@@ -11,6 +11,7 @@ import logging
 import secrets
 from datetime import date, datetime, timezone
 from typing import Optional
+from rate_limit import limiter
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, EmailStr
 import httpx
@@ -211,7 +212,8 @@ async def subscribe(req: SubscribeRequest, request: Request):
 
 
 @router.get("/confirm/{token}")
-async def confirm_subscription(token: str):
+@limiter.shared_limit("10/minute", scope="newsletter:confirm_subscription")
+async def confirm_subscription(token: str, request: Request = None):
     """Confirm newsletter subscription via token from email link."""
     from fastapi.responses import HTMLResponse
 

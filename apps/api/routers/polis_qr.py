@@ -16,13 +16,14 @@ import os
 import secrets
 import logging
 from typing import Literal, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import redis.asyncio as aioredis
 
 from database import get_db
+from rate_limit import limiter
 from services.bill_visibility import is_public_bill
 from services.vote_scope import ScopeAction, ensure_bill_scope_allowed
 from models import (
@@ -130,9 +131,11 @@ async def _mark_session_used(redis_client, session_key: str) -> None:
 
 
 @router.get("/qr-session")
+@limiter.limit("10/minute")
 async def create_qr_session(
     purpose: Literal["ticket", "vote", "consensus", "forum_login"] = Query("ticket"),
     bill_id: Optional[str] = Query(None),
+    request: Request = None,
 ):
     """Generate a new QR login session with challenge.
 
@@ -175,7 +178,8 @@ async def create_qr_session(
 
 
 @router.get("/qr-session/{session_id}")
-async def poll_qr_session(session_id: str):
+@limiter.shared_limit("120/minute", scope="polis_qr:poll_qr_session")
+async def poll_qr_session(session_id: str, request: Request = None):
     """Poll QR session status. Returns pending/authenticated/expired/used."""
     r = await _redis()
     data = await r.hgetall(f"polis_qr:{session_id}")
@@ -208,7 +212,8 @@ class QRAuthRequest(BaseModel):
 
 
 @router.post("/qr-auth")
-async def authenticate_qr(req: QRAuthRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("10/minute")
+async def authenticate_qr(req: QRAuthRequest, db: AsyncSession = Depends(get_db), request: Request = None):
     """App submits signed challenge to authenticate browser session."""
     r = await _redis()
     data = await r.hgetall(f"polis_qr:{req.session_id}")
@@ -285,7 +290,8 @@ class QRVoteRequest(BaseModel):
 
 
 @router.post("/qr-vote")
-async def qr_web_vote(req: QRVoteRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("20/minute")
+async def qr_web_vote(req: QRVoteRequest, db: AsyncSession = Depends(get_db), request: Request = None):
     """Browser submits vote via an authenticated QR session.
 
     The session must have purpose=vote, status=authenticated, and matching bill_id.
@@ -417,7 +423,8 @@ class QRConsensusRequest(BaseModel):
 
 
 @router.post("/qr-consensus")
-async def qr_web_consensus(req: QRConsensusRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("20/minute")
+async def qr_web_consensus(req: QRConsensusRequest, db: AsyncSession = Depends(get_db), request: Request = None):
     """Browser submits consensus via an authenticated QR session.
 
     Same pattern as qr-vote: session IS the proof of identity.

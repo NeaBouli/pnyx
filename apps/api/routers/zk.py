@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Path as FastAPIPath, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path as FastAPIPath, Query, status, Request
 from pydantic import BaseModel, Field, model_serializer
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
 from database import get_db
+from rate_limit import limiter
 from services.small_cell import small_cell_k
 from services.zk_vote_aggregation import zk_scope_publishable
 from dependencies import verify_admin_key
@@ -743,7 +744,8 @@ async def get_zk_canary_preflight(
 
 
 @router.post("/opt-in", response_model=ZkOptInResponse)
-async def opt_in_zk(req: ZkOptInRequest, db: AsyncSession = Depends(get_db)) -> ZkOptInResponse:
+@limiter.limit("10/minute")
+async def opt_in_zk(req: ZkOptInRequest, db: AsyncSession = Depends(get_db), request: Request = None) -> ZkOptInResponse:
     _ensure_zk_opt_in_enabled()
 
     id_result = await db.execute(
@@ -1007,7 +1009,8 @@ async def publish_zk_root(
 
 
 @router.post("/vote", response_model=ZkVoteAcceptResponse)
-async def accept_zk_vote(req: ZkVoteRequest, db: AsyncSession = Depends(get_db)) -> ZkVoteAcceptResponse:
+@limiter.limit("20/minute")
+async def accept_zk_vote(req: ZkVoteRequest, db: AsyncSession = Depends(get_db), request: Request = None) -> ZkVoteAcceptResponse:
     if not zk_voting_enabled():
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -1101,7 +1104,8 @@ async def accept_zk_vote(req: ZkVoteRequest, db: AsyncSession = Depends(get_db))
 
 
 @router.post("/verify", response_model=ZkVerifyResponse)
-async def verify_zk_proof(req: ZkVerifyRequest, db: AsyncSession = Depends(get_db)) -> ZkVerifyResponse:
+@limiter.limit("10/minute")
+async def verify_zk_proof(req: ZkVerifyRequest, db: AsyncSession = Depends(get_db), request: Request = None) -> ZkVerifyResponse:
     if not zk_voting_enabled():
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

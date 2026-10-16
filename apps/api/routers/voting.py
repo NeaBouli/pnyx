@@ -846,11 +846,13 @@ async def _load_vote_status(
 
 
 @router.get("/{bill_id}/status", response_model=VoteStatusResponse)
+@limiter.shared_limit("10/minute", scope="voting:get_vote_status")
 async def get_vote_status(
     bill_id: str,
     response: Response,
     nullifier_hash: str = Query(..., min_length=64, max_length=64),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Legacy transition path; signed clients use POST /{bill_id}/status."""
     if vote_status_require_signed():
@@ -867,11 +869,13 @@ async def get_vote_status(
 
 
 @router.post("/{bill_id}/status", response_model=VoteStatusResponse)
+@limiter.shared_limit("10/minute", scope="voting:post_vote_status")
 async def post_vote_status(
     bill_id: str,
     req: VoteStatusReadRequest,
     response: Response,
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Signed personal vote-status read; same response shape as the legacy GET."""
     if not citizen_action_timestamp_is_fresh(req.timestamp_ms):
@@ -921,7 +925,8 @@ class CorrectionRequest(BaseModel):
 
 
 @router.put("/{bill_id}/correct")
-async def correct_vote(bill_id: str, req: CorrectionRequest, db: AsyncSession = Depends(get_db)):
+@limiter.shared_limit("20/minute", scope="voting:correct_vote")
+async def correct_vote(bill_id: str, req: CorrectionRequest, db: AsyncSession = Depends(get_db), request: Request = None):
     """
     Einmalige Stimmkorrektur — nur in WINDOW_24H erlaubt.
     - Bill muss Status WINDOW_24H haben
@@ -1300,10 +1305,12 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/{bill_id}/relevance")
+@limiter.shared_limit("30/minute", scope="voting:vote_relevance")
 async def vote_relevance(
     bill_id: str,
     req: RelevanceRequest,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """MOD-14: Up/Down Relevanz-Signal. Getrennt von inhaltlicher Stimme."""
     if req.signal not in [1, -1]:
@@ -1363,7 +1370,8 @@ async def vote_relevance(
 # ─── VoteReceipt (ADR-008 stub) ─────────────────────────────────────────────
 
 @router.get("/{bill_id}/receipt")
-async def get_vote_receipt_deprecated(bill_id: str):
+@limiter.shared_limit("10/minute", scope="voting:get_vote_receipt_deprecated")
+async def get_vote_receipt_deprecated(bill_id: str, request: Request = None):
     """DEPRECATED: Use POST /{bill_id}/receipt with signed body."""
     raise HTTPException(status_code=410, detail="Endpoint deprecated. Use POST with signature_hex.")
 
@@ -1374,10 +1382,12 @@ class ReceiptRequest(BaseModel):
 
 
 @router.post("/{bill_id}/receipt")
+@limiter.shared_limit("10/minute", scope="voting:post_vote_receipt")
 async def post_vote_receipt(
     bill_id: str,
     req: ReceiptRequest,
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """ADR-008: VoteReceipt — requires Ed25519 signature proof."""
     identity = (await db.execute(
@@ -1430,10 +1440,12 @@ class ConsensusRequest(BaseModel):
 
 
 @router.post("/{bill_id}/consensus")
+@limiter.shared_limit("20/minute", scope="voting:submit_consensus")
 async def submit_consensus(
     bill_id: str,
     req: ConsensusRequest,
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Post-vote consensus score for OPEN_END bills. Scale: -5 (full resistance) to +5 (full consensus)."""
     from sqlalchemy import text
@@ -1503,7 +1515,8 @@ async def submit_consensus(
 
 
 @router.get("/compass/personal")
-async def get_personal_compass_deprecated():
+@limiter.limit("10/minute")
+async def get_personal_compass_deprecated(request: Request = None):
     """DEPRECATED: Use POST /compass/personal with signed body."""
     raise HTTPException(status_code=410, detail="Endpoint deprecated. Use POST with signature_hex.")
 
@@ -1514,9 +1527,11 @@ class CompassRequest(BaseModel):
 
 
 @router.post("/compass/personal")
+@limiter.limit("10/minute")
 async def post_personal_compass(
     req: CompassRequest,
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Personal compass position — requires Ed25519 signature proof."""
     from sqlalchemy import text

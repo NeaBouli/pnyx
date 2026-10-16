@@ -10,13 +10,14 @@ import logging
 from datetime import datetime, timezone, timedelta
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Header, Response
+from fastapi import APIRouter, Depends, HTTPException, Header, Response, Request
 from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from rate_limit import limiter
 from dependencies import verify_admin_key
 from ip_utils import log_reference
 from services.invite_codes import invite_code_hash, invite_code_hint
@@ -250,7 +251,8 @@ async def verify_rep_token(
 
 
 @router.post("/verify")
-async def verify_representative(req: VerifyRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("10/minute")
+async def verify_representative(req: VerifyRequest, db: AsyncSession = Depends(get_db), request: Request = None):
     """Verify representative via ADA number + admin invite code. Returns a 24h token."""
     # 1. Validate invite code
     inv_result = await db.execute(text(
@@ -336,7 +338,8 @@ async def verify_representative(req: VerifyRequest, db: AsyncSession = Depends(g
 
 
 @router.post("/auth")
-async def auth_representative(req: AuthRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("10/minute")
+async def auth_representative(req: AuthRequest, db: AsyncSession = Depends(get_db), request: Request = None):
     """Authenticate with ADA + token."""
     rep = await _get_rep_token(req.token, db)
     if not rep or rep["ada_number"] != req.ada_number:
@@ -454,10 +457,12 @@ async def get_rep_bills(
 
 
 @router.get("/results/{bill_id}")
+@limiter.shared_limit("30/minute", scope="representative:get_rep_results")
 async def get_rep_results(
     bill_id: str,
     rep: dict = Depends(verify_rep_token),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Detailed results for representatives including hourly timeline."""
     bill = (await db.execute(
@@ -510,10 +515,12 @@ async def get_rep_results(
 
 
 @router.get("/divergence/{bill_id}")
+@limiter.shared_limit("30/minute", scope="representative:get_rep_divergence")
 async def get_rep_divergence(
     bill_id: str,
     rep: dict = Depends(verify_rep_token),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Divergence analysis: citizens vs parliament by governance level."""
     bill = (await db.execute(
@@ -561,9 +568,11 @@ async def get_rep_divergence(
 
 
 @router.post("/enable-evaluation")
+@limiter.limit("20/minute")
 async def enable_evaluation(
     rep: dict = Depends(verify_rep_token),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Representative consents to being evaluated by verified citizens."""
     # EVA-012: the demo account must never enter public evaluation,
@@ -586,9 +595,11 @@ async def enable_evaluation(
 
 
 @router.get("/my-scores")
+@limiter.limit("10/minute")
 async def get_my_scores(
     rep: dict = Depends(verify_rep_token),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Representative views their own evaluation scores."""
     result = await db.execute(text("""

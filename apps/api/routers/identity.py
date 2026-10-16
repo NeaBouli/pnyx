@@ -598,7 +598,8 @@ async def revoke_identity(req: RevokeRequest, request: Request, db: AsyncSession
 
 
 @router.post("/status", response_model=StatusResponse)
-async def check_status(req: StatusRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("10/minute")
+async def check_status(req: StatusRequest, db: AsyncSession = Depends(get_db), request: Request = None):
     """Prüft ob ein Nullifier Hash aktiv oder revoziert ist."""
     result = await db.execute(
         select(IdentityRecord).where(IdentityRecord.nullifier_hash == req.nullifier_hash)
@@ -742,9 +743,11 @@ class LocationUpdateRequest(BaseModel):
 
 
 @router.patch("/profile/location")
+@limiter.limit("20/minute")
 async def update_profile_location(
     req: LocationUpdateRequest,
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """
     Sync user's declared Dimos/Periferia to server.

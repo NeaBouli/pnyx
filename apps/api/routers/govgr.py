@@ -40,6 +40,7 @@ import hashlib
 import hmac
 import logging
 from typing import Any
+from rate_limit import limiter
 from fastapi import APIRouter, Query, HTTPException, Request
 from fastapi.responses import RedirectResponse
 import httpx
@@ -202,7 +203,8 @@ async def govgr_status():
 
 
 @router.get("/login")
-async def govgr_login(redirect_after: str = Query("/")):
+@limiter.limit("10/minute")
+async def govgr_login(redirect_after: str = Query("/"), request: Request = None):
     """
     Startet gov.gr OAuth2.0 Flow (Phase A).
     Redirect zu oauth2.gov.gr → Taxisnet Login.
@@ -235,8 +237,10 @@ async def govgr_login(redirect_after: str = Query("/")):
 
 
 @router.get("/callback")
+@limiter.limit("10/minute")
 async def govgr_callback(
-    code: str = Query(None), state: str = Query(None), error: str = Query(None)
+    code: str = Query(None), state: str = Query(None), error: str = Query(None),
+    request: Request = None,
 ):
     """
     OAuth2.0 Callback von gov.gr.

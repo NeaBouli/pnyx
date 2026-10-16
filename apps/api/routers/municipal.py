@@ -14,6 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from rate_limit import limiter
 from services.small_cell import suppress_public_cells
 from models import (
     Periferia, Dimos, Decision, GovernanceLevel, BillStatus,
@@ -221,7 +222,8 @@ class DecisionVoteRequest(BaseModel):
 
 
 @router.post("/municipal/vote")
-async def vote_on_decision(req: DecisionVoteRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("20/minute")
+async def vote_on_decision(req: DecisionVoteRequest, db: AsyncSession = Depends(get_db), request: Request = None):
     """Cast a vote on a Diavgeia municipal decision. Requires Ed25519 signature."""
     from keypair import verify_signature
 
