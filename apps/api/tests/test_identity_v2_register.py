@@ -35,6 +35,7 @@ PUB_OLD = "a" * 64
 PUB_NEW = "b" * 64
 PRIV_NEW = "c" * 64
 hlr_calls: list[int] = []
+lock_keys: list[str] = []
 
 
 @event.listens_for(_engine.sync_engine, "connect")
@@ -91,7 +92,8 @@ async def setup_db(monkeypatch):
     async def fake_increment_hlr_usage(_providers: list[str]) -> int:
         return 1
 
-    async def fake_acquire_identity_verify_lock(_nullifier_hash: str) -> tuple[str, str]:
+    async def fake_acquire_identity_verify_lock(nullifier_hash: str) -> tuple[str, str]:
+        lock_keys.append(nullifier_hash)
         return ("identity:verify:lock:test", "token")
 
     async def fake_release_identity_verify_lock(_lock_key: str, _token: str) -> None:
@@ -101,6 +103,7 @@ async def setup_db(monkeypatch):
         return None
 
     hlr_calls.clear()
+    lock_keys.clear()
     monkeypatch.setenv("IDENTITY_V2_ENABLED", "true")
     monkeypatch.setattr(identity, "verify_greek_number", fake_hlr)
     monkeypatch.setattr(identity, "_increment_hlr_usage", fake_increment_hlr_usage)
@@ -241,6 +244,44 @@ async def test_active_identity_is_not_rekeyed_by_hlr_alone() -> None:
     assert response.status_code == 409
     assert response.json()["detail"].startswith("IDENTITY_ACTIVE")
     assert await _rows() == [(V1, PUB_OLD, "ACTIVE")]
+    assert hlr_calls == []  # decided locally before the paid HLR call
+
+
+@pytest.mark.asyncio
+async def test_active_identity_matched_only_by_v2_nullifier_is_not_rekeyed(monkeypatch) -> None:
+    monkeypatch.setenv("IDENTITY_NULLIFIER_KDF_VERSION", "v2")
+    async with _engine.begin() as conn:
+        await conn.execute(text(
+            "INSERT INTO identity_records (nullifier_hash, nullifier_hash_v2, nullifier_version, public_key_hex, status) "
+            "VALUES (:n, :n2, 'v2', :p, 'ACTIVE')"), {"n": "8" * 64, "n2": V2, "p": PUB_OLD})
+    response = await _post(_signed_body())
+    assert response.status_code == 409
+    assert response.json()["detail"].startswith("IDENTITY_ACTIVE")
+    assert await _rows() == [("8" * 64, PUB_OLD, "ACTIVE")]
+    assert hlr_calls == []
+
+
+@pytest.mark.asyncio
+async def test_registration_holds_a_per_key_lock() -> None:
+    body = _signed_body()
+    response = await _post(body)
+    assert response.status_code == 200, response.text
+    assert lock_keys[0] == "pk:" + body["public_key_hex"]
+    assert V1 in lock_keys[1:]
+
+
+@pytest.mark.asyncio
+async def test_rate_limit_applies_before_the_key_lookup(monkeypatch) -> None:
+    sk = SigningKey.generate()
+    await _insert("9" * 64, sk.verify_key.encode().hex(), "ACTIVE")
+
+    async def limited(_request, _normalized_number: str) -> None:
+        raise HTTPException(status_code=429, detail="RATE_LIMITED")
+
+    monkeypatch.setattr(identity, "_enforce_hlr_verify_limits", limited)
+    response = await _post(_signed_body(sk))
+    assert response.status_code == 429
+    assert hlr_calls == []
 
 
 @pytest.mark.asyncio
@@ -265,3 +306,27 @@ async def test_v1_still_returns_server_generated_key() -> None:
     assert response.status_code == 200, response.text
     assert response.json()["private_key_hex"] == PRIV_NEW
     assert await _rows() == [(V1, PUB_NEW, "ACTIVE")]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("racing_row,detail", [
+    ("same_identity", "IDENTITY_ACTIVE"),
+    ("same_key", "PUBLIC_KEY_IN_USE"),
+])
+async def test_locked_recheck_catches_rows_created_after_the_preflight(monkeypatch, racing_row, detail) -> None:
+    # A competing registration commits while this request waits for HLR.
+    body = _signed_body()
+
+    async def racing_hlr(_phone: str) -> dict[str, object]:
+        hlr_calls.append(1)
+        if racing_row == "same_identity":
+            await _insert(V1, PUB_OLD, "ACTIVE")
+        else:
+            await _insert("7" * 64, body["public_key_hex"], "ACTIVE")
+        return {"valid": True, "network": "TEST", "country": "GR", "status": "LIVE", "error": None}
+
+    monkeypatch.setattr(identity, "verify_greek_number", racing_hlr)
+    response = await _post(body)
+    assert response.status_code == 409
+    assert response.json()["detail"].startswith(detail)
+    assert len(await _rows()) == 1

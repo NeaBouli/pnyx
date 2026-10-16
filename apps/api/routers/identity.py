@@ -268,6 +268,25 @@ class StatusResponse(BaseModel):
 
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
+async def _find_identity(db: AsyncSession, nullifier: str, nullifier_v2: str | None) -> IdentityRecord | None:
+    """Identity row for a v1 anchor and/or v2 nullifier (v1-preferred)."""
+    identity_filter = IdentityRecord.nullifier_hash == nullifier
+    if nullifier_v2:
+        identity_filter = or_(IdentityRecord.nullifier_hash_v2 == nullifier_v2, identity_filter)
+    result = await db.execute(_identity_match_query(identity_filter))
+    matches = result.scalars().all()
+    if len(matches) > 1:
+        logger.warning("[MOD-01] Multiple identity rows matched v2 migration lookup; using v1-preferred anchor")
+    return _select_identity_match(matches, nullifier)
+
+
+def _identity_active_error() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail="IDENTITY_ACTIVE: Η ταυτότητα είναι ήδη ενεργή. / Identity already active.",
+    )
+
+
 async def _register_identity(
     req: "VerifyRequest",
     request: Request,
@@ -297,6 +316,19 @@ async def _register_identity(
         )
     await _enforce_hlr_verify_limits(request, normalized_number)
 
+    precomputed: tuple[str, str | None] | None = None
+    if client_public_key_hex is not None:
+        # v2 preflight (EVA-001 review): rejections the database already decides
+        # happen after the rate limits but before the paid HLR call.
+        if await _public_key_active(db, client_public_key_hex):
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="PUBLIC_KEY_IN_USE")
+        pre_v1 = generate_nullifier_hash(req.phone_number)
+        pre_v2 = generate_nullifier_hash_v2(req.phone_number) if _identity_kdf_version() == "v2" else None
+        precomputed = (pre_v1, pre_v2)
+        pre_existing = await _find_identity(db, pre_v1, pre_v2)
+        if pre_existing and pre_existing.status == KeyStatus.ACTIVE:
+            raise _identity_active_error()
+
     # 1. HLR Prüfung
     hlr_result = await verify_greek_number(req.phone_number)
     # Track HLR usage (even failed lookups cost a credit if not DRY_RUN)
@@ -309,33 +341,29 @@ async def _register_identity(
         )
 
     # 2. Nullifier Hash (Telefonnummer wird in der Funktion sofort gelöscht)
-    nullifier = generate_nullifier_hash(req.phone_number)  # v1 compatibility anchor
+    if precomputed is None:
+        nullifier = generate_nullifier_hash(req.phone_number)  # v1 compatibility anchor
+    else:
+        nullifier = precomputed[0]
     lock_key, lock_token = await _acquire_identity_verify_lock(nullifier)
     try:
-        kdf_version = _identity_kdf_version()
-        nullifier_v2 = generate_nullifier_hash_v2(req.phone_number) if kdf_version == "v2" else None
+        if precomputed is None:
+            kdf_version = _identity_kdf_version()
+            nullifier_v2 = generate_nullifier_hash_v2(req.phone_number) if kdf_version == "v2" else None
+        else:
+            nullifier_v2 = precomputed[1]
         del req.phone_number
         gc.collect()
 
         # 3. Bestehenden Record prüfen
-        identity_filter = IdentityRecord.nullifier_hash == nullifier
-        if nullifier_v2:
-            identity_filter = or_(IdentityRecord.nullifier_hash_v2 == nullifier_v2, identity_filter)
-        result = await db.execute(_identity_match_query(identity_filter))
-        matches = result.scalars().all()
-        if len(matches) > 1:
-            logger.warning("[MOD-01] Multiple identity rows matched v2 migration lookup; using v1-preferred anchor")
-        existing = _select_identity_match(matches, nullifier)
+        existing = await _find_identity(db, nullifier, nullifier_v2)
 
         if client_public_key_hex is not None and existing and existing.status == KeyStatus.ACTIVE:
             # D3: a key swap on an ACTIVE identity needs the old key's signature
-            # (rotate-key); HLR alone must not replace it in v2.
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="IDENTITY_ACTIVE: Η ταυτότητα είναι ήδη ενεργή. / Identity already active.",
-            )
+            # (rotate-key); HLR alone must not replace it in v2. Re-checked here
+            # under the per-nullifier lock (the preflight can race).
+            raise _identity_active_error()
         if client_public_key_hex is not None and await _public_key_active(db, client_public_key_hex):
-            # Re-check under the per-nullifier lock (the pre-HLR check can race).
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="PUBLIC_KEY_IN_USE")
 
         if existing and existing.status == KeyStatus.ACTIVE:
@@ -754,12 +782,16 @@ async def verify_identity_v2(req: VerifyV2Request, request: Request, db: AsyncSe
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not Found")
 
     _check_registration_pop(req, int(datetime.now(timezone.utc).timestamp() * 1000))
-    if await _public_key_active(db, req.public_key_hex):
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="PUBLIC_KEY_IN_USE")
-
-    public_key_hex, _private, nullifier_hash = await _register_identity(
-        req, request, db, client_public_key_hex=req.public_key_hex,
-    )
+    # One in-flight registration per public key: different phone numbers take
+    # different nullifier locks, so without this a replayed PoP could bind the
+    # same key to two identities concurrently (EVA-001 review).
+    pk_lock_key, pk_lock_token = await _acquire_identity_verify_lock(f"pk:{req.public_key_hex}")
+    try:
+        public_key_hex, _private, nullifier_hash = await _register_identity(
+            req, request, db, client_public_key_hex=req.public_key_hex,
+        )
+    finally:
+        await _release_identity_verify_lock(pk_lock_key, pk_lock_token)
     return VerifyV2Response(
         success=True,
         public_key_hex=public_key_hex,
