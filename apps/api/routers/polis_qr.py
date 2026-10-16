@@ -327,10 +327,14 @@ async def qr_web_vote(req: QRVoteRequest, db: AsyncSession = Depends(get_db)):
     if identity.public_key_hex != data.get("public_key_hex", ""):
         raise HTTPException(403, "Session key is no longer current — scan QR again")
 
-    # Check bill is votable
-    bill_result = await db.execute(
-        select(ParliamentBill).where(ParliamentBill.id == req.bill_id)
-    )
+    # Check bill is votable. With the ZK tier guard on, lock the bill row like
+    # POST /vote and ZK opt-in do, and hold it through commit: a concurrent
+    # opt-in cannot slip between the tier-lock check and this vote (EVA-006).
+    from routers.voting import zk_tier1_guard_enabled
+    bill_query = select(ParliamentBill).where(ParliamentBill.id == req.bill_id)
+    if zk_tier1_guard_enabled():
+        bill_query = bill_query.with_for_update()
+    bill_result = await db.execute(bill_query)
     bill = bill_result.scalar_one_or_none()
     if not bill or not is_public_bill(bill):
         raise HTTPException(404, f"Bill {req.bill_id} not found")
@@ -340,6 +344,16 @@ async def qr_web_vote(req: QRVoteRequest, db: AsyncSession = Depends(get_db)):
         raise HTTPException(400, f"Voting closed. Status: {bill.status.value}")
 
     ensure_bill_scope_allowed(identity, bill)
+
+    # EVA-006/NEA-249: the QR path must honour the same ZK cross-tier lock as
+    # POST /vote, otherwise a ZK opt-in voter could also vote here (Tier 1).
+    from routers.voting import raise_if_zk_tier1_locked
+    await raise_if_zk_tier1_locked(
+        db,
+        bill_id=req.bill_id,
+        bill_source=getattr(bill, "source", None),
+        nullifier_hash=nullifier_hash,
+    )
 
     vote_choice = VoteChoice(req.vote)
 
@@ -386,8 +400,8 @@ async def qr_web_vote(req: QRVoteRequest, db: AsyncSession = Depends(get_db)):
 
     await _mark_session_used(r, session_key)
 
-    logger.info("QR web vote: bill=%s vote=%s nullifier=%s...",
-                req.bill_id, req.vote, nullifier_hash[:8])
+    # EVA-006: never log the choice next to an identity reference.
+    logger.info("QR web vote accepted: bill=%s", req.bill_id)
 
     return {"success": True, "message": msg, "bill_id": req.bill_id, "vote": req.vote}
 
@@ -486,8 +500,7 @@ async def qr_web_consensus(req: QRConsensusRequest, db: AsyncSession = Depends(g
 
     await _mark_session_used(r, session_key)
 
-    logger.info("QR consensus: bill=%s score=%d nullifier=%s...",
-                req.bill_id, req.score, nullifier_hash[:8])
+    logger.info("QR consensus accepted: bill=%s", req.bill_id)
 
     return {
         "success": True,
