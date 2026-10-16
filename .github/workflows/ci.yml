@@ -13,26 +13,38 @@ permissions:
 jobs:
   test-api:
     name: Python API Tests
-    # GitHub-hosted only: needs the redis service container (no Docker for pnyx on the fallback host).
+    # GitHub-hosted only: starts a redis container (no Docker for pnyx on the fallback host).
     runs-on: ubuntu-latest
     timeout-minutes: 30
-
-    services:
-      redis:
-        # Docker Official Image, Redis 8.10.2-alpine; digest matches Docker Hub.
-        image: public.ecr.aws/docker/library/redis@sha256:3811787313eba226a2ef38658c6ccb91cd5e110edc89c37767de373120a0e5a0
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
+
+      # Redis 8.10.2-alpine (Docker Official Image), digest-pinned. Started as a
+      # step instead of a service container so the pull can fall back across
+      # registries: ECR Public hit its anonymous data limit on shared runner
+      # IPs, and mirror.gcr.io is an evictable cache. The digest pin makes every
+      # source byte-identical.
+      - name: Start redis (digest-pinned, registry fallback)
+        run: |
+          set -euo pipefail
+          DIGEST="sha256:3811787313eba226a2ef38658c6ccb91cd5e110edc89c37767de373120a0e5a0"
+          IMG=""
+          for ref in mirror.gcr.io/library/redis public.ecr.aws/docker/library/redis docker.io/library/redis; do
+            for attempt in 1 2; do
+              if docker pull -q "$ref@$DIGEST"; then IMG="$ref@$DIGEST"; break 2; fi
+              sleep 5
+            done
+          done
+          test -n "$IMG" || { echo "redis image unavailable from all registries"; exit 1; }
+          docker run -d --name redis -p 6379:6379 "$IMG"
+          for i in $(seq 1 30); do
+            if docker exec redis redis-cli ping | grep -q PONG; then exit 0; fi
+            sleep 1
+          done
+          echo "redis did not become healthy"; exit 1
 
       - name: Set up Python 3.12
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
