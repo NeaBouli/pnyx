@@ -1167,6 +1167,7 @@ async def add_noindex_header(request: Request, call_next):
 
 
 app.include_router(identity.router)
+app.include_router(identity.router_v2)
 app.include_router(vaa.router)
 app.include_router(parliament.router)
 app.include_router(voting.router)
