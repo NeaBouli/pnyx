@@ -232,7 +232,7 @@
       <tr><td data-el="Αριθμός κινητού" data-en="Phone number">Αριθμός κινητού</td><td style="color:var(--red);font-weight:700">❌ Ποτέ</td><td data-el="Διαγράφεται μετά το hashing" data-en="Deleted after hashing">Διαγράφεται μετά το hashing</td></tr>
       <tr><td>Private Key</td><td style="color:var(--red);font-weight:700">❌ Ποτέ</td><td data-el="Δημιουργείται στον server κατά την επαλήθευση και παραδίδεται μία φορά στη συσκευή· δεν αποθηκεύεται ούτε καταγράφεται" data-en="Created on the server during verification and handed to the device once; never stored or logged">Δημιουργείται στον server κατά την επαλήθευση και παραδίδεται μία φορά στη συσκευή· δεν αποθηκεύεται ούτε καταγράφεται</td></tr>
       <tr><td data-el="Ηλικία, Φύλο, Περιφέρεια (δημογραφικά στοιχεία επαλήθευσης)" data-en="Age, Gender, Region (verification demographics)">Ηλικία, Φύλο, Περιφέρεια (δημογραφικά στοιχεία επαλήθευσης)</td><td style="color:var(--red);font-weight:700" data-el="❌ Όχι" data-en="❌ No">❌ Όχι</td><td data-el="Δεν αποθηκεύονται. Οι νέες ή ανανεωμένες επαληθεύσεις δεν τα κρατούν και η βάση δεδομένων δεν περιέχει τέτοιες εγγραφές (έλεγχος 11/10/2026)." data-en="Not stored. New or renewed verifications do not keep them, and the database contains no such entries (checked 2026-10-11).">Δεν αποθηκεύονται. Οι νέες ή ανανεωμένες επαληθεύσεις δεν τα κρατούν και η βάση δεδομένων δεν περιέχει τέτοιες εγγραφές (έλεγχος 11/10/2026).</td></tr>
-      <tr><td>IP Address</td><td style="color:#f59e0b;font-weight:700" data-el="⚠️ Περιορισμένα" data-en="⚠️ Limited">⚠️ Περιορισμένα</td><td data-el="Μόνο για rate limiting / ασφάλεια, όχι σύνδεση με ψήφο ή ταυτότητα" data-en="Only for rate limiting / security, not linked to vote or identity">Μόνο για rate limiting / ασφάλεια, όχι σύνδεση με ψήφο ή ταυτότητα</td></tr>
+      <tr><td>IP Address</td><td style="color:#f59e0b;font-weight:700" data-el="⚠️ Περιορισμένα" data-en="⚠️ Limited">⚠️ Περιορισμένα</td><td data-el="Η IP δεν αποθηκεύεται μαζί με την ψήφο. Λειτουργικά logs και όρια αιτημάτων μπορεί να την επεξεργάζονται για σύντομο χρόνο." data-en="The IP is not stored with the vote. Operational logs and rate limits may process it briefly.">Η IP δεν αποθηκεύεται μαζί με την ψήφο. Λειτουργικά logs και όρια αιτημάτων μπορεί να την επεξεργάζονται για σύντομο χρόνο.</td></tr>
     </table>
   </div>
 
@@ -244,14 +244,14 @@
       <tr><td>Public Key</td><td>Ed25519 Hex</td><td data-el="Επαλήθευση υπογραφής" data-en="Signature verification">Επαλήθευση υπογραφής</td></tr>
       <tr><td data-el="Ψήφοι (ψευδώνυμα)" data-en="Votes (pseudonymous)">Ψήφοι (ψευδώνυμα)</td><td>YES/NO/ABSTAIN</td><td data-el="Αποτελέσματα· συνδέονται με ψευδώνυμο nullifier, όχι με όνομα ή αριθμό τηλεφώνου" data-en="Results; linked to a pseudonymous nullifier, not to a name or phone number">Αποτελέσματα· συνδέονται με ψευδώνυμο nullifier, όχι με όνομα ή αριθμό τηλεφώνου</td></tr>
       <tr><td data-el="Περιφέρεια / Δήμος (προαιρετικά)" data-en="Region / Municipality (optional)">Περιφέρεια / Δήμος (προαιρετικά)</td><td data-el="Αυτοδήλωση, κλειδωμένη" data-en="Self-declared, locked">Αυτοδήλωση, κλειδωμένη</td><td data-el="Τοπικές ψηφοφορίες — δεν αποτελεί επαληθευμένη κατοικία" data-en="Local votes — not verified residence">Τοπικές ψηφοφορίες — δεν αποτελεί επαληθευμένη κατοικία</td></tr>
-      <tr><td data-el="VAA Απαντήσεις" data-en="VAA Answers">VAA Απαντήσεις</td><td data-el="Ψευδώνυμο (Public Key Hash)" data-en="Pseudonymous (Public Key Hash)">Ψευδώνυμο (Public Key Hash)</td><td data-el="Πολιτική Πυξίδα — Art. 9 GDPR · Διαγράφονται με revoke" data-en="Political Compass — Art. 9 GDPR · Deleted on revoke">Πολιτική Πυξίδα — Art. 9 GDPR · Διαγράφονται με revoke</td></tr>
+      <tr><td data-el="VAA Απαντήσεις" data-en="VAA Answers">VAA Απαντήσεις</td><td data-el="Δεν αποθηκεύονται από το /vaa/match" data-en="Not stored by /vaa/match">Δεν αποθηκεύονται από το /vaa/match</td><td data-el="Πολιτική Πυξίδα — υπολογισμός στη μνήμη, χωρίς σύνδεση με δημόσιο κλειδί ή αποθηκευμένο αρχείο προς διαγραφή με ανάκληση" data-en="Political Compass — computed in memory, without a public-key link or stored answer record to delete on revocation">Πολιτική Πυξίδα — υπολογισμός στη μνήμη, χωρίς σύνδεση με δημόσιο κλειδί ή αποθηκευμένο αρχείο προς διαγραφή με ανάκληση</td></tr>
     </table>
   </div>
 
   <h2 class="fade-in">k-Anonymity</h2>
   <div class="info-box fade-in">
-    <p data-el="Δημογραφικά αποτελέσματα μόνο όταν k ≥ 10 ψήφοι. Αποτρέπει επαναναγνώριση." data-en="Demographic results only when k ≥ 10 votes. Prevents re-identification.">
-      Δημογραφικά αποτελέσματα εμφανίζονται <strong>μόνο όταν k ≥ 10 ψήφοι</strong>. Αποτρέπει επαναναγνώριση.
+    <p data-el="Το όριο k ≥ 10 εφαρμόζεται σε συγκεκριμένα συγκεντρωτικά αποτελέσματα, όπου υλοποιείται ο σχετικός έλεγχος· δεν είναι καθολική εγγύηση για κάθε δημοσίευση. Μειώνει, αλλά δεν εξαλείφει, τον κίνδυνο επαναναγνώρισης." data-en="The k ≥ 10 threshold applies to specific aggregates where the check is implemented; it is not a universal guarantee for every publication. It reduces, but does not eliminate, re-identification risk.">
+      Το όριο k ≥ 10 εφαρμόζεται σε συγκεκριμένα συγκεντρωτικά αποτελέσματα, όπου υλοποιείται ο σχετικός έλεγχος· δεν είναι καθολική εγγύηση για κάθε δημοσίευση. Μειώνει, αλλά δεν εξαλείφει, τον κίνδυνο επαναναγνώρισης.
     </p>
   </div>
 
@@ -277,8 +277,8 @@
 
   <h2 class="fade-in" data-el="Arweave Μόνιμο Αρχείο" data-en="Arweave Permanent Archive">Arweave Μόνιμο Αρχείο</h2>
   <div class="info-box fade-in">
-    <p data-el="Τα αποτελέσματα ψηφοφορίας αρχειοθετούνται μόνιμα στο Arweave αποκλειστικά ως συγκεντρωτικά δεδομένα:" data-en="Vote results are permanently archived on Arweave exclusively as aggregate data:">
-      Τα αποτελέσματα ψηφοφορίας αρχειοθετούνται μόνιμα στο <strong>Arweave</strong> αποκλειστικά ως <strong>συγκεντρωτικά δεδομένα</strong>:
+    <p data-el="Κανονικές ψήφοι: μόνο συγκεντρωτικά αποτελέσματα στο Arweave. ZK ψήφοι (σε παύση): ατομικές επιλογές με ZK απόδειξη, χωρίς ταυτότητα." data-en="Ordinary votes: only aggregates on Arweave. ZK votes (currently paused): individual choices with a ZK proof, without identity.">
+      Κανονικές ψήφοι: μόνο συγκεντρωτικά αποτελέσματα στο Arweave. ZK ψήφοι (σε παύση): ατομικές επιλογές με ZK απόδειξη, χωρίς ταυτότητα.
     </p>
   </div>
   <div class="table-wrap fade-in">
@@ -287,14 +287,14 @@
       <tr><td data-el="Συνολικές ψήφοι ανά επιλογή" data-en="Total votes per option">Συνολικές ψήφοι ανά επιλογή (YES / NO / ABSTAIN)</td><td style="color:var(--green);font-weight:700">✅</td></tr>
       <tr><td>Divergence Score</td><td style="color:var(--green);font-weight:700">✅</td></tr>
       <tr><td data-el="Αποτέλεσμα Βουλής" data-en="Parliament Result">Αποτέλεσμα Βουλής</td><td style="color:var(--green);font-weight:700">✅</td></tr>
-      <tr><td data-el="Ατομικές ψήφοι" data-en="Individual votes">Ατομικές ψήφοι</td><td style="color:var(--red);font-weight:700">❌ ΠΟΤΕ</td></tr>
+      <tr><td data-el="Ατομικές κανονικές ψήφοι" data-en="Individual ordinary votes">Ατομικές κανονικές ψήφοι</td><td style="color:var(--red);font-weight:700">❌ ΠΟΤΕ</td></tr>
       <tr><td data-el="Public Keys συνδεδεμένοι με ψήφους" data-en="Public Keys linked to votes">Public Keys συνδεδεμένοι με ψήφους</td><td style="color:var(--red);font-weight:700">❌ ΠΟΤΕ</td></tr>
-      <tr><td>Nullifier Hashes</td><td style="color:var(--red);font-weight:700">❌ ΠΟΤΕ</td></tr>
+      <tr><td data-el="Nullifiers ταυτότητας (κανονικές ψήφοι)" data-en="Identity nullifiers (ordinary votes)">Nullifiers ταυτότητας (κανονικές ψήφοι)</td><td style="color:var(--red);font-weight:700">❌ ΠΟΤΕ</td></tr>
     </table>
   </div>
   <div class="success-box fade-in">
-    <p data-el="Τα συγκεντρωτικά στατιστικά δεν αποτελούν προσωπικά δεδομένα — συμβατά με Art. 17 GDPR (δικαίωμα διαγραφής)." data-en="Aggregate statistics are not personal data — compatible with Art. 17 GDPR (right to erasure).">
-      Τα συγκεντρωτικά στατιστικά <strong>δεν αποτελούν προσωπικά δεδομένα</strong> — συμβατά με Art. 17 GDPR (δικαίωμα διαγραφής).
+    <p data-el="Τα συγκεντρωτικά αποτελέσματα μειώνουν την έκθεση ατομικών ψήφων, χωρίς να εγγυώνται μηδενικό κίνδυνο επαναναγνώρισης. Ήδη δημοσιευμένα αρχεία στο Arweave δεν διαγράφονται με ανάκληση κλειδιού." data-en="Aggregate results reduce exposure of individual votes, without guaranteeing zero re-identification risk. Already published Arweave records are not deleted by key revocation.">
+      Τα συγκεντρωτικά αποτελέσματα μειώνουν την έκθεση ατομικών ψήφων, χωρίς να εγγυώνται μηδενικό κίνδυνο επαναναγνώρισης. Ήδη δημοσιευμένα αρχεία στο Arweave δεν διαγράφονται με ανάκληση κλειδιού.
     </p>
   </div>
 
@@ -347,7 +347,7 @@
   </div>
 </div>
 <script>
-var _privacyHtml='<h2 style="margin-top:0">Πολιτική Απορρήτου</h2><p><strong>Τι ΔΕΝ αποθηκεύουμε:</strong> Αριθμό κινητού, Private Key, IP συνδεδεμένη με ψήφο ή ταυτότητα.</p><p><strong>Τι αποθηκεύουμε:</strong> Nullifier Hash, Public Key, Ψήφοι (ψευδώνυμα).</p><p><strong>GDPR:</strong> Servers στην Ευρώπη. Privacy by design.</p><p><a href="privacy.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#2563eb;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Πλήρης Πολιτική Απορρήτου →</a></p>';
+var _privacyHtml='<h2 style="margin-top:0">Πολιτική Απορρήτου</h2><p><strong>Τι ΔΕΝ αποθηκεύουμε:</strong> Αριθμό κινητού, Private Key, IP μαζί με την ψήφο.</p><p>Η IP μπορεί να υποβάλλεται σε σύντομη επεξεργασία για λειτουργικά logs και όρια αιτημάτων.</p><p><strong>Τι αποθηκεύουμε:</strong> Nullifier Hash, Public Key, Ψήφοι (ψευδώνυμα).</p><p><strong>GDPR:</strong> Servers στην Ευρώπη. Privacy by design.</p><p><a href="privacy.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#2563eb;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Πλήρης Πολιτική Απορρήτου →</a></p>';
 var _deleteHtml='<h2 style="margin-top:0">Διαγραφή Λογαριασμού</h2><p>Απεγκαταστήστε την εφαρμογή — Private Key και Nullifier διαγράφονται αμέσως.</p><p><a href="delete-account.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#ef4444;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Αναλυτικές Οδηγίες Διαγραφής →</a></p>';
 function openLegalModal(t){document.getElementById("legalContent").innerHTML=t==="privacy"?_privacyHtml:_deleteHtml;document.getElementById("legalModal").style.display="flex"}
 function closeLegalModal(){document.getElementById("legalModal").style.display="none"}

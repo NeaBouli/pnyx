@@ -61,21 +61,24 @@ import r0_inventory
 # region is self-declared and locked, GDPR/"no personal data" badges are replaced
 # by factual minimization statements, and TrueRepublic/iOS are labelled planned /
 # not available. community.html: "Data minimization." and pseudonymous POLIS identity.
+# T-9132 (Gio approved 2026-10-16, ADR-007 S1): ordinary votes use no-name /
+# pseudonymous wording; retention, VAA, IP handling and scoped k>=10 assurances
+# follow the code. Ordinary Arweave aggregates are distinguished from paused ZK.
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/community.html": "01cadf7469b64df69c23c1ebff8bde67c7e6b5e0f4b2d12394509b5f20413b86",  # T-9048: scoped contrast, heading semantics and document-language toggle; T-9106: legal-modal claims text
+    "docs/community.html": "3f076b81946c821644441d9422128c67e32a923f1a10a98433544c798eeb54e0",  # T-9048: scoped contrast, heading semantics and document-language toggle; T-9106: legal-modal claims text
     "docs/wiki/api.html": "e56012799245533915b72606ffc8955bd4c3ce61f3ba5f9926fd07abb101106c",
     "docs/wiki/architecture.html": "1af2aa9c102d66887e52627c277ebfea03935a2ff3b772235cf07ed3d4313f0b",
     "docs/wiki/broadcasting.html": "eb345ed4551a94220e47aeb4b40c7c745bf6dfeaa5f330eac6f629a09d31f716",
     "docs/wiki/contributing.html": "bb4048480c3b75cb98ee668305833fe36b2c939f29ef27f1f8bec230c9d49d88",
     "docs/wiki/database.html": "08ac70323ffa6a6db969f41678ad8de9afd5fdd8f5b74981665cbf8e38afb9f9",
-    "docs/wiki/delete-account.html": "23e161c6767392c8c7507a68ad4240b66e8e2e5bedb34a63d050b85f6e1a89a9",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
-    "docs/wiki/faq.html": "0de1d5990d9700f775209780dba6f8273f8c3d29c3a0b3719a75271726cc3caa",  # T-9127: OPEN_END voting closed
+    "docs/wiki/delete-account.html": "3d7090ca86d5d17207477b664fa9d29066c0073a446d67e13dfd7eaf26822d1e",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
+    "docs/wiki/faq.html": "d02f097fefe2163de252bafb13326eb899a6a62a6f306cb5d764a1ac3d045be0",  # T-9127: OPEN_END voting closed
     "docs/wiki/index.html": "ea418f9164a41aafa72721bdc8feaf7612a26fc83a32e7e781d7f166fe278419",  # T-9047/T-9048: named code region, contrast, headings and document language; T-9106: legal-modal claims text
     "docs/wiki/modules.html": "dd1f4addfdc25337790028ac3f3d4d608832a11ad682c9068dae1c9b0a265544",  # T-9072: neutral unknown health dots, MOD-23/25 mapping, localized status labels; T-9106: legal-modal claims text
-    "docs/wiki/privacy.html": "53017decbc23d65f3f794573b001b00e29a48b5e636d7fceec32763d4de71ad6",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
+    "docs/wiki/privacy.html": "b17654f943d74c1e242a9a9bb59f479f23c52b1f956cb46a9f457fb60d8bb3c3",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
     "docs/wiki/roadmap.html": "84468c8a672a819d07e1d2649084356993d13fde0c41c1df4a26054c611b76a1",
-    "docs/wiki/security.html": "a21963b938d05cba0f1d86e6bf30cf6c4b2832f7f65101c1951f6abf3c416ec9",  # T-9127: OPEN_END voting closed
-    "docs/wiki/whitepaper.html": "e4d9e3e2ab1a422d18c42d0104c73fbc2cc4c634d8229cf7cbcd45bc375634a2",  # T-9127: OPEN_END voting closed
+    "docs/wiki/security.html": "3f20f24228a11e8011fd65678e384fb6572d41444d6f4cd260f0dbf26e5340c6",  # T-9127: OPEN_END voting closed
+    "docs/wiki/whitepaper.html": "c657de01e6cb47060bae0b28b2dab96349e0d663eb16e584daafc0940af56f1f",  # T-9127: OPEN_END voting closed
     "docs/wiki/zk-voting.html": "5dafa29250109c593a4aaabe65b7bc2a824d9f1efc90485d0278dd6325b07ccf",
 }
 # T-420 changed only the "24 Ώρες" footer target; T-421 only drops the same-URL

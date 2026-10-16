@@ -667,8 +667,14 @@ async def api_info():
         },
         "data_policy": {
             "stored": ["nullifier_hash", "public_key", "vote_choice"],
-            "never":  ["phone", "name", "ip_address", "individual_votes"],
-            "arweave": "Full audit trail bei PARLIAMENT_VOTED",
+            "never": ["phone", "name"],
+            "votes": "Ordinary votes are stored with a pseudonymous code (nullifier), "
+                     "without a name or phone number. The operator can link votes "
+                     "under the same code; only aggregates are published.",
+            "ip_address": "Not stored with the vote; operational logs and rate limits "
+                          "may process IP addresses briefly.",
+            "arweave": "Ordinary votes: only aggregates. ZK votes (currently paused): "
+                       "individual choices with a ZK proof, without identity.",
         },
         "contact": "github.com/NeaBouli/pnyx/issues",
     }

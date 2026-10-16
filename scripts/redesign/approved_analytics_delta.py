@@ -52,13 +52,16 @@ SECURITY_REMEDIATION_SHA256 = {
 # same-URL hreflang="en", complete og/twitter/hreflang/JSON-LD on legal.html,
 # twitter cards on tickets and municipality, municipality canonical/og:url on
 # the final /municipality/index.html document.
+# T-9132 (Gio approved 2026-10-16, ADR-007 S1): no-name / pseudonymous
+# ordinary-vote claims and qualified IP assurances; T-9127 OPEN_END logic retained.
 CONTENT_REMEDIATION_SHA256 = {
-    "docs/demo/bills.html": "8a91eb562dbfb676a69f929d3a77643c46218566f5815e009b9d08b855e0ca84",  # T-9127: OPEN_END voting closed
-    "docs/embed/vote.html": "824ad6243142dd8396cca8197def574e05317b39dcc05eae44e969c2a56af9df",  # T-9127: OPEN_END voting closed
-    "docs/govgr-dimos.html": "4a3e4f3e1eb0fa0971d25eb621c6b34aa0c869bcb08a18a917105c1d33a241ae",
+    "docs/demo/index.html": "41475d41b01cd765ed0dcaa189fcab0aaede720bd06b76d653ffa509821eb8f2",  # T-9132: approved pseudonymous vote wording
+    "docs/demo/bills.html": "bcc57f45c9e25c3ac3a6eb0fe9b17b29a2908c5863ad744407dc2cd56215dee8",  # T-9127: OPEN_END voting closed
+    "docs/embed/vote.html": "2afc2f067db2fb4adf91e7e9bbebaf69f155eff87aa429976d48b94d59667576",  # T-9127: OPEN_END voting closed
+    "docs/govgr-dimos.html": "369b6d3f5203d126058dc2bfbab9c66d2c8ede936a8b6d9a0aa6758887668159",
     "docs/legal.html": "42edc8e9c7db5d3fa4bb141adc915d47acc232ff93d405a38871b83ee1b5b4b7",
-    "docs/municipality/article.html": "cfed54a81ba6d97cd2be4ab54f34b0ed0b0467191c0a82c4449fc8d360b12e9e",
-    "docs/municipality/index.html": "d089aef8d2ec4ebc595344c9410c91681cc0fc947339f784222d30d0000d809e",
+    "docs/municipality/article.html": "aebe3b819ec76fc9c3769ad38a847246657bd5d85b70c914cb84528d4b658123",
+    "docs/municipality/index.html": "b553913780f18868fc49157f303379cbf630b12651ad1877b31a09b3483f5f84",
     "docs/tickets/index.html": "e7ac386295ade2c52c6d3826c89ade8ffc140f290dbc78ac8487d32394f2b225",
 }
 
