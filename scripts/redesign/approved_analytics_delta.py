@@ -54,11 +54,13 @@ SECURITY_REMEDIATION_SHA256 = {
 # the final /municipality/index.html document.
 # T-9132 (Gio approved 2026-10-16, ADR-007 S1): no-name / pseudonymous
 # ordinary-vote claims and qualified IP assurances; T-9127 OPEN_END logic retained.
+# T-9132 review: demo discloses possible linkage through verification; demo and
+# govgr-dimos separate expiring daily HMAC counters from size-rotated IP logs.
 CONTENT_REMEDIATION_SHA256 = {
-    "docs/demo/index.html": "41475d41b01cd765ed0dcaa189fcab0aaede720bd06b76d653ffa509821eb8f2",  # T-9132: approved pseudonymous vote wording
+    "docs/demo/index.html": "0b5b6325ca36af9f8ffa056b171f197fc4daef520c17238923dfd1825779439e",  # T-9132: approved pseudonymous vote wording
     "docs/demo/bills.html": "bcc57f45c9e25c3ac3a6eb0fe9b17b29a2908c5863ad744407dc2cd56215dee8",  # T-9127: OPEN_END voting closed
     "docs/embed/vote.html": "2afc2f067db2fb4adf91e7e9bbebaf69f155eff87aa429976d48b94d59667576",  # T-9127: OPEN_END voting closed
-    "docs/govgr-dimos.html": "369b6d3f5203d126058dc2bfbab9c66d2c8ede936a8b6d9a0aa6758887668159",
+    "docs/govgr-dimos.html": "2a688aeda5af19061db9d64e2a7180fa4a292511fdc201712e8f243d2616a176",
     "docs/legal.html": "42edc8e9c7db5d3fa4bb141adc915d47acc232ff93d405a38871b83ee1b5b4b7",
     "docs/municipality/article.html": "aebe3b819ec76fc9c3769ad38a847246657bd5d85b70c914cb84528d4b658123",
     "docs/municipality/index.html": "b553913780f18868fc49157f303379cbf630b12651ad1877b31a09b3483f5f84",

@@ -671,8 +671,9 @@ async def api_info():
             "votes": "Ordinary votes are stored with a pseudonymous code (nullifier), "
                      "without a name or phone number. The operator can link votes "
                      "under the same code; only aggregates are published.",
-            "ip_address": "Not stored with the vote; operational logs and rate limits "
-                          "may process IP addresses briefly.",
+            "ip_address": "Not stored with the vote. Rate-limit counters use daily HMAC "
+                          "IP identifiers and expire. Access logs may contain the IP "
+                          "and are rotated by size, without a fixed retention period.",
             "arweave": "Ordinary votes: only aggregates. ZK votes (currently paused): "
                        "individual choices with a ZK proof, without identity.",
         },

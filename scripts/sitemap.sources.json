@@ -7,8 +7,8 @@
       "source": "docs/index.html",
       "changefreq": "weekly",
       "priority": "1.0",
-      "lastmod": "2026-10-11",
-      "sha256": "fa56d5d5530876fdde57bb400ccbd79ed29cdf42c1a2afd871db19e5934d7543"
+      "lastmod": "2026-10-16",
+      "sha256": "8901fa162c6d526ee0c11393287ffe4384a4e81a8dd1fdbe11645236b96afdd2"
     },
     {
       "loc": "/el/bills",
@@ -33,8 +33,8 @@
       "source": "docs/community.html",
       "changefreq": "monthly",
       "priority": "0.8",
-      "lastmod": "2026-10-15",
-      "sha256": "fb553e9c3471c06597b40b344e434ef246e9cd6a8057403321d961f1d7cbd76f"
+      "lastmod": "2026-10-16",
+      "sha256": "8bfcd934b54b5e70d31fc1257779d1931802eb67d3d2d2ac90f57b6a80c7f7cd"
     },
     {
       "loc": "/legal.html",
@@ -49,8 +49,8 @@
       "source": "docs/govgr-dimos.html",
       "changefreq": "monthly",
       "priority": "0.8",
-      "lastmod": "2026-09-27",
-      "sha256": "369b6d3f5203d126058dc2bfbab9c66d2c8ede936a8b6d9a0aa6758887668159"
+      "lastmod": "2026-10-16",
+      "sha256": "2a688aeda5af19061db9d64e2a7180fa4a292511fdc201712e8f243d2616a176"
     },
     {
       "loc": "/representative.html",
@@ -74,7 +74,7 @@
       "changefreq": "monthly",
       "priority": "0.9",
       "lastmod": "2026-10-16",
-      "sha256": "94fcb3b24289d76fb2fe6b3cd12b8ae412a8561c46b02bea142830d485ddfa13"
+      "sha256": "b33174dfca09daa1b0c94bf3aa4e60b98d4577f693b4c520a8e1f5a2113845b9"
     },
     {
       "loc": "/wiki/whitepaper.html",
@@ -89,8 +89,8 @@
       "source": "docs/wiki/privacy.html",
       "changefreq": "monthly",
       "priority": "0.8",
-      "lastmod": "2026-10-15",
-      "sha256": "891e7b23722a02b750ebe3b1f0239966ebbe1d361933c10df4501589cd54440c"
+      "lastmod": "2026-10-16",
+      "sha256": "1174ad39dbbbf486600d162c4362573fa1863f1bf2a34d8b2300430fa97a407a"
     },
     {
       "loc": "/wiki/security.html",
@@ -98,7 +98,7 @@
       "changefreq": "monthly",
       "priority": "0.7",
       "lastmod": "2026-10-16",
-      "sha256": "7cbe305dcdcd512e75592860bd220de4a02b584ab40833140f43a5f4cf6f2f6d"
+      "sha256": "0418aed3dba6a0819ec1c05db9fecba155e4dad959942f39b271a89defc10c81"
     },
     {
       "loc": "/wiki/api.html",
@@ -129,8 +129,8 @@
       "source": "docs/wiki/roadmap.html",
       "changefreq": "monthly",
       "priority": "0.7",
-      "lastmod": "2026-10-11",
-      "sha256": "2717cc363eaba941381bba4b7031faecf68aae2faae8688be93ffc707f9b55c3"
+      "lastmod": "2026-10-16",
+      "sha256": "5b36f4030bef48fbccbd85b83b3b0b6d4afdf5267aca9eb064a8c1a4ea093d5c"
     },
     {
       "loc": "/wiki/database.html",

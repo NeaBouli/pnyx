@@ -64,20 +64,23 @@ import r0_inventory
 # T-9132 (Gio approved 2026-10-16, ADR-007 S1): ordinary votes use no-name /
 # pseudonymous wording; retention, VAA, IP handling and scoped k>=10 assurances
 # follow the code. Ordinary Arweave aggregates are distinguished from paused ZK.
+# T-9132 review: IP counters expire; access logs rotate by size with no fixed
+# retention period. FAQ default Greek matches EL/JSON-LD, votes are pseudonymous,
+# and FAQ/roadmap ZK status follows the security-review pause since 2026-10-03.
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/community.html": "3f076b81946c821644441d9422128c67e32a923f1a10a98433544c798eeb54e0",  # T-9048: scoped contrast, heading semantics and document-language toggle; T-9106: legal-modal claims text
+    "docs/community.html": "d3b543a9482915ed5a3100cf616ba2861c29238d84bdeae82d5661f836b1d2c0",  # T-9048: scoped contrast, heading semantics and document-language toggle; T-9106: legal-modal claims text
     "docs/wiki/api.html": "e56012799245533915b72606ffc8955bd4c3ce61f3ba5f9926fd07abb101106c",
     "docs/wiki/architecture.html": "1af2aa9c102d66887e52627c277ebfea03935a2ff3b772235cf07ed3d4313f0b",
     "docs/wiki/broadcasting.html": "eb345ed4551a94220e47aeb4b40c7c745bf6dfeaa5f330eac6f629a09d31f716",
     "docs/wiki/contributing.html": "bb4048480c3b75cb98ee668305833fe36b2c939f29ef27f1f8bec230c9d49d88",
     "docs/wiki/database.html": "08ac70323ffa6a6db969f41678ad8de9afd5fdd8f5b74981665cbf8e38afb9f9",
     "docs/wiki/delete-account.html": "3d7090ca86d5d17207477b664fa9d29066c0073a446d67e13dfd7eaf26822d1e",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
-    "docs/wiki/faq.html": "d02f097fefe2163de252bafb13326eb899a6a62a6f306cb5d764a1ac3d045be0",  # T-9127: OPEN_END voting closed
+    "docs/wiki/faq.html": "0d9583ac4244b4dfe44dbf96ceeff530adc1ed2d807c51df2d2984393296454f",  # T-9127: OPEN_END voting closed
     "docs/wiki/index.html": "ea418f9164a41aafa72721bdc8feaf7612a26fc83a32e7e781d7f166fe278419",  # T-9047/T-9048: named code region, contrast, headings and document language; T-9106: legal-modal claims text
     "docs/wiki/modules.html": "dd1f4addfdc25337790028ac3f3d4d608832a11ad682c9068dae1c9b0a265544",  # T-9072: neutral unknown health dots, MOD-23/25 mapping, localized status labels; T-9106: legal-modal claims text
-    "docs/wiki/privacy.html": "b17654f943d74c1e242a9a9bb59f479f23c52b1f956cb46a9f457fb60d8bb3c3",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
-    "docs/wiki/roadmap.html": "84468c8a672a819d07e1d2649084356993d13fde0c41c1df4a26054c611b76a1",
-    "docs/wiki/security.html": "3f20f24228a11e8011fd65678e384fb6572d41444d6f4cd260f0dbf26e5340c6",  # T-9127: OPEN_END voting closed
+    "docs/wiki/privacy.html": "58550c4a6d68fb39a43c46b2810819dcb8af70cc141f43d9fa5651aac4e990b8",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
+    "docs/wiki/roadmap.html": "8fae28938db627f3cade818fc490e1fac5f1be3984544c72a16817fd9aa84ff5",
+    "docs/wiki/security.html": "0546a8aaf80b51cd4a9de72a33ce82059f8da96ce7ab2a20af7ad278932edc36",  # T-9127: OPEN_END voting closed
     "docs/wiki/whitepaper.html": "c657de01e6cb47060bae0b28b2dab96349e0d663eb16e584daafc0940af56f1f",  # T-9127: OPEN_END voting closed
     "docs/wiki/zk-voting.html": "5dafa29250109c593a4aaabe65b7bc2a824d9f1efc90485d0278dd6325b07ccf",
 }
