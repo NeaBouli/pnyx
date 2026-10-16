@@ -10,28 +10,31 @@
  *   3. POST /api/v2/identity/rotate-key, signed by the old AND the new key.
  *   4. On 200 commit the new key, mark the origin "device", drop the staging.
  *
- * Crash safety: the staging slot (bound to nullifier + old key) is the source
- * of truth. If the stored key already (partly) equals the staged key, the swap
- * is finalised locally; if the stored key is still the old key, the staged
- * rotation is re-sent and the server confirms it idempotently. Everything runs
- * under the identity-state lock, so import/verification cannot interleave.
+ * Crash safety: the local commit is one journaled write (key pair + marker +
+ * staging removal), rolled forward after an interruption. Before the commit,
+ * the staging slot (bound to nullifier + old key) holds the new key; while the
+ * stored key is still the old one the staged rotation is re-sent and the
+ * server confirms it idempotently. Runs under the identity-state lock, only
+ * when no verification/import holds or waits for it.
  * The write goes to API_BASE only — never to the read-only mirror.
  */
 import { ed25519 } from "@noble/curves/ed25519.js";
 import * as Crypto from "expo-crypto";
 
 import {
+  IDENTITY_STORE_KEYS,
   bytesToHex,
   clearRotationStaging,
   hexToBytes,
+  installIdentityState,
+  isConsistentKeypair,
   loadKeyOrigin,
   loadKeypair,
   loadNullifier,
   loadRotationStaging,
-  markKeyOriginDevice,
   persistLegacyPolisSeed,
-  storeKeypair,
   storeRotationStaging,
+  tryWithIdentityStateLock,
   withIdentityStateLock,
   type RotationStaging,
 } from "./crypto-native";
@@ -40,7 +43,6 @@ import { isDemoMode } from "./demo";
 export type RotationResult =
   | "rotated"
   | "already_rotated"
-  | "finalized"
   | "not_needed"
   | "skipped"
   | "unsupported"
@@ -96,35 +98,38 @@ async function serverSupportsRotation(deps: RotationDeps): Promise<boolean | nul
 }
 
 async function commit(staged: RotationStaging): Promise<void> {
-  await storeKeypair(staged.privateKeyHex, staged.publicKeyHex);
-  await markKeyOriginDevice(staged.publicKeyHex);
-  await clearRotationStaging();
+  // One journaled unit: no mixed key pair, marker or staging can survive a crash.
+  await installIdentityState({
+    [IDENTITY_STORE_KEYS.privateKey]: staged.privateKeyHex,
+    [IDENTITY_STORE_KEYS.publicKey]: staged.publicKeyHex,
+    [IDENTITY_STORE_KEYS.keyOrigin]: staged.publicKeyHex,
+    [IDENTITY_STORE_KEYS.rotationStaging]: null,
+  });
 }
 
 async function rotateUnlocked(deps: RotationDeps): Promise<RotationResult> {
   if (await isDemoMode()) return "skipped";
 
+  // The lock already rolled any interrupted journal forward: the stored
+  // credentials are complete and authoritative here.
   const current = await loadKeypair();
   const nullifier = await loadNullifier();
-  let staged = await loadRotationStaging();
+  if (!current || !nullifier) return "skipped";
+  if (!isConsistentKeypair(current)) return "skipped"; // never rotate or mark a broken pair
 
-  if (staged && current && staged.nullifier === nullifier) {
-    // Interrupted local commit: the stored key already (partly) is the staged key.
-    if (current.privateKeyHex === staged.privateKeyHex || current.publicKeyHex === staged.publicKeyHex) {
-      await commit(staged);
-      return "finalized";
-    }
-  }
-  if (staged && (!current || staged.nullifier !== nullifier || staged.oldPublicKeyHex !== current.publicKeyHex)) {
-    // Belongs to credentials that are no longer installed (import, other
-    // number, or a server-issued re-verification key): the server key for the
-    // installed identity is the installed one, so the staged key is unused.
+  let staged = await loadRotationStaging();
+  if (staged && (staged.nullifier !== nullifier || staged.oldPublicKeyHex !== current.publicKeyHex)) {
+    // The installed credentials are complete (journal) and were deliberately
+    // replaced since this staging was written: another identity (import /
+    // verification of another number, which replaced that identity on this
+    // device), or a key the server issued/holds for this identity (v1
+    // re-verification, import). The staged key is not the installed
+    // identity's server key, so it is obsolete.
     await clearRotationStaging();
     staged = null;
   }
 
   if ((await loadKeyOrigin()) === "device") return "not_needed";
-  if (!current || !nullifier) return "skipped";
 
   const supported = await serverSupportsRotation(deps);
   if (supported === null) return "retry_later";
@@ -189,8 +194,10 @@ async function rotateUnlocked(deps: RotationDeps): Promise<RotationResult> {
   return res.status === 404 ? "unsupported" : "retry_later";
 }
 
-export function rotateLegacyKeyIfNeeded(deps: RotationDeps = DEFAULT_DEPS): Promise<RotationResult> {
-  return withIdentityStateLock(() => rotateUnlocked(deps));
+export async function rotateLegacyKeyIfNeeded(deps: RotationDeps = DEFAULT_DEPS): Promise<RotationResult> {
+  // Background work: never queue behind (or block) verification/import.
+  const run = tryWithIdentityStateLock(() => rotateUnlocked(deps));
+  return run ?? "retry_later";
 }
 
 let inFlight: Promise<RotationResult> | null = null;
@@ -200,7 +207,9 @@ let ranThisSession = false;
 export function rotateLegacyKeyOnce(): Promise<RotationResult> | null {
   if (ranThisSession) return inFlight;
   ranThisSession = true;
-  inFlight = rotateLegacyKeyIfNeeded().catch(() => "retry_later" as const);
+  inFlight = withIdentityStateLock(async () => undefined) // rolls an interrupted journal forward
+    .then(() => rotateLegacyKeyIfNeeded())
+    .catch(() => "retry_later" as const);
   return inFlight;
 }
 

@@ -4,7 +4,12 @@ import { ed25519 } from "@noble/curves/ed25519.js";
 import { loadUserBillScope } from "./bill-scope-storage";
 import { storeProfileLocation } from "./profile-location";
 import { clearVoteMarks } from "./vote-marks";
-import { prepareForServerIssuedKey, withIdentityStateLock } from "./crypto-native";
+import {
+  holdIdentityStateWhile,
+  installIdentityState,
+  prepareForServerIssuedKey,
+  withIdentityStateLock,
+} from "./crypto-native";
 
 export interface ImportedAccountCredentials {
   privateKey: string;
@@ -55,11 +60,8 @@ async function snapshotImportState(): Promise<Map<string, string | null>> {
 }
 
 async function restoreImportState(snapshot: Map<string, string | null>): Promise<void> {
-  for (const key of IMPORT_STATE_KEYS) {
-    const value = snapshot.get(key) ?? null;
-    if (value === null) await SecureStore.deleteItemAsync(key);
-    else await SecureStore.setItemAsync(key, value);
-  }
+  // Journaled: an interrupted rollback is completed on the next start.
+  await installIdentityState(Object.fromEntries(IMPORT_STATE_KEYS.map((key) => [key, snapshot.get(key) ?? null])));
 }
 
 /**
@@ -70,11 +72,13 @@ async function restoreImportState(snapshot: Map<string, string | null>): Promise
 export function importAccountCredentials(
   credentials: ImportedAccountCredentials,
 ): Promise<void> {
-  // EVA-001 PR4: never interleave with a background key rotation (incl. rollback).
-  return withIdentityStateLock(() => importAccountCredentialsUnlocked(credentials));
+  // EVA-001 PR4: background key rotation never starts during an import; the
+  // storage phases are journaled under the identity lock, the network-bound
+  // scope refresh runs outside it.
+  return holdIdentityStateWhile(() => importAccountCredentialsPhased(credentials));
 }
 
-async function importAccountCredentialsUnlocked(
+async function importAccountCredentialsPhased(
   credentials: ImportedAccountCredentials,
 ): Promise<void> {
   requireHex32(credentials.privateKey, "private key");
@@ -85,37 +89,47 @@ async function importAccountCredentialsUnlocked(
     throw new Error("Imported Ed25519 key pair does not match");
   }
 
-  const snapshot = await snapshotImportState();
+  let snapshot: Map<string, string | null> | null = null;
   try {
-    // Same identity: keep pk_polis registered across the key replacement.
-    await prepareForServerIssuedKey(credentials.nullifier);
-    await SecureStore.setItemAsync("ekklesia_private_key", credentials.privateKey);
-    await SecureStore.setItemAsync("ekklesia_public_key", credentials.publicKey);
-    await SecureStore.setItemAsync("ekklesia_nullifier", credentials.nullifier);
-    await SecureStore.deleteItemAsync("ekklesia_nullifier_root");
-    await SecureStore.deleteItemAsync("ekklesia_identity_commitment");
-    await SecureStore.deleteItemAsync("polis_registered");
-    // An imported identity is real; end any earlier demo session (audit F4).
-    await SecureStore.deleteItemAsync("is_demo_mode");
+    await withIdentityStateLock(async () => {
+      snapshot = await snapshotImportState();
+      // Same identity: keep pk_polis registered across the key replacement.
+      await prepareForServerIssuedKey(credentials.nullifier);
+      await installIdentityState({
+        ekklesia_private_key: credentials.privateKey,
+        ekklesia_public_key: credentials.publicKey,
+        ekklesia_nullifier: credentials.nullifier,
+        ekklesia_nullifier_root: null,
+        ekklesia_identity_commitment: null,
+        polis_registered: null,
+        // An imported identity is real; end any earlier demo session (audit F4).
+        is_demo_mode: null,
+      });
+      // Clear any previous identity's cached scope before asking the API. If the
+      // primary is unavailable, loadUserBillScope returns this empty, owner-bound
+      // cache and the imported account remains NATIONAL-only.
+      await storeProfileLocation(
+        { periferiaId: null, dimosId: null },
+        credentials.nullifier,
+      );
+    });
 
-    // Clear any previous identity's cached scope before asking the API. If the
-    // primary is unavailable, loadUserBillScope returns this empty, owner-bound
-    // cache and the imported account remains NATIONAL-only.
-    await storeProfileLocation(
-      { periferiaId: null, dimosId: null },
-      credentials.nullifier,
-    );
     await loadUserBillScope();
 
-    await SecureStore.setItemAsync("onboarding_completed", "true");
-    await SecureStore.setItemAsync("user_profile_completed", "true");
-    // Only clear after all rollback-capable writes succeed. A rejected import
-    // restores the original identity and must retain its local evidence.
-    if (snapshot.get("ekklesia_nullifier") !== credentials.nullifier) {
-      await clearVoteMarks();
-    }
+    await withIdentityStateLock(async () => {
+      await SecureStore.setItemAsync("onboarding_completed", "true");
+      await SecureStore.setItemAsync("user_profile_completed", "true");
+      // Only clear after all rollback-capable writes succeed. A rejected import
+      // restores the original identity and must retain its local evidence.
+      if (snapshot!.get("ekklesia_nullifier") !== credentials.nullifier) {
+        await clearVoteMarks();
+      }
+    });
   } catch (error) {
-    await restoreImportState(snapshot);
+    if (snapshot) {
+      const previous = snapshot as Map<string, string | null>;
+      await withIdentityStateLock(() => restoreImportState(previous));
+    }
     throw error;
   }
 }

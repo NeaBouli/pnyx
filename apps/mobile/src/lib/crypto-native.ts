@@ -56,9 +56,17 @@ const KEYS = {
   KEY_ORIGIN:        "ekklesia_key_origin",        // public key of the device-generated key
   POLIS_SEED:        "ekklesia_polis_seed",        // {nullifier, seed}: legacy POLIS seed kept across rotation
   ROTATION_STAGING:  "ekklesia_rotation_staging",  // {nullifier, oldPublicKeyHex, privateKeyHex, publicKeyHex}
+  IDENTITY_JOURNAL:  "ekklesia_identity_journal",  // write-ahead record of a multi-key credential change
 } as const;
 
-export const KEY_LIFECYCLE_STORE_KEYS = [KEYS.KEY_ORIGIN, KEYS.POLIS_SEED, KEYS.ROTATION_STAGING] as const;
+export const KEY_LIFECYCLE_STORE_KEYS = [KEYS.KEY_ORIGIN, KEYS.POLIS_SEED, KEYS.ROTATION_STAGING, KEYS.IDENTITY_JOURNAL] as const;
+export const IDENTITY_STORE_KEYS = {
+  privateKey: KEYS.PRIVATE_KEY,
+  publicKey: KEYS.PUBLIC_KEY,
+  nullifier: KEYS.NULLIFIER,
+  keyOrigin: KEYS.KEY_ORIGIN,
+  rotationStaging: KEYS.ROTATION_STAGING,
+} as const;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -352,16 +360,82 @@ export async function getOrDerivePolisKey(): Promise<{
 // ─── EVA-001 PR4: identity key lifecycle ─────────────────────────────────────
 
 let identityStateQueue: Promise<unknown> = Promise.resolve();
+let identityStateBusy = 0;
+let identityStateWaiters = 0;
 
 /**
  * Serialise every read-modify-write of the identity credentials (rotation,
- * verification, import incl. rollback, clearing). Not re-entrant: callers
- * inside the lock use the plain helpers below.
+ * verification install, import incl. rollback, clearing). Not re-entrant.
+ * Holders must not wait on unbounded network calls. Every holder first rolls
+ * an interrupted journal forward.
  */
 export function withIdentityStateLock<T>(fn: () => Promise<T>): Promise<T> {
-  const run = identityStateQueue.then(fn, fn);
+  const task = async () => {
+    identityStateBusy += 1;
+    try {
+      await recoverIdentityJournal();
+      return await fn();
+    } finally {
+      identityStateBusy -= 1;
+    }
+  };
+  const run = identityStateQueue.then(task, task);
   identityStateQueue = run.then(() => undefined, () => undefined);
   return run;
+}
+
+/** Background work (key rotation) only runs when nobody holds or waits for the lock. */
+export function tryWithIdentityStateLock<T>(fn: () => Promise<T>): Promise<T> | null {
+  if (identityStateBusy > 0 || identityStateWaiters > 0) return null;
+  return withIdentityStateLock(fn);
+}
+
+/** Marks a multi-phase flow (import) during which background rotation must not start. */
+export async function holdIdentityStateWhile<T>(fn: () => Promise<T>): Promise<T> {
+  identityStateWaiters += 1;
+  try {
+    return await fn();
+  } finally {
+    identityStateWaiters -= 1;
+  }
+}
+
+/**
+ * Write-ahead journal for credential changes that span several SecureStore
+ * entries. The complete target state is written as ONE entry first, then
+ * applied, then the journal is removed. An interruption anywhere is completed
+ * by recoverIdentityJournal() (roll forward), so no mixed key pair, nullifier
+ * or marker can survive. null deletes the entry.
+ */
+export async function installIdentityState(values: Record<string, string | null>): Promise<void> {
+  await secureSet(KEYS.IDENTITY_JOURNAL, JSON.stringify(values));
+  await applyIdentityState(values);
+  await SecureStore.deleteItemAsync(KEYS.IDENTITY_JOURNAL);
+}
+
+async function applyIdentityState(values: Record<string, string | null>): Promise<void> {
+  for (const [key, value] of Object.entries(values)) {
+    if (value === null) await SecureStore.deleteItemAsync(key);
+    else await secureSet(key, value);
+  }
+}
+
+export async function recoverIdentityJournal(): Promise<boolean> {
+  const raw = await SecureStore.getItemAsync(KEYS.IDENTITY_JOURNAL);
+  if (!raw) return false;
+  let values: Record<string, string | null> | null = null;
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      && Object.values(parsed as Record<string, unknown>).every((v) => v === null || typeof v === "string")) {
+      values = parsed as Record<string, string | null>;
+    }
+  } catch {
+    values = null;
+  }
+  if (values) await applyIdentityState(values);
+  await SecureStore.deleteItemAsync(KEYS.IDENTITY_JOURNAL);
+  return values !== null;
 }
 
 const HEX32 = /^[0-9a-f]{64}$/;
@@ -408,11 +482,42 @@ export async function prepareForServerIssuedKey(newNullifier: string): Promise<v
   }
 }
 
-/** "device" only while the stored public key is the device-generated one. */
+/**
+ * Install a server-issued key pair (v1 verification, demo) atomically via the
+ * journal. Call inside withIdentityStateLock, AFTER the network request.
+ */
+export async function installServerIssuedCredentials(
+  privateKeyHex: string,
+  publicKeyHex: string,
+  nullifier: string,
+): Promise<void> {
+  const previousNullifier = await SecureStore.getItemAsync(KEYS.NULLIFIER);
+  await prepareForServerIssuedKey(nullifier);
+  await installIdentityState({
+    [KEYS.PRIVATE_KEY]: privateKeyHex,
+    [KEYS.PUBLIC_KEY]: publicKeyHex,
+    [KEYS.NULLIFIER]: nullifier,
+  });
+  if (previousNullifier !== nullifier) await clearVoteMarks();
+}
+
+/** True when the stored public key really belongs to the stored private key. */
+export function isConsistentKeypair(kp: { privateKeyHex: string; publicKeyHex: string }): boolean {
+  try {
+    return HEX32.test(kp.privateKeyHex)
+      && bytesToHex(ed25519.getPublicKey(hexToBytes(kp.privateKeyHex))) === kp.publicKeyHex;
+  } catch {
+    return false;
+  }
+}
+
+/** "device" only while the stored, consistent key pair is the device-generated one. */
 export async function loadKeyOrigin(): Promise<"device" | "server"> {
   const marker = await SecureStore.getItemAsync(KEYS.KEY_ORIGIN);
-  const current = await SecureStore.getItemAsync(KEYS.PUBLIC_KEY);
-  return marker !== null && current !== null && marker === current ? "device" : "server";
+  const current = await loadKeypair();
+  return marker !== null && current !== null && marker === current.publicKeyHex && isConsistentKeypair(current)
+    ? "device"
+    : "server";
 }
 
 export async function markKeyOriginDevice(publicKeyHex: string): Promise<void> {

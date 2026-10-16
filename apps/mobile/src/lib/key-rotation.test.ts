@@ -5,11 +5,17 @@ const state = vi.hoisted(() => ({
   values: new Map<string, string>(),
   demo: false,
   failImport: false,
+  failWrite: null as string | null,
+  scopeGate: null as Promise<void> | null,
 }));
 
 vi.mock("expo-secure-store", () => ({
   getItemAsync: vi.fn(async (key: string) => state.values.get(key) ?? null),
   setItemAsync: vi.fn(async (key: string, value: string) => {
+    if (state.failWrite === key) {
+      state.failWrite = null;
+      throw new Error(`killed while writing ${key}`);
+    }
     state.values.set(key, value);
   }),
   deleteItemAsync: vi.fn(async (key: string) => {
@@ -19,9 +25,20 @@ vi.mock("expo-secure-store", () => ({
 vi.mock("expo-crypto", () => ({ getRandomBytes: vi.fn() }));
 vi.mock("./demo", () => ({ isDemoMode: vi.fn(async () => state.demo) }));
 vi.mock("./profile-location", () => ({ storeProfileLocation: vi.fn(async () => {}) }));
-vi.mock("./bill-scope-storage", () => ({ loadUserBillScope: vi.fn(async () => { if (state.failImport) throw new Error("scope down"); }) }));
+vi.mock("./bill-scope-storage", () => ({ loadUserBillScope: vi.fn(async () => {
+  if (state.scopeGate) await state.scopeGate;
+  if (state.failImport) throw new Error("scope down");
+}) }));
 
-import { getOrDerivePolisKey, loadKeyOrigin, prepareForServerIssuedKey, storeKeypair, storeNullifier } from "./crypto-native";
+import {
+  getOrDerivePolisKey,
+  installServerIssuedCredentials,
+  loadKeyOrigin,
+  prepareForServerIssuedKey,
+  recoverIdentityJournal,
+  storeKeypair,
+  withIdentityStateLock,
+} from "./crypto-native";
 import { importAccountCredentials } from "./import-account";
 import { identityRotateMessage, rotateLegacyKeyIfNeeded, type RotationDeps } from "./key-rotation";
 
@@ -67,6 +84,8 @@ beforeEach(() => {
   state.values.clear();
   state.demo = false;
   state.failImport = false;
+  state.failWrite = null;
+  state.scopeGate = null;
 });
 
 describe("rotateLegacyKeyIfNeeded", () => {
@@ -156,16 +175,18 @@ describe("rotateLegacyKeyIfNeeded", () => {
     expect(state.values.has("ekklesia_key_origin")).toBe(false);
   });
 
-  it("finalises an interrupted local commit without calling the server", async () => {
+  it("an interrupted local commit is rolled forward from the journal", async () => {
     legacyUser();
-    await rotateLegacyKeyIfNeeded(deps({ rotate: new Error("network") }).d);
-    // Crash after the private key was written but before the public key.
-    state.values.set("ekklesia_private_key", NEW_PRIV);
-    const { d, calls } = deps();
-    expect(await rotateLegacyKeyIfNeeded(d)).toBe("finalized");
-    expect(calls).toHaveLength(0);
+    state.failWrite = "ekklesia_public_key"; // killed between private and public key
+    await expect(rotateLegacyKeyIfNeeded(deps().d)).rejects.toThrow("killed");
+    expect(state.values.get("ekklesia_private_key")).toBe(NEW_PRIV);
+    expect(state.values.get("ekklesia_public_key")).toBe(OLD_PUB); // mixed on disk
+
+    expect(await recoverIdentityJournal()).toBe(true);
     expect(state.values.get("ekklesia_public_key")).toBe(NEW_PUB);
     expect(await loadKeyOrigin()).toBe("device");
+    expect(state.values.has("ekklesia_rotation_staging")).toBe(false);
+    expect(state.values.has("ekklesia_identity_journal")).toBe(false);
   });
 
   it("ignores a corrupt staging slot", async () => {
@@ -266,19 +287,95 @@ describe("server-issued keys and import (Codex review scenarios)", () => {
     expect(await loadKeyOrigin()).toBe("device");
   });
 
-  it("a rotation started during an import sees the imported identity, not a mix", async () => {
+  it("a rotation started during an import is skipped, not interleaved", async () => {
     legacyUser();
-    await Promise.all([
-      importAccountCredentials({ privateKey: C_PRIV, publicKey: C_PUB, nullifier: C_NULLIFIER }),
-      (async () => {
-        const { d, calls } = deps();
-        await rotateLegacyKeyIfNeeded(d);
-        const body = JSON.parse(String(rotateCalls(calls)[0].init!.body));
-        expect([body.nullifier_hash, body.old_public_key_hex]).toEqual([C_NULLIFIER, C_PUB]);
-      })(),
-    ]);
+    let release!: () => void;
+    state.scopeGate = new Promise<void>((r) => { release = r; });
+    const importing = importAccountCredentials({ privateKey: C_PRIV, publicKey: C_PUB, nullifier: C_NULLIFIER });
+    await new Promise((r) => setTimeout(r, 10));
+    const { d, calls } = deps();
+    expect(await rotateLegacyKeyIfNeeded(d)).toBe("retry_later");
+    expect(calls).toHaveLength(0);
+    release();
+    await importing;
+    expect(state.values.get("ekklesia_public_key")).toBe(C_PUB);
+  });
+
+  it("the import's network phase does not hold the identity lock", async () => {
+    legacyUser();
+    let release!: () => void;
+    state.scopeGate = new Promise<void>((r) => { release = r; });
+    const importing = importAccountCredentials({ privateKey: C_PRIV, publicKey: C_PUB, nullifier: C_NULLIFIER });
+    await new Promise((r) => setTimeout(r, 10));
+    // e.g. a verification install can proceed while the scope request hangs
+    await expect(withIdentityStateLock(async () => "free")).resolves.toBe("free");
+    release();
+    await importing;
+  });
+
+  it("Codex P1: killed import (keys written, nullifier not) is completed, not misread", async () => {
+    legacyUser();
+    await rotateLegacyKeyIfNeeded(deps({ rotate: new Error("lost") }).d); // A installed, B staged
+    state.failWrite = "ekklesia_nullifier";
+    state.failImport = false;
+    await importAccountCredentials({ privateKey: C_PRIV, publicKey: C_PUB, nullifier: C_NULLIFIER }).catch(() => {});
+    // Simulated restart: the journal (if left) is rolled forward first.
+    await recoverIdentityJournal();
+    const installed = [state.values.get("ekklesia_private_key"), state.values.get("ekklesia_public_key"), state.values.get("ekklesia_nullifier")];
+    // Either fully A (rollback ran) or fully C (rolled forward) — never mixed.
+    expect([[OLD_PRIV, OLD_PUB, NULLIFIER], [C_PRIV, C_PUB, C_NULLIFIER]]).toContainEqual(installed);
+    if (installed[2] === NULLIFIER) {
+      // A restored: its staged B must still be there to recover the server key.
+      expect(JSON.parse(state.values.get("ekklesia_rotation_staging")!).publicKeyHex).toBe(NEW_PUB);
+    }
+  });
+
+  it("Codex P1 (hard kill, no rollback): the import journal is rolled forward, then stale staging is dropped", async () => {
+    legacyUser();
+    await rotateLegacyKeyIfNeeded(deps({ rotate: new Error("lost") }).d); // A installed, B staged
+    // App killed after the import journal and the two keys, before the nullifier.
+    state.values.set("ekklesia_identity_journal", JSON.stringify({
+      ekklesia_private_key: C_PRIV, ekklesia_public_key: C_PUB, ekklesia_nullifier: C_NULLIFIER,
+    }));
+    state.values.set("ekklesia_private_key", C_PRIV);
+    state.values.set("ekklesia_public_key", C_PUB);
+    const freshSeed = Uint8Array.from({ length: 32 }, (_, i) => 70 + i);
+    const { d, calls } = deps();
+    d.randomBytes = () => freshSeed.slice();
+    await withIdentityStateLock(async () => undefined); // app start: journal rolled forward
     expect(state.values.get("ekklesia_nullifier")).toBe(C_NULLIFIER);
-    expect(state.values.get("ekklesia_public_key")).toBe(NEW_PUB);
+    expect(await rotateLegacyKeyIfNeeded(d)).toBe("rotated");
+    expect(JSON.parse(String(rotateCalls(calls)[0].init!.body))).toMatchObject({ nullifier_hash: C_NULLIFIER, old_public_key_hex: C_PUB });
+  });
+
+  it("Codex P1: an obsolete rotation is never finalised over a newer server key", async () => {
+    legacyUser();
+    state.failWrite = "ekklesia_key_origin"; // rotation commit killed before the marker
+    await rotateLegacyKeyIfNeeded(deps().d).catch(() => {});
+    await recoverIdentityJournal(); // restart: B committed (the server holds B)
+    expect(await loadKeyOrigin()).toBe("device");
+    // Same-number verification issues C; killed between private and public key.
+    state.failWrite = "ekklesia_public_key";
+    await withIdentityStateLock(() => installServerIssuedCredentials(C_PRIV, C_PUB, NULLIFIER)).catch(() => {});
+    await recoverIdentityJournal();
+    expect(state.values.get("ekklesia_private_key")).toBe(C_PRIV);
+    expect(state.values.get("ekklesia_public_key")).toBe(C_PUB);
+    expect(await loadKeyOrigin()).toBe("server");
+    const freshSeed = Uint8Array.from({ length: 32 }, (_, i) => 50 + i);
+    const { d, calls } = deps();
+    d.randomBytes = () => freshSeed.slice();
+    expect(await rotateLegacyKeyIfNeeded(d)).toBe("rotated");
+    expect(JSON.parse(String(rotateCalls(calls)[0].init!.body)).old_public_key_hex).toBe(C_PUB);
+  });
+
+  it("Codex P2: a mixed key pair is neither trusted as device-origin nor rotated", async () => {
+    legacyUser();
+    state.values.set("ekklesia_private_key", C_PRIV); // legacy crash without journal: C private, A public
+    state.values.set("ekklesia_key_origin", OLD_PUB);
+    expect(await loadKeyOrigin()).toBe("server");
+    const { d, calls } = deps();
+    expect(await rotateLegacyKeyIfNeeded(d)).toBe("skipped");
+    expect(calls).toHaveLength(0);
   });
 
   it("drops staging that belongs to credentials no longer installed", async () => {
