@@ -15,7 +15,7 @@ import {
 import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
 import { verifyIdentity } from "../lib/api";
-import { storeKeypair, storeNullifier } from "../lib/crypto-native";
+import { resetKeyLifecycleForServerKey, storeKeypair, storeNullifier } from "../lib/crypto-native";
 import { clearPendingProfileLocation, loadPendingProfileLocation } from "../lib/profile-location";
 import { isDemoNumber, activateDemo, clearDemo, DEMO_NULLIFIER_PREFIX } from "../lib/demo";
 import { normalizeGreekMobileInput } from "../lib/phone";
@@ -45,8 +45,10 @@ export default function VerifyScreen({ navigation }: Props) {
       if (isDemoNumber(normalizedPhone)) {
         const demoKey = "a".repeat(64);
         const demoPub = "b".repeat(64);
+        const demoNullifier = DEMO_NULLIFIER_PREFIX + Date.now().toString(16);
+        await resetKeyLifecycleForServerKey(demoNullifier);
         await storeKeypair(demoKey, demoPub);
-        await storeNullifier(DEMO_NULLIFIER_PREFIX + Date.now().toString(16));
+        await storeNullifier(demoNullifier);
         await activateDemo();
         Alert.alert(
           "Demo Mode",
@@ -58,7 +60,8 @@ export default function VerifyScreen({ navigation }: Props) {
 
       const res = await verifyIdentity(normalizedPhone);
 
-      // Αποθήκευση στο Secure Enclave
+      // Αποθήκευση στο Secure Enclave (server-issued key: reset rotation state first)
+      await resetKeyLifecycleForServerKey(res.nullifier_hash);
       await storeKeypair(res.private_key_hex, res.public_key_hex);
       await storeNullifier(res.nullifier_hash);
       // A real identity ends any earlier demo session (audit F4).

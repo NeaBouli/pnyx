@@ -18,7 +18,7 @@ vi.mock("expo-secure-store", () => ({
 vi.mock("expo-crypto", () => ({ getRandomBytes: vi.fn() }));
 vi.mock("./demo", () => ({ isDemoMode: vi.fn(async () => state.demo) }));
 
-import { getOrDerivePolisKey } from "./crypto-native";
+import { getOrDerivePolisKey, resetKeyLifecycleForServerKey, storeKeypair } from "./crypto-native";
 import { identityRotateMessage, rotateLegacyKeyIfNeeded, type RotationDeps } from "./key-rotation";
 
 const hex = (b: Uint8Array) => Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
@@ -183,5 +183,38 @@ describe("rotateLegacyKeyIfNeeded", () => {
     const { d, calls } = deps();
     await rotateLegacyKeyIfNeeded(d);
     expect(calls.every((c) => c.url.startsWith(API))).toBe(true);
+  });
+});
+
+describe("resetKeyLifecycleForServerKey (v1 re-verification)", () => {
+  it("same identity: keeps pk_polis stable across a new server key and allows a later rotation", async () => {
+    legacyUser();
+    const polisBefore = (await getOrDerivePolisKey())!.pkPolisHex;
+    expect(await rotateLegacyKeyIfNeeded(deps().d)).toBe("rotated");
+    state.values.set("ekklesia_rotation_staging", "leftover");
+
+    // Re-verification of the same number issues a new server key.
+    await resetKeyLifecycleForServerKey(NULLIFIER);
+    await storeKeypair("cd".repeat(32), hex(ed25519.getPublicKey(Uint8Array.from({ length: 32 }, () => 0xcd))));
+
+    expect(state.values.has("ekklesia_key_origin")).toBe(false);
+    expect(state.values.has("ekklesia_rotation_staging")).toBe(false);
+    expect((await getOrDerivePolisKey())!.pkPolisHex).toBe(polisBefore);
+  });
+
+  it("same identity without a prior rotation: persists the seed of the key being replaced", async () => {
+    legacyUser();
+    const polisBefore = (await getOrDerivePolisKey())!.pkPolisHex;
+    await resetKeyLifecycleForServerKey(NULLIFIER);
+    await storeKeypair("cd".repeat(32), hex(ed25519.getPublicKey(Uint8Array.from({ length: 32 }, () => 0xcd))));
+    expect((await getOrDerivePolisKey())!.pkPolisHex).toBe(polisBefore);
+  });
+
+  it("different identity: drops the previous POLIS seed", async () => {
+    legacyUser();
+    expect(await rotateLegacyKeyIfNeeded(deps().d)).toBe("rotated");
+    await resetKeyLifecycleForServerKey("2".repeat(64));
+    expect(state.values.has("ekklesia_polis_seed")).toBe(false);
+    expect(state.values.has("ekklesia_key_origin")).toBe(false);
   });
 });

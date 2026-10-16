@@ -363,6 +363,24 @@ export async function persistLegacyPolisSeed(): Promise<void> {
   await secureSet(KEYS.POLIS_SEED, bytesToHex(polisSeed));
 }
 
+/**
+ * EVA-001 PR4: call BEFORE storing a key the server issued (v1 verification or
+ * demo). The new key is server-generated again, so any "device" marker and any
+ * staged rotation of the previous key are dropped. For the same identity the
+ * POLIS seed is kept (and persisted from the key about to be replaced) so
+ * pk_polis stays registered; for a different identity it is removed.
+ */
+export async function resetKeyLifecycleForServerKey(newNullifier: string): Promise<void> {
+  const previousNullifier = await SecureStore.getItemAsync(KEYS.NULLIFIER);
+  if (previousNullifier === newNullifier) {
+    await persistLegacyPolisSeed();
+  } else {
+    await SecureStore.deleteItemAsync(KEYS.POLIS_SEED);
+  }
+  await SecureStore.deleteItemAsync(KEYS.KEY_ORIGIN);
+  await SecureStore.deleteItemAsync(KEYS.ROTATION_STAGING);
+}
+
 export async function loadKeyOrigin(): Promise<"device" | "server"> {
   return (await SecureStore.getItemAsync(KEYS.KEY_ORIGIN)) === "device" ? "device" : "server";
 }
