@@ -18,6 +18,8 @@
 # Retention: 30 daily, 12 weekly (Sunday), 6 monthly (1st)
 
 set -euo pipefail
+# shellcheck source=scripts/lib/backup-encrypt.sh
+source "$(dirname "$0")/lib/backup-encrypt.sh"
 
 # ─── Config ───────────────────────────────────────────────────────────────────
 STORAGE_BOX_USER="${STORAGE_BOX_USER:-}"
@@ -84,28 +86,32 @@ tar -czf "${LOCAL_BACKUP_DIR}/${BACKUP_FILE}" \
   "alembic-${TIMESTAMP}.txt" \
   2>/dev/null
 
+# ─── 4b. Encrypt (ADR-007 S3; active once BACKUP_AGE_RECIPIENT is set) ───────
+UPLOAD_PATH=$(select_upload_file "${LOCAL_BACKUP_DIR}/${BACKUP_FILE}")
+UPLOAD_FILE=$(basename "${UPLOAD_PATH}")
+
 # ─── 5. Upload to off-site target ────────────────────────────────────────────
-echo "${LOG_PREFIX} Uploading to off-site target..."
+echo "${LOG_PREFIX} Uploading ${UPLOAD_FILE} to off-site target..."
 sftp "${SFTP_OPTS[@]}" "${STORAGE_BOX_USER}@${STORAGE_BOX_HOST}" <<SFTP
   -mkdir ${REMOTE_DIR}
   -mkdir ${REMOTE_DIR}/daily
   -mkdir ${REMOTE_DIR}/weekly
   -mkdir ${REMOTE_DIR}/monthly
-  put ${LOCAL_BACKUP_DIR}/${BACKUP_FILE} ${REMOTE_DIR}/daily/${BACKUP_FILE}
+  put ${UPLOAD_PATH} ${REMOTE_DIR}/daily/${UPLOAD_FILE}
 SFTP
 
 # ─── 6. Weekly + Monthly Copies ──────────────────────────────────────────────
 if [ "${DAY_OF_WEEK}" = "7" ]; then
   echo "${LOG_PREFIX} Sunday — creating weekly copy..."
   sftp "${SFTP_OPTS[@]}" "${STORAGE_BOX_USER}@${STORAGE_BOX_HOST}" <<SFTP
-    put ${LOCAL_BACKUP_DIR}/${BACKUP_FILE} ${REMOTE_DIR}/weekly/${BACKUP_FILE}
+    put ${UPLOAD_PATH} ${REMOTE_DIR}/weekly/${UPLOAD_FILE}
 SFTP
 fi
 
 if [ "${DAY_OF_MONTH}" = "01" ]; then
   echo "${LOG_PREFIX} 1st of month — creating monthly copy..."
   sftp "${SFTP_OPTS[@]}" "${STORAGE_BOX_USER}@${STORAGE_BOX_HOST}" <<SFTP
-    put ${LOCAL_BACKUP_DIR}/${BACKUP_FILE} ${REMOTE_DIR}/monthly/${BACKUP_FILE}
+    put ${UPLOAD_PATH} ${REMOTE_DIR}/monthly/${UPLOAD_FILE}
 SFTP
 fi
 
@@ -115,6 +121,7 @@ find "${LOCAL_BACKUP_DIR}/daily" -name "*.dump" -mtime +30 -delete 2>/dev/null |
 find "${LOCAL_BACKUP_DIR}/daily" -name "*.rdb" -mtime +30 -delete 2>/dev/null || true
 find "${LOCAL_BACKUP_DIR}/daily" -name "*.txt" -mtime +30 -delete 2>/dev/null || true
 find "${LOCAL_BACKUP_DIR}" -name "ekklesia-backup-*.tar.gz" -mtime +30 -delete 2>/dev/null || true
+find "${LOCAL_BACKUP_DIR}" -name "ekklesia-backup-*.tar.gz.age" -mtime +30 -delete 2>/dev/null || true
 
 # ─── 8. Remote Cleanup ───────────────────────────────────────────────────────
 # Remote retention managed by Storage Box sub-account or manual cron
@@ -122,4 +129,4 @@ find "${LOCAL_BACKUP_DIR}" -name "ekklesia-backup-*.tar.gz" -mtime +30 -delete 2
 
 ARCHIVE_SIZE=$(du -sh "${LOCAL_BACKUP_DIR}/${BACKUP_FILE}" | cut -f1)
 echo "${LOG_PREFIX} Done. Archive: ${BACKUP_FILE} (${ARCHIVE_SIZE})"
-echo "${LOG_PREFIX} Remote: ${STORAGE_BOX_USER}@${STORAGE_BOX_HOST}:${REMOTE_DIR}/daily/${BACKUP_FILE}"
+echo "${LOG_PREFIX} Remote: ${STORAGE_BOX_USER}@${STORAGE_BOX_HOST}:${REMOTE_DIR}/daily/${UPLOAD_FILE}"
