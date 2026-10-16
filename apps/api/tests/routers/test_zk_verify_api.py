@@ -1317,6 +1317,7 @@ async def test_zk_vote_rejects_proof_not_bound_to_scope_and_vote(monkeypatch) ->
     monkeypatch.setenv("ZK_CANARY_SCOPE_ALLOWLIST", "bill:ZK-CANARY-001")
     bill = SimpleNamespace(
         id="ZK-CANARY-001",
+        status=BillStatus.ACTIVE,
         source="ZK_CANARY",
         admin_hidden=True,
         forum_topic_id=None,
@@ -1354,6 +1355,7 @@ async def test_zk_vote_rejects_mixed_native_and_canonical_proof_fields(monkeypat
     monkeypatch.setenv("ZK_CANARY_SCOPE_ALLOWLIST", "bill:ZK-CANARY-001")
     bill = SimpleNamespace(
         id="ZK-CANARY-001",
+        status=BillStatus.ACTIVE,
         source="ZK_CANARY",
         admin_hidden=True,
         forum_topic_id=None,
@@ -1393,6 +1395,7 @@ async def test_zk_vote_rejects_invalid_vote_commitment(monkeypatch) -> None:
     monkeypatch.setenv("ZK_CANARY_SCOPE_ALLOWLIST", "bill:ZK-CANARY-001")
     bill = SimpleNamespace(
         id="ZK-CANARY-001",
+        status=BillStatus.ACTIVE,
         source="ZK_CANARY",
         admin_hidden=True,
         forum_topic_id=None,
@@ -1464,6 +1467,7 @@ async def test_zk_vote_accepts_bound_proof_and_stores_public_receipt(monkeypatch
     vote_commitment = "YES"
     bill = SimpleNamespace(
         id="ZK-CANARY-001",
+        status=BillStatus.ACTIVE,
         source="ZK_CANARY",
         admin_hidden=True,
         forum_topic_id=None,

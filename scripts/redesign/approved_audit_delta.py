@@ -69,13 +69,13 @@ APPROVED_WIKI_INVENTORY_HASH = {
     "docs/wiki/contributing.html": "bb4048480c3b75cb98ee668305833fe36b2c939f29ef27f1f8bec230c9d49d88",
     "docs/wiki/database.html": "08ac70323ffa6a6db969f41678ad8de9afd5fdd8f5b74981665cbf8e38afb9f9",
     "docs/wiki/delete-account.html": "23e161c6767392c8c7507a68ad4240b66e8e2e5bedb34a63d050b85f6e1a89a9",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
-    "docs/wiki/faq.html": "6427c63a93d3bc840755c446b1309e53098752aad51710e13c44653a7cb36863",
+    "docs/wiki/faq.html": "0de1d5990d9700f775209780dba6f8273f8c3d29c3a0b3719a75271726cc3caa",  # T-9127: OPEN_END voting closed
     "docs/wiki/index.html": "ea418f9164a41aafa72721bdc8feaf7612a26fc83a32e7e781d7f166fe278419",  # T-9047/T-9048: named code region, contrast, headings and document language; T-9106: legal-modal claims text
     "docs/wiki/modules.html": "dd1f4addfdc25337790028ac3f3d4d608832a11ad682c9068dae1c9b0a265544",  # T-9072: neutral unknown health dots, MOD-23/25 mapping, localized status labels; T-9106: legal-modal claims text
     "docs/wiki/privacy.html": "53017decbc23d65f3f794573b001b00e29a48b5e636d7fceec32763d4de71ad6",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
     "docs/wiki/roadmap.html": "84468c8a672a819d07e1d2649084356993d13fde0c41c1df4a26054c611b76a1",
-    "docs/wiki/security.html": "8ade2139559176c15551f19ce8c5d2aa8a09e0d66235ff326bf4fa13da71db97",
-    "docs/wiki/whitepaper.html": "495f7182ea35f22de6cdb18783c7dbf1f4d80b4991f10ad4ca9e40c124a32200",
+    "docs/wiki/security.html": "a21963b938d05cba0f1d86e6bf30cf6c4b2832f7f65101c1951f6abf3c416ec9",  # T-9127: OPEN_END voting closed
+    "docs/wiki/whitepaper.html": "e4d9e3e2ab1a422d18c42d0104c73fbc2cc4c634d8229cf7cbcd45bc375634a2",  # T-9127: OPEN_END voting closed
     "docs/wiki/zk-voting.html": "5dafa29250109c593a4aaabe65b7bc2a824d9f1efc90485d0278dd6325b07ccf",
 }
 # T-420 changed only the "24 Ώρες" footer target; T-421 only drops the same-URL

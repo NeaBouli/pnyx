@@ -53,6 +53,8 @@ SECURITY_REMEDIATION_SHA256 = {
 # twitter cards on tickets and municipality, municipality canonical/og:url on
 # the final /municipality/index.html document.
 CONTENT_REMEDIATION_SHA256 = {
+    "docs/demo/bills.html": "8a91eb562dbfb676a69f929d3a77643c46218566f5815e009b9d08b855e0ca84",  # T-9127: OPEN_END voting closed
+    "docs/embed/vote.html": "824ad6243142dd8396cca8197def574e05317b39dcc05eae44e969c2a56af9df",  # T-9127: OPEN_END voting closed
     "docs/govgr-dimos.html": "4a3e4f3e1eb0fa0971d25eb621c6b34aa0c869bcb08a18a917105c1d33a241ae",
     "docs/legal.html": "42edc8e9c7db5d3fa4bb141adc915d47acc232ff93d405a38871b83ee1b5b4b7",
     "docs/municipality/article.html": "cfed54a81ba6d97cd2be4ab54f34b0ed0b0467191c0a82c4449fc8d360b12e9e",
