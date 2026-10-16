@@ -51,10 +51,16 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install system dependencies (for PyNaCl)
+      - name: Install system dependencies (for PyNaCl; age for the backup test)
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq gcc libsodium-dev
+          sudo apt-get install -y -qq gcc libsodium-dev age
+
+      # ADR-007 S3: off-site backups are age-encrypted before upload (fails if age is missing).
+      - name: Backup encryption test
+        env:
+          BACKUP_TEST_REQUIRE_AGE: "1"
+        run: python -m unittest scripts/tests/test_backup_encryption.py -v
 
       - name: Install Python dependencies
         working-directory: apps/api

@@ -15,6 +15,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 SCRIPT = REPO / "scripts" / "backup-offsite.sh"
 HAVE_AGE = shutil.which("age") and shutil.which("age-keygen")
+if os.getenv("BACKUP_TEST_REQUIRE_AGE") == "1" and not HAVE_AGE:
+    raise RuntimeError("age/age-keygen required for this test run (CI)")
 
 
 @unittest.skipUnless(HAVE_AGE, "age not installed")
