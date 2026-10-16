@@ -6,6 +6,7 @@
 import axios from "axios";
 import { buildVoteMessage } from "./crypto";
 import type { WebSigner } from "./keystore";
+import { withRequestDeadline } from "./request-deadline";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.ekklesia.gr";
 
@@ -21,45 +22,57 @@ export async function submitSignedVote(
   choice: string,
   signer: WebSigner & { nullifier: string },
 ): Promise<{ response: Response; isCorrection: boolean }> {
-  const timestampMs = Date.now();
-  const statusSignature = await signer.sign(
-    `vote-status-read:v1:${JSON.stringify([billId, signer.nullifier, timestampMs])}`,
-  );
-  const statusResponse = await fetch(`${API_URL}/api/v1/vote/${encodeURIComponent(billId)}/status`, {
-    method: "POST",
-    cache: "no-store",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      nullifier_hash: signer.nullifier,
-      timestamp_ms: timestampMs,
-      signature_hex: statusSignature,
-    }),
-  });
-  if (!statusResponse.ok) return { response: statusResponse, isCorrection: false };
-  const voteStatus: { status: string; has_voted: boolean; vote: string | null } = await statusResponse.json();
-  const vote = choice.toUpperCase();
-  const isCorrection = voteStatus.status === "WINDOW_24H"
-    && voteStatus.has_voted && voteStatus.vote !== vote;
-  // /correct verifies the same canonical bill:VOTE:nullifier payload as POST.
-  const signatureHex = await signer.sign(buildVoteMessage({
-    bill_id: billId, vote, nullifier_hash: signer.nullifier,
-  }));
-  const response = await fetch(
-    isCorrection
-      ? `${API_URL}/api/v1/vote/${encodeURIComponent(billId)}/correct`
-      : `${API_URL}/api/v1/vote`,
-    {
-      method: isCorrection ? "PUT" : "POST",
+  return withRequestDeadline(async (signal) => {
+    const timestampMs = Date.now();
+    const statusSignature = await signer.sign(
+      `vote-status-read:v1:${JSON.stringify([billId, signer.nullifier, timestampMs])}`,
+    );
+    signal.throwIfAborted();
+    const statusResponse = await fetch(`${API_URL}/api/v1/vote/${encodeURIComponent(billId)}/status`, {
+      method: "POST",
+      cache: "no-store",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         nullifier_hash: signer.nullifier,
-        bill_id: billId,
-        vote,
-        signature_hex: signatureHex,
+        timestamp_ms: timestampMs,
+        signature_hex: statusSignature,
       }),
-    },
-  );
-  return { response, isCorrection };
+      signal,
+    });
+    if (!statusResponse.ok) {
+      await statusResponse.clone().text();
+      return { response: statusResponse, isCorrection: false };
+    }
+    const voteStatus: { status: string; has_voted: boolean; vote: string | null } = await statusResponse.json();
+    signal.throwIfAborted();
+    const vote = choice.toUpperCase();
+    const isCorrection = voteStatus.status === "WINDOW_24H"
+      && voteStatus.has_voted && voteStatus.vote !== vote;
+    // /correct verifies the same canonical bill:VOTE:nullifier payload as POST.
+    const signatureHex = await signer.sign(buildVoteMessage({
+      bill_id: billId, vote, nullifier_hash: signer.nullifier,
+    }));
+    signal.throwIfAborted();
+    const response = await fetch(
+      isCorrection
+        ? `${API_URL}/api/v1/vote/${encodeURIComponent(billId)}/correct`
+        : `${API_URL}/api/v1/vote`,
+      {
+        method: isCorrection ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nullifier_hash: signer.nullifier,
+          bill_id: billId,
+          vote,
+          signature_hex: signatureHex,
+        }),
+        signal,
+      },
+    );
+    // Buffer under the deadline; the caller can still read the original body.
+    await response.clone().text();
+    return { response, isCorrection };
+  });
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -340,12 +353,14 @@ export async function voteRelevance(
   nullifierHash: string,
   signatureHex: string,
 ): Promise<{ success: boolean; message: string }> {
-  const res = await api.post(`/api/v1/vote/${billId}/relevance`, {
-    signal,
-    nullifier_hash: nullifierHash,
-    signature_hex: signatureHex,
+  return withRequestDeadline(async (requestSignal) => {
+    const res = await api.post(`/api/v1/vote/${billId}/relevance`, {
+      signal,
+      nullifier_hash: nullifierHash,
+      signature_hex: signatureHex,
+    }, { signal: requestSignal });
+    return res.data;
   });
-  return res.data;
 }
 export type BillStatusFilter =
   | "ANNOUNCED"

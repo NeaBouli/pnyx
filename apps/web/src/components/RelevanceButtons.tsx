@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { voteRelevance } from "@/lib/api";
 import { withSigner } from "@/lib/keystore";
+import { RequestTimeoutError, requestTimeoutMessage } from "@/lib/request-deadline";
 
 interface Props {
   billId: string;
@@ -20,11 +21,13 @@ export default function RelevanceButtons({
   const [score, setScore] = useState(initialScore);
   const [voted, setVoted] = useState<1 | -1 | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleVote(signal: 1 | -1) {
     if (voted !== null || loading) return;
 
     setLoading(true);
+    setError(null);
     try {
       const submitted = await withSigner(async (signer) => {
         if (!signer?.nullifier) return false;
@@ -36,8 +39,12 @@ export default function RelevanceButtons({
       if (!submitted) return;
       setScore((s) => s + signal);
       setVoted(signal);
-    } catch {
-      setVoted(signal); // already voted
+    } catch (err) {
+      if (err instanceof RequestTimeoutError || (err instanceof Error && "code" in err && err.code === "ECONNABORTED")) {
+        setError(requestTimeoutMessage(locale === "el"));
+      } else {
+        setVoted(signal); // already voted
+      }
     } finally {
       setLoading(false);
     }
@@ -89,6 +96,7 @@ export default function RelevanceButtons({
           {locale === "el" ? "✓" : "✓"}
         </span>
       )}
+      {error && <span role="alert" className="text-xs text-red-600">{error}</span>}
     </div>
   );
 }

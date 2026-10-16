@@ -20,6 +20,7 @@ import { ed25519 } from "@noble/curves/ed25519.js";
 
 import { bytesToHex, hexToBytes, loadKeypair, loadNullifier, signPayload } from "./crypto";
 import { reencryptLegacyCompassBlob } from "./compass/storage";
+import { REQUEST_TIMEOUT_MS, withRequestDeadline } from "./request-deadline";
 
 export const LEGACY_PRIVATE_KEY = "ekklesia_private_key";
 export const LEGACY_PUBLIC_KEY = "ekklesia_public_key";
@@ -107,7 +108,7 @@ export function setKeyRecordStoreForTests(next: KeyRecordStore | null): void {
   backend = next;
 }
 
-type LockManagerLike = { request<T>(name: string, options: { mode: "shared" | "exclusive" }, cb: () => Promise<T>): Promise<T> };
+type LockManagerLike = { request<T>(name: string, options: { mode: "shared" | "exclusive"; signal?: AbortSignal }, cb: () => Promise<T>): Promise<T> };
 let lockOverride: LockManagerLike | null | undefined;
 
 function lockManager(): LockManagerLike | null {
@@ -215,12 +216,21 @@ export async function getSigner(): Promise<WebSigner | null> {
   };
 }
 
-/** Acquire, sign and submit inside this callback; never retain its signer. */
-export async function withSigner<T>(submit: (signer: WebSigner | null) => Promise<T>): Promise<T> {
-  const run = async () => submit(await getSigner());
+/**
+ * Acquire, sign and submit inside this callback; never retain its signer.
+ * The signal cancels queued acquisition; submit must bound its network I/O.
+ */
+export async function withSigner<T>(submit: (signer: WebSigner | null) => Promise<T>, signal?: AbortSignal): Promise<T> {
+  signal?.throwIfAborted();
+  const run = async () => {
+    signal?.throwIfAborted();
+    const signer = await getSigner();
+    signal?.throwIfAborted();
+    return submit(signer);
+  };
   const locks = lockManager();
   // Rotation/migration cannot run without Web Locks, so legacy signing is safe.
-  return locks ? locks.request(KEYSTORE_LOCK, { mode: "shared" }, run) : run();
+  return locks ? locks.request(KEYSTORE_LOCK, { mode: "shared", signal }, run) : run();
 }
 
 /** Synchronous hint for UI state: a key (legacy or WebCrypto) is present. */
@@ -276,7 +286,7 @@ const DEFAULT_DEPS: MigrationDeps = {
   apiUrl: process.env.NEXT_PUBLIC_API_URL || "https://api.ekklesia.gr",
   fetchImpl: (...args) => fetch(...args),
   now: () => Date.now(),
-  timeoutMs: 15_000,
+  timeoutMs: REQUEST_TIMEOUT_MS,
 };
 
 export function identityKeyCheckMessage(nullifierHash: string, publicKeyHex: string, timestampMs: number): string {
@@ -295,34 +305,17 @@ export async function supportsNonExtractableEd25519(): Promise<boolean> {
 }
 
 async function fetchJson(deps: MigrationDeps, url: string, init?: RequestInit): Promise<{ status: number; body: unknown; headers: Headers }> {
-  const controller = new AbortController();
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const deadline = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => {
-      controller.abort();
-      reject(new Error("timeout"));
-    }, deps.timeoutMs);
-  });
-  try {
-    // Bound headers AND body while holding the cross-tab lock, even if a
-    // response implementation does not honour AbortSignal after headers.
-    return await Promise.race([
-      (async () => {
-        const res = await deps.fetchImpl(url, { ...init, signal: controller.signal });
-        const text = await res.text();
-        let body: unknown = null;
-        try {
-          body = text ? JSON.parse(text) : null;
-        } catch {
-          body = null;
-        }
-        return { status: res.status, body, headers: res.headers };
-      })(),
-      deadline,
-    ]);
-  } finally {
-    clearTimeout(timer);
-  }
+  return withRequestDeadline(async (signal) => {
+    const res = await deps.fetchImpl(url, { ...init, signal });
+    const text = await res.text();
+    let body: unknown = null;
+    try {
+      body = text ? JSON.parse(text) : null;
+    } catch {
+      body = null;
+    }
+    return { status: res.status, body, headers: res.headers };
+  }, { timeoutMs: deps.timeoutMs });
 }
 
 async function serverConfirmsKey(

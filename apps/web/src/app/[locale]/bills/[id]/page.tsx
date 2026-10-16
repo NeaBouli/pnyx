@@ -5,6 +5,7 @@ import { useLocale } from "next-intl";
 import Link from "next/link";
 import { ekklesia, Bill, BillResults, submitSignedVote } from "@/lib/api";
 import { withSigner } from "@/lib/keystore";
+import { RequestTimeoutError, requestTimeoutMessage } from "@/lib/request-deadline";
 import StatusBadge from "@/components/StatusBadge";
 import RelevanceButtons from "@/components/RelevanceButtons";
 import BillResultReport from "@/components/BillResultReport";
@@ -111,7 +112,8 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
         return;
       }
     } catch (err) {
-      setVoteError(err instanceof Error ? err.message : "Network error");
+      setVoteError(err instanceof RequestTimeoutError ? requestTimeoutMessage(locale === "el")
+        : err instanceof Error ? err.message : "Network error");
       setVoteStatus("error");
       return;
     } finally { setVoteLoading(false); }

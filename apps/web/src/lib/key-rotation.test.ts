@@ -5,8 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { createEmptyProfile } from "./compass/engine";
 import { loadProfile, saveProfile } from "./compass/storage";
+import { submitSignedVote, voteRelevance, api as voteApi } from "./api";
+import { REQUEST_TIMEOUT_MS, RequestTimeoutError } from "./request-deadline";
+import { memoryLocks } from "./test-utils/web-locks";
 import {
-  KEYSTORE_LOCK, KEY_CUSTODY_MARKER, getSigner, identityKeyCheckMessage, identityRotateMessage,
+  KEY_CUSTODY_MARKER, getSigner, identityKeyCheckMessage, identityRotateMessage,
   migrateLegacyWebKey, readCompassKeyStrict, readCompassKeys, rotateMigratedWebKey,
   setKeyRecordStoreForTests, setLockManagerForTests, withKeystoreLock, withSigner,
   type KeyRecordStore, type MigrationDeps,
@@ -53,21 +56,6 @@ class MemoryStore implements KeyRecordStore {
     this.data.delete(id);
   }
   record(id = "identity") { return this.data.get(id) as Record; }
-}
-
-function memoryLocks() {
-  let queue: Promise<unknown> = Promise.resolve();
-  const requested = vi.fn();
-  return {
-    requested,
-    request<T>(name: string, options: { mode: "shared" | "exclusive" }, cb: () => Promise<T>): Promise<T> {
-      expect(name).toBe(KEYSTORE_LOCK);
-      requested(name, options);
-      const result = queue.then(cb, cb);
-      queue = result.catch(() => undefined);
-      return result;
-    },
-  };
 }
 
 const response = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
@@ -210,6 +198,7 @@ beforeEach(async () => {
 afterEach(() => {
   setKeyRecordStoreForTests(null);
   setLockManagerForTests(undefined);
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -459,6 +448,78 @@ describe("fresh browser identity rotation", () => {
     expect(await rotation).toBe("rotated");
   });
 
+  it.each(["status fetch", "status body", "status error body", "vote fetch", "vote body"])(
+    "releases a stalled %s at the deadline so queued rotation and signers proceed", async (stage) => {
+      vi.useFakeTimers();
+      const stalled = deferred<void>();
+      const lateResponse = deferred<Response>();
+      let requestSignal: AbortSignal | undefined;
+      const voteFetch = vi.fn((_url: string, init: RequestInit) => {
+        requestSignal = init.signal!;
+        const isStatus = voteFetch.mock.calls.length === 1;
+        if (isStatus && stage.startsWith("vote")) {
+          return Promise.resolve(response({ status: "ACTIVE", has_voted: false, vote: null }));
+        }
+        stalled.resolve();
+        // Deliberately ignore abort to exercise the hard deadline.
+        return stage.endsWith("fetch") ? lateResponse.promise : Promise.resolve(new Response(
+          new ReadableStream(), { status: stage === "status error body" ? 503 : 200 },
+        ));
+      });
+      vi.stubGlobal("fetch", voteFetch);
+      const voting = withSigner(async (signer) => submitSignedVote("GR-timeout", "YES", {
+        ...signer!, nullifier: signer!.nullifier!,
+      })).catch((error: unknown) => error);
+      await stalled.promise;
+      const rotation = rotateMigratedWebKey(api);
+      const nextSigner = vi.fn(async (signer: { publicKeyHex: string } | null) => signer!.publicKeyHex);
+      const signing = withSigner(nextSigner);
+      await vi.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS - 1);
+      expect(rotations).toHaveLength(0);
+      expect(nextSigner).not.toHaveBeenCalled();
+      expect(requestSignal!.aborted).toBe(false);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(await voting).toBeInstanceOf(RequestTimeoutError);
+      expect(requestSignal!.aborted).toBe(true);
+      expect(await rotation).toBe("rotated");
+      expect(await signing).toBe(serverKey);
+      expect(serverKey).not.toBe(PUB);
+      // A late status response must never start a vote with the retired key.
+      lateResponse.resolve(response({ status: "ACTIVE", has_voted: false, vote: null }));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(voteFetch).toHaveBeenCalledTimes(stage.startsWith("vote") ? 2 : 1);
+      expect(vi.getTimerCount()).toBe(0);
+    },
+  );
+
+  it("bounds relevance submission while holding the signing lock", async () => {
+    vi.useFakeTimers();
+    const stalled = deferred<void>();
+    let signal: AbortSignal | undefined;
+    vi.spyOn(voteApi, "post").mockImplementation((_url, _body, options) => {
+      signal = options?.signal as AbortSignal;
+      stalled.resolve();
+      return new Promise(() => {});
+    });
+    const voting = withSigner(async () => voteRelevance("GR-timeout", 1, NULLIFIER, "signature"))
+      .catch((error: unknown) => error);
+    await stalled.promise;
+    const rotation = rotateMigratedWebKey(api);
+    await vi.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS);
+    expect(await voting).toBeInstanceOf(RequestTimeoutError);
+    expect(signal!.aborted).toBe(true);
+    expect(await rotation).toBe("rotated");
+  });
+
+  it("rejects an already aborted signer request even without Web Locks", async () => {
+    setLockManagerForTests(null);
+    const controller = new AbortController();
+    controller.abort(new RequestTimeoutError());
+    const submit = vi.fn();
+    await expect(withSigner(submit, controller.signal)).rejects.toBeInstanceOf(RequestTimeoutError);
+    expect(submit).not.toHaveBeenCalled();
+  });
+
   it("a signing request made during rotation acquires the promoted key after the swap", async () => {
     const rotating = deferred<void>();
     const commit = deferred<void>();
@@ -541,12 +602,28 @@ describe("fresh browser identity rotation", () => {
     expect(rotations).toHaveLength(0);
   });
 
-  it("bounds a stalled response body and releases the lock without discarding staging", async () => {
+  it.each(["fetch", "body"])("bounds a stalled rotation %s without discarding staging", async (stage) => {
+    vi.useFakeTimers();
     const realFetch = api.fetchImpl;
+    const stalled = deferred<void>();
+    let signal: AbortSignal | undefined;
     api.timeoutMs = 20;
-    api.fetchImpl = (async (url: string, init?: RequestInit) => url.endsWith("/rotate-key")
-      ? { status: 200, text: () => new Promise(() => {}) } : realFetch(url, init)) as typeof fetch;
-    expect(await rotateMigratedWebKey(api)).toBe("retry_later");
+    api.fetchImpl = (async (url: string, init?: RequestInit) => {
+      if (!url.endsWith("/rotate-key")) return realFetch(url, init);
+      signal = init?.signal as AbortSignal;
+      stalled.resolve();
+      return stage === "fetch" ? new Promise(() => {}) : { status: 200, text: () => new Promise(() => {}) };
+    }) as typeof fetch;
+    const rotation = rotateMigratedWebKey(api);
+    await stalled.promise;
+    const write = vi.fn(async () => undefined);
+    const compass = withKeystoreLock(write);
+    expect(write).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(api.timeoutMs);
+    expect(await rotation).toBe("retry_later");
+    await compass;
+    expect(signal!.aborted).toBe(true);
+    expect(write).toHaveBeenCalledTimes(1);
     expect(store.record().publicKeyHex).toBe(PUB);
     expect(store.data.has(STAGING)).toBe(true);
     api.fetchImpl = realFetch;

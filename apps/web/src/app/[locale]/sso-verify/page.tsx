@@ -6,6 +6,7 @@ import { useLocale } from "next-intl";
 import Image from "next/image";
 import { QRCodeSVG } from "qrcode.react";
 import { withSigner, hasLocalSignerHint } from "@/lib/keystore";
+import { RequestTimeoutError, requestTimeoutMessage, withRequestDeadline } from "@/lib/request-deadline";
 
 type State = "checking" | "nokey" | "verifying" | "success" | "error";
 type QrState = "idle" | "loading" | "ready" | "authenticated" | "expired" | "error";
@@ -18,7 +19,7 @@ const clientSnapshot = () => true;
 const serverSnapshot = () => false;
 
 type QrData = { session_id: string; qr_data: string };
-type LoginError = { code: "missing" | "identity" | "expired" | "connection" | "server"; detail?: string };
+type LoginError = { code: "missing" | "identity" | "expired" | "connection" | "timeout" | "server"; detail?: string };
 type InitialResult =
   | { kind: "qr"; data: QrData }
   | { kind: "redirect"; url: string }
@@ -33,42 +34,46 @@ function initialSession(ready: boolean, nonce: string | null, returnUrl: string 
 }
 
 async function startSession(nonce: string): Promise<InitialResult> {
-  let qr = true;
-  const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(new Error("Request timed out")), REQUEST_TIMEOUT);
+  let qr = !hasLocalSignerHint();
   try {
-    const signedResult = await withSigner<InitialResult | null>(async (signer) => {
-      if (!signer) return null;
-      const publicKey = signer.publicKeyHex;
-      qr = false;
-      const signatureHex = await signer.sign(`discourse_sso:${nonce}:${publicKey}`);
-      const res = await fetch(`${API_URL}/api/v1/sso/discourse/callback`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nonce, public_key_hex: publicKey, signature_hex: signatureHex }),
-        signal: controller.signal,
-      });
-      if (res.status === 404) return { kind: "error", error: { code: "identity" }, qr };
-      if (res.status === 410) return { kind: "error", error: { code: "expired" }, qr };
-      const text = await res.text();
-      let data;
-      try { data = JSON.parse(text); } catch {}
-      if (res.ok && typeof data?.redirect_url === "string" && data.redirect_url) {
-        return { kind: "redirect", url: data.redirect_url };
-      }
-      return { kind: "error", error: { code: "server", detail: typeof data?.detail === "string" ? data.detail : `Error ${res.status}` }, qr };
+    // Start before lock acquisition so a queued request shares the same deadline.
+    return await withRequestDeadline(async (signal) => {
+      const signedResult = await withSigner<InitialResult | null>(async (signer) => {
+        if (!signer) { qr = true; return null; }
+        const publicKey = signer.publicKeyHex;
+        qr = false;
+        // Race inside the lock too: a stalled body must release the shared lock.
+        return withRequestDeadline<InitialResult>(async (requestSignal) => {
+          const signatureHex = await signer.sign(`discourse_sso:${nonce}:${publicKey}`);
+          requestSignal.throwIfAborted();
+          const res = await fetch(`${API_URL}/api/v1/sso/discourse/callback`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ nonce, public_key_hex: publicKey, signature_hex: signatureHex }),
+            signal: requestSignal,
+          });
+          const text = await res.text();
+          if (res.status === 404) return { kind: "error", error: { code: "identity" }, qr };
+          if (res.status === 410) return { kind: "error", error: { code: "expired" }, qr };
+          let data;
+          try { data = JSON.parse(text); } catch {}
+          if (res.ok && typeof data?.redirect_url === "string" && data.redirect_url) {
+            return { kind: "redirect", url: data.redirect_url };
+          }
+          return { kind: "error", error: { code: "server", detail: typeof data?.detail === "string" ? data.detail : `Error ${res.status}` }, qr };
+        }, { signal });
+      }, signal);
+      if (signedResult) return signedResult;
+      signal.throwIfAborted();
+      const res = await fetch(`${API_URL}/api/v1/polis/qr-session?purpose=forum_login`, { signal });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (typeof data?.session_id !== "string" || !data.session_id ||
+          typeof data?.qr_data !== "string" || !data.qr_data) throw new Error("Invalid QR session");
+      return { kind: "qr", data: { session_id: data.session_id, qr_data: data.qr_data } };
     });
-    if (signedResult) return signedResult;
-    const res = await fetch(`${API_URL}/api/v1/polis/qr-session?purpose=forum_login`, { signal: controller.signal });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    if (typeof data?.session_id !== "string" || !data.session_id ||
-        typeof data?.qr_data !== "string" || !data.qr_data) throw new Error("Invalid QR session");
-    return { kind: "qr", data: { session_id: data.session_id, qr_data: data.qr_data } };
   } catch (err) {
-    return { kind: "error", error: { code: "connection", detail: err instanceof Error ? err.message : "unknown" }, qr };
-  } finally {
-    window.clearTimeout(timeout);
+    return { kind: "error", error: { code: err instanceof RequestTimeoutError ? "timeout" : "connection", detail: err instanceof Error ? err.message : "unknown" }, qr };
   }
 }
 
@@ -78,6 +83,7 @@ function errorMessage(error: LoginError | null, isEl: boolean): string {
     case "identity": return isEl ? "Η ταυτότητα δεν βρέθηκε. Ολοκληρώστε πρώτα την εγγραφή." : "Identity not found. Please register first.";
     case "expired": return isEl ? "Η σύνδεση έληξε. Επιστρέψτε στο forum και δοκιμάστε ξανά." : "Session expired. Go back to the forum and try again.";
     case "connection": return `${isEl ? "Αδυναμία σύνδεσης" : "Connection failed"}: ${error.detail}`;
+    case "timeout": return requestTimeoutMessage(isEl);
     default: return error?.detail || "";
   }
 }
@@ -105,7 +111,7 @@ function SSOSession({ nonce, returnUrl, ready, isEl, onRetry }: {
   const errorMsg = errorMessage(error, isEl);
   const [qrState, setQrState] = useState<QrState>(initial.state === "nokey" ? "loading" : "idle");
   const [qrData, setQrData] = useState<QrData | null>(null);
-  const [qrError, setQrError] = useState("");
+  const [qrError, setQrError] = useState<string | LoginError>("");
   const request = useRef<Promise<InitialResult> | null>(null);
 
   useEffect(() => {
@@ -196,7 +202,7 @@ function SSOSession({ nonce, returnUrl, ready, isEl, onRetry }: {
         startPolling(result.data);
       } else if (result.qr) {
         setState("nokey");
-        setQrError(result.error.detail || "connection error");
+        setQrError(result.error);
         setQrState("error");
       } else {
         setError(result.error);
@@ -290,7 +296,7 @@ function SSOSession({ nonce, returnUrl, ready, isEl, onRetry }: {
               )}
               {qrState === "error" && (
                 <div className="mt-4 text-xs text-red-600 break-words">
-                  {qrError || (isEl ? "Σφάλμα QR σύνδεσης" : "QR login error")}
+                  {(typeof qrError === "string" ? qrError : errorMessage(qrError, isEl)) || (isEl ? "Σφάλμα QR σύνδεσης" : "QR login error")}
                   <button
                     onClick={onRetry}
                     className="block mx-auto mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold"
