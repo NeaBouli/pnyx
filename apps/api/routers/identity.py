@@ -864,8 +864,9 @@ class RotateKeyRequest(BaseModel):
 
 
 class RotateKeyResponse(BaseModel):
-    success:        bool
-    public_key_hex: str
+    success:         bool
+    public_key_hex:  str
+    already_rotated: bool = False
 
 
 _ROTATION_CONFLICT = "ROTATION_CONFLICT"
@@ -914,6 +915,17 @@ async def rotate_identity_key(req: RotateKeyRequest, request: Request, db: Async
         record_id = result.scalar_one_or_none()
         if record_id is None:
             await db.rollback()
+            # Idempotent retry (EVA-001 PR4 crash recovery): the identity already
+            # carries the new key. The caller proved possession of both keys, so
+            # confirming this reveals nothing new; no second audit row.
+            current = await db.execute(
+                select(IdentityRecord.id)
+                .where(IdentityRecord.nullifier_hash == req.nullifier_hash)
+                .where(IdentityRecord.public_key_hex == req.new_public_key_hex)
+                .where(IdentityRecord.status == KeyStatus.ACTIVE)
+            )
+            if current.first() is not None:
+                return RotateKeyResponse(success=True, public_key_hex=req.new_public_key_hex, already_rotated=True)
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=_ROTATION_CONFLICT)
         await db.execute(
             text(

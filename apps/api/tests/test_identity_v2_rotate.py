@@ -168,7 +168,7 @@ async def test_rotation_swaps_key_and_audits_without_key_material() -> None:
     await _insert(NULLIFIER, _pk(old))
     response = await _post(_rotation(old, new))
     assert response.status_code == 200, response.text
-    assert response.json() == {"success": True, "public_key_hex": _pk(new)}
+    assert response.json() == {"success": True, "public_key_hex": _pk(new), "already_rotated": False}
     assert await _keys() == [(NULLIFIER, _pk(new), "ACTIVE")]
     audit = await _audit()
     assert audit == [("identity.key_rotated", "identity_holder", "identity_record", "1", "{}")]
@@ -177,16 +177,30 @@ async def test_rotation_swaps_key_and_audits_without_key_material() -> None:
 
 
 @pytest.mark.asyncio
-async def test_replay_after_rotation_is_rejected() -> None:
+async def test_retry_after_rotation_is_idempotent_without_second_audit() -> None:
+    # PR4 crash recovery: the app re-sends its staged rotation.
     old, new = SigningKey.generate(), SigningKey.generate()
     await _insert(NULLIFIER, _pk(old))
-    body = _rotation(old, new)
-    assert (await _post(body)).status_code == 200
-    replay = await _post(body)
-    assert replay.status_code == 409
-    assert replay.json()["detail"] == "ROTATION_CONFLICT"
+    assert (await _post(_rotation(old, new))).status_code == 200
+    retry = await _post(_rotation(old, new))
+    assert retry.status_code == 200
+    assert retry.json() == {"success": True, "public_key_hex": _pk(new), "already_rotated": True}
     assert await _keys() == [(NULLIFIER, _pk(new), "ACTIVE")]
     assert len(await _audit()) == 1
+
+
+@pytest.mark.asyncio
+async def test_old_message_cannot_undo_a_later_rotation() -> None:
+    # A->B then B->C: replaying A->B is neither applied nor confirmed.
+    a, b, c = SigningKey.generate(), SigningKey.generate(), SigningKey.generate()
+    await _insert(NULLIFIER, _pk(a))
+    first = _rotation(a, b)
+    assert (await _post(first)).status_code == 200
+    assert (await _post(_rotation(b, c))).status_code == 200
+    replay = await _post(first)
+    assert replay.status_code == 409
+    assert replay.json()["detail"] == "ROTATION_CONFLICT"
+    assert await _keys() == [(NULLIFIER, _pk(c), "ACTIVE")]
 
 
 @pytest.mark.asyncio

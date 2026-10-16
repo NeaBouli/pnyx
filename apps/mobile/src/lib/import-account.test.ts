@@ -32,6 +32,19 @@ vi.mock("./api", () => ({
 
 vi.mock("./crypto-native", () => ({
   signProfileLocation: vi.fn(),
+  prepareForServerIssuedKey: vi.fn(async () => {}),
+  withIdentityStateLock: <T,>(fn: () => Promise<T>) => fn(),
+  holdIdentityStateWhile: <T,>(fn: () => Promise<T>) => fn(),
+  installIdentityState: vi.fn(async (values: Record<string, string | null>) => {
+    for (const [key, value] of Object.entries(values)) {
+      if (state.failOnceForKey === key) {
+        state.failOnceForKey = null;
+        throw new Error(`write failed: ${key}`);
+      }
+      if (value === null) state.values.delete(key);
+      else state.values.set(key, value);
+    }
+  }),
 }));
 
 import { importAccountCredentials } from "./import-account";

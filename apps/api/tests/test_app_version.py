@@ -96,3 +96,17 @@ async def test_profile_compatibility_aliases_match_legacy_endpoint() -> None:
     assert canonical.status_code == legacy.status_code == 200
     for field in ("version", "downloadUrl", "playStoreUrl"):
         assert canonical.json()[field] == legacy.json()[field]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("env,expected", [(None, False), ("false", False), ("true", True)])
+async def test_identity_rotate_feature_follows_the_server_flag(monkeypatch, env, expected) -> None:
+    # EVA-001 PR4: the app rotates legacy keys only when this is advertised.
+    if env is None:
+        monkeypatch.delenv("IDENTITY_ROTATE_ENABLED", raising=False)
+    else:
+        monkeypatch.setenv("IDENTITY_ROTATE_ENABLED", env)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/api/v1/app/version")
+    assert response.status_code == 200
+    assert response.json()["features"] == {"identity_rotate": expected}
