@@ -7,7 +7,9 @@ Tracking: EVA-007 (P1, audit 2026-10-11); related: ADR-004, EVA-001/003/006/008/
 
 ## Context
 
-EVA-007 says the mobile key hierarchy uses the phone number as root entropy, and asks for a versioned KDF, cross-implementation KATs, and a migration that keeps vote history and replay protection. A code analysis on 2026-10-16 (checkout `ff72b86b`, every claim with file:line) gives this picture. The production values come from separate read-only checks (see *Receipts*).
+EVA-007 says the mobile key hierarchy uses the phone number as root entropy, and asks for a versioned KDF, cross-implementation KATs, and a migration that keeps vote history and replay protection. The basis is a code analysis on 2026-10-16 (baseline `ff72b86b`, plus EVA-037 from `8f48ed03`; source references below) and separate read-only production checks (*Receipts*). "Merged" ≠ "deployed": production runs `b343adfa`.
+
+Source references: `apps/mobile/src/lib/crypto-native.ts` (`deriveNullifierRoot`, `registerTier1`, `getOrDerivePolisKey`, `signVoteEphemeral`), `packages/crypto/src/nullifier.ts` + `types.ts` (package roots, Tier-1 payload), `packages/crypto/nullifier.py` (v1/v2, `normalize_phone_number`), `packages/crypto/hlr.py` (`normalize_greek_number`), `apps/api/routers/identity.py` (`_v1_anchors`, `_v2_anchors`, verify/revoke), `apps/api/routers/voting.py` + `apps/api/crypto/nullifier.py` (legacy and Tier-1 votes), `apps/api/routers/polis_qr.py` (QR proxy), `apps/api/models.py` (`identity_records`, `citizen_votes`, uniqueness `(nullifier_hash, bill_id)`), `packages/crypto/tests/vectors/eka22_kat_v1.json` (KATs).
 
 ### Derivations in the code
 
@@ -49,16 +51,28 @@ The API also accepts optional **Tier-1 metadata** (vote nullifier, linkage tag, 
 - **Rejected: OPRF root (RFC 9497).** It protects against outsiders, but the operator holding the key can still evaluate known numbers. It needs authorization and rate limiting as an online enumeration service, and it doesn't solve point 2.
 
 ### B. Server anchors and deduplication (D2, D5)
-- **New identities get a random anchor:** `nullifier_hash = "r1:" + 32 random bytes (hex)`, unrelated to the phone number. Deduplication runs through a separate lookup column **v3** = `HMAC-SHA256(K_dedupe, "ekklesia:identity-dedupe:v3:" ‖ E164(phone))`, with `K_dedupe` as a new 32-byte secret outside the DB, not `SERVER_SALT`. A DB leak then doesn't link a new anchor to a phone number. With `K_dedupe` as well, only the lookup column can be enumerated, and the anchor would also have to be joined. That's why `K_dedupe` belongs in a secret store separate from the DB credentials.
+- **New identities get a random anchor:** `nullifier_hash` = 32 random bytes as **64 lowercase hex**, the same format as today. That keeps `String(64)` and every hex64 validator (voting, QR, POLIS, rotation, key-check) compatible; a new column `anchor_kind` (`v1` | `random`) tells them apart. Deduplication runs through a new lookup column **v3** = `HMAC-SHA256(K_dedupe, "ekklesia:identity-dedupe:v3:" ‖ E164(phone))`, with a **unique index**, and `K_dedupe` as a new 32-byte secret outside the DB (not `SERVER_SALT`).
+  - Registration is atomic: lock on v3, look up v3 → v2 → v1, insert. That replaces the uniqueness that deterministic anchors gave implicitly.
+  - Writers that don't know v3 (old API versions) must not be running during rollout or rollback: no mixed operation, and rollback only to a version with v3 lookup.
+  - A DB leak then doesn't link a new anchor to a phone number. With `K_dedupe` as well, only the v3 column can be enumerated, so `K_dedupe` belongs in a secret store separate from the DB credentials.
 - **Existing identities:** dual lookup v3 → v2 → v1 (canonical + legacy forms, EVA-037) into the **same row**. On the next verification the row receives v3. The v1 anchor next to historical votes stays as it is (ADR-004 continuity), and so does its exposure from point 2.
-- **D5, deliberately rewriting historical anchors:** a one-off migration replaces each v1 anchor in every table with a random `r1:` anchor, with no mapping kept. That ends the phone link of all historical votes after a leak, but breaks the continuity ADR-004 requires (audit/re-checking old signatures against the anchor). Needs an owner decision and its own ADR section with a backup and rollback plan.
-- **No duplicates at cutoff (fail closed):** v1/v2 lookup is retired only after a cutoff, and `SERVER_SALT` then moves to **offline/cold storage** rather than being deleted. A verification that finds no v3 match doesn't create an ACTIVE identity. It lands in `PENDING_LEGACY_REVIEW` until a separate offline step with the cold `SERVER_SALT` has checked for an existing v1/v2 row. Eligibility continuity therefore doesn't depend on a client adoption rate. The cutoff is about server state (share of identities without v3), not about app versions.
+- **D5, deliberately rewriting historical anchors:** a one-off migration replaces each v1 anchor in every table with a random anchor (no mapping kept; anchor columns have no FK, so every table needs an explicit migration). **Alone that isn't enough**, because other artifacts remain as oracles:
+  - (i) `nullifier_hash_v2` (computable with `SERVER_SALT`);
+  - (ii) stored legacy vote signatures over `bill:CHOICE:nullifier`, which confirm a guessed old anchor together with the stored public key.
+
+  An effective rewrite also requires removing v2 after the cutoff and removing or re-signing old signatures, which in turn gives up the ability to re-check old votes (ADR-004 continuity). Owner decision, with its own section (backup, rollback, audit consequences).
+- **No duplicates at cutoff (fail closed):** v1/v2 lookup is retired only after a cutoff (by server state: share of identities without v3, not by app versions).
+  - A verification without a v3 match then doesn't create an ACTIVE identity; it lands in `PENDING_LEGACY_REVIEW`.
+  - A review can only **positively** confirm a legacy match (standard forms, EVA-037). A **negative** result does **not** authorize activation, because v1 rows from exotic spellings stay unreachable. Unresolved cases stay pending until an owner-defined review (e.g. confirmation via the old identity key or explicit owner approval). Completion happens atomically against the original eligibility record (adopt v3, keep its anchor).
+  - **Prerequisite for taking `SERVER_SALT` offline:** today it is also used by the invite-code hash (`services/invite_codes.py`, y802), push registration (`services/push_registration.py`), vote receipts (`routers/voting.py`), the ZK tier lock (`services/zk_tier_lock.py`, `routers/zk.py`), gov.gr (`routers/govgr.py`), admin paths (`routers/admin*.py`) and the startup check. Each needs a dedicated key with its own migration plan before then, because replacing it invalidates existing keyed values.
 
 ### C. Versioned vote envelope (D3)
 - Signed message: `ekklesia:vote:v2:{op}:{bill_id}:{CHOICE}:{nullifier}:{revision}:{timestamp_ms}:{nonce}`.
   - `op ∈ {cast, update, correct}`, so an update can't be redeemed as a correction.
-  - `revision` is the row revision currently known to the server. Writes are **compare-and-swap on the revision** (atomic, for all writers including the QR proxy, which sets the revision on the server side). That defines order, equal timestamps, retries and concurrency cleanly; the timestamp (±5 min) only prevents stale replays.
-- **Protocol floor:** once an identity has written with v2, the server no longer accepts legacy signatures for it (column `vote_protocol_min`). There is no downgrade replay against identities that have moved up. For identities that haven't, the legacy replay risk remains until the global cutoff (documented).
+  - `revision` is the revision of the vote row that the client had seen. Writes are **compare-and-swap on that revision**: stale intents fail instead of overwriting newer state.
+  - For the **QR proxy**, the expected revision and the operation get bound to the QR authorization when the session is created (signed by the app), and they survive retries. The proxy doesn't fill in the current revision, so a delayed QR request can't overwrite a newer signed update.
+  - The timestamp (±5 min) only prevents stale replays; equal timestamps are resolved by the revision.
+- **Protocol floor:** once an identity has written with v2, the server no longer accepts legacy signatures for it (column `vote_protocol_min` on `identity_records`). Floor check, floor raise and vote commit run under an **identity-wide lock** (row lock on the identity record) for every writer. Otherwise a legacy write on bill A could read the old floor while a v2 write on bill B raises it. For identities that haven't moved up, the legacy replay risk remains until the global cutoff (documented).
 - The legacy format is accepted within a transition window (flag `VOTE_LEGACY_SIGNATURE_ACCEPTED`), then rejected.
 
 ### D. KATs and specification
