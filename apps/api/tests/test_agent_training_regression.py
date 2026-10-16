@@ -246,6 +246,8 @@ def test_payment_output_guard_leaves_normal_answers(answer: str) -> None:
 async def test_claude_answers_with_payment_links_are_replaced(
     monkeypatch: pytest.MonkeyPatch, model_answer: str,
 ) -> None:
+    monkeypatch.setenv("AGENT_MODE", "hybrid")
+
     async def fake_context(*args: object, **kwargs: object):
         return "", [], False, []
 
@@ -272,6 +274,8 @@ async def test_claude_answers_with_payment_links_are_replaced(
 async def test_model_answers_with_payment_links_are_replaced(
     monkeypatch: pytest.MonkeyPatch, model_answer: str,
 ) -> None:
+    monkeypatch.setenv("AGENT_MODE", "hybrid")
+
     async def fake_context(*args: object, **kwargs: object):
         return "", [], False, []
 

@@ -1,17 +1,19 @@
 """
-MOD-22: Hybrid RAG Agent — Citizen Q&A
-POST /api/v1/agent/ask — Ollama first, Claude fallback for complex questions
+MOD-22: Citizen FAQ — deterministic by default, hybrid only for rollback
+POST /api/v1/agent/ask — canonical answers, then verbatim curated FAQ blocks
 Rate limited: 5 requests/minute per IP
-Strategy: Ollama (local, fast, free) → Claude Haiku (API, smart, costs tokens)
-Trust boundary (EKA-58): retrieved KB/bill text is untrusted data serialised by
-services.agent_prompt; model output passes an output guard that fails closed.
+AGENT_MODE=hybrid restores Ollama → Claude; unset/invalid values use deterministic.
+Hybrid trust boundary (EKA-58): retrieved KB/bill text is untrusted data serialised
+by services.agent_prompt; model output passes an output guard that fails closed.
 See docs/security/AGENT_PROMPT_TRUST_BOUNDARY.md.
 """
+import json
 import os
 import logging
 import re
 import unicodedata
 from datetime import datetime, timezone
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
@@ -197,6 +199,74 @@ def _match_text(text: str) -> str:
 def _is_payment_intent(question: str) -> bool:
     text = _match_text(question)
     return any(pattern.search(text) for pattern in _PAYMENT_RES)
+
+
+# Load the reviewed bilingual text and compile keyword stems once, without I/O
+# on the request path. Text is never translated, summarised or interpolated.
+_FACTS = json.loads(
+    (Path(__file__).resolve().parent.parent / "data" / "agent_facts.json").read_text(encoding="utf-8")
+)
+_FACT_KEYWORDS = {
+    topic: tuple(
+        re.compile(r"(?<!\w)" + re.escape(keyword))
+        for keyword in sorted({_match_text(word) for word in block["kw"]})
+    )
+    for topic, block in _FACTS.items()
+}
+_FAQ_URL = "https://ekklesia.gr/wiki/faq.html"
+_SUPPORT_URL = "https://ekklesia.gr/tickets/index.html"
+_FAQ_LEAD_IN = {
+    "el": "Επιβεβαιωμένες πληροφορίες:",
+    "en": "Verified information:",
+}
+_FAQ_FALLBACK = {
+    "el": (
+        "Δεν έχω επιβεβαιωμένη πληροφορία για αυτό. "
+        f"Δείτε τις Συχνές Ερωτήσεις: {_FAQ_URL}\n"
+        f"Υποστήριξη: {_SUPPORT_URL}"
+    ),
+    "en": (
+        "I don't have verified information on this. "
+        f"Please see the FAQ: {_FAQ_URL}\n"
+        f"Support: {_SUPPORT_URL}"
+    ),
+}
+
+
+def _select_fact_blocks(question: str) -> list[str]:
+    """Rank by keyword hits as in the evaluation; return at most two tied best.
+
+    Accent-equivalent keywords count once. Match at word starts (keywords may
+    be stems) so e.g. 'app' does not match 'happy'. Topic ids break ties stably.
+    """
+    folded = _match_text(question)
+    scored = sorted(
+        ((sum(bool(pattern.search(folded)) for pattern in patterns), topic)
+         for topic, patterns in _FACT_KEYWORDS.items()),
+        key=lambda item: (-item[0], item[1]),
+    )
+    best = scored[0][0]
+    return [topic for score, topic in scored[:2] if score > 0 and score == best]
+
+
+def _deterministic_response(question: str, lang: str) -> dict:
+    topics = _select_fact_blocks(question)
+    if topics:
+        faq_label = "Συχνές Ερωτήσεις" if lang == "el" else "FAQ"
+        answer = "\n\n".join([
+            _FAQ_LEAD_IN[lang],
+            *(_FACTS[topic][lang] for topic in topics),
+            f"{faq_label}: {_FAQ_URL}",
+        ])
+    else:
+        answer = _FAQ_FALLBACK[lang]
+    return {
+        "question": question,
+        "answer": _with_disclaimer(answer, lang),
+        "model": "faq-deterministic",
+        "sources": [{"type": "knowledge_base", "topic": topic} for topic in topics],
+        "lang": lang,
+    }
 
 
 _BILL_QUERY_PATTERNS = [
@@ -942,14 +1012,9 @@ async def ask_agent(
     req: AskRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Hybrid RAG Agent — Ollama first, Claude Haiku fallback.
-    Strategy:
-    1. Build context from Knowledge Base + Bills
-    2. Try Ollama (local, free, fast)
-    3. If Ollama fails or gives poor answer → Claude Haiku (API, smart)
-    4. Output guard: instruction echo / rule leak / role override → fail closed
-    5. Always append disclaimer
+    """Safety/canonical answers first, then a deterministic FAQ with disclaimer.
+
+    Only AGENT_MODE=hybrid enables the legacy database/Ollama/Claude path.
     """
     safety = _safety_response(req.question, req.lang)
     if safety:
@@ -958,6 +1023,9 @@ async def ask_agent(
     canonical = _canonical_response(req.question, req.lang)
     if canonical:
         return canonical
+
+    if os.getenv("AGENT_MODE") != "hybrid":
+        return _deterministic_response(req.question, req.lang)
 
     context, bills, include_bills, kb_entries = await _build_context(req.question, req.lang, db)
     sources = _sources(
