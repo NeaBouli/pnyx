@@ -117,6 +117,7 @@ def correction_request(
 @pytest.fixture(autouse=True)
 def _guard_off(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("ZK_TIER1_GUARD_ENABLED", raising=False)
+    monkeypatch.setenv("TIER1_METADATA_ACCEPTED", "true")  # ADR-006 D6: enforcement path
 
 
 @pytest.fixture

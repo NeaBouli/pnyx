@@ -118,6 +118,9 @@ def _request(vote: str = "YES", **tier1) -> voting.VoteRequest:
 @pytest.fixture(autouse=True)
 def _identity_signature_ok(monkeypatch):
     monkeypatch.delenv("ZK_TIER1_GUARD_ENABLED", raising=False)
+    # ADR-006 D6: Tier-1 metadata is ignored by default; these tests cover the
+    # enforcement path that applies only when it is explicitly re-enabled.
+    monkeypatch.setenv("TIER1_METADATA_ACCEPTED", "true")
     monkeypatch.setattr(voting, "verify_signature", lambda *_args: True)
 
 
@@ -496,3 +499,57 @@ async def test_correction_rejects_tier1_row_without_stored_timestamp():
     assert "STALE_PAYLOAD" in exc.value.detail
     assert db.commits == 0
     assert vars(stored) == snapshot
+
+
+# ─── ADR-006 D6: Tier-1 metadata is ignored by default ───────────────────────
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("fields", [
+    "valid",
+    "invalid_signature",
+    "incomplete",
+])
+async def test_tier1_metadata_is_ignored_by_default(monkeypatch, fields) -> None:
+    monkeypatch.delenv("TIER1_METADATA_ACCEPTED", raising=False)
+    tier1 = _tier1_fields()
+    if fields == "invalid_signature":
+        tier1["tier1_signature_hex"] = "0" * 128
+    elif fields == "incomplete":
+        tier1 = {"vote_nullifier": tier1["vote_nullifier"]}
+    # identity, bill, existing vote — no Tier-1 nullifier lookup happens
+    db = _FakeDb([_identity(), _bill(), None])
+    await voting.submit_vote(_request(**tier1), db)
+    assert len(db.added) == 1
+    vote = db.added[0]
+    assert vote.pk_eph is None and vote.vote_nullifier is None and vote.linkage_tag is None
+    assert db.commits == 1
+
+
+def test_tier1_metadata_flag_defaults_off(monkeypatch) -> None:
+    monkeypatch.delenv("TIER1_METADATA_ACCEPTED", raising=False)
+    assert voting.tier1_metadata_accepted() is False
+    monkeypatch.setenv("TIER1_METADATA_ACCEPTED", "true")
+    assert voting.tier1_metadata_accepted() is True
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("send_tier1", [False, True])
+async def test_stored_tier1_row_can_be_updated_with_flag_off(monkeypatch, send_tier1):
+    monkeypatch.delenv("TIER1_METADATA_ACCEPTED", raising=False)
+    stored = _stored_vote(tier1=True, timestamp_ms=1)
+    extra = _tier1_fields(sign_choice="NO") if send_tier1 else {}
+    db = _FakeDb([_identity(), _window_bill(), stored])
+    await voting.submit_vote(_request(vote="NO", **extra), db)
+    assert db.commits == 1
+    assert (stored.pk_eph, stored.vote_nullifier, stored.linkage_tag, stored.timestamp_ms) == (None, None, None, None)
+
+
+@pytest.mark.asyncio
+async def test_stored_tier1_row_can_be_corrected_with_flag_off(monkeypatch):
+    monkeypatch.delenv("TIER1_METADATA_ACCEPTED", raising=False)
+    stored = _stored_vote(tier1=True, timestamp_ms=1)
+    req = voting.CorrectionRequest(nullifier_hash=NULLIFIER_HASH, bill_id=BILL_ID, vote="NO", signature_hex="b" * 128)
+    db = _FakeDb([_window_bill(), _identity(), stored, None, None, None])
+    await voting.correct_vote(BILL_ID, req, db)
+    assert db.commits == 1
+    assert stored.vote_nullifier is None and stored.pk_eph is None
