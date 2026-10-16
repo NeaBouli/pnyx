@@ -19,7 +19,7 @@ Which jobs follow `CI_RUNNER`:
 | Docs Redesign Gates | yes | standard-library Python and Node checks; no npm dependencies |
 | T-356 Browser Gate | yes, manual only | browser binaries are installed without sudo; required system libraries must already exist |
 | Client Web/Dashboard/Mobile/Representative/Crypto-TS | yes | Node from `.nvmrc` via `setup-node` |
-| Python API Tests | no, stays GitHub-hosted | needs the `redis` service container; pnyx has no Docker on the fallback host |
+| Python API Tests | no, stays GitHub-hosted | starts Redis and PostgreSQL containers as steps; pnyx has no Docker on the fallback host |
 | Secret Detection, Dependency Audit, Security Summary | no, stays GitHub-hosted | rely on the toolchain of the hosted image |
 
 Rules on the fallback runner: jobs that follow `CI_RUNNER` run there only for `push`,
@@ -114,10 +114,11 @@ Adding this workflow and passing its static contracts does not prove a GitHub Ac
 browser run. Cold/warm hosted or fallback dispatches must be recorded separately;
 no such dispatch or fallback library provisioning is claimed by this change.
 
-## Redis test-service image
+## API test-service images
 
-The API job pulls the Docker Official Redis image anonymously from ECR Public,
-avoiding Docker Hub's anonymous pull quota without adding registry credentials.
+The API job starts Redis and PostgreSQL as steps so each digest-pinned pull can try
+`mirror.gcr.io`, ECR Public, then Docker Hub, with two attempts per registry and a
+five-second delay after each failed attempt. No registry credentials are needed.
 Docker documents this [official distribution mirror](https://www.docker.com/press-release/docker-official-images-available-amazon-elastic-container-registry/).
 
 The service is pinned to the Redis `8.10.2-alpine` OCI index
@@ -126,6 +127,16 @@ ECR manifest inspection and the [Docker Hub metadata](https://hub.docker.com/lay
 matched on 2026-10-09, including the Linux/amd64 manifest
 `sha256:2d3814be5e9b06a30a0be54770b7e12052e7e79ec85271aefd34875c1f393b23`.
 This is an artifact-identity check, not a comparison with older local caches.
+
+PostgreSQL is pinned to the locally recorded `15.18-alpine` image digest
+`sha256:df7bca0066e6f60cc3dd32faa70caddec20e2c22b58932f79498e5704b23854a`.
+The step generates a throwaway password, creates `pnyx_test_ci`, publishes port
+5432 only on `127.0.0.1`, and waits for TCP readiness with `pg_isready`. It writes
+`PNYX_TEST_POSTGRES_URL=postgresql+asyncpg://test:<password>@127.0.0.1:5432/pnyx_test_ci`
+to `GITHUB_ENV`, enabling the real PostgreSQL fixtures in the full API test run.
+Pytest prints skip reasons (`-rs`); the job fails if any `*_pg.py`, knowledge-base
+sync, or municipal concurrency test is skipped, or a skip mentions the PostgreSQL
+URL variable. Other intentional skips remain allowed.
 
 Future Redis updates must explicitly refresh the digest, verify the official-image
 provenance, and pass the service healthcheck and API/real-Redis tests. ECR availability
