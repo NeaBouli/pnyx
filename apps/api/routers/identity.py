@@ -16,6 +16,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import ColumnElement, or_, select, update, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import Select
 import redis.asyncio as aioredis
 
@@ -427,7 +428,15 @@ async def _register_identity(
             text("DELETE FROM survey_responses WHERE user_hash = :nh"),
             {"nh": compatibility_nullifier}
         )
-        await db.commit()
+        try:
+            await db.commit()
+        except IntegrityError as exc:
+            # Backstop for the per-key lock (lease expiry): the partial unique
+            # index allows one ACTIVE identity per public key.
+            await db.rollback()
+            if client_public_key_hex is not None and "public_key_hex" in str(exc.orig):
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="PUBLIC_KEY_IN_USE") from None
+            raise
 
         return keypair["public_key_hex"], keypair["private_key_hex"], compatibility_nullifier
     finally:
@@ -785,13 +794,30 @@ async def verify_identity_v2(req: VerifyV2Request, request: Request, db: AsyncSe
     # One in-flight registration per public key: different phone numbers take
     # different nullifier locks, so without this a replayed PoP could bind the
     # same key to two identities concurrently (EVA-001 review).
-    pk_lock_key, pk_lock_token = await _acquire_identity_verify_lock(f"pk:{req.public_key_hex}")
+    # The unique index uq_identity_records_active_public_key is the backstop
+    # if this lease expires before commit.
     try:
-        public_key_hex, _private, nullifier_hash = await _register_identity(
-            req, request, db, client_public_key_hex=req.public_key_hex,
-        )
+        try:
+            pk_lock_key, pk_lock_token = await _acquire_identity_verify_lock(f"pk:{req.public_key_hex}")
+        except HTTPException:
+            raise
+        except Exception as exc:
+            logger.error("[MOD-01] identity key lock Redis unavailable (fail-closed)", exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=_HLR_VERIFY_UNAVAILABLE_DETAIL,
+            ) from exc
+        try:
+            public_key_hex, _private, nullifier_hash = await _register_identity(
+                req, request, db, client_public_key_hex=req.public_key_hex,
+            )
+        finally:
+            await _release_identity_verify_lock(pk_lock_key, pk_lock_token)
     finally:
-        await _release_identity_verify_lock(pk_lock_key, pk_lock_token)
+        # Never keep the raw number on the request object, also on early exits.
+        if "phone_number" in req.__dict__:
+            del req.phone_number
+            gc.collect()
     return VerifyV2Response(
         success=True,
         public_key_hex=public_key_hex,

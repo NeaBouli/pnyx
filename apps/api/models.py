@@ -70,6 +70,11 @@ class IdentityRecord(Base):
     __table_args__ = (
         Index("idx_identity_nullifier", "nullifier_hash"),
         Index("idx_identity_status", "status"),
+        # EVA-001: one ACTIVE identity per public key (alembic y803a2b3c4d5).
+        Index(
+            "uq_identity_records_active_public_key", "public_key_hex", unique=True,
+            postgresql_where=text("status = 'ACTIVE'"), sqlite_where=text("status = 'ACTIVE'"),
+        ),
     )
 
 

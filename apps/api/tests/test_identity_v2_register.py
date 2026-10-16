@@ -63,6 +63,8 @@ CREATE TABLE IF NOT EXISTS identity_records (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     revoked_at TIMESTAMP
 );
+CREATE UNIQUE INDEX IF NOT EXISTS uq_identity_records_active_public_key
+    ON identity_records (public_key_hex) WHERE status = 'ACTIVE';
 CREATE TABLE IF NOT EXISTS survey_responses (
     id INTEGER PRIMARY KEY,
     user_hash TEXT NOT NULL
@@ -330,3 +332,53 @@ async def test_locked_recheck_catches_rows_created_after_the_preflight(monkeypat
     assert response.status_code == 409
     assert response.json()["detail"].startswith(detail)
     assert len(await _rows()) == 1
+
+
+@pytest.mark.asyncio
+async def test_unique_index_backstops_an_expired_key_lock(monkeypatch) -> None:
+    # Lease expired: both locked rechecks miss the competing row, the index does not.
+    body = _signed_body()
+    real_active = identity._public_key_active
+
+    async def blind(_db, _pk) -> bool:
+        return False
+
+    async def racing_hlr(_phone: str) -> dict[str, object]:
+        hlr_calls.append(1)
+        await _insert("7" * 64, body["public_key_hex"], "ACTIVE")
+        return {"valid": True, "network": "TEST", "country": "GR", "status": "LIVE", "error": None}
+
+    monkeypatch.setattr(identity, "_public_key_active", blind)
+    monkeypatch.setattr(identity, "verify_greek_number", racing_hlr)
+    response = await _post(body)
+    assert response.status_code == 409
+    assert response.json()["detail"] == "PUBLIC_KEY_IN_USE"
+    assert await _rows() == [("7" * 64, body["public_key_hex"], "ACTIVE")]
+    assert real_active is not blind
+
+
+@pytest.mark.asyncio
+async def test_redis_outage_on_key_lock_is_a_controlled_503(monkeypatch) -> None:
+    async def down(_key: str):
+        raise ConnectionError("redis down")
+
+    monkeypatch.setattr(identity, "_acquire_identity_verify_lock", down)
+    response = await _post(_signed_body())
+    assert response.status_code == 503
+    assert hlr_calls == []
+
+
+@pytest.mark.asyncio
+async def test_phone_number_is_removed_on_early_rejection(monkeypatch) -> None:
+    await _insert(V1, PUB_OLD, "ACTIVE")
+    seen: list[object] = []
+    real = identity._register_identity
+
+    async def spy(req, request, db, **kw):
+        seen.append(req)
+        return await real(req, request, db, **kw)
+
+    monkeypatch.setattr(identity, "_register_identity", spy)
+    response = await _post(_signed_body())
+    assert response.status_code == 409
+    assert "phone_number" not in seen[0].__dict__
