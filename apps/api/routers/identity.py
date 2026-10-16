@@ -29,7 +29,7 @@ import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../packages/crypto"))
 sys.path.insert(0, "/packages/crypto")  # Docker container path
 from keypair import generate_keypair, verify_signature
-from nullifier import generate_nullifier_hash, generate_nullifier_hash_v2
+from nullifier import generate_nullifier_hash, generate_nullifier_hash_v2, normalize_phone_number
 from hlr import normalize_greek_number, verify_greek_number
 
 from rate_limit import limiter
@@ -194,13 +194,59 @@ def _compatibility_nullifier(existing: IdentityRecord | None, computed_v1: str) 
     return computed_v1
 
 
-def _select_identity_match(matches: list[IdentityRecord], computed_v1: str) -> IdentityRecord | None:
-    existing = next((record for record in matches if record.nullifier_hash == computed_v1), None)
-    if existing is not None:
-        return existing
+def _select_identity_match(
+    matches: list[IdentityRecord], computed_v1: str, legacy_v1: tuple[str, ...] = (),
+    computed_v2: str | None = None, legacy_v2: tuple[str, ...] = (),
+) -> IdentityRecord | None:
+    """Deterministic choice: canonical v1, legacy v1, canonical v2, legacy v2."""
+    for attr, value in (
+        ("nullifier_hash", computed_v1),
+        *(("nullifier_hash", v) for v in legacy_v1),
+        ("nullifier_hash_v2", computed_v2),
+        *(("nullifier_hash_v2", v) for v in legacy_v2),
+    ):
+        if value is None:
+            continue
+        existing = next((record for record in matches if getattr(record, attr) == value), None)
+        if existing is not None:
+            return existing
     if matches:
         return matches[0]
     return None
+
+
+def _v1_anchors(raw_phone: str, normalized_phone: str) -> tuple[str, tuple[str, ...]]:
+    """EVA-037: v1 identity anchors for one number.
+
+    v1 hashed the request string verbatim, so different spellings of the same
+    number ("+3069…", "0030…", "69 12…") produced different anchors and could
+    create a second identity for a number whose row has no v2 nullifier.
+    The canonical anchor is computed from the normalized number (what the app
+    always sent). The request spelling and the separator-free standard forms
+    of the number are looked up as legacy anchors to FIND rows created from a
+    non-canonical spelling; they are never written for new rows.
+    """
+    canonical = generate_nullifier_hash(normalized_phone)
+    national = normalized_phone[3:]  # "69XXXXXXXX"
+    legacy_inputs = {raw_phone, national, "0" + national, "30" + national, "0030" + national, normalized_phone}
+    legacy_inputs.discard(normalized_phone)
+    legacy = tuple(sorted({generate_nullifier_hash(value) for value in legacy_inputs} - {canonical}))
+    return canonical, legacy
+
+
+def _v2_anchors(raw_phone: str, normalized_phone: str) -> tuple[str | None, tuple[str, ...]]:
+    """EVA-037: canonical v2 nullifier (from the normalized "+3069…" number) and
+    the legacy v2 nullifiers to look up. The v2 normalisation collapses every
+    accepted spelling to "+3069…" EXCEPT the national form with a leading zero
+    ("069…"), so that form is the only possible other v2 anchor of a number and
+    is always looked up. Empty when the KDF is v1."""
+    if _identity_kdf_version() != "v2":
+        return None, ()
+    canonical = generate_nullifier_hash_v2(normalized_phone)
+    legacy_inputs = {normalize_phone_number(raw_phone), "0" + normalized_phone[3:]}
+    legacy_inputs.discard(normalize_phone_number(normalized_phone))
+    legacy = tuple(sorted({generate_nullifier_hash_v2(value) for value in legacy_inputs} - {canonical}))
+    return canonical, legacy
 
 
 def _identity_match_query(identity_filter: ColumnElement[bool]) -> Select:
@@ -272,16 +318,23 @@ class StatusResponse(BaseModel):
 
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
-async def _find_identity(db: AsyncSession, nullifier: str, nullifier_v2: str | None) -> IdentityRecord | None:
-    """Identity row for a v1 anchor and/or v2 nullifier (v1-preferred)."""
+async def _find_identity(
+    db: AsyncSession, nullifier: str, nullifier_v2: str | None,
+    legacy_v1: tuple[str, ...] = (), legacy_v2: tuple[str, ...] = (),
+) -> IdentityRecord | None:
+    """Identity row for a v1 anchor and/or v2 nullifier (canonical or raw spelling)."""
     identity_filter = IdentityRecord.nullifier_hash == nullifier
+    if legacy_v1:
+        identity_filter = or_(IdentityRecord.nullifier_hash.in_(legacy_v1), identity_filter)
+    if legacy_v2:
+        identity_filter = or_(IdentityRecord.nullifier_hash_v2.in_(legacy_v2), identity_filter)
     if nullifier_v2:
         identity_filter = or_(IdentityRecord.nullifier_hash_v2 == nullifier_v2, identity_filter)
     result = await db.execute(_identity_match_query(identity_filter))
     matches = result.scalars().all()
     if len(matches) > 1:
         logger.warning("[MOD-01] Multiple identity rows matched v2 migration lookup; using v1-preferred anchor")
-    return _select_identity_match(matches, nullifier)
+    return _select_identity_match(matches, nullifier, legacy_v1, nullifier_v2, legacy_v2)
 
 
 def _is_active_key_conflict(exc: IntegrityError) -> bool:
@@ -292,6 +345,16 @@ def _is_active_key_conflict(exc: IntegrityError) -> bool:
         "uq_identity_records_active_public_key" in message
         or "UNIQUE constraint failed: identity_records.public_key_hex" in message
     )
+
+
+async def _v2_owned_by_other(db: AsyncSession, nullifier_v2: str, record_id: int) -> bool:
+    result = await db.execute(
+        select(IdentityRecord.id)
+        .where(IdentityRecord.nullifier_hash_v2 == nullifier_v2)
+        .where(IdentityRecord.id != record_id)
+        .limit(1)
+    )
+    return result.first() is not None
 
 
 def _identity_active_error() -> HTTPException:
@@ -330,16 +393,16 @@ async def _register_identity(
         )
     await _enforce_hlr_verify_limits(request, normalized_number)
 
-    precomputed: tuple[str, str | None] | None = None
+    # EVA-037: canonical (normalized) anchors + raw-spelling anchors for lookup.
+    canonical_v1, legacy_v1 = _v1_anchors(req.phone_number, normalized_number)
+    canonical_v2, legacy_v2 = _v2_anchors(req.phone_number, normalized_number)
+    del normalized_number
     if client_public_key_hex is not None:
         # v2 preflight (EVA-001 review): rejections the database already decides
         # happen after the rate limits but before the paid HLR call.
         if await _public_key_active(db, client_public_key_hex):
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="PUBLIC_KEY_IN_USE")
-        pre_v1 = generate_nullifier_hash(req.phone_number)
-        pre_v2 = generate_nullifier_hash_v2(req.phone_number) if _identity_kdf_version() == "v2" else None
-        precomputed = (pre_v1, pre_v2)
-        pre_existing = await _find_identity(db, pre_v1, pre_v2)
+        pre_existing = await _find_identity(db, canonical_v1, canonical_v2, legacy_v1, legacy_v2)
         if pre_existing and pre_existing.status == KeyStatus.ACTIVE:
             raise _identity_active_error()
 
@@ -355,22 +418,15 @@ async def _register_identity(
         )
 
     # 2. Nullifier Hash (Telefonnummer wird in der Funktion sofort gelöscht)
-    if precomputed is None:
-        nullifier = generate_nullifier_hash(req.phone_number)  # v1 compatibility anchor
-    else:
-        nullifier = precomputed[0]
+    nullifier = canonical_v1  # v1 compatibility anchor (normalized number, EVA-037)
+    nullifier_v2 = canonical_v2
     lock_key, lock_token = await _acquire_identity_verify_lock(nullifier)
     try:
-        if precomputed is None:
-            kdf_version = _identity_kdf_version()
-            nullifier_v2 = generate_nullifier_hash_v2(req.phone_number) if kdf_version == "v2" else None
-        else:
-            nullifier_v2 = precomputed[1]
         del req.phone_number
         gc.collect()
 
         # 3. Bestehenden Record prüfen
-        existing = await _find_identity(db, nullifier, nullifier_v2)
+        existing = await _find_identity(db, nullifier, nullifier_v2, legacy_v1, legacy_v2)
 
         if client_public_key_hex is not None and existing and existing.status == KeyStatus.ACTIVE:
             # D3: a key swap on an ACTIVE identity needs the old key's signature
@@ -415,7 +471,13 @@ async def _register_identity(
                     "revoked_at": None,
                     "created_at": datetime.now(timezone.utc).replace(tzinfo=None),
                 }
-                if nullifier_v2:
+                if nullifier_v2 and existing.nullifier_hash_v2 != nullifier_v2 and await _v2_owned_by_other(
+                    db, nullifier_v2, existing.id,
+                ):
+                    # EVA-037: a pre-fix duplicate already owns this number's
+                    # canonical v2 anchor; never move it (unique constraint).
+                    logger.warning("[MOD-01] duplicate identity rows for one number; v2 anchor left in place")
+                elif nullifier_v2:
                     update_values.update({
                         "nullifier_hash_v2": nullifier_v2,
                         "nullifier_version": "v2",
@@ -483,22 +545,36 @@ async def verify_identity(req: VerifyRequest, request: Request, db: AsyncSession
 
 
 @router.post("/revoke")
-async def revoke_identity(req: RevokeRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("10/minute")
+async def revoke_identity(req: RevokeRequest, request: Request, db: AsyncSession = Depends(get_db)):
     """
     Key Revokation: alter Key wird ungültig, neuer Nullifier-Check.
     Telefonnummer wird nach Hash-Generierung sofort gelöscht.
     """
-    new_nullifier = generate_nullifier_hash(req.phone_number)
-    del req.phone_number
-    gc.collect()
-
-    if new_nullifier != req.nullifier_hash:
-        raise HTTPException(status_code=400, detail="Ο Nullifier δεν αντιστοιχεί στον αριθμό.")
-
+    # EVA-037: the number may be spelled differently than at registration.
+    # The phone proves ownership of the record behind the provided anchor if
+    # it yields that v1 anchor (canonical or raw spelling) or the record's v2.
+    # Cheap checks first; the memory-hard v2 derivation runs only when a row
+    # with this anchor exists, carries a v2 anchor and no v1 form matched.
+    new_nullifier = req.nullifier_hash
     result = await db.execute(
         select(IdentityRecord).where(IdentityRecord.nullifier_hash == new_nullifier)
     )
     record = result.scalar_one_or_none()
+    normalized_number = normalize_greek_number(req.phone_number)
+    v1_candidates = {generate_nullifier_hash(req.phone_number)}
+    if normalized_number:
+        canonical_v1, legacy_v1 = _v1_anchors(req.phone_number, normalized_number)
+        v1_candidates.update((canonical_v1, *legacy_v1))
+    owns = new_nullifier in v1_candidates
+    if not owns and normalized_number and record is not None and record.nullifier_hash_v2 is not None:
+        canonical_v2, legacy_v2 = _v2_anchors(req.phone_number, normalized_number)
+        owns = record.nullifier_hash_v2 in {a for a in (canonical_v2, *legacy_v2) if a}
+    del normalized_number
+    del req.phone_number
+    gc.collect()
+    if not owns:
+        raise HTTPException(status_code=400, detail="Ο Nullifier δεν αντιστοιχεί στον αριθμό.")
 
     if not record:
         raise HTTPException(status_code=404, detail="Δεν βρέθηκε κλειδί για αυτόν τον αριθμό.")
