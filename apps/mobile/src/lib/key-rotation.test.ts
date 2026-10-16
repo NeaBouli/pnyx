@@ -22,7 +22,8 @@ vi.mock("expo-secure-store", () => ({
     state.values.delete(key);
   }),
 }));
-vi.mock("expo-crypto", () => ({ getRandomBytes: vi.fn() }));
+// Same bytes as NEW_SEED (vi.mock factories are hoisted above the constants).
+vi.mock("expo-crypto", () => ({ getRandomBytes: vi.fn(() => Uint8Array.from({ length: 32 }, (_, i) => 200 - i)) }));
 vi.mock("./demo", () => ({ isDemoMode: vi.fn(async () => state.demo) }));
 vi.mock("./profile-location", () => ({ storeProfileLocation: vi.fn(async () => {}) }));
 vi.mock("./bill-scope-storage", () => ({ loadUserBillScope: vi.fn(async () => {
@@ -42,7 +43,14 @@ import {
   withIdentityStateLock,
 } from "./crypto-native";
 import { importAccountCredentials } from "./import-account";
-import { identityRotateMessage, rotateLegacyKeyIfNeeded, type RotationDeps } from "./key-rotation";
+import {
+  ROTATION_RETRY_INTERVAL_MS,
+  identityRotateMessage,
+  maybeRotateLegacyKey,
+  resetRotationSessionForTests,
+  rotateLegacyKeyIfNeeded,
+  type RotationDeps,
+} from "./key-rotation";
 
 const hex = (b: Uint8Array) => Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
 const OLD_SEED = Uint8Array.from({ length: 32 }, (_, i) => i + 1);
@@ -471,5 +479,32 @@ describe("round 3 (Codex) regressions", () => {
     await recoverIdentityJournal(); // restart
     expect(state.values.get("is_demo_mode")).toBe("true");
     expect(state.values.get("ekklesia_nullifier")).toBe("demo_1");
+  });
+});
+
+describe("maybeRotateLegacyKey (app start / foreground hook)", () => {
+  beforeEach(() => resetRotationSessionForTests());
+
+  it("retries a lost response on a later foreground event, not only after a restart", async () => {
+    legacyUser();
+    // The default deps use global fetch: stub it.
+    let serverApplied = false;
+    const responses: Array<() => Response> = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (String(url).endsWith("/api/v1/app/version")) {
+        return new Response(JSON.stringify({ features: { identity_rotate: true } }), { status: 200 });
+      }
+      if (!serverApplied) {
+        serverApplied = true;
+        throw new Error("response lost"); // applied on the server, response lost
+      }
+      return responses.length ? responses.shift()!() : new Response(JSON.stringify({ success: true, public_key_hex: "x", already_rotated: true }), { status: 200 });
+    }));
+    const t0 = 1_000_000;
+    expect(await maybeRotateLegacyKey(t0)).toBe("retry_later");
+    expect(maybeRotateLegacyKey(t0 + 1_000)).toBeNull(); // rate-limited
+    expect(await maybeRotateLegacyKey(t0 + ROTATION_RETRY_INTERVAL_MS + 1)).toBe("already_rotated");
+    expect(maybeRotateLegacyKey(t0 + 10 * ROTATION_RETRY_INTERVAL_MS)).toBeNull(); // final outcome: not again
+    vi.unstubAllGlobals();
   });
 });

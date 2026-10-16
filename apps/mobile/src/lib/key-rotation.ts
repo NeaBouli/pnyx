@@ -222,19 +222,35 @@ export async function rotateLegacyKeyIfNeeded(deps: RotationDeps = DEFAULT_DEPS)
 }
 
 let inFlight: Promise<RotationResult> | null = null;
-let ranThisSession = false;
+let lastResult: RotationResult | null = null;
+let lastAttemptAt = 0;
+export const ROTATION_RETRY_INTERVAL_MS = 60_000;
 
-/** App-start hook: at most one attempt per app session, never concurrent. */
-export function rotateLegacyKeyOnce(): Promise<RotationResult> | null {
-  if (ranThisSession) return inFlight;
-  ranThisSession = true;
+/**
+ * App start / foreground hook. Never concurrent. A final outcome is not
+ * retried within the session; "retry_later" (lost response, offline, server
+ * busy, lock busy) is retried on the next foreground event after at most
+ * ROTATION_RETRY_INTERVAL_MS, so an applied-but-unconfirmed rotation is
+ * recovered as soon as the network is back, without a process restart.
+ */
+export function maybeRotateLegacyKey(now: number = Date.now()): Promise<RotationResult> | null {
+  if (inFlight) return inFlight;
+  if (lastResult !== null && lastResult !== "retry_later") return null;
+  if (lastResult === "retry_later" && now - lastAttemptAt < ROTATION_RETRY_INTERVAL_MS) return null;
+  lastAttemptAt = now;
   inFlight = withIdentityStateLock(async () => undefined) // rolls an interrupted journal forward
     .then(() => rotateLegacyKeyIfNeeded())
-    .catch(() => "retry_later" as const);
+    .catch(() => "retry_later" as const)
+    .then((result) => {
+      lastResult = result;
+      inFlight = null;
+      return result;
+    });
   return inFlight;
 }
 
 export function resetRotationSessionForTests(): void {
-  ranThisSession = false;
   inFlight = null;
+  lastResult = null;
+  lastAttemptAt = 0;
 }

@@ -19,7 +19,7 @@ it("consumes only the top system inset before banners and gives navigation a rel
     if (id === "./src/navigation") return { default: "Navigation" };
     if (id === "./src/theme") return { colors: { headerBg: "#123456" } };
     if (id === "./src/lib/notifications") return {};
-    if (id === "./src/lib/key-rotation") return { rotateLegacyKeyOnce: () => null };
+    if (id === "./src/lib/key-rotation") return { maybeRotateLegacyKey: () => null };
     throw new Error(`Unexpected import ${id}`);
   } });
   const tree = exports.default();
