@@ -322,6 +322,10 @@ async def qr_web_vote(req: QRVoteRequest, db: AsyncSession = Depends(get_db)):
     identity = id_result.scalar_one_or_none()
     if not identity:
         raise HTTPException(403, "Identity not found or revoked")
+    # EVA-001 PR2: a session authenticated with a key that has since been
+    # rotated away must not act for the identity.
+    if identity.public_key_hex != data.get("public_key_hex", ""):
+        raise HTTPException(403, "Session key is no longer current — scan QR again")
 
     # Check bill is votable
     bill_result = await db.execute(
@@ -433,6 +437,9 @@ async def qr_web_consensus(req: QRConsensusRequest, db: AsyncSession = Depends(g
     identity = id_result.scalar_one_or_none()
     if not identity:
         raise HTTPException(403, "Η ταυτότητα δεν βρέθηκε ή έχει ανακληθεί")
+    # EVA-001 PR2: the session key must still be the identity's current key.
+    if identity.public_key_hex != data.get("public_key_hex", ""):
+        raise HTTPException(403, "Το κλειδί της συνεδρίας δεν είναι πλέον ενεργό — σαρώστε ξανά τον κωδικό QR")
 
     # Check bill is OPEN_END
     bill = (await db.execute(

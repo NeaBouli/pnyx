@@ -4,6 +4,7 @@ POST /api/v1/identity/verify  — HLR SIM check → Ed25519 Keypair
 POST /api/v1/identity/revoke  — Key Revokation
 GET  /api/v1/identity/status  — Key Status prüfen
 POST /api/v2/identity/verify  — HLR check + device-generated key with PoP (EVA-001, flag IDENTITY_V2_ENABLED)
+POST /api/v2/identity/rotate-key — key swap signed by old + new key (EVA-001 PR2, flag IDENTITY_ROTATE_ENABLED)
 """
 import gc
 import re
@@ -30,6 +31,7 @@ from keypair import generate_keypair, verify_signature
 from nullifier import generate_nullifier_hash, generate_nullifier_hash_v2
 from hlr import normalize_greek_number, verify_greek_number
 
+from rate_limit import limiter
 from ip_utils import (
     hashed_rate_subject,
     rate_limit_key_for_ip,
@@ -834,3 +836,98 @@ async def verify_identity_v2(req: VerifyV2Request, request: Request, db: AsyncSe
         nullifier_hash=nullifier_hash,
         message="Η ταυτότητα επαληθεύτηκε. Το ιδιωτικό κλειδί δημιουργήθηκε στη συσκευή σας και δεν φεύγει ποτέ από αυτήν.",
     )
+
+
+# ─── EVA-001 PR2: key rotation authorised by the old key ─────────────────────
+# D3: an ACTIVE identity changes its key only with the current key's signature.
+# The message is signed by BOTH keys (old = authorisation, new = possession);
+# the swap is a compare-and-swap on the current key, so a replayed message is a
+# no-op once the key moved on. No HLR, no phone, no key history (D4).
+# Disabled unless IDENTITY_ROTATE_ENABLED=true.
+
+def identity_rotate_enabled() -> bool:
+    return os.getenv("IDENTITY_ROTATE_ENABLED", "false").strip().lower() == "true"
+
+
+def identity_rotate_message(nullifier_hash: str, old_public_key_hex: str, new_public_key_hex: str, timestamp_ms: int) -> str:
+    """Domain-separated, versioned rotation message signed by both keys."""
+    return f"ekklesia:identity-rotate:v1:{nullifier_hash}:{old_public_key_hex}:{new_public_key_hex}:{timestamp_ms}"
+
+
+class RotateKeyRequest(BaseModel):
+    nullifier_hash:     str
+    old_public_key_hex: str
+    new_public_key_hex: str
+    timestamp_ms:       int
+    old_signature_hex:  str
+    new_signature_hex:  str
+
+
+class RotateKeyResponse(BaseModel):
+    success:        bool
+    public_key_hex: str
+
+
+_ROTATION_CONFLICT = "ROTATION_CONFLICT"
+
+
+@router_v2.post("/rotate-key", response_model=RotateKeyResponse)
+@limiter.limit("10/minute")
+async def rotate_identity_key(req: RotateKeyRequest, request: Request, db: AsyncSession = Depends(get_db)):
+    """Swap the public key of an ACTIVE identity (EVA-001 PR2)."""
+    if not identity_rotate_enabled():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not Found")
+
+    if not (
+        _HEX64.fullmatch(req.nullifier_hash)
+        and _HEX64.fullmatch(req.old_public_key_hex)
+        and _HEX64.fullmatch(req.new_public_key_hex)
+        and _HEX128.fullmatch(req.old_signature_hex)
+        and _HEX128.fullmatch(req.new_signature_hex)
+    ):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="INVALID_KEY_FORMAT")
+    if req.old_public_key_hex == req.new_public_key_hex:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="SAME_KEY")
+    now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+    if abs(now_ms - req.timestamp_ms) > IDENTITY_POP_WINDOW_MS:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="POP_EXPIRED")
+    message = identity_rotate_message(req.nullifier_hash, req.old_public_key_hex, req.new_public_key_hex, req.timestamp_ms)
+    if not (
+        verify_signature(req.old_public_key_hex, message, req.old_signature_hex)
+        and verify_signature(req.new_public_key_hex, message, req.new_signature_hex)
+    ):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="INVALID_SIGNATURE")
+
+    # Compare-and-swap: only the identity whose CURRENT key is the old key.
+    # Unknown nullifier, wrong old key, REVOKED identity and already-rotated
+    # (replayed) requests all give the same 409, so the endpoint reveals nothing
+    # beyond what the old key's holder already knows.
+    try:
+        result = await db.execute(
+            update(IdentityRecord)
+            .where(IdentityRecord.nullifier_hash == req.nullifier_hash)
+            .where(IdentityRecord.public_key_hex == req.old_public_key_hex)
+            .where(IdentityRecord.status == KeyStatus.ACTIVE)
+            .values(public_key_hex=req.new_public_key_hex)
+            .returning(IdentityRecord.id)
+        )
+        record_id = result.scalar_one_or_none()
+        if record_id is None:
+            await db.rollback()
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=_ROTATION_CONFLICT)
+        await db.execute(
+            text(
+                "INSERT INTO audit_log (action, actor, target_type, target_id) "
+                "VALUES ('identity.key_rotated', 'identity_holder', 'identity_record', :rid)"
+            ),
+            {"rid": str(record_id)},
+        )
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        if _is_active_key_conflict(exc):
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="PUBLIC_KEY_IN_USE") from None
+        raise
+
+    logger.info("[MOD-01] identity key rotated (record %s)", record_id)
+    return RotateKeyResponse(success=True, public_key_hex=req.new_public_key_hex)
