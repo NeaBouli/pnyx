@@ -1,7 +1,7 @@
 # ADR-006: Identity KDFs, client roots and versioned vote envelopes (EVA-007)
 
 Date: 2026-10-16
-Status: Proposed. Owner decisions D1–D6 below are open (Gio).
+Status: Partly decided (2026-10-16, coordinator gio-1c, Gio informed): D1, D6 accepted; D2 direction accepted; D3 scheduled; D4/D5 open (together with EVA-006).
 Tracking: EVA-007 (P1, audit 2026-10-11); related: ADR-004, EVA-001/003/006/008/010/037,
 `docs/security/VOTE_STATUS_READ_MIGRATION.md`
 
@@ -81,7 +81,14 @@ The API also accepts optional **Tier-1 metadata** (vote nullifier, linkage tag, 
 - Cross-implementation KATs (Python/TS/mobile) for every protocol several clients compute (vote envelope v2, device-root children). Server-only KATs for dedupe and anchor.
 - ADR-004 gets a correction note for the v2 salt (the code is authoritative).
 
-## Owner decisions (open)
+## Decision record (2026-10-16)
+- **D1 accepted:** the phone-derived client KDF is permanently forbidden; a guard test must prevent any activation.
+- **D6 accepted:** Tier-1 metadata on votes is ignored until there is an enrollment proof.
+- **D2 direction accepted:** random anchors + v3 with `K_dedupe`; implementation after the EVA-001 series. The new secret `K_dedupe` goes through Gio's secret gate when it is due.
+- **D3 scheduled:** together with the device-key app release (store gate).
+- **D4/D5 open:** to be decided together with the EVA-006 ADR (ballot secrecy).
+
+## Owner decisions (options)
 - **D1:** Phone-derived client roots forbidden now (guard test), removal later. *Recommendation: yes.*
 - **D2:** Random anchor for new identities + v3 lookup with a dedicated `K_dedupe` (a new secret, so Gio's secret handling applies). *Recommendation: yes, after the EVA-001 series.*
 - **D3:** Vote envelope v2 (op, revision CAS, protocol floor) + legacy window; needs an app release (store gate). *Recommendation: yes, bundled with the device-key release.*
