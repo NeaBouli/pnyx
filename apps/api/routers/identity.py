@@ -281,6 +281,16 @@ async def _find_identity(db: AsyncSession, nullifier: str, nullifier_v2: str | N
     return _select_identity_match(matches, nullifier)
 
 
+def _is_active_key_conflict(exc: IntegrityError) -> bool:
+    """Only a unique violation of the ACTIVE-public-key index (PostgreSQL names
+    the index; SQLite names the column of the unique constraint)."""
+    message = str(exc.orig)
+    return (
+        "uq_identity_records_active_public_key" in message
+        or "UNIQUE constraint failed: identity_records.public_key_hex" in message
+    )
+
+
 def _identity_active_error() -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_409_CONFLICT,
@@ -387,54 +397,55 @@ async def _register_identity(
         if req.age_group or req.region or req.gender_code:
             logger.info("[MOD-01] demographic fields supplied and discarded")
 
-        # 6. Nur Public Key + Nullifier speichern
-        if existing:
-            # Revoked record reaktivieren — Legacy-Demographie (falls aus
-            # alten Releases vorhanden) wird dabei mitgelöscht.
-            update_values = {
-                "public_key_hex": keypair["public_key_hex"],
-                "status": KeyStatus.ACTIVE,
-                "demographic_hash": None,
-                "age_group": None,
-                "region": None,
-                "gender_code": None,
-                "revoked_at": None,
-                "created_at": datetime.now(timezone.utc).replace(tzinfo=None),
-            }
-            if nullifier_v2:
-                update_values.update({
-                    "nullifier_hash_v2": nullifier_v2,
-                    "nullifier_version": "v2",
-                    "nullifier_migrated_at": datetime.now(timezone.utc).replace(tzinfo=None),
-                })
-            await db.execute(
-                update(IdentityRecord)
-                .where(IdentityRecord.id == existing.id)
-                .values(**update_values)
-            )
-        else:
-            record = IdentityRecord(
-                nullifier_hash=nullifier,
-                nullifier_hash_v2=nullifier_v2,
-                nullifier_version="v2" if nullifier_v2 else "v1",
-                nullifier_migrated_at=datetime.now(timezone.utc).replace(tzinfo=None) if nullifier_v2 else None,
-                public_key_hex=keypair["public_key_hex"],
-                status=KeyStatus.ACTIVE,
-            )
-            db.add(record)
-
-        # Cascade: SurveyResponses (VAA — Art. 9 GDPR)
-        await db.execute(
-            text("DELETE FROM survey_responses WHERE user_hash = :nh"),
-            {"nh": compatibility_nullifier}
-        )
         try:
+            # 6. Nur Public Key + Nullifier speichern
+            if existing:
+                # Revoked record reaktivieren — Legacy-Demographie (falls aus
+                # alten Releases vorhanden) wird dabei mitgelöscht.
+                update_values = {
+                    "public_key_hex": keypair["public_key_hex"],
+                    "status": KeyStatus.ACTIVE,
+                    "demographic_hash": None,
+                    "age_group": None,
+                    "region": None,
+                    "gender_code": None,
+                    "revoked_at": None,
+                    "created_at": datetime.now(timezone.utc).replace(tzinfo=None),
+                }
+                if nullifier_v2:
+                    update_values.update({
+                        "nullifier_hash_v2": nullifier_v2,
+                        "nullifier_version": "v2",
+                        "nullifier_migrated_at": datetime.now(timezone.utc).replace(tzinfo=None),
+                    })
+                await db.execute(
+                    update(IdentityRecord)
+                    .where(IdentityRecord.id == existing.id)
+                    .values(**update_values)
+                )
+            else:
+                record = IdentityRecord(
+                    nullifier_hash=nullifier,
+                    nullifier_hash_v2=nullifier_v2,
+                    nullifier_version="v2" if nullifier_v2 else "v1",
+                    nullifier_migrated_at=datetime.now(timezone.utc).replace(tzinfo=None) if nullifier_v2 else None,
+                    public_key_hex=keypair["public_key_hex"],
+                    status=KeyStatus.ACTIVE,
+                )
+                db.add(record)
+
+            # Cascade: SurveyResponses (VAA — Art. 9 GDPR)
+            await db.execute(
+                text("DELETE FROM survey_responses WHERE user_hash = :nh"),
+                {"nh": compatibility_nullifier}
+            )
             await db.commit()
         except IntegrityError as exc:
             # Backstop for the per-key lock (lease expiry): the partial unique
-            # index allows one ACTIVE identity per public key.
+            # index allows one ACTIVE identity per public key. Covers the
+            # UPDATE, autoflush and commit; other integrity errors re-raise.
             await db.rollback()
-            if client_public_key_hex is not None and "public_key_hex" in str(exc.orig):
+            if client_public_key_hex is not None and _is_active_key_conflict(exc):
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="PUBLIC_KEY_IN_USE") from None
             raise
 
@@ -787,16 +798,15 @@ def _check_registration_pop(req: VerifyV2Request, now_ms: int) -> None:
 @router_v2.post("/verify", response_model=VerifyV2Response)
 async def verify_identity_v2(req: VerifyV2Request, request: Request, db: AsyncSession = Depends(get_db)):
     """EVA-001: register a device-generated public key after HLR verification."""
-    if not identity_v2_enabled():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not Found")
-
-    _check_registration_pop(req, int(datetime.now(timezone.utc).timestamp() * 1000))
     # One in-flight registration per public key: different phone numbers take
     # different nullifier locks, so without this a replayed PoP could bind the
     # same key to two identities concurrently (EVA-001 review).
     # The unique index uq_identity_records_active_public_key is the backstop
     # if this lease expires before commit.
     try:
+        if not identity_v2_enabled():
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not Found")
+        _check_registration_pop(req, int(datetime.now(timezone.utc).timestamp() * 1000))
         try:
             pk_lock_key, pk_lock_token = await _acquire_identity_verify_lock(f"pk:{req.public_key_hex}")
         except HTTPException:

@@ -382,3 +382,46 @@ async def test_phone_number_is_removed_on_early_rejection(monkeypatch) -> None:
     response = await _post(_signed_body())
     assert response.status_code == 409
     assert "phone_number" not in seen[0].__dict__
+
+
+@pytest.mark.asyncio
+async def test_key_conflict_on_revoked_reactivation_is_409_not_500(monkeypatch) -> None:
+    # The REVOKED path UPDATEs before commit; the index fires on the UPDATE.
+    body = _signed_body()
+    await _insert(V1, PUB_OLD, "REVOKED")
+    await _insert("7" * 64, body["public_key_hex"], "ACTIVE")
+
+    async def blind(_db, _pk) -> bool:
+        return False
+
+    monkeypatch.setattr(identity, "_public_key_active", blind)
+    response = await _post(body)
+    assert response.status_code == 409
+    assert response.json()["detail"] == "PUBLIC_KEY_IN_USE"
+
+
+def test_only_the_active_key_index_maps_to_409() -> None:
+    from sqlalchemy.exc import IntegrityError
+
+    def err(msg: str) -> IntegrityError:
+        return IntegrityError("stmt", {}, Exception(msg))
+
+    assert identity._is_active_key_conflict(err('duplicate key value violates unique constraint "uq_identity_records_active_public_key"'))
+    assert identity._is_active_key_conflict(err("UNIQUE constraint failed: identity_records.public_key_hex"))
+    assert not identity._is_active_key_conflict(err('null value in column "public_key_hex" violates not-null constraint'))
+    assert not identity._is_active_key_conflict(err("UNIQUE constraint failed: identity_records.nullifier_hash"))
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("case,code", [("disabled", 404), ("bad_pop", 400)])
+async def test_phone_number_is_removed_on_flag_and_pop_rejections(monkeypatch, case, code) -> None:
+    if case == "disabled":
+        monkeypatch.delenv("IDENTITY_V2_ENABLED", raising=False)
+    body = _signed_body()
+    if case == "bad_pop":
+        body["pop_signature_hex"] = "0" * 128
+    req = identity.VerifyV2Request(**body)
+    with pytest.raises(HTTPException) as exc:
+        await identity.verify_identity_v2(req, request=None, db=None)
+    assert exc.value.status_code == code
+    assert "phone_number" not in req.__dict__
