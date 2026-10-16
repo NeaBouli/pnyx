@@ -169,7 +169,7 @@ def test_non_payment_prompts_do_not_hit_paused_answer(lang: str, question: str) 
     ("el", "Πού αποθηκεύεται το ιδιωτικό κλειδί μου;"),
     ("el", "Τι γίνεται αν χάσω το ιδιωτικό μου κλειδί;"),
 ])
-def test_private_key_answer_separates_web_local_storage_from_mobile_secure_store(
+def test_private_key_answer_covers_browser_migration_and_mobile_secure_store(
     lang: str, question: str,
 ) -> None:
     response = _canonical_response(question, lang)
@@ -179,7 +179,13 @@ def test_private_key_answer_separates_web_local_storage_from_mobile_secure_store
     answer = response["answer"]
     web, mobile = answer.split("Mobile app:" if lang == "en" else "Εφαρμογή κινητού:", 1)
     assert "Web Beta" in web and "localStorage" in web
-    assert ("not iOS Keychain or Android Keystore" if lang == "en" else "όχι iOS Keychain ή Android Keystore") in web
+    assert "WebCrypto" in web and "IndexedDB" in web and "Web Locks" in web
+    assert ("non-extractable" if lang == "en" else "μη εξαγώγιμο") in web
+    assert "features.identity_key_check" in web
+    assert ("off by default" if lang == "en" else "ανενεργό από προεπιλογή") in web
+    assert ("deletes the plaintext copy only after successful migration" if lang == "en"
+            else "διαγράφει το απλό αντίγραφο μόνο μετά την επιτυχή μετάβαση") in web
+    assert ("the copy remains" if lang == "en" else "το αντίγραφο παραμένει") in web
     assert "Expo SecureStore" in mobile and "Android Keystore" in mobile and "iOS Keychain" in mobile
     assert ("implemented iOS code path" if lang == "en" else "υλοποιημένη διαδρομή κώδικα iOS") in mobile
     assert ("does not store it and cannot recover it later" if lang == "en" else "δεν το αποθηκεύει") in mobile

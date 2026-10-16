@@ -104,7 +104,7 @@ def _assert_reviewed_response(response: dict, question: str, lang: str) -> None:
 
 
 def test_eval_fixture_contains_32_unique_questions() -> None:
-    assert len(QUESTIONS) == len(BY_ID) == 32
+    assert len(QUESTIONS) == len({record["question"] for record in QUESTIONS}) == 32
     assert {record["lang"] for record in QUESTIONS} == {"el", "en"}
 
 
@@ -148,7 +148,11 @@ async def test_only_exact_hybrid_value_can_enable_models(monkeypatch: pytest.Mon
     ("hlr forum", ["forum", "verification"]),
     ("hlr forum iphone", ["apps", "forum"]),  # Three-way tie is capped at two.
     ("forum forum forum hlr", ["forum", "verification"]),  # Count keyword hits, not repetition.
-    ("Happy birthday!", []),  # 'app' must start a word.
+    ("Happy birthday!", []),
+    ("Can I appeal?", []),
+    ("This is appalling.", []),
+    ("app", ["apps"]),
+    ("apps", ["apps"]),
 ])
 def test_keyword_ranking(question: str, topics: list[str]) -> None:
     assert agent._select_fact_blocks(question) == topics
@@ -164,6 +168,32 @@ async def test_accent_case_and_unicode_variants_match_verification(question: str
     response = await _ask(question, "el")
     assert response["sources"] == [{"type": "knowledge_base", "topic": "verification"}]
     assert FACTS["verification"]["el"] in response["answer"]
+
+
+@pytest.mark.parametrize("question,topic", [
+    ("Πού βρίσκω τις εφαρμογές;", "apps"),
+    ("Πληροφορίες εφαρμογών;", "apps"),
+    ("ΕΦΑΡΜΟΓΩΝ;", "apps"),
+    (unicodedata.normalize("NFD", "Εφαρμογές;"), "apps"),
+    ("Πληροφορίες περιφερειών;", "local"),
+    ("Αποθηκεύετε δεδομένα;", "verification"),
+    ("Ψηφιακές υπογραφές;", "voting"),
+    ("Απώλεια κλειδιών;", "private_key"),
+])
+async def test_explicit_greek_stems_keep_matching_inflections(question: str, topic: str) -> None:
+    response = await _ask(question, "el")
+    assert response["model"] == "faq-deterministic"
+    assert response["sources"] == [{"type": "knowledge_base", "topic": topic}]
+    assert FACTS[topic]["el"] in response["answer"]
+
+
+@pytest.mark.parametrize("question", [BY_ID["EN-016"]["question"], "This is appalling."])
+async def test_app_prefix_in_unrelated_words_does_not_return_android_answer(question: str) -> None:
+    response = await _ask(question)
+    _assert_reviewed_response(response, question, "en")
+    assert response["sources"] == []
+    assert response["answer"].startswith(FALLBACK["en"])
+    assert "Android" not in response["answer"]
 
 
 @pytest.mark.parametrize("lang", ["el", "en"])

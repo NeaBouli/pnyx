@@ -201,14 +201,18 @@ def _is_payment_intent(question: str) -> bool:
     return any(pattern.search(text) for pattern in _PAYMENT_RES)
 
 
-# Load the reviewed bilingual text and compile keyword stems once, without I/O
-# on the request path. Text is never translated, summarised or interpolated.
+# Load the reviewed bilingual text and compile keywords once, without I/O on
+# the request path. Only keywords ending in '*' are intentional word stems;
+# all others must match whole words. Text is never translated or summarised.
 _FACTS = json.loads(
     (Path(__file__).resolve().parent.parent / "data" / "agent_facts.json").read_text(encoding="utf-8")
 )
 _FACT_KEYWORDS = {
     topic: tuple(
-        re.compile(r"(?<!\w)" + re.escape(keyword))
+        re.compile(
+            r"(?<!\w)" + re.escape(keyword.removesuffix("*"))
+            + ("" if keyword.endswith("*") else r"(?!\w)")
+        )
         for keyword in sorted({_match_text(word) for word in block["kw"]})
     )
     for topic, block in _FACTS.items()
@@ -236,8 +240,8 @@ _FAQ_FALLBACK = {
 def _select_fact_blocks(question: str) -> list[str]:
     """Rank by keyword hits as in the evaluation; return at most two tied best.
 
-    Accent-equivalent keywords count once. Match at word starts (keywords may
-    be stems) so e.g. 'app' does not match 'happy'. Topic ids break ties stably.
+    Accent-equivalent keywords count once. Whole words have both boundaries;
+    explicit '*' stems match at word starts. Topic ids break ties stably.
     """
     folded = _match_text(question)
     scored = sorted(
@@ -532,25 +536,8 @@ def _canonical_response(question: str, lang: str) -> dict | None:
 
     if "private key" in q or "signing key" in q or ("ιδιωτικ" in q and "κλειδ" in q):
         return resp(
-            "Το σημείο αποθήκευσης του ιδιωτικού κλειδιού εξαρτάται από την "
-            "πλατφόρμα. Web Beta: φυλάσσεται στο localStorage του browser — απλή "
-            "αποθήκευση browser, όχι iOS Keychain ή Android Keystore. Εφαρμογή "
-            "κινητού: αποθηκεύεται μέσω Expo SecureStore, που χρησιμοποιεί Android "
-            "Keystore και, στην υλοποιημένη διαδρομή κώδικα iOS, iOS Keychain. "
-            "Ο server δημιουργεί το ζεύγος κλειδιών μία φορά κατά την επαλήθευση "
-            "και σας παραδίδει το ιδιωτικό κλειδί μόνο μία φορά· δεν το αποθηκεύει "
-            "και δεν μπορεί να το ανακτήσει αργότερα. Αν χαθεί, ακολουθείτε μόνο την επίσημη ροή "
-            "επαλήθευσης/επανέκδοσης που παρέχει η εφαρμογή· δεν υπάρχει μυστική "
-            "ανάκτηση από τον server.",
-            "Where your private key is stored depends on the platform. Web Beta: "
-            "it is kept in the browser's localStorage — plain browser storage, "
-            "not iOS Keychain or Android Keystore. Mobile app: it is stored via "
-            "Expo SecureStore, which uses Android Keystore and, in the implemented "
-            "iOS code path, iOS Keychain. The server creates the key pair once during "
-            "verification and hands you the private key a single time; it does "
-            "not store it and cannot recover it later. If it is lost, use only the official app "
-            "re-verification/key-rotation flow; there is no hidden server-side "
-            "recovery process.",
+            _FACTS["private_key"]["el"],
+            _FACTS["private_key"]["en"],
             "private_key",
         )
 
@@ -622,12 +609,12 @@ def _canonical_response(question: str, lang: str) -> dict | None:
     if "change my vote" in q or "correct" in q or "vote twice" in q or "αλλάξ" in q or "διόρθ" in q:
         return resp(
             "Δεν μπορείτε να ψηφίσετε δύο φορές στο ίδιο νομοσχέδιο. Αν είναι "
-            "ενεργό το παράθυρο διόρθωσης, η εφαρμογή μπορεί να επιτρέπει μία "
-            "διόρθωση ψήφου σύμφωνα με την κατάσταση του νομοσχεδίου. Εκτός "
+            "ενεργό το παράθυρο WINDOW_24H, η εφαρμογή επιτρέπει μία "
+            "διόρθωση ψήφου μέσω της λειτουργίας διόρθωσης. Εκτός "
             "αυτού του παραθύρου η ψήφος δεν αλλάζει.",
-            "You cannot vote twice on the same bill. If the correction window is "
-            "active, the app may allow one vote correction depending on the bill "
-            "status. Outside that window, the vote cannot be changed.",
+            "You cannot vote twice on the same bill. In WINDOW_24H, the app allows "
+            "one vote correction through the correction function. Outside that "
+            "window, the vote cannot be changed.",
             "vote_correction",
         )
 
