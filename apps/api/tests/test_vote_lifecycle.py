@@ -1,12 +1,17 @@
 """T-9127: archived bills retain results/consensus but accept no citizen votes."""
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 from fastapi import HTTPException
 from nacl.signing import SigningKey
 
-from models import BillStatus, CitizenVote, GovernanceLevel, VoteChoice
-from routers import polis_qr, voting
+from models import (
+    BillStatus, CitizenVote, GovernanceLevel, VoteChoice,
+    ZkIdentityCommitment, ZkVoteReceipt, ZkVoteTierLock,
+)
+from routers import polis_qr, voting, zk
+from services.zk_proof_binding import canonical_zk_message_value, canonical_zk_scope_value
 
 BILL_ID = "GR-T9127"
 NULLIFIER = "a" * 64
@@ -22,6 +27,12 @@ class _Result:
         return self.value
 
     def fetchone(self):
+        return self.value
+
+    def scalars(self):
+        return self
+
+    def all(self):
         return self.value
 
 
@@ -41,6 +52,14 @@ class _Db:
 
     async def commit(self):
         self.commits += 1
+
+    async def flush(self):
+        for row_id, row in enumerate(self.added, start=1):
+            if row.id is None:
+                row.id = row_id
+
+    async def refresh(self, row):
+        await self.flush()
 
 
 class _Redis:
@@ -76,7 +95,7 @@ def voter(monkeypatch):
     monkeypatch.setenv("TIER1_METADATA_ACCEPTED", "false")
     key = SigningKey.generate()
     identity = SimpleNamespace(
-        public_key_hex=key.verify_key.encode().hex(), periferia_id=6, dimos_id=22,
+        id=7, public_key_hex=key.verify_key.encode().hex(), periferia_id=6, dimos_id=22,
     )
     return key, identity
 
@@ -215,3 +234,146 @@ async def test_open_end_consensus_still_accepted(monkeypatch, voter, endpoint):
     assert db.added == []
     assert any("INSERT INTO consensus_votes" in str(stmt) for stmt in db.executed)
     assert all("citizen_votes" not in str(stmt) for stmt in db.executed)
+
+
+@pytest.fixture(params=["allowlist", "global", "canary"])
+def zk_mode(request, monkeypatch):
+    for flag in ("ZK_VOTING_ENABLED", "ZK_OPT_IN_ENABLED", "ZK_TIER1_GUARD_ENABLED"):
+        monkeypatch.setenv(flag, "true")
+    monkeypatch.setenv("ZK_ROOT_PUBLICATION_ENABLED", "false")
+    monkeypatch.setenv("ZK_CANARY_ENABLED", str(request.param == "canary").lower())
+    monkeypatch.setenv("ZK_GLOBAL_ROLLOUT_ENABLED", str(request.param == "global").lower())
+    monkeypatch.setenv("ZK_PRODUCTION_SCOPE_ALLOWLIST", "" if request.param == "global" else f"bill:{BILL_ID}")
+    monkeypatch.setenv("ZK_CANARY_SCOPE_ALLOWLIST", f"bill:{BILL_ID}")
+    return request.param
+
+
+def _zk_bill(bill_status, mode):
+    bill = _bill(bill_status, GovernanceLevel.NATIONAL)
+    if mode == "canary":
+        bill.source = "ZK_CANARY"
+        bill.admin_hidden = True
+        bill.forum_topic_id = None
+        bill.arweave_tx_id = None
+    return bill
+
+
+def _zk_proof():
+    scope = f"bill:{BILL_ID}"
+    return {
+        "merkleTreeDepth": 16,
+        "merkleTreeRoot": "123456789",
+        "message": canonical_zk_message_value(vote_scope_id=scope, vote_commitment="YES"),
+        "nullifier": "987654321",
+        "scope": canonical_zk_scope_value(scope),
+        "points": [str(n) for n in range(1, 9)],
+    }
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("bill_status", list(BillStatus))
+async def test_zk_vote_write_lifecycle(monkeypatch, zk_mode, bill_status):
+    verifier = Mock(return_value=True)
+    monkeypatch.setattr(zk, "verify_semaphore_proof", verifier)
+    monkeypatch.setattr(zk, "load_verification_key", Mock(return_value={}))
+    proof = _zk_proof()
+    db = _Db([_zk_bill(bill_status, zk_mode), SimpleNamespace(merkle_depth=16)])
+    req = zk.ZkVoteRequest(vote_scope_id=f"bill:{BILL_ID}", vote_commitment="YES", proof=proof)
+
+    if bill_status not in (BillStatus.ACTIVE, BillStatus.WINDOW_24H):
+        with pytest.raises(HTTPException) as exc:
+            await zk.accept_zk_vote(req, db)
+        # Production scope visibility already excludes announced/parliament-voted bills.
+        if zk_mode != "canary" and bill_status != BillStatus.OPEN_END:
+            assert exc.value.status_code == 404
+        else:
+            assert exc.value.status_code == 400
+            assert exc.value.detail == (
+                f"Η ψηφοφορία έχει κλείσει ή δεν έχει ανοίξει ακόμα. Κατάσταση: {bill_status.value}. "
+                "Επιτρέπεται: ACTIVE, WINDOW_24H."
+            )
+        assert len(db.executed) == 1  # no root lookup or write
+        assert db.added == []
+        assert db.commits == 0
+        verifier.assert_not_called()
+        return
+
+    result = await zk.accept_zk_vote(req, db)
+    assert result.accepted is True
+    assert result.vote_scope_id == f"bill:{BILL_ID}"
+    assert db.commits == 1
+    assert len(db.added) == 1
+    receipt = db.added[0]
+    assert isinstance(receipt, ZkVoteReceipt)
+    assert receipt.vote_commitment == "YES"
+    assert receipt.proof_public_json == proof
+    verifier.assert_called_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("bill_status", list(BillStatus))
+async def test_zk_opt_in_write_lifecycle(monkeypatch, voter, zk_mode, bill_status):
+    key, identity = voter
+    signature = key.sign(f"zk_opt_in:{BILL_ID}:123456789:{NULLIFIER}".encode()).signature.hex()
+    db = _Db([identity, _zk_bill(bill_status, zk_mode), None, None])
+    req = zk.ZkOptInRequest(
+        nullifier_hash=NULLIFIER, bill_id=BILL_ID, commitment="123456789", signature_hex=signature,
+    )
+    publish_root = Mock()
+    monkeypatch.setattr(zk, "build_active_group_root_for_scope", publish_root)
+
+    if bill_status not in (BillStatus.ACTIVE, BillStatus.WINDOW_24H):
+        with pytest.raises(HTTPException) as exc:
+            await zk.opt_in_zk(req, db)
+        assert exc.value.status_code == 400
+        assert exc.value.detail == (
+            f"Η ψηφοφορία έχει κλείσει ή δεν έχει ανοίξει ακόμα. Κατάσταση: {bill_status.value}. "
+            "Επιτρέπεται: ACTIVE, WINDOW_24H."
+        )
+        assert len(db.executed) == 2  # no enrollment, tier lock, or root write
+        assert db.added == []
+        assert db.commits == 0
+        publish_root.assert_not_called()
+        return
+
+    result = await zk.opt_in_zk(req, db)
+    assert result.status == "pending_root"
+    assert result.tier_locked is True
+    assert db.commits == 1
+    assert [type(row) for row in db.added] == [ZkIdentityCommitment, ZkVoteTierLock]
+
+
+@pytest.mark.asyncio
+async def test_zk_open_end_receipts_remain_readable(zk_mode):
+    receipt = ZkVoteReceipt(
+        vote_scope_id=f"bill:{BILL_ID}", vote_commitment="YES",
+        semaphore_nullifier="987654321", merkle_root="123456789", merkle_depth=16,
+        signal_hash=_zk_proof()["message"], external_nullifier=_zk_proof()["scope"],
+        proof_public_json=_zk_proof(), verifier_version="test-verifier", circuit_version="test-circuit",
+        arweave_pending=True,
+    )
+    db = _Db([_zk_bill(BillStatus.OPEN_END, zk_mode), [receipt]])
+
+    result = await zk.list_zk_receipts(f"bill:{BILL_ID}", limit=100, offset=0, db=db)
+
+    assert len(result.receipts) == 1
+    assert result.receipts[0]["vote_commitment"] == "YES"
+    assert result.receipts[0]["proof_public"] == _zk_proof()
+    assert db.added == []
+    assert db.commits == 0
+
+
+@pytest.mark.asyncio
+async def test_zk_open_end_root_remains_readable(zk_mode):
+    root = SimpleNamespace(
+        id=8, vote_scope_id=f"bill:{BILL_ID}", merkle_root="123456789", merkle_depth=16,
+        group_size=5, commitment_version="semaphore-v4", status="OPEN",
+    )
+    db = _Db([_zk_bill(BillStatus.OPEN_END, zk_mode), root])
+
+    result = await zk.get_current_zk_root(f"bill:{BILL_ID}", db=db)
+
+    assert result.merkle_root == root.merkle_root
+    assert result.root_id == root.id
+    assert db.added == []
+    assert db.commits == 0
