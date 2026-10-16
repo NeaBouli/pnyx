@@ -1,10 +1,10 @@
 # Ekklesia.gr
 
-Το Ekklesia.gr είναι μια ανεξάρτητη, ανοικτού κώδικα πλατφόρμα για ανώνυμη
-ψηφιακή συμμετοχή και άμεση δημοκρατία στην Ελλάδα.
+Το Ekklesia.gr είναι μια ανεξάρτητη, ανοικτού κώδικα πλατφόρμα για ψηφιακή
+συμμετοχή χωρίς όνομα (ψευδώνυμα) και άμεση δημοκρατία στην Ελλάδα.
 
-Ekklesia.gr is an independent, open-source platform for anonymous digital
-participation and direct democracy in Greece.
+Ekklesia.gr is an independent, open-source platform for digital participation with no name (pseudonymously)
+and direct democracy in Greece.
 
 ## Current Android release
 
