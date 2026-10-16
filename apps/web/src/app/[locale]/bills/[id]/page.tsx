@@ -612,7 +612,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
         )}
 
         {/* ── FULL RESULT REPORT ── */}
-        {results && results.total_votes > 0 && (
+        {results && !results.results_hidden && (results.total_votes === null || results.total_votes > 0) && (
           <BillResultReport
             billId={billId}
             titleEl={bill?.title_el || ""}
@@ -623,7 +623,8 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
             yesPct={results.yes_percent}
             noPct={results.no_percent}
             abstainPct={results.abstain_percent}
-            unknownCount={results.unknown_count || 0}
+            unknownCount={results.unknown_count === undefined ? 0 : results.unknown_count}
+            suppressionK={results.suppression_k}
             unknownPct={results.unknown_percent}
             divergence={results.divergence}
             representativity={(results as unknown as Record<string, unknown>).representativity as never ?? null}

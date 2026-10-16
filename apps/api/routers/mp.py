@@ -16,6 +16,8 @@ from sqlalchemy import select, func
 from database import get_db
 from models import ParliamentBill, CitizenVote, Party, BillStatus, VoteChoice
 from services.bill_visibility import is_public_bill, public_bill_filter, results_hidden
+from services.small_cell import small_cell_k, choices_suppressed, suppress_public_cells
+from services.zk_vote_aggregation import aggregate_bill_vote_totals, include_zk_for_bill
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/mp", tags=["MOD-12 MP Comparison"])
@@ -36,8 +38,13 @@ async def get_party_map(db: AsyncSession) -> dict:
     return {p.abbreviation: p for p in result.scalars().all()}
 
 
-async def citizen_majority_for(db: AsyncSession, bill_id: str):
+async def citizen_majority_for(db: AsyncSession, bill_id: str, bill=None):
     """Returns (majority: str, yes: int, no: int, total: int)"""
+    if small_cell_k():
+        totals = await aggregate_bill_vote_totals(db, bill_id, include_zk=include_zk_for_bill(bill))
+        majority = None if choices_suppressed((totals.yes, totals.no, totals.abstain, totals.unknown)) else (
+            "YES" if totals.yes >= totals.no else "NO")
+        return majority, totals.yes, totals.no, totals.total
     yes   = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.YES)) or 0
     no    = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.NO)) or 0
     total = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill_id)) or 0
@@ -93,9 +100,9 @@ async def party_comparison(party_abbr: str, db: AsyncSession = Depends(get_db)):
             no_data += 1; continue
 
         party_vote = normalize_vote(party_vote_raw)
-        majority, yes, no_cnt, total = await citizen_majority_for(db, bill.id)
+        majority, yes, no_cnt, total = await citizen_majority_for(db, bill.id, bill)
 
-        if total < K_MIN:
+        if total < K_MIN or majority is None:
             no_data += 1; continue
 
         match = (majority == "YES" and party_vote == "YES") or (majority == "NO" and party_vote == "NO")
@@ -157,8 +164,8 @@ async def party_ranking(db: AsyncSession = Depends(get_db)):
             if not pvr:
                 continue
             pv = normalize_vote(pvr)
-            majority, yes, no_cnt, total = await citizen_majority_for(db, bill.id)
-            if total < K_MIN:
+            majority, yes, no_cnt, total = await citizen_majority_for(db, bill.id, bill)
+            if total < K_MIN or majority is None:
                 continue
             if (majority == "YES" and pv == "YES") or (majority == "NO" and pv == "NO"):
                 agree += 1
@@ -197,7 +204,7 @@ async def bill_party_breakdown(bill_id: str, db: AsyncSession = Depends(get_db))
     if hidden:
         majority, yes, no_cnt, total = None, 0, 0, 0
     else:
-        majority, yes, no_cnt, total = await citizen_majority_for(db, bill_id)
+        majority, yes, no_cnt, total = await citizen_majority_for(db, bill_id, bill)
     party_map = await get_party_map(db)
 
     breakdown = []
@@ -215,10 +222,15 @@ async def bill_party_breakdown(bill_id: str, db: AsyncSession = Depends(get_db))
 
     breakdown.sort(key=lambda x: (x["vote"], x["party_abbr"]))
 
+    citizen_votes = suppress_public_cells(
+        {"yes": yes, "no": no_cnt, "total": total, "majority": majority,
+         "yes_pct": round(yes / total * 100, 1) if total > 0 else 0},
+        choices=("yes", "no"), total="total", percentages=("yes_pct",), derived=("majority",))
+    if small_cell_k() and majority is None:
+        citizen_votes.update(yes=None, no=None, yes_pct=None, suppressed=True)
     return {
         "bill_id": bill_id, "title_el": bill.title_el, "status": bill.status.value,
-        "citizen_votes": {"yes": yes, "no": no_cnt, "total": total, "majority": majority,
-                          "yes_pct": round(yes / total * 100, 1) if total > 0 else 0},
+        "citizen_votes": citizen_votes,
         "party_votes": breakdown,
         "results_hidden": hidden,
         "k_anonymity_met": total >= K_MIN, "data_license": "CC BY 4.0",

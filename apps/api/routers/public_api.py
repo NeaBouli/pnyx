@@ -35,6 +35,7 @@ from services.bill_visibility import (
     results_hidden,
 )
 from services.zk_vote_aggregation import VoteTotals, aggregate_bill_vote_totals, count_public_votes
+from services.small_cell import suppress_public_cells, choices_suppressed
 from models import (
     ParliamentBill, CitizenVote, Party,
     BillStatus, VoteChoice
@@ -403,7 +404,7 @@ async def public_bill_results(
     def pct(n): return round(n / total * 100, 1) if total > 0 else 0.0
 
     divergence = None
-    if total > 0 and bill.party_votes_parliament:
+    if total > 0 and bill.party_votes_parliament and not choices_suppressed((yes, no, abstain, unknown)):
         yes_pct = yes / total
         parl_yes = sum(1 for v in bill.party_votes_parliament.values() if v in ("ΝΑΙ", "YES"))
         parl_no  = sum(1 for v in bill.party_votes_parliament.values() if v in ("ΟΧΙ", "NO"))
@@ -411,7 +412,7 @@ async def public_bill_results(
 
     return {
         "bill_id": bill_id, "title_el": bill.title_el, "status": bill.status.value,
-        "citizen_votes": {
+        "citizen_votes": suppress_public_cells({
             "yes": yes,
             "no": no,
             "abstain": abstain,
@@ -423,7 +424,9 @@ async def public_bill_results(
             "no_pct": pct(no),
             "abstain_pct": pct(abstain),
             "unknown_pct": pct(unknown),
-        },
+        }, choices=("yes", "no", "abstain", "unknown"), total="total",
+            percentages=("yes_pct", "no_pct", "abstain_pct", "unknown_pct"),
+            partitions=("tier1_total", "zk_total")),
         "results_hidden": hidden,
         "parliament_votes": bill.party_votes_parliament,
         "divergence_score": divergence,
@@ -475,7 +478,7 @@ async def public_stats(_key=Depends(rate_limit_check), db: AsyncSession = Depend
 
     return {
         "platform": "ekklesia.gr", "version": "Beta",
-        "stats": {
+        "stats": suppress_public_cells({
             "total_bills": total_bills,
             "parliament_bills": parliament_bills,
             "diavgeia_bills": diavgeia_bills,
@@ -484,7 +487,7 @@ async def public_stats(_key=Depends(rate_limit_check), db: AsyncSession = Depend
             "arweave_archived": arweave_archived,
             "total_votes": total_votes,
             "forum_topics": forum_topics,
-        },
+        }, choices=(), total="total_votes"),
         "license": "MIT", "source_code": "https://github.com/NeaBouli/pnyx",
         "data_license": "CC BY 4.0",
         "updated_at": datetime.now(timezone.utc).isoformat(),

@@ -60,7 +60,7 @@ function isPublishedResult(value: unknown): value is PublishedResult {
   return isRecord(value)
     && typeof value.bill_id === "string"
     && typeof value.title_el === "string"
-    && typeof value.citizen_total === "number";
+    && (typeof value.citizen_total === "number" || (value.citizen_total === null && value.suppressed === true));
 }
 
 export function billsQuery(status: string): string {

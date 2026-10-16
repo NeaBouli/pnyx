@@ -59,7 +59,8 @@ async def publish_bill_event(event_type: str, bill_id: str, data: dict = {}):
 
 async def publish_vote_milestone(bill_id: str, total_votes: int):
     """Milestone bei 100/500/1000/5000 Stimmen."""
-    if total_votes in [100, 500, 1000, 5000, 10000]:
+    from services.small_cell import suppress_cell
+    if total_votes in [100, 500, 1000, 5000, 10000] and not suppress_cell(total_votes)["suppressed"]:
         await publish_bill_event("bill.vote_milestone", bill_id, {
             "milestone": total_votes,
             "message_el": f"{total_votes} ψήφοι για το νομοσχέδιο!",

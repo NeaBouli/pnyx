@@ -41,3 +41,17 @@ describe("BillResultReport subsection headings", () => {
     expect(html.match(/<h2[^>]*>/g)).toHaveLength(1);
   });
 });
+
+describe("BillResultReport suppressed public counts", () => {
+  it.each([null, 60])("renders a withheld breakdown with total %s without invented zeros", (totalVotes) => {
+    const html = renderToStaticMarkup(<BillResultReport {...props} locale="en"
+      totalVotes={totalVotes} yesCount={null} noCount={null} abstainCount={null} unknownCount={null}
+      yesPct={null} noPct={null} abstainPct={null} unknownPct={null}
+      divergence={null} representativity={null} suppressionK={10} />);
+    expect(html).toContain("fewer than 10 votes");
+    expect(html).toContain("The breakdown is withheld.");
+    expect(html).not.toMatch(/NaN|null%|undefined|width:/);
+    expect(html).not.toContain("No (0%)");
+    expect(html).toContain(totalVotes === null ? "&lt; 10" : ">60</strong>");
+  });
+});

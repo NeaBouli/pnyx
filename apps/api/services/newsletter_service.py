@@ -12,6 +12,7 @@ from sqlalchemy import select, func
 
 from services.bill_visibility import public_bill_filter
 from services.mail_policy import OPERATOR_EMAIL, operator_reply_to
+from services.small_cell import small_cell_k
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +100,7 @@ async def send_welcome(email: str) -> bool:
 async def send_monthly_report(db: AsyncSession) -> bool:
     """Generate and send monthly report to all subscribers."""
     from models import ParliamentBill, BillStatus, CitizenVote
+    threshold = small_cell_k()
 
     now = datetime.now(timezone.utc)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -173,6 +175,13 @@ async def send_monthly_report(db: AsyncSession) -> bool:
     """), {"month_start": month_start})
     top_votes_list = top_votes_result.all()
 
+    # Older monthly queries use a different population/window from public
+    # results. While suppression is enabled, link to those guarded results
+    # instead of publishing a second, subtractable set of counts.
+    if threshold:
+        total_votes = "—"
+        top_votes_list = []
+
     # ── Build HTML ────────────────────────────────────────────────
     month_name = now.strftime("%B %Y")
 
@@ -222,6 +231,8 @@ async def send_monthly_report(db: AsyncSession) -> bool:
         for bill_id, title, yes, no, total in top_votes_list:
             top_html += f'<tr><td style="padding:6px">{(title or "")[:40]}</td><td style="padding:6px;text-align:center;color:#22c55e">{yes}</td><td style="padding:6px;text-align:center;color:#ef4444">{no}</td><td style="padding:6px;text-align:center;font-weight:700">{total}</td></tr>'
         top_html += '</table>'
+    if threshold:
+        top_html = '<p><a href="https://ekklesia.gr/el/results">Αποτελέσματα ψηφοφοριών</a></p>'
 
     body = stats_html + bills_html + upcoming_html + top_html + """
 <p style="text-align:center;margin:24px 0">

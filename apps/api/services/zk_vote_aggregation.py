@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import CitizenVote, ParliamentBill, VoteChoice, ZkVoteReceipt
 from services.bill_visibility import public_bill_filter, results_visible_filter
 from services.zk_tier_lock import VoteScopeType, canonical_vote_scope_id
+from services.small_cell import small_cell_k
 
 
 @dataclass(frozen=True)
@@ -84,6 +85,33 @@ async def count_public_votes(
     Votes of a running vote with hidden results are not counted, so global turnout counters
     cannot reveal its progress (T-599).
     """
+    threshold = small_cell_k()
+    if threshold:
+        # Sum publishable bill totals only. Otherwise global turnout minus
+        # the visible bills could recover a bill whose total is below k.
+        tier_events = (
+            select(CitizenVote.bill_id.label("bill_id"))
+            .join(ParliamentBill, CitizenVote.bill_id == ParliamentBill.id)
+            .where(public_bill_filter(), results_visible_filter(), ~CitizenVote.bill_id.like("DEMO-%"))
+        )
+        zk_events = (
+            select(ParliamentBill.id.label("bill_id"))
+            .join(ZkVoteReceipt, ZkVoteReceipt.vote_scope_id == func.concat("bill:", ParliamentBill.id))
+            .where(public_bill_filter(), results_visible_filter(),
+                   func.coalesce(ParliamentBill.source, "PARLIAMENT") == "PARLIAMENT",
+                   ~ParliamentBill.id.like("DEMO-%"),
+                   ZkVoteReceipt.vote_commitment.in_([choice.value for choice in VoteChoice]))
+        )
+        if since is not None:
+            tier_events = tier_events.where(CitizenVote.created_at >= since)
+            zk_events = zk_events.where(ZkVoteReceipt.created_at >= since)
+        events = union_all(tier_events, zk_events).subquery("public_count_events")
+        eligible = (
+            select(func.count().label("count")).select_from(events)
+            .group_by(events.c.bill_id).having(func.count() >= threshold)
+        ).subquery("publishable_bill_counts")
+        return int(await db.scalar(select(func.sum(eligible.c.count))) or 0)
+
     tier1_query = (
         select(func.count(CitizenVote.id))
         .join(ParliamentBill, CitizenVote.bill_id == ParliamentBill.id)

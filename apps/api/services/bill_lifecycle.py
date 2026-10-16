@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import ParliamentBill, BillStatus, BillStatusLog
 from services.bill_visibility import public_bill_filter, is_public_bill
+from services.small_cell import small_cell_k
 from services.zk_vote_aggregation import aggregate_bill_vote_totals, include_zk_for_bill
 
 logger = logging.getLogger(__name__)
@@ -293,22 +294,28 @@ async def _hook_arweave_snapshot(db: AsyncSession, bill: ParliamentBill) -> None
         from sqlalchemy import func, select as sa_select
         from models import CitizenVote, VoteChoice, BillStatusLog
 
-        # Count votes
-        yes = await db.scalar(
-            sa_select(func.count(CitizenVote.id)).where(
-                CitizenVote.bill_id == bill.id, CitizenVote.vote == VoteChoice.YES
-            )
-        ) or 0
-        no = await db.scalar(
-            sa_select(func.count(CitizenVote.id)).where(
-                CitizenVote.bill_id == bill.id, CitizenVote.vote == VoteChoice.NO
-            )
-        ) or 0
-        abstain = await db.scalar(
-            sa_select(func.count(CitizenVote.id)).where(
-                CitizenVote.bill_id == bill.id, CitizenVote.vote == VoteChoice.ABSTAIN
-            )
-        ) or 0
+        if small_cell_k():
+            totals = await aggregate_bill_vote_totals(db, bill.id, include_zk=include_zk_for_bill(bill))
+            vote_results = {"yes": totals.yes, "no": totals.no, "abstain": totals.abstain,
+                            "unknown": totals.unknown, "total": totals.total}
+        else:
+            yes = await db.scalar(
+                sa_select(func.count(CitizenVote.id)).where(
+                    CitizenVote.bill_id == bill.id, CitizenVote.vote == VoteChoice.YES
+                )
+            ) or 0
+            no = await db.scalar(
+                sa_select(func.count(CitizenVote.id)).where(
+                    CitizenVote.bill_id == bill.id, CitizenVote.vote == VoteChoice.NO
+                )
+            ) or 0
+            abstain = await db.scalar(
+                sa_select(func.count(CitizenVote.id)).where(
+                    CitizenVote.bill_id == bill.id, CitizenVote.vote == VoteChoice.ABSTAIN
+                )
+            ) or 0
+
+            vote_results = {"yes": yes, "no": no, "abstain": abstain, "total": yes + no + abstain}
 
         # Get status logs
         logs_result = await db.execute(
@@ -318,7 +325,6 @@ async def _hook_arweave_snapshot(db: AsyncSession, bill: ParliamentBill) -> None
         )
         status_logs = logs_result.scalars().all()
 
-        vote_results = {"yes": yes, "no": no, "abstain": abstain, "total": yes + no + abstain}
         audit = build_audit_trail(bill, status_logs, vote_results, divergence_score=None)
         tx_id = await publish_to_arweave(audit, bill.id)
         if tx_id:
