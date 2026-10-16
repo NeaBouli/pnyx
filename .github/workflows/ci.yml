@@ -106,7 +106,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pytest tests/ -v --tb=short -rs | tee "$RUNNER_TEMP/api-tests.log"
-          if grep -E '^SKIPPED .*(_pg\.py|test_knowledge_base_sync\.py|test_municipal_vote_concurrency\.py|PNYX_TEST_POSTGRES_URL)' "$RUNNER_TEMP/api-tests.log"; then
+          if grep -E '^SKIPPED .*(_pg\.py|test_knowledge_base_sync\.py|PNYX_TEST_POSTGRES_URL)' "$RUNNER_TEMP/api-tests.log"; then
             echo "::error::Real PostgreSQL tests must run without skips"
             exit 1
           fi
