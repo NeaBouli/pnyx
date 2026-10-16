@@ -25,7 +25,7 @@ export default function RelevanceButtons({
     if (voted !== null || loading) return;
 
     const signer = await getSigner();
-    if (!signer) return;
+    if (!signer || !signer.nullifier) return;
     const nullifier = signer.nullifier;
 
     // Sign: "relevance:{bill_id}:{signal}:{nullifier_hash}"

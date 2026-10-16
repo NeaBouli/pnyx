@@ -9,7 +9,7 @@ import type { CompassProfile, CompassModel, CompassResult } from "./types";
 import { createEmptyProfile, seedFromVAA, recordBillVote, computeResult, getDataPointCount } from "./engine";
 import { loadProfile, saveProfile, clearProfile as clearStorage, CompassStorageError, type CompassKeys } from "./storage";
 import { loadKeypair } from "../crypto";
-import { getCompassKey } from "../keystore";
+import { getCompassKey, withKeystoreLock } from "../keystore";
 
 interface PartyData {
   parties: Record<string, {
@@ -129,7 +129,13 @@ export function useCompass() {
   const persistProfile = useCallback((p: CompassProfile) => {
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(() => {
-      void getKeys().then((keys) => saveProfileSafely(p, keys));
+      // EVA-003: serialised with the key migration in every tab; keys are
+      // read inside the lock so a legacy-key write can never land after the
+      // migration moved the profile to the new key.
+      void (async () => {
+        const locked = await withKeystoreLock(async () => saveProfileSafely(p, await getKeys()));
+        if (!locked) await saveProfileSafely(p, await getKeys());
+      })().catch(() => {});
     }, 300);
   }, [getKeys]);
 

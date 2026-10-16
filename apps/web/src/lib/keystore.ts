@@ -25,6 +25,9 @@ export const LEGACY_PUBLIC_KEY = "ekklesia_public_key";
 export const KEY_CUSTODY_MARKER = "ekklesia_key_custody";
 
 const IDENTITY_RECORD = "identity";
+const PENDING_IDENTITY_RECORD = "identity_pending";
+/** Web Lock shared by the migration and Compass writes in every tab. */
+export const KEYSTORE_LOCK = "ekklesia-keystore";
 const COMPASS_RECORD = "compass";
 const PKCS8_ED25519_PREFIX = "302e020100300506032b657004220420";
 const HEX32 = /^[0-9a-f]{64}$/;
@@ -34,6 +37,7 @@ const HEX32 = /^[0-9a-f]{64}$/;
 export interface KeyRecordStore {
   get<T>(id: string): Promise<T | undefined>;
   put<T>(id: string, value: T): Promise<void>;
+  delete(id: string): Promise<void>;
 }
 
 interface IdentityRecord {
@@ -69,6 +73,9 @@ function indexedDbStore(): KeyRecordStore {
     put: async <T>(id: string, value: T) => {
       await run("readwrite", (s) => s.put(value, id));
     },
+    delete: async (id: string) => {
+      await run("readwrite", (s) => s.delete(id));
+    },
   };
 }
 
@@ -82,11 +89,35 @@ export function setKeyRecordStoreForTests(next: KeyRecordStore | null): void {
   backend = next;
 }
 
+type LockManagerLike = { request<T>(name: string, cb: () => Promise<T>): Promise<T> };
+let lockOverride: LockManagerLike | null | undefined;
+
+function lockManager(): LockManagerLike | null {
+  if (lockOverride !== undefined) return lockOverride;
+  const locks = (globalThis.navigator as { locks?: LockManagerLike } | undefined)?.locks;
+  return locks && typeof locks.request === "function" ? locks : null;
+}
+
+export function setLockManagerForTests(next: LockManagerLike | null | undefined): void {
+  lockOverride = next;
+}
+
+/**
+ * Run fn under the cross-tab keystore lock. Returns null if the browser has no
+ * Web Locks (callers then keep the legacy behaviour).
+ */
+export async function withKeystoreLock<T>(fn: () => Promise<T>): Promise<{ value: T } | null> {
+  const locks = lockManager();
+  if (!locks) return null;
+  return locks.request(KEYSTORE_LOCK, async () => ({ value: await fn() }));
+}
+
 // ─── Signing ────────────────────────────────────────────────────────────────
 
 export interface WebSigner {
   publicKeyHex: string;
-  nullifier: string;
+  /** Needed for votes/relevance; SSO signs with the key pair alone. */
+  nullifier: string | null;
   custody: "webcrypto" | "legacy";
   sign(payload: string): Promise<string>;
 }
@@ -96,10 +127,10 @@ async function webCryptoSign(key: CryptoKey, payload: string): Promise<string> {
   return bytesToHex(new Uint8Array(sig));
 }
 
-async function loadIdentityRecord(): Promise<IdentityRecord | null> {
+async function loadIdentityRecord(id: string = IDENTITY_RECORD): Promise<IdentityRecord | null> {
   if (typeof indexedDB === "undefined" && backend === null) return null;
   try {
-    const rec = await store().get<IdentityRecord>(IDENTITY_RECORD);
+    const rec = await store().get<IdentityRecord>(id);
     if (!rec || !(rec.privateKey instanceof CryptoKey) || !HEX32.test(rec.publicKeyHex) || !rec.nullifier) return null;
     return rec;
   } catch {
@@ -108,6 +139,14 @@ async function loadIdentityRecord(): Promise<IdentityRecord | null> {
 }
 
 /** The signer for this browser: WebCrypto custody first, legacy plaintext as fallback. */
+function readLegacy(): { keypair: ReturnType<typeof loadKeypair>; nullifier: string | null } {
+  try {
+    return { keypair: loadKeypair(), nullifier: loadNullifier() };
+  } catch {
+    return { keypair: null, nullifier: null }; // storage blocked
+  }
+}
+
 export async function getSigner(): Promise<WebSigner | null> {
   const rec = await loadIdentityRecord();
   if (rec) {
@@ -115,18 +154,20 @@ export async function getSigner(): Promise<WebSigner | null> {
       publicKeyHex: rec.publicKeyHex,
       nullifier: rec.nullifier,
       custody: "webcrypto",
-      sign: (payload) => webCryptoSign(rec.privateKey, payload),
+      sign: async (payload) => {
+        try {
+          return await webCryptoSign(rec.privateKey, payload);
+        } catch (error) {
+          // A still-present legacy copy of the SAME key keeps signing working.
+          const legacy = readLegacy().keypair;
+          if (legacy && legacy.publicKeyHex === rec.publicKeyHex) return signPayload(legacy.privateKeyHex, payload);
+          throw error;
+        }
+      },
     };
   }
-  let legacy: ReturnType<typeof loadKeypair> = null;
-  let nullifier: string | null = null;
-  try {
-    legacy = loadKeypair();
-    nullifier = loadNullifier();
-  } catch {
-    return null; // storage blocked
-  }
-  if (!legacy || !nullifier) return null;
+  const { keypair: legacy, nullifier } = readLegacy();
+  if (!legacy) return null;
   const privateKeyHex = legacy.privateKeyHex;
   return {
     publicKeyHex: legacy.publicKeyHex,
@@ -258,24 +299,26 @@ async function serverSupportsKeyCheck(deps: MigrationDeps): Promise<boolean | nu
 
 let migrationInFlight: Promise<MigrationResult> | null = null;
 
-/** Idempotent; never concurrent within a page. Safe to call on every page load. */
+/**
+ * Idempotent; never concurrent within a page, and serialised across tabs by
+ * the Web Lock (state is re-read inside it). Safe to call on every page load.
+ */
 export function migrateLegacyWebKey(deps: MigrationDeps = DEFAULT_DEPS): Promise<MigrationResult> {
-  migrationInFlight ??= migrate(deps).catch(() => "retry_later" as const).finally(() => {
-    migrationInFlight = null;
-  });
+  migrationInFlight ??= (async () => {
+    if (typeof window === "undefined") return "not_needed" as const;
+    const locked = await withKeystoreLock(() => migrate(deps));
+    return locked ? locked.value : ("unsupported" as const); // no Web Locks: stay on legacy
+  })()
+    .catch(() => "retry_later" as const)
+    .finally(() => {
+      migrationInFlight = null;
+    });
   return migrationInFlight;
 }
 
 async function migrate(deps: MigrationDeps): Promise<MigrationResult> {
-  if (typeof window === "undefined") return "not_needed";
-  let legacy: ReturnType<typeof loadKeypair> = null;
-  let nullifier: string | null = null;
-  try {
-    legacy = loadKeypair();
-    nullifier = loadNullifier();
-  } catch {
-    return "retry_later";
-  }
+  // Runs under KEYSTORE_LOCK: another tab may have finished meanwhile.
+  const { keypair: legacy, nullifier } = readLegacy();
   if (!legacy) return (await loadIdentityRecord()) ? "not_needed" : "no_legacy";
   if (!nullifier || !HEX32.test(legacy.privateKeyHex) || !HEX32.test(legacy.publicKeyHex)) return "retry_later";
   if (!(await supportsNonExtractableEd25519())) return "unsupported";
@@ -299,30 +342,39 @@ async function migrate(deps: MigrationDeps): Promise<MigrationResult> {
   }
   if (key.extractable || !(await selfTest(key, legacy.publicKeyHex))) return "retry_later";
 
-  // 2. Compass key: reuse (interrupted earlier run) or create, non-extractable.
+  // 2. Compass key: get-or-create under the lock, non-extractable.
   let compassKey = await getCompassKey();
   if (!compassKey) {
-    compassKey = (await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"])) as CryptoKey;
-    await store().put(COMPASS_RECORD, compassKey);
+    await store().put(COMPASS_RECORD, await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]));
     compassKey = await getCompassKey();
     if (!compassKey) return "retry_later";
   }
 
-  // 3. Persist the identity key and read it back (round-trip through IndexedDB).
-  await store().put<IdentityRecord>(IDENTITY_RECORD, { privateKey: key, publicKeyHex: legacy.publicKeyHex, nullifier });
-  const stored = await loadIdentityRecord();
-  if (!stored || stored.publicKeyHex !== legacy.publicKeyHex || stored.nullifier !== nullifier) return "retry_later";
-  if (stored.privateKey.extractable || !(await selfTest(stored.privateKey, legacy.publicKeyHex))) return "retry_later";
+  // 3. Persist as PENDING and read it back; signers never see it.
+  const record: IdentityRecord = { privateKey: key, publicKeyHex: legacy.publicKeyHex, nullifier };
+  await store().put<IdentityRecord>(PENDING_IDENTITY_RECORD, record);
+  const pending = await loadIdentityRecord(PENDING_IDENTITY_RECORD);
+  if (!pending || pending.publicKeyHex !== legacy.publicKeyHex || pending.nullifier !== nullifier) return "retry_later";
+  if (pending.privateKey.extractable || !(await selfTest(pending.privateKey, legacy.publicKeyHex))) return "retry_later";
 
   // 4. The server confirms that the re-read key is the identity's current key.
-  const confirmed = await serverConfirmsKey(deps, stored.privateKey, nullifier, legacy.publicKeyHex);
+  const confirmed = await serverConfirmsKey(deps, pending.privateKey, nullifier, legacy.publicKeyHex);
   if (confirmed === "mismatch") return "key_not_current"; // keep everything; the server holds another key
   if (confirmed !== "ok") return "retry_later";
 
-  // 5. Compass ciphertext moves to the new key (only replaced on success).
+  // 5. Publish the validated key, re-read and re-test; roll back on failure.
+  await store().put<IdentityRecord>(IDENTITY_RECORD, { ...record, privateKey: pending.privateKey });
+  const published = await loadIdentityRecord();
+  if (!published || published.publicKeyHex !== legacy.publicKeyHex || !(await selfTest(published.privateKey, legacy.publicKeyHex))) {
+    await store().delete(IDENTITY_RECORD).catch(() => undefined);
+    return "retry_later";
+  }
+  await store().delete(PENDING_IDENTITY_RECORD).catch(() => undefined);
+
+  // 6. Compass ciphertext moves to the new key (only replaced on success).
   if (!(await reencryptLegacyCompassBlob(legacy.privateKeyHex, compassKey))) return "retry_later";
 
-  // 6. Only now: drop the plaintext private key (public key + nullifier stay).
+  // 7. Only now: drop the plaintext private key (public key + nullifier stay).
   try {
     localStorage.setItem(KEY_CUSTODY_MARKER, "webcrypto");
     if (localStorage.getItem(LEGACY_PRIVATE_KEY) === legacy.privateKeyHex) {

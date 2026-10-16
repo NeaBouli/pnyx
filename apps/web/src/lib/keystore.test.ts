@@ -20,6 +20,8 @@ import { saveProfile } from "./compass/storage";
 import { createEmptyProfile } from "./compass/engine";
 import {
   KEY_CUSTODY_MARKER,
+  setLockManagerForTests,
+  withKeystoreLock,
   getCompassKey,
   getSigner,
   hasLocalSignerHint,
@@ -49,6 +51,22 @@ class MemoryStore implements KeyRecordStore {
     if (this.failPut) throw new Error("idb down");
     this.data.set(id, value);
   }
+  async delete(id: string) {
+    this.data.delete(id);
+  }
+}
+
+/** In-process stand-in for navigator.locks (exclusive, FIFO). */
+function memoryLocks() {
+  const queues = new Map<string, Promise<unknown>>();
+  return {
+    request<T>(name: string, cb: () => Promise<T>): Promise<T> {
+      const prev = queues.get(name) ?? Promise.resolve();
+      const run = prev.then(cb, cb);
+      queues.set(name, run.then(() => undefined, () => undefined));
+      return run;
+    },
+  };
 }
 
 let store: MemoryStore;
@@ -91,6 +109,7 @@ beforeEach(() => {
   lsFail.key = null;
   store = new MemoryStore();
   setKeyRecordStoreForTests(store);
+  setLockManagerForTests(memoryLocks());
   serverKey = PUB;
   serverStatus = 200;
   feature = true;
@@ -194,5 +213,101 @@ describe("getSigner", () => {
   it("returns null without any key", async () => {
     expect(await getSigner()).toBeNull();
     expect(hasLocalSignerHint()).toBe(false);
+  });
+});
+
+describe("review round 1 (Codex)", () => {
+  it("a failed migration never publishes a signer record (pending stays invisible)", async () => {
+    legacyBrowser();
+    serverKey = "ab".repeat(32); // server says: not the current key
+    expect(await migrateLegacyWebKey(deps())).toBe("key_not_current");
+    expect(store.data.has("identity")).toBe(false);
+    expect((await getSigner())!.custody).toBe("legacy");
+  });
+
+  it("rolls back a published record that fails its re-test", async () => {
+    legacyBrowser();
+    const wrong = (await crypto.subtle.generateKey({ name: "Ed25519" }, false, ["sign", "verify"])) as CryptoKeyPair;
+    const realGet = store.get.bind(store);
+    store.get = async <T,>(id: string) => {
+      const v = await realGet<T>(id);
+      if (id === "identity" && v) return { ...(v as object), privateKey: wrong.privateKey } as T; // corrupted on read
+      return v;
+    };
+    expect(await migrateLegacyWebKey(deps())).toBe("retry_later");
+    expect(store.data.has("identity")).toBe(false);
+    expect(ls.get("ekklesia_private_key")).toBe(PRIV);
+  });
+
+  it("signing falls back to the legacy copy of the same key if WebCrypto signing fails", async () => {
+    legacyBrowser();
+    const aes = (await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"])) as CryptoKey;
+    store.data.set("identity", { privateKey: aes, publicKeyHex: PUB, nullifier: NULLIFIER }); // unusable for Ed25519
+    const sig = await (await getSigner())!.sign("payload");
+    expect(ed25519.verify(bytes(sig), new TextEncoder().encode("payload"), bytes(PUB))).toBe(true);
+  });
+
+  it("SSO can sign with a legacy pair that has no nullifier", async () => {
+    ls.set("ekklesia_private_key", PRIV);
+    ls.set("ekklesia_public_key", PUB);
+    const signer = (await getSigner())!;
+    expect(signer.nullifier).toBeNull();
+    const sig = await signer.sign("discourse_sso:n:" + PUB);
+    expect(ed25519.verify(bytes(sig), new TextEncoder().encode("discourse_sso:n:" + PUB), bytes(PUB))).toBe(true);
+  });
+
+  it("without Web Locks the browser stays on the legacy key", async () => {
+    legacyBrowser();
+    setLockManagerForTests(null);
+    expect(await migrateLegacyWebKey(deps())).toBe("unsupported");
+    expect(ls.get("ekklesia_private_key")).toBe(PRIV);
+  });
+
+  it("two tabs migrating at once end with one Compass key that decrypts the profile", async () => {
+    legacyBrowser();
+    await saveProfile({ ...createEmptyProfile(), selectedModel: "left-right" } as ReturnType<typeof createEmptyProfile>, PRIV);
+    const locks = memoryLocks();
+    setLockManagerForTests(locks);
+    vi.resetModules();
+    const tabA = await import("./keystore");
+    vi.resetModules();
+    const tabB = await import("./keystore");
+    for (const tab of [tabA, tabB]) {
+      tab.setKeyRecordStoreForTests(store);
+      tab.setLockManagerForTests(locks);
+    }
+    const [a, b] = await Promise.all([tabA.migrateLegacyWebKey(deps()), tabB.migrateLegacyWebKey(deps())]);
+    expect([a, b].sort()).toEqual(["migrated", "not_needed"]);
+    const { loadProfile } = await import("./compass/storage");
+    const key = (await tabB.getCompassKey())!;
+    expect((await loadProfile({ aesKey: key })).selectedModel).toBe("left-right");
+  });
+
+  it("a Compass save waiting for the lock reads the keys only after the migration", async () => {
+    legacyBrowser();
+    await saveProfile(createEmptyProfile(), PRIV);
+    let release!: () => void;
+    const gate = new Promise<void>((r) => { release = r; });
+    const d = deps();
+    const realFetch = d.fetchImpl;
+    d.fetchImpl = (async (url: string, init?: RequestInit) => {
+      if (url.endsWith("/key-check")) await gate;
+      return realFetch(url, init);
+    }) as typeof fetch;
+    // useCompass must see the same store and the same cross-tab lock.
+    const locks = memoryLocks();
+    setLockManagerForTests(locks);
+    const keystoreForCompass = await import("./keystore");
+    keystoreForCompass.setKeyRecordStoreForTests(store);
+    keystoreForCompass.setLockManagerForTests(locks);
+    const migration = migrateLegacyWebKey(d);
+    await new Promise((r) => setTimeout(r, 10));
+    const { readCompassKeysSafely, saveProfileSafely } = await import("./compass/useCompass");
+    const save = withKeystoreLock(async () => saveProfileSafely({ ...createEmptyProfile(), selectedModel: "party-match" } as ReturnType<typeof createEmptyProfile>, await readCompassKeysSafely()));
+    release();
+    expect(await migration).toBe("migrated");
+    await save;
+    const { loadProfile } = await import("./compass/storage");
+    expect((await loadProfile({ aesKey: (await getCompassKey())! })).selectedModel).toBe("party-match");
   });
 });
