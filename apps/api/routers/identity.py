@@ -3,8 +3,10 @@ MOD-01: Identity Router
 POST /api/v1/identity/verify  — HLR SIM check → Ed25519 Keypair
 POST /api/v1/identity/revoke  — Key Revokation
 GET  /api/v1/identity/status  — Key Status prüfen
+POST /api/v2/identity/verify  — HLR check + device-generated key with PoP (EVA-001, flag IDENTITY_V2_ENABLED)
 """
 import gc
+import re
 import logging
 import json
 from datetime import date, datetime, timezone
@@ -266,18 +268,24 @@ class StatusResponse(BaseModel):
 
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
-@router.post("/verify", response_model=VerifyResponse)
-async def verify_identity(req: VerifyRequest, request: Request, db: AsyncSession = Depends(get_db)):
-    """
-    Beta-Flow:
-    1. HLR Lookup → nur echte griechische Mobilnummern
-    2. Nullifier Hash erzeugen (Telefonnummer danach gelöscht)
-    3. Prüfen: existiert dieser Nullifier bereits?
-    4. Ed25519 Keypair erzeugen
-    5. Public Key + Nullifier speichern (KEIN Private Key, KEINE Telefonnummer)
-    6. Private Key einmalig zurückgeben → Client speichert im Secure Enclave
-    """
+async def _register_identity(
+    req: "VerifyRequest",
+    request: Request,
+    db: AsyncSession,
+    *,
+    client_public_key_hex: str | None = None,
+) -> tuple[str, str | None, str]:
+    """Shared registration flow for v1 and v2 (EVA-001).
 
+    v1 (client_public_key_hex is None): the server generates the key pair and
+    returns the private key once — unchanged legacy behaviour.
+    v2: the client already proved possession of client_public_key_hex; the
+    server stores only that public key and never sees a private key. Per D3 an
+    ACTIVE identity is never re-keyed here (409, use rotate-key); REVOKED or
+    unknown identities are (re)activated with the client key.
+
+    Returns (public_key_hex, private_key_hex or None, compatibility_nullifier).
+    """
     # 0. Lokale Formatprüfung + Kosten-/Missbrauchsschutz (EKA-06) — vor jedem
     # kostenpflichtigen Provideraufruf. Ungültige Nummern werden lokal
     # abgelehnt, ohne Redis oder Provider zu berühren.
@@ -319,6 +327,17 @@ async def verify_identity(req: VerifyRequest, request: Request, db: AsyncSession
             logger.warning("[MOD-01] Multiple identity rows matched v2 migration lookup; using v1-preferred anchor")
         existing = _select_identity_match(matches, nullifier)
 
+        if client_public_key_hex is not None and existing and existing.status == KeyStatus.ACTIVE:
+            # D3: a key swap on an ACTIVE identity needs the old key's signature
+            # (rotate-key); HLR alone must not replace it in v2.
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="IDENTITY_ACTIVE: Η ταυτότητα είναι ήδη ενεργή. / Identity already active.",
+            )
+        if client_public_key_hex is not None and await _public_key_active(db, client_public_key_hex):
+            # Re-check under the per-nullifier lock (the pre-HLR check can race).
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="PUBLIC_KEY_IN_USE")
+
         if existing and existing.status == KeyStatus.ACTIVE:
             # Re-register in one transaction so an interrupted key rotation cannot
             # leave a valid citizen identity stuck in REVOKED.
@@ -328,8 +347,11 @@ async def verify_identity(req: VerifyRequest, request: Request, db: AsyncSession
         # public compatibility anchor for votes/status/downstream tables.
         compatibility_nullifier = _compatibility_nullifier(existing, nullifier)
 
-        # 4. Keypair erzeugen
-        keypair = generate_keypair()
+        # 4. Keypair: v1 erzeugt serverseitig, v2 nutzt den Client-Schlüssel
+        if client_public_key_hex is None:
+            keypair = generate_keypair()
+        else:
+            keypair = {"public_key_hex": client_public_key_hex, "private_key_hex": None}
 
         # 5. Roh-Demographie (EVA-002): Felder aus alten App-Versionen werden
         # akzeptiert, aber nie persistiert — nur Public Key + Nullifier.
@@ -379,16 +401,34 @@ async def verify_identity(req: VerifyRequest, request: Request, db: AsyncSession
         )
         await db.commit()
 
-        # 7. Private Key einmalig zurückgeben — danach nie wieder verfügbar
-        return VerifyResponse(
-            success=True,
-            public_key_hex=keypair["public_key_hex"],
-            private_key_hex=keypair["private_key_hex"],
-            nullifier_hash=compatibility_nullifier,
-            message="Κλειδί δημιουργήθηκε. Αποθηκεύεται με ασφάλεια στη συσκευή σας. Δεν αποθηκεύεται στον server."
-        )
+        return keypair["public_key_hex"], keypair["private_key_hex"], compatibility_nullifier
     finally:
         await _release_identity_verify_lock(lock_key, lock_token)
+
+
+
+
+@router.post("/verify", response_model=VerifyResponse)
+async def verify_identity(req: VerifyRequest, request: Request, db: AsyncSession = Depends(get_db)):
+    """
+    Beta-Flow:
+    1. HLR Lookup → nur echte griechische Mobilnummern
+    2. Nullifier Hash erzeugen (Telefonnummer danach gelöscht)
+    3. Prüfen: existiert dieser Nullifier bereits?
+    4. Ed25519 Keypair erzeugen
+    5. Public Key + Nullifier speichern (KEIN Private Key, KEINE Telefonnummer)
+    6. Private Key einmalig zurückgeben → Client speichert im Secure Enclave
+    """
+
+    public_key_hex, private_key_hex, nullifier_hash = await _register_identity(req, request, db)
+    # 7. Private Key einmalig zurückgeben — danach nie wieder verfügbar
+    return VerifyResponse(
+        success=True,
+        public_key_hex=public_key_hex,
+        private_key_hex=private_key_hex,
+        nullifier_hash=nullifier_hash,
+        message="Κλειδί δημιουργήθηκε. Αποθηκεύεται με ασφάλεια στη συσκευή σας. Δεν αποθηκεύεται στον server."
+    )
 
 
 @router.post("/revoke")
@@ -649,3 +689,80 @@ async def update_profile_location(
         "dimos_id": identity.dimos_id,
         "region_locked": identity.region_locked,
     }
+
+
+# ─── EVA-001 v2: client-generated keys with proof of possession ──────────────
+# The device generates its Ed25519 key; the server receives only the public key
+# plus a signature over a domain-separated registration message (PoP). The
+# private key never leaves the device. Disabled unless IDENTITY_V2_ENABLED=true.
+
+router_v2 = APIRouter(prefix="/api/v2/identity", tags=["MOD-01 Identity"])
+
+IDENTITY_POP_WINDOW_MS = 5 * 60 * 1000
+_HEX64 = re.compile(r"[0-9a-f]{64}")
+_HEX128 = re.compile(r"[0-9a-f]{128}")
+
+
+def identity_v2_enabled() -> bool:
+    return os.getenv("IDENTITY_V2_ENABLED", "false").strip().lower() == "true"
+
+
+def identity_register_pop_message(public_key_hex: str, pop_timestamp_ms: int) -> str:
+    """Domain-separated, versioned PoP message; never contains the phone number."""
+    return f"ekklesia:identity-register:v1:{public_key_hex}:{pop_timestamp_ms}"
+
+
+class VerifyV2Request(VerifyRequest):
+    public_key_hex:    str = Field(..., description="Ed25519 public key, 64 lowercase hex")
+    pop_timestamp_ms:  int = Field(..., description="Client time (ms) signed in the PoP message")
+    pop_signature_hex: str = Field(..., description="Ed25519 signature (128 lowercase hex) over the PoP message")
+
+
+class VerifyV2Response(BaseModel):
+    # Deliberately no private key field: the server never holds one in v2.
+    success:        bool
+    public_key_hex: str
+    nullifier_hash: str
+    message:        str
+
+
+async def _public_key_active(db: AsyncSession, public_key_hex: str) -> bool:
+    result = await db.execute(
+        select(IdentityRecord.id)
+        .where(IdentityRecord.public_key_hex == public_key_hex)
+        .where(IdentityRecord.status == KeyStatus.ACTIVE)
+        .limit(1)
+    )
+    return result.first() is not None
+
+
+def _check_registration_pop(req: VerifyV2Request, now_ms: int) -> None:
+    """Reject malformed, stale or unsigned registrations (all before HLR)."""
+    if not _HEX64.fullmatch(req.public_key_hex) or not _HEX128.fullmatch(req.pop_signature_hex):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="INVALID_KEY_FORMAT")
+    if abs(now_ms - req.pop_timestamp_ms) > IDENTITY_POP_WINDOW_MS:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="POP_EXPIRED")
+    message = identity_register_pop_message(req.public_key_hex, req.pop_timestamp_ms)
+    if not verify_signature(req.public_key_hex, message, req.pop_signature_hex):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="INVALID_POP_SIGNATURE")
+
+
+@router_v2.post("/verify", response_model=VerifyV2Response)
+async def verify_identity_v2(req: VerifyV2Request, request: Request, db: AsyncSession = Depends(get_db)):
+    """EVA-001: register a device-generated public key after HLR verification."""
+    if not identity_v2_enabled():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not Found")
+
+    _check_registration_pop(req, int(datetime.now(timezone.utc).timestamp() * 1000))
+    if await _public_key_active(db, req.public_key_hex):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="PUBLIC_KEY_IN_USE")
+
+    public_key_hex, _private, nullifier_hash = await _register_identity(
+        req, request, db, client_public_key_hex=req.public_key_hex,
+    )
+    return VerifyV2Response(
+        success=True,
+        public_key_hex=public_key_hex,
+        nullifier_hash=nullifier_hash,
+        message="Η ταυτότητα επαληθεύτηκε. Το ιδιωτικό κλειδί δημιουργήθηκε στη συσκευή σας και δεν φεύγει ποτέ από αυτήν.",
+    )
