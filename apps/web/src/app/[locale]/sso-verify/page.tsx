@@ -5,12 +5,11 @@ import { useSearchParams } from "next/navigation";
 import { useLocale } from "next-intl";
 import Image from "next/image";
 import { QRCodeSVG } from "qrcode.react";
-import { signPayload } from "@/lib/crypto";
+import { getSigner, hasLocalSignerHint } from "@/lib/keystore";
 
 type State = "checking" | "nokey" | "verifying" | "success" | "error";
 type QrState = "idle" | "loading" | "ready" | "authenticated" | "expired" | "error";
 
-const LOCALSTORAGE_KEY = "ekklesia_private_key";
 const LOCALSTORAGE_PUBKEY = "ekklesia_public_key";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.ekklesia.gr";
 const QR_LIFETIME = 5 * 60 * 1000;
@@ -33,8 +32,8 @@ function initialSession(ready: boolean, nonce: string | null, returnUrl: string 
   if (!nonce || !returnUrl) return { state: "error", error: { code: "missing" }, publicKey: null };
   try {
     const publicKey = localStorage.getItem(LOCALSTORAGE_PUBKEY);
-    const hasPrivateKey = Boolean(localStorage.getItem(LOCALSTORAGE_KEY));
-    return { state: publicKey && hasPrivateKey ? "verifying" : "nokey", error: null, publicKey };
+    // EVA-003: a migrated browser has no plaintext key but a WebCrypto signer.
+    return { state: publicKey && hasLocalSignerHint() ? "verifying" : "nokey", error: null, publicKey };
   } catch {
     // Browser storage restrictions must not prevent signing in with the mobile app.
     return { state: "nokey", error: null, publicKey: null };
@@ -46,15 +45,10 @@ async function startSession(nonce: string, publicKey: string | null): Promise<In
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(new Error("Request timed out")), REQUEST_TIMEOUT);
   try {
-    let privateKey: string | null = null;
-    try {
-      if (publicKey && localStorage.getItem(LOCALSTORAGE_PUBKEY) === publicKey) {
-        privateKey = localStorage.getItem(LOCALSTORAGE_KEY);
-      }
-    } catch {}
-    if (publicKey && privateKey) {
+    const signer = publicKey ? await getSigner().catch(() => null) : null;
+    if (publicKey && signer && signer.publicKeyHex === publicKey) {
       qr = false;
-      const signatureHex = signPayload(privateKey, `discourse_sso:${nonce}:${publicKey}`);
+      const signatureHex = await signer.sign(`discourse_sso:${nonce}:${publicKey}`);
       const res = await fetch(`${API_URL}/api/v1/sso/discourse/callback`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

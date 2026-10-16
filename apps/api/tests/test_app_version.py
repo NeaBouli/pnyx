@@ -109,4 +109,17 @@ async def test_identity_rotate_feature_follows_the_server_flag(monkeypatch, env,
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get("/api/v1/app/version")
     assert response.status_code == 200
-    assert response.json()["features"] == {"identity_rotate": expected}
+    assert response.json()["features"]["identity_rotate"] is expected
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("env,expected", [(None, False), ("true", True)])
+async def test_identity_key_check_feature_follows_the_server_flag(monkeypatch, env, expected) -> None:
+    # EVA-003 PR5: browsers migrate their legacy key only when advertised.
+    if env is None:
+        monkeypatch.delenv("IDENTITY_KEY_CHECK_ENABLED", raising=False)
+    else:
+        monkeypatch.setenv("IDENTITY_KEY_CHECK_ENABLED", env)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/api/v1/app/version")
+    assert response.json()["features"]["identity_key_check"] is expected

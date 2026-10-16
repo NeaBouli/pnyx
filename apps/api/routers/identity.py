@@ -5,6 +5,7 @@ POST /api/v1/identity/revoke  — Key Revokation
 GET  /api/v1/identity/status  — Key Status prüfen
 POST /api/v2/identity/verify  — HLR check + device-generated key with PoP (EVA-001, flag IDENTITY_V2_ENABLED)
 POST /api/v2/identity/rotate-key — key swap signed by old + new key (EVA-001 PR2, flag IDENTITY_ROTATE_ENABLED)
+POST /api/v2/identity/key-check  — signed proof that a key is the current key of an identity (EVA-003 PR5)
 """
 import gc
 import re
@@ -943,3 +944,66 @@ async def rotate_identity_key(req: RotateKeyRequest, request: Request, db: Async
 
     logger.info("[MOD-01] identity key rotated (record %s)", record_id)
     return RotateKeyResponse(success=True, public_key_hex=req.new_public_key_hex)
+
+
+# ─── EVA-003 PR5: server-side key check for the web key migration ────────────
+# Before the web client deletes its legacy plaintext key it proves, with a
+# signature made by the migrated (non-extractable) key, that this key is the
+# identity's current ACTIVE key. Read-only; same answer for every mismatch.
+
+def identity_key_check_enabled() -> bool:
+    return os.getenv("IDENTITY_KEY_CHECK_ENABLED", "false").strip().lower() == "true"
+
+
+def identity_key_check_message(nullifier_hash: str, public_key_hex: str, timestamp_ms: int) -> str:
+    """Domain-separated, versioned key-check message."""
+    return f"ekklesia:identity-key-check:v1:{nullifier_hash}:{public_key_hex}:{timestamp_ms}"
+
+
+class KeyCheckRequest(BaseModel):
+    nullifier_hash: str
+    public_key_hex: str
+    timestamp_ms:   int
+    signature_hex:  str
+
+
+async def _count_key_check(outcome: str) -> None:
+    """Migration telemetry: outcome counters only, never key material."""
+    try:
+        r = await _get_hlr_redis()
+        await r.incr(f"identity:key_check:{outcome}")
+    except Exception:
+        logger.warning("[MOD-01] key-check counter unavailable")
+
+
+@router_v2.post("/key-check")
+@limiter.limit("30/minute")
+async def check_identity_key(req: KeyCheckRequest, request: Request, db: AsyncSession = Depends(get_db)):
+    """200 only if the signature is valid and the key is the identity's current ACTIVE key."""
+    if not identity_key_check_enabled():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not Found")
+    if not (
+        _HEX64.fullmatch(req.nullifier_hash)
+        and _HEX64.fullmatch(req.public_key_hex)
+        and _HEX128.fullmatch(req.signature_hex)
+    ):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="INVALID_KEY_FORMAT")
+    now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+    if abs(now_ms - req.timestamp_ms) > IDENTITY_POP_WINDOW_MS:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="POP_EXPIRED")
+    message = identity_key_check_message(req.nullifier_hash, req.public_key_hex, req.timestamp_ms)
+    if not verify_signature(req.public_key_hex, message, req.signature_hex):
+        await _count_key_check("bad_signature")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="INVALID_SIGNATURE")
+
+    result = await db.execute(
+        select(IdentityRecord.id)
+        .where(IdentityRecord.nullifier_hash == req.nullifier_hash)
+        .where(IdentityRecord.public_key_hex == req.public_key_hex)
+        .where(IdentityRecord.status == KeyStatus.ACTIVE)
+    )
+    if result.first() is None:
+        await _count_key_check("mismatch")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="KEY_NOT_CURRENT")
+    await _count_key_check("ok")
+    return {"ok": True}

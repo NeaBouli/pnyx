@@ -7,8 +7,9 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import type { CompassProfile, CompassModel, CompassResult } from "./types";
 import { createEmptyProfile, seedFromVAA, recordBillVote, computeResult, getDataPointCount } from "./engine";
-import { loadProfile, saveProfile, clearProfile as clearStorage, CompassStorageError } from "./storage";
+import { loadProfile, saveProfile, clearProfile as clearStorage, CompassStorageError, type CompassKeys } from "./storage";
 import { loadKeypair } from "../crypto";
+import { readCompassKeyStrict, withKeystoreLock } from "../keystore";
 
 interface PartyData {
   parties: Record<string, {
@@ -79,8 +80,18 @@ export function readPrivateKeySafely(): string | null {
  * Speichert und behandelt erwartbare Speicherfehler (kein Key, Storage/Krypto nicht
  * verfügbar), damit kein unbehandeltes Promise entsteht. Kein Klartext-Fallback.
  */
-export function saveProfileSafely(p: CompassProfile, privateKeyHex: string | null): Promise<void> {
-  return saveProfile(p, privateKeyHex).catch((error: unknown) => {
+/**
+ * EVA-003: the non-extractable Compass key once migrated, else the legacy
+ * identity key. A failed IndexedDB read REJECTS (it must not look like "no
+ * key"): callers then neither load nor save, so stored data stays untouched.
+ */
+export async function readCompassKeysSafely(): Promise<CompassKeys> {
+  const aesKey = await readCompassKeyStrict();
+  return { aesKey, legacyPrivateKeyHex: readPrivateKeySafely() };
+}
+
+export function saveProfileSafely(p: CompassProfile, keys: string | CompassKeys | null): Promise<void> {
+  return saveProfile(p, keys).catch((error: unknown) => {
     if (!(error instanceof CompassStorageError)) console.warn("[compass] profile save failed", error);
   });
 }
@@ -91,15 +102,19 @@ export function useCompass() {
   const [partyData, setPartyData] = useState<PartyData | null>(null);
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Private Key für Verschlüsselung
-  const getPrivateKey = useCallback((): string | null => readPrivateKeySafely(), []);
+  // Schlüssel für die Verschlüsselung (EVA-003: eigener Compass-Key oder Legacy)
+  const getKeys = useCallback((): Promise<CompassKeys> => readCompassKeysSafely(), []);
 
   // Profil laden
   useEffect(() => {
     async function init() {
       try {
         const [loaded, pd] = await Promise.all([
-          loadProfile(getPrivateKey()),
+          // EVA-003: load (incl. its implicit plaintext migration save) under
+          // the cross-tab keystore lock, keys read inside it.
+          withKeystoreLock(async () => loadProfile(await getKeys())).then(
+            async (locked) => (locked ? locked.value : loadProfile(await getKeys())),
+          ),
           getPartyData(),
         ]);
         setProfile(loaded);
@@ -111,15 +126,21 @@ export function useCompass() {
       }
     }
     init();
-  }, [getPrivateKey]);
+  }, [getKeys]);
 
   // Profil speichern (debounced)
   const persistProfile = useCallback((p: CompassProfile) => {
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(() => {
-      void saveProfileSafely(p, getPrivateKey());
+      // EVA-003: serialised with the key migration in every tab; keys are
+      // read inside the lock so a legacy-key write can never land after the
+      // migration moved the profile to the new key.
+      void (async () => {
+        const locked = await withKeystoreLock(async () => saveProfileSafely(p, await getKeys()));
+        if (!locked) await saveProfileSafely(p, await getKeys());
+      })().catch(() => {});
     }, 300);
-  }, [getPrivateKey]);
+  }, [getKeys]);
 
   // Ergebnis bei Profil/Modell-Änderung berechnen (abgeleitet, kein Effekt)
   const result = useMemo(

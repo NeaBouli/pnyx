@@ -1,6 +1,7 @@
 /**
  * Compass Storage — Verschlüsselte Speicherung des Kompass-Profils.
- * Verwendet AES-256-GCM abgeleitet vom Ed25519 Private Key via HKDF.
+ * Verwendet AES-256-GCM: seit EVA-003 mit einem eigenen, nicht extrahierbaren
+ * Schlüssel aus IndexedDB; Legacy: abgeleitet vom Ed25519 Private Key via HKDF.
  * Kein Klartext-Fallback: ohne Key oder bei Fehler wird nichts persistiert.
  */
 import type { CompassProfile } from "./types";
@@ -63,6 +64,101 @@ async function decrypt(base64: string, key: CryptoKey): Promise<string> {
   return new TextDecoder().decode(decrypted);
 }
 
+// ─── Schlüsselquellen ───────────────────────────────────────────────────────
+
+/**
+ * EVA-003: aesKey = non-extractable Compass key (IndexedDB); legacyPrivateKeyHex
+ * = plaintext identity key of not yet migrated browsers. A plain string is the
+ * legacy key (backwards compatible call sites).
+ */
+export interface CompassKeys {
+  aesKey?: CryptoKey | null;
+  legacyPrivateKeyHex?: string | null;
+}
+
+function normalizeKeys(keys: string | CompassKeys | null): CompassKeys {
+  if (keys === null) return {};
+  return typeof keys === "string" ? { legacyPrivateKeyHex: keys } : keys;
+}
+
+async function encryptionKey(keys: CompassKeys): Promise<CryptoKey | null> {
+  if (keys.aesKey) return keys.aesKey;
+  if (keys.legacyPrivateKeyHex) return deriveAesKey(keys.legacyPrivateKeyHex);
+  return null;
+}
+
+async function decryptWithAny(blob: string, keys: CompassKeys): Promise<string | null> {
+  if (keys.aesKey) {
+    try {
+      return await decrypt(blob, keys.aesKey);
+    } catch {
+      // not (yet) encrypted with the new key
+    }
+  }
+  if (keys.legacyPrivateKeyHex) {
+    try {
+      return await decrypt(blob, await deriveAesKey(keys.legacyPrivateKeyHex));
+    } catch {
+      // wrong or no legacy key
+    }
+  }
+  return null;
+}
+
+function isStructurallyValidBlob(blob: string): boolean {
+  try {
+    return atob(blob).length >= 12 + 16; // IV + GCM tag at minimum
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * EVA-003 migration step: move the stored ciphertext from the legacy
+ * HKDF key to the new key. Idempotent. Returns false only if the blob is
+ * readable with the legacy key but could not be re-encrypted/stored, so the
+ * caller keeps the legacy key. An absent or already migrated blob returns
+ * true; so does a STRUCTURALLY broken blob (not base64 / shorter than IV+tag),
+ * which no key can ever read. A failed AES-GCM decrypt is ambiguous (wrong key
+ * or transient error) and returns false, so the legacy key is kept for retry.
+ */
+export async function reencryptLegacyCompassBlob(legacyPrivateKeyHex: string, aesKey: CryptoKey): Promise<boolean> {
+  let blob: string | null;
+  try {
+    blob = localStorage.getItem(STORAGE_KEY_ENCRYPTED);
+  } catch {
+    return false;
+  }
+  if (!blob) return true;
+  try {
+    await decrypt(blob, aesKey);
+    return true; // already migrated
+  } catch {
+    // continue with the legacy key
+  }
+  let legacyKey: CryptoKey;
+  try {
+    legacyKey = await deriveAesKey(legacyPrivateKeyHex);
+  } catch {
+    return false; // operational crypto failure: keep the legacy key and retry
+  }
+  if (!isStructurallyValidBlob(blob)) return true; // corrupt: unreadable with any key
+  let json: string;
+  try {
+    json = await decrypt(blob, legacyKey);
+  } catch {
+    return false; // ambiguous decrypt failure: keep the legacy key and retry
+  }
+  try {
+    const next = await encrypt(json, aesKey);
+    if ((await decrypt(next, aesKey)) !== json) return false;
+    localStorage.setItem(STORAGE_KEY_ENCRYPTED, next);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // ─── Öffentliche API ────────────────────────────────────────────────────────
 
 export type CompassStorageErrorCode = "NO_KEY" | "CRYPTO" | "STORAGE";
@@ -110,8 +206,9 @@ function takeLegacyProfile(): CompassProfile | null {
  * Lädt das Kompass-Profil. Ciphertext hat Vorrang; Legacy-Klartext wird nur
  * ohne Ciphertext übernommen, sofort gelöscht und mit Key verschlüsselt migriert.
  */
-export async function loadProfile(privateKeyHex: string | null): Promise<CompassProfile> {
+export async function loadProfile(keysOrPrivateKeyHex: string | CompassKeys | null): Promise<CompassProfile> {
   if (typeof window === "undefined") return createEmptyProfile();
+  const keys = normalizeKeys(keysOrPrivateKeyHex);
 
   const legacy = takeLegacyProfile();
   let encrypted: string | null;
@@ -122,13 +219,12 @@ export async function loadProfile(privateKeyHex: string | null): Promise<Compass
   }
 
   if (encrypted) {
-    if (privateKeyHex) {
+    const json = await decryptWithAny(encrypted, keys);
+    if (json !== null) {
       try {
-        const key = await deriveAesKey(privateKeyHex);
-        const json = await decrypt(encrypted, key);
         return JSON.parse(json) as CompassProfile;
       } catch {
-        // Entschlüsselung fehlgeschlagen — kein Rückfall auf Klartext
+        // korrupt — kein Rückfall auf Klartext
       }
     }
     return createEmptyProfile();
@@ -136,9 +232,9 @@ export async function loadProfile(privateKeyHex: string | null): Promise<Compass
 
   if (!legacy) return createEmptyProfile();
 
-  if (privateKeyHex) {
+  if (keys.aesKey || keys.legacyPrivateKeyHex) {
     try {
-      await saveProfile(legacy, privateKeyHex);
+      await saveProfile(legacy, keys);
     } catch {
       // Migration fehlgeschlagen — Profil bleibt nur in-memory
     }
@@ -147,18 +243,19 @@ export async function loadProfile(privateKeyHex: string | null): Promise<Compass
 }
 
 /** Speichert das Kompass-Profil ausschließlich verschlüsselt. Ohne Key oder bei Fehler: reject. */
-export async function saveProfile(profile: CompassProfile, privateKeyHex: string | null): Promise<void> {
+export async function saveProfile(profile: CompassProfile, keysOrPrivateKeyHex: string | CompassKeys | null): Promise<void> {
   if (typeof window === "undefined") return;
+  const keys = normalizeKeys(keysOrPrivateKeyHex);
 
   withStorage(() => localStorage.removeItem(STORAGE_KEY));
 
-  if (!privateKeyHex) {
+  if (!keys.aesKey && !keys.legacyPrivateKeyHex) {
     throw new CompassStorageError("NO_KEY", "Compass profile requires a key to be stored");
   }
 
   let encrypted: string;
   try {
-    const key = await deriveAesKey(privateKeyHex);
+    const key = (await encryptionKey(keys))!;
     encrypted = await encrypt(JSON.stringify(profile), key);
   } catch (cause) {
     throw new CompassStorageError("CRYPTO", "Compass profile encryption failed", cause);

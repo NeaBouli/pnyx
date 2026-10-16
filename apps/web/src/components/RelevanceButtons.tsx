@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { voteRelevance } from "@/lib/api";
-import { loadNullifier, loadKeypair, signPayload } from "@/lib/crypto";
+import { getSigner } from "@/lib/keystore";
 
 interface Props {
   billId: string;
@@ -24,13 +24,13 @@ export default function RelevanceButtons({
   async function handleVote(signal: 1 | -1) {
     if (voted !== null || loading) return;
 
-    const nullifier = loadNullifier();
-    const keypair = loadKeypair();
-    if (!nullifier || !keypair) return;
+    const signer = await getSigner();
+    if (!signer || !signer.nullifier) return;
+    const nullifier = signer.nullifier;
 
     // Sign: "relevance:{bill_id}:{signal}:{nullifier_hash}"
     const payload = `relevance:${billId}:${signal}:${nullifier}`;
-    const sig = signPayload(keypair.privateKeyHex, payload);
+    const sig = await signer.sign(payload);
 
     setLoading(true);
     try {
