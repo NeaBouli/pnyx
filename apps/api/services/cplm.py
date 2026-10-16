@@ -31,13 +31,13 @@ HISTORY_KEY = "cplm:history:v2"
 STRENGTH = 0.05
 
 
-def publish_cplm(snapshot: dict) -> dict:
+def publish_cplm(snapshot: dict, *, verified: bool = False) -> dict:
     """Guard new results as well as snapshots cached before flag activation."""
     k = small_cell_k()
     if not k:
         return snapshot
     result = dict(snapshot)
-    hidden = (snapshot.get("total_voters") or 0) < k
+    hidden = not verified or (snapshot.get("total_voters") or 0) < k
     if hidden:
         for key in ("x", "y", "quadrant", "total_voters", "total_votes",
                     "open_end_votes", "consensus_adjustments", "trend"):
@@ -83,6 +83,11 @@ async def compute_cplm(db: AsyncSession) -> dict:
     """
     from sqlalchemy import text
 
+    allowed = None
+    if small_cell_k():
+        from services.public_result_windows import load_publishable_bill_ids
+        allowed = await load_publishable_bill_ids(db)
+
     # Load all votes with their bills
     result = await db.execute(
         select(CitizenVote, ParliamentBill)
@@ -91,6 +96,8 @@ async def compute_cplm(db: AsyncSession) -> dict:
         .where(results_visible_filter())
     )
     rows = result.all()
+    if allowed is not None:
+        rows = [(vote, bill) for vote, bill in rows if bill.id in allowed]
 
     if not rows:
         return publish_cplm({
@@ -99,7 +106,7 @@ async def compute_cplm(db: AsyncSession) -> dict:
             "consensus_adjustments": 0,
             "last_updated": datetime.now(timezone.utc).isoformat(),
             "trend": {"x_delta": 0.0, "y_delta": 0.0, "direction": "stable"},
-        })
+        }, verified=True)
 
     # Load consensus votes for weighting
     consensus_result = await db.execute(text(
@@ -169,7 +176,17 @@ async def compute_cplm(db: AsyncSession) -> dict:
         "consensus_adjustments": consensus_adjustments,
         "last_updated": datetime.now(timezone.utc).isoformat(),
         "trend": {"x_delta": 0.0, "y_delta": 0.0, "direction": "stable"},
-    })
+    }, verified=True)
+
+
+def _store_snapshot(snapshot: dict, k: int) -> str:
+    return json.dumps({"policy": "publishable-v1", "snapshot": snapshot} if k else snapshot)
+
+
+def _read_snapshot(raw: str, k: int) -> dict:
+    stored = json.loads(raw)
+    verified = bool(k and stored.get("policy") == "publishable-v1")
+    return publish_cplm(stored["snapshot"] if verified else stored, verified=verified)
 
 
 async def get_cplm_cached(db: AsyncSession) -> dict:
@@ -178,22 +195,22 @@ async def get_cplm_cached(db: AsyncSession) -> dict:
     # Keep flag-off cache/history byte-compatible and never reuse its unchecked
     # trend deltas when suppression is enabled (including after changing k).
     k = small_cell_k()
-    suffix = f":k{k}" if k else ""
+    suffix = f":publishable-v1:k{k}" if k else ""
     cache_key, history_key = CACHE_KEY + suffix, HISTORY_KEY + suffix
     cached = await r.get(cache_key)
     if cached:
         await r.aclose()
-        return publish_cplm(json.loads(cached))
+        return _read_snapshot(cached, k)
 
     result = await compute_cplm(db)
 
     # Cache + store history snapshot
-    await r.setex(cache_key, CACHE_TTL, json.dumps(result))
+    await r.setex(cache_key, CACHE_TTL, _store_snapshot(result, k))
 
     # Compute trend from previous snapshot
     prev = await r.lindex(history_key, 0)
     if prev:
-        prev_data = publish_cplm(json.loads(prev))
+        prev_data = _read_snapshot(prev, k)
     if prev and result["x"] is not None and prev_data["x"] is not None:
         x_delta = result["x"] - prev_data.get("x", 0)
         y_delta = result["y"] - prev_data.get("y", 0)
@@ -206,7 +223,7 @@ async def get_cplm_cached(db: AsyncSession) -> dict:
         result["trend"] = {"x_delta": round(x_delta, 4), "y_delta": round(y_delta, 4), "direction": direction}
 
     # Push to history (keep last 365 entries)
-    await r.lpush(history_key, json.dumps(result))
+    await r.lpush(history_key, _store_snapshot(result, k))
     await r.ltrim(history_key, 0, 364)
 
     await r.aclose()
@@ -217,17 +234,17 @@ async def get_cplm_history(days: int = 30) -> list[dict]:
     """Get historical CPLM snapshots from Redis."""
     r = aioredis.from_url(REDIS_URL, decode_responses=True)
     k = small_cell_k()
-    suffix = f":k{k}" if k else ""
+    suffix = f":publishable-v1:k{k}" if k else ""
     entries = await r.lrange(HISTORY_KEY + suffix, 0, min(days * 4, 364))  # ~4 snapshots/day
     await r.aclose()
-    return [publish_cplm(json.loads(e)) for e in entries]
+    return [_read_snapshot(e, k) for e in entries]
 
 
 async def refresh_cplm_cache(db: AsyncSession) -> dict:
     """Force refresh the CPLM cache (called by scheduler)."""
     r = aioredis.from_url(REDIS_URL, decode_responses=True)
     k = small_cell_k()
-    suffix = f":k{k}" if k else ""
+    suffix = f":publishable-v1:k{k}" if k else ""
     await r.delete(CACHE_KEY + suffix)
     await r.aclose()
     return await get_cplm_cached(db)

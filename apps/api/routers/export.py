@@ -15,10 +15,10 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, cast, String, union_all
+from sqlalchemy import select, func
 
 from database import get_db
-from models import ParliamentBill, CitizenVote, BillStatus, VoteChoice, Party, ZkVoteReceipt
+from models import ParliamentBill, CitizenVote, BillStatus, VoteChoice, Party
 from services.bill_visibility import public_bill_filter, results_hidden
 from services.small_cell import small_cell_k, suppress_public_cells
 from routers.voting import compute_divergence
@@ -30,7 +30,6 @@ router = APIRouter(prefix="/api/v1/export", tags=["MOD-14 Data Export"])
 async def get_all_results(db: AsyncSession, min_votes: int = 0) -> list[dict]:
     """Aggregierte Ergebnisse aller Bills."""
     threshold = small_cell_k()
-    min_votes = max(min_votes, threshold)
     result = await db.execute(
         select(ParliamentBill).where(public_bill_filter()).order_by(
             ParliamentBill.parliament_vote_date.desc().nullslast()
@@ -38,35 +37,24 @@ async def get_all_results(db: AsyncSession, min_votes: int = 0) -> list[dict]:
     )
     bills = result.scalars().all()
 
-    vote_query = (
-        select(CitizenVote.bill_id, CitizenVote.vote, func.count(CitizenVote.id))
-        .group_by(CitizenVote.bill_id, CitizenVote.vote)
-    )
     if threshold:
-        # Use the same combined population as public results: a Tier-1-only
-        # export could be subtracted from it to recover a small ZK choice.
-        events = union_all(
-            select(CitizenVote.bill_id, cast(CitizenVote.vote, String).label("vote")),
-            select(ParliamentBill.id, ZkVoteReceipt.vote_commitment)
-            .join(ParliamentBill, ZkVoteReceipt.vote_scope_id == func.concat("bill:", ParliamentBill.id))
-            .where(func.coalesce(ParliamentBill.source, "PARLIAMENT") == "PARLIAMENT",
-                   ZkVoteReceipt.vote_commitment.in_([c.value for c in VoteChoice])),
-        ).subquery("export_vote_events")
-        vote_query = select(events.c.bill_id, events.c.vote, func.count()).group_by(
-            events.c.bill_id, events.c.vote)
-    vote_result = await db.execute(vote_query)
-    vote_counts: dict[str, dict[VoteChoice, int]] = {}
-    for bill_id, vote, count in vote_result.all():
-        vote_counts.setdefault(bill_id, {})[VoteChoice(vote)] = count
-
-    zk_totals = {}
-    if threshold:
-        result = await db.execute(select(ZkVoteReceipt.vote_scope_id, func.count())
-                                  .group_by(ZkVoteReceipt.vote_scope_id))
-        zk_totals = {scope: count for scope, count in result.all()}
+        from services.public_result_windows import load_public_vote_days, publishable_bill_ids
+        populations = await load_public_vote_days(db)
+        allowed = publishable_bill_ids(populations)
+        vote_counts = {bid: {choice: populations[bid]["totals"][choice.value.lower()]
+                             for choice in VoteChoice} for bid in allowed}
+    else:
+        vote_result = await db.execute(
+            select(CitizenVote.bill_id, CitizenVote.vote, func.count(CitizenVote.id))
+            .group_by(CitizenVote.bill_id, CitizenVote.vote))
+        vote_counts = {}
+        for bill_id, vote, count in vote_result.all():
+            vote_counts.setdefault(bill_id, {})[VoteChoice(vote)] = count
 
     rows = []
     for bill in bills:
+        if threshold and bill.id not in allowed:
+            continue
         # A running vote with hidden results exports no counts (T-599).
         counts = {} if results_hidden(bill) else vote_counts.get(bill.id, {})
         yes = counts.get(VoteChoice.YES, 0)
@@ -112,7 +100,7 @@ async def get_all_results(db: AsyncSession, min_votes: int = 0) -> list[dict]:
         }, choices=("citizen_yes", "citizen_no", "citizen_abstain", "citizen_unknown"),
             total="citizen_total", percentages=("yes_pct", "no_pct", "abstain_pct"),
             derived=("divergence_score",), k=threshold,
-            public_source_total=zk_totals.get("bill:" + bill.id, 0) if threshold and (getattr(bill, "source", None) or "PARLIAMENT") == "PARLIAMENT" else 0))
+            publishable=True if threshold else None))
 
     return rows
 
@@ -146,7 +134,7 @@ async def export_bills_csv(db: AsyncSession = Depends(get_db)):
 
 @router.get("/results.json")
 async def export_results_json(
-    min_votes: int = Query(0, ge=0, description="Minimum votes; effective minimum is max(min_votes, PUBLIC_RESULTS_MIN_COUNT)"),
+    min_votes: int = Query(0, ge=0, description="Minimum votes among publishable bills"),
     db: AsyncSession = Depends(get_db),
 ):
     """Alle Abstimmungsergebnisse als JSON. Lizenz: CC BY 4.0"""
@@ -170,7 +158,7 @@ async def export_results_json(
 
 @router.get("/divergence.csv")
 async def export_divergence_csv(
-    min_votes: int = Query(10, ge=0, description="Minimum votes; cannot lower PUBLIC_RESULTS_MIN_COUNT"),
+    min_votes: int = Query(10, ge=0, description="Minimum votes among publishable bills"),
     db: AsyncSession = Depends(get_db)
 ):
     """Divergence Score Ranking als CSV. Sortiert nach höchster Abweichung."""
@@ -178,7 +166,8 @@ async def export_divergence_csv(
 
     diverge_rows = [
         r for r in rows
-        if r["citizen_total"] >= min_votes and r["divergence_score"] not in ("", None)
+        if r["divergence_score"] not in ("", None) and r["citizen_total"] is not None
+        and r["citizen_total"] >= min_votes
     ]
     diverge_rows.sort(
         key=lambda r: float(r["divergence_score"]) if r["divergence_score"] else 0,

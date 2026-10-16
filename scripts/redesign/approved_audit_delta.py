@@ -61,8 +61,9 @@ import r0_inventory
 # region is self-declared and locked, GDPR/"no personal data" badges are replaced
 # by factual minimization statements, and TrueRepublic/iOS are labelled planned /
 # not available. community.html: "Data minimization." and pseudonymous POLIS identity.
+# T-9128: community result counters render null as withheld.
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/community.html": "01cadf7469b64df69c23c1ebff8bde67c7e6b5e0f4b2d12394509b5f20413b86",  # T-9048: scoped contrast, heading semantics and document-language toggle; T-9106: legal-modal claims text
+    "docs/community.html": "2e69bc32ab3c9730e5997fbad648b591388134897e80f796daefc9f1a7607bd5",  # T-9048: scoped contrast, heading semantics and document-language toggle; T-9106: legal-modal claims text
     "docs/wiki/api.html": "e56012799245533915b72606ffc8955bd4c3ce61f3ba5f9926fd07abb101106c",
     "docs/wiki/architecture.html": "1af2aa9c102d66887e52627c277ebfea03935a2ff3b772235cf07ed3d4313f0b",
     "docs/wiki/broadcasting.html": "eb345ed4551a94220e47aeb4b40c7c745bf6dfeaa5f330eac6f629a09d31f716",

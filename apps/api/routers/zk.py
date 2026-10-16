@@ -18,7 +18,7 @@ from starlette.concurrency import run_in_threadpool
 
 from database import get_db
 from services.small_cell import small_cell_k
-from services.zk_vote_aggregation import count_zk_scope_receipts
+from services.zk_vote_aggregation import zk_scope_publishable
 from dependencies import verify_admin_key
 from keypair import verify_signature
 from models import (
@@ -863,7 +863,7 @@ async def list_zk_receipts(
     scope = validate_vote_scope_id(vote_scope_id)
     await _ensure_scope_public_or_safe_canary(db, scope)
     k = small_cell_k()
-    if k and await count_zk_scope_receipts(db, scope) < k:
+    if k and not await zk_scope_publishable(db, scope):
         return ZkReceiptListResponse(vote_scope_id=scope, limit=limit, offset=offset,
                                      receipts=None, suppressed=True, suppression_k=k)
     result = await db.execute(

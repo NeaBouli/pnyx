@@ -1,7 +1,7 @@
 """Public individual-vote cells (ADR-007 S2); never apply to private reads.
 
-Zero is a small cell too. Secondary suppression hides the entire choice or
-source partition, so a published total cannot recover one hidden member.
+Zero is a small cell too. One publishable set governs all public bill results
+and their derivatives; suppression withholds the entire bill population.
 """
 import logging
 import os
@@ -37,9 +37,17 @@ def choices_suppressed(counts: Iterable[int], *, k: int | None = None) -> bool:
     return threshold > 0 and any(count < threshold for count in counts)
 
 
-def source_complement_suppressed(total: int, zk_total: int, *, k: int | None = None) -> bool:
+def publishable_set(bills: dict, *, k: int | None = None) -> set:
+    """One release decision for every consumer.
+
+    Values contain (combined choices, separately observable source choices).
+    Absent sources are omitted; every choice (including zero) in a present
+    source must reach k. Callers must supply complete source partitions.
+    """
     threshold = small_cell_k() if k is None else k
-    return threshold > 0 and zk_total >= threshold and total - zk_total < threshold
+    return {bill_id for bill_id, (combined, sources) in bills.items()
+            if not threshold or all(count >= threshold
+                                    for cells in (combined, *sources) for count in cells)}
 
 
 def suppress_public_cells(
@@ -51,6 +59,7 @@ def suppress_public_cells(
     partitions: tuple[str, ...] = (),
     derived: tuple[str, ...] = (),
     public_source_total: int = 0,
+    publishable: bool | None = None,
     k: int | None = None,
 ) -> dict:
     """Preserve keys; suppress choices, derived shares and source partitions.
@@ -63,25 +72,19 @@ def suppress_public_cells(
     if threshold == 0:
         return payload
     result = dict(payload)
-    # Enumerable ZK receipts publish their scope count independently. Hiding
-    # the source fields alone cannot protect total minus that public count.
-    source_total = public_source_total
-    if not source_total:
-        source_total = payload.get("zk_total", payload.get("zk_vote_count", 0)) or 0
-    hide_source_complement = source_complement_suppressed(payload[total], source_total, k=threshold)
-    hide_choices = hide_source_complement or choices_suppressed((payload[key] for key in choices), k=threshold)
-    hide_partitions = choices_suppressed((payload[key] for key in partitions), k=threshold)
-    hide_total = payload[total] < threshold or hide_source_complement
-    if hide_choices:
-        for key in (*choices, *percentages, *derived):
+    if publishable is None:
+        cells = tuple(payload[key] for key in choices) or (payload[total],)
+        sources = tuple((payload[key],) for key in partitions if payload[key])
+        # A mixed source total cannot establish per-choice safety. Real bill
+        # callers pass the decision made with the complete source counts.
+        source_total = public_source_total or payload.get("zk_total", payload.get("zk_vote_count", 0)) or 0
+        if source_total and source_total != payload[total]:
+            sources += ((0,),)
+        publishable = bool(publishable_set({0: (cells, sources)}, k=threshold))
+    if not publishable:
+        for key in (*choices, *percentages, *partitions, *derived, total):
             result[key] = None
-    if hide_partitions:
-        for key in partitions:
-            result[key] = None
-    if hide_total:
-        result[total] = None
-    result.update(suppressed=hide_choices or hide_partitions or hide_total,
-                  suppression_k=threshold)
+    result.update(suppressed=not publishable, suppression_k=threshold)
     return result
 
 
@@ -99,7 +102,7 @@ def suppress_public_series(rows: list[dict], *, choices: tuple[str, ...], total:
     # also protects differences between successive/overlapping window queries.
     partition = rows if all_time_rows is None else all_time_rows
     hide_choices = any(choices_suppressed((r[c] for c in choices), k=threshold) for r in partition)
-    hide_totals = any(r[total] < threshold for r in partition)
+    hide_totals = hide_choices or any(r[total] < threshold for r in partition)
     published = []
     for row in rows:
         result = suppress_public_cells(row, choices=choices, total=total, k=threshold)

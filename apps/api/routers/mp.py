@@ -16,7 +16,7 @@ from sqlalchemy import select, func
 from database import get_db
 from models import ParliamentBill, CitizenVote, Party, BillStatus, VoteChoice
 from services.bill_visibility import is_public_bill, public_bill_filter, results_hidden
-from services.small_cell import small_cell_k, choices_suppressed, suppress_public_cells
+from services.small_cell import small_cell_k, suppress_public_cells
 from services.zk_vote_aggregation import aggregate_bill_vote_totals, include_zk_for_bill
 
 logger = logging.getLogger(__name__)
@@ -42,12 +42,9 @@ async def citizen_majority_for(db: AsyncSession, bill_id: str, bill=None):
     """Returns (majority: str, yes: int, no: int, total: int)"""
     if small_cell_k():
         totals = await aggregate_bill_vote_totals(db, bill_id, include_zk=include_zk_for_bill(bill))
-        majority = None if choices_suppressed((totals.yes, totals.no, totals.abstain, totals.unknown)) else (
-            "YES" if totals.yes >= totals.no else "NO")
-        # A published receipt count is an independently visible source cell.
-        if totals.zk_total >= small_cell_k() and totals.tier1_total < small_cell_k():
+        if not totals.publishable:
             return None, None, None, None
-        return majority, totals.yes, totals.no, totals.total
+        return ("YES" if totals.yes >= totals.no else "NO"), totals.yes, totals.no, totals.total
     yes   = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.YES)) or 0
     no    = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.NO)) or 0
     total = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill_id)) or 0

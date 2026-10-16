@@ -16,27 +16,22 @@ percentages are JSON `null`, never zero. CSV represents null as an empty field.
 With the flag disabled, no suppression metadata fields are added, including
 through the HTTP `BillResults` response model.
 
-* Counts below k, **including zero**, are small cells. If any choice is small,
-  **all** choice counts, percentages, and derived citizen majorities/divergence
-  are withheld. This includes UNKNOWN where the population supports that choice.
-* The overall total is published exactly only when it is at least k. It may
-  remain visible when choices are withheld: no other choice count/share is
-  available to subtract from that total.
-* Tier-1 and ZK totals form a separate partition. If either is below k, **both**
-  are withheld to prevent recovering one from the total minus the other.
-* Public ZK receipt lists and future Arweave receipt/aggregate publications are
-  withheld until the scope has at least k ZK receipts. A single lookup using its
-  own receipt token remains available. Once enumeration is available, its ZK
-  count is a published source cell: if total minus ZK is below k, the combined
-  total and choices are withheld as well, even if both tier fields are null.
-  Receipt timestamps also make the ZK daily/window counts public; those time
-  partitions must protect their Tier-1 complements in the same way.
-* `suppressed` indicates at least one withheld field, not necessarily a hidden
-  total. A particular null can be **secondary** suppression even if that cell
-  has at least k votes. Clients must not label every null choice as "< k";
-  show a withheld breakdown notice. A null total can also protect a source or
-  time complement while the total itself exceeds k; show `—` when the reason
-  is unavailable.
+* One function (`services.small_cell.publishable_set`) selects publishable
+  bills/scopes. Every choice cell in the combined population and in **each
+  present source** (ordinary/Tier-1 and ZK, including enumerable receipts) must
+  reach k. Zero choice cells in a present source count as small; a source with
+  no votes is absent, so ordinary-only bills can qualify.
+* If any check fails, the whole bill is suppressed: all choices, percentages,
+  totals, tier subtotals and derived values are null. Its ZK enumeration and
+  future ZK/Arweave publication are withheld. A token-based lookup of one's own
+  receipt remains available.
+* All derived outputs use only the publishable set: CPLM positions, voter and
+  vote counts, caches and history; platform vote sums and timelines; rankings,
+  divergence, representation, MP comparisons and exports. Suppressed bills
+  never contribute to another bill's or the platform's aggregate.
+* `suppressed` indicates withheld results. Nulls may be secondary suppression;
+  clients show `—` and a withheld breakdown notice, without claiming every
+  hidden cell itself has fewer than k votes.
 * Dates, titles, parliament/authority votes, and other public metadata retain
   their previous meaning. Existing results-visibility checks still apply.
 
@@ -45,7 +40,7 @@ Example (k=10, choices 39/1/10/10, sources 59/1):
 ```json
 {
   "yes": null, "no": null, "abstain": null, "unknown": null,
-  "total": 60, "yes_pct": null, "no_pct": null,
+  "total": null, "yes_pct": null, "no_pct": null,
   "abstain_pct": null, "unknown_pct": null,
   "tier1_total": null, "zk_total": null,
   "suppressed": true, "suppression_k": 10
@@ -63,15 +58,15 @@ Example (k=10, choices 39/1/10/10, sources 59/1):
 | `GET /api/v1/public/bills/{bill}/results` | Full choice/source rule; flags inside `citizen_votes`. `divergence_score=null` when choices are hidden. |
 | `GET /api/v1/analytics/votes-timeline` | Each daily bucket follows the full choice rule over the **all-time** daily partition, including days outside the requested window. If any day has hidden choices/totals, that partition is withheld throughout the bill series. Platform series exclude bills with suppressed cells **before** combining days across bills. Flags are per bucket. |
 | `GET /api/v1/analytics/bill/{bill}` | Full choice/source rule in `votes`; divergence withheld with choices. Weekday counts retain the existing minimum 10, raised to k if larger; if any observed weekday is below that minimum, all observed weekday counts become null with per-row flags. |
-| Analytics `divergence-trends`, `top-divergence`, `overview`, `representation`; public `representation` | Suppressed-choice bills contribute no divergence score or ranking entry; existing minimum 10 still applies. Representation's total excludes bill totals below k. |
-| `GET /api/v1/export/results.json` and `bills.csv` | Filter rows using max(caller minimum, k), then apply the full choice rule and null divergence. Flags per row. While enabled, exports use combined Tier-1/ZK counts just like ordinary results (ZK only for Parliament), preventing subtraction between different populations. Flag off preserves legacy Tier-1 export behavior. |
+| Analytics `divergence-trends`, `top-divergence`, `overview`, `representation`; public `representation` | Suppressed-choice bills contribute no divergence score or ranking entry; existing minimum 10 still applies. Representation's total excludes every suppressed bill. |
+| `GET /api/v1/export/results.json` and `bills.csv` | Exclude suppressed bills first, independently of caller minimum. Apply `min_votes` only among publishable bills; probing different minima cannot reveal suppressed totals. Flags per row. While enabled, exports use combined Tier-1/ZK counts just like ordinary results (ZK only for Parliament), preventing subtraction between different populations. Flag off preserves legacy Tier-1 export behavior. |
 | `GET /api/v1/export/divergence.csv` | Same admission rule, including `min_votes=0`; omit rows with suppressed/unavailable divergence. CSV adds suppression columns while enabled. |
 | `GET /api/v1/municipal/{dimos}/voteable` | Three published choice cells and total follow the rule; flags inside each decision's `votes`. `/decisions` has no individual-vote aggregates. |
 | `GET /api/v1/mp/bill/{bill}` | Full choice rule; flags in `citizen_votes`; hide majority, yes/no counts/share and party matches when the breakdown is suppressed. While enabled, counts use the same combined population as results. |
 | MP `compare/{party}` and `ranking` | Suppressed-choice bills contribute no comparison/ranking entry; existing minimum 10 still applies. |
 | Future aggregate Arweave audit snapshots | Same full choice rule and null divergence; flags in `citizen_votes`. Lifecycle publisher uses the combined public population while enabled. |
 
-Future Telegram bill notifications suppress totals below k; SSE milestones only publish at/above k. While enabled, monthly newsletters omit their separate vote-count table and turnout counter and link readers to the guarded public results.
+Future Telegram bill notifications and SSE milestones require a publishable bill. While enabled, monthly newsletters omit their separate vote-count table and turnout counter and link readers to the guarded public results.
 
 Web bill reports/results and mobile results handle nullable values. A hidden
 overall total is shown as `—`, or `< 10` when it is known to be below the
@@ -94,16 +89,19 @@ such bills before combining. This deliberately conservative release policy
 covers successive and overlapping window queries on unchanged data: different
 window lengths must not select different suppression baselines or release a
 small daily difference. Empty dates are not published as numeric zero buckets.
-CPLM points and historical snapshots require at least k distinct voters; otherwise
+CPLM points and historical snapshots are computed only from publishable bills,
+and additionally require at least k distinct voters; otherwise
 coordinates, counts, quadrant and trend are null with suppression metadata.
-Flag-enabled CPLM caches/history are isolated by k from legacy cache records.
+Flag-enabled CPLM caches/history use a new `publishable-v1` namespace per k;
+legacy snapshots without this policy envelope are withheld. Flag-off cache keys
+and response bytes remain unchanged.
 
 ## Scope and remaining limits
 
 Evaluation aggregates (existing k=10), consensus (own minimum), signed personal
 reads, authenticated representative reads, and admin outputs are unchanged.
 Single ZK receipt lookup by its own token remains available; public enumeration
-and future Arweave publication follow the scope threshold above.
+and future Arweave publication follow the full per-choice/source rule above.
 
 This is suppression at publication time, not differential privacy. Previously
 published exports, cached responses and immutable Arweave records cannot be

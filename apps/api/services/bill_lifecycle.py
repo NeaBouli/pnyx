@@ -296,7 +296,9 @@ async def _hook_arweave_snapshot(db: AsyncSession, bill: ParliamentBill) -> None
 
         if small_cell_k():
             totals = await aggregate_bill_vote_totals(db, bill.id, include_zk=include_zk_for_bill(bill))
-            vote_results = {"yes": totals.yes, "no": totals.no, "abstain": totals.abstain,
+            if not totals.publishable:
+                return
+            vote_results = {"publishable": totals.publishable, "yes": totals.yes, "no": totals.no, "abstain": totals.abstain,
                             "unknown": totals.unknown, "total": totals.total, "zk_total": totals.zk_total}
         else:
             yes = await db.scalar(
@@ -355,8 +357,7 @@ async def _hook_telegram_community(bill: ParliamentBill, new_status: BillStatus,
                     include_zk=include_zk_for_bill(bill),
                 )
                 citizen_votes = totals.total
-                from services.small_cell import source_complement_suppressed
-                if source_complement_suppressed(totals.total, totals.zk_total):
+                if not totals.publishable:
                     citizen_votes = None
             await notify_parliament_voted(bill.id, title, citizen_votes=citizen_votes)
     except Exception as e:

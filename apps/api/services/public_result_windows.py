@@ -5,7 +5,7 @@ from sqlalchemy import String, cast, func, literal, select, union_all
 
 from models import CitizenVote, ParliamentBill, VoteChoice, ZkVoteReceipt
 from services.bill_visibility import public_bill_filter, results_visible_filter
-from services.small_cell import small_cell_k, suppress_public_cells, suppress_public_series, source_complement_suppressed
+from services.small_cell import small_cell_k, publishable_set, suppress_public_series
 
 CHOICES = ("yes", "no", "abstain", "unknown")
 
@@ -34,41 +34,49 @@ async def load_public_vote_days(db, *, bill_id=None):
                               .group_by(events.c.bill_id, day, events.c.vote, events.c.zk))
     bills = {}
     for row in result.all():
-        entry = bills.setdefault(row.bill_id, {"days": {}, "zk_total": 0, "zk_days": {}})
+        entry = bills.setdefault(row.bill_id, {"days": {}, "zk_total": 0,
+                                               "sources": {}, "daily_sources": {}})
         date = str(row.day)[:10]
         bucket = entry["days"].setdefault(date, dict.fromkeys((*CHOICES, "total"), 0))
         bucket["date"] = date
         bucket[str(row.vote).lower()] += row.count
         bucket["total"] += row.count
         entry["zk_total"] += row.count if row.zk else 0
-        entry["zk_days"][date] = entry["zk_days"].get(date, 0) + (row.count if row.zk else 0)
+        source = entry["sources"].setdefault(row.zk, dict.fromkeys(CHOICES, 0))
+        source[str(row.vote).lower()] += row.count
+        daily = entry["daily_sources"].setdefault((date, row.zk), dict.fromkeys(CHOICES, 0))
+        daily[str(row.vote).lower()] += row.count
     for entry in bills.values():
         entry["totals"] = {key: sum(r[key] for r in entry["days"].values())
                            for key in (*CHOICES, "total")}
     return bills
 
 
-def publishable_bill(entry):
-    result = suppress_public_cells(entry["totals"], choices=CHOICES, total="total",
-                                   public_source_total=entry["zk_total"])
-    return not result["suppressed"]
+def publishable_bill_ids(bills):
+    return publishable_set({bill_id: (tuple(entry["totals"][c] for c in CHOICES),
+                                     tuple(tuple(cells[c] for c in CHOICES)
+                                           for cells in entry["sources"].values() if sum(cells.values())))
+                            for bill_id, entry in bills.items()})
+
+
+async def load_publishable_bill_ids(db):
+    return publishable_bill_ids(await load_public_vote_days(db))
 
 
 def hidden_daily_sources(entry):
     # Once scope enumeration is open, receipt timestamps also publish the ZK
     # count for every date/window, even when that narrower count is below k.
     k = small_cell_k()
-    return entry["zk_total"] >= k and any(
-        r["total"] - entry["zk_days"].get(date, 0) < k for date, r in entry["days"].items())
+    return entry["zk_total"] > 0 and any(
+        count < k for cells in entry["daily_sources"].values() for count in cells.values())
 
 
 def public_window_count(bills, *, since=None):
     """Sum only publishable bills; a withheld time complement withholds the sum."""
     k = small_cell_k()
     total = 0
-    for entry in bills.values():
-        if not publishable_bill(entry):
-            continue
+    for bill_id in publishable_bill_ids(bills):
+        entry = bills[bill_id]
         if since is None:
             total += entry["totals"]["total"]
             continue
@@ -90,15 +98,15 @@ def public_window_count(bills, *, since=None):
 
 def public_daily_series(bills, *, since: datetime, platform: bool):
     timeline = {}
-    for entry in bills.values():
+    for bill_id in publishable_bill_ids(bills):
+        entry = bills[bill_id]
         days = list(entry["days"].values())
         published = suppress_public_series(days, choices=CHOICES, total="total", all_time_rows=days)
-        if (source_complement_suppressed(entry["totals"]["total"], entry["zk_total"])
-                or hidden_daily_sources(entry)):
+        if hidden_daily_sources(entry):
             for row in published:
                 row.update(dict.fromkeys((*CHOICES, "total")))
                 row["suppressed"] = True
-        if platform and (not publishable_bill(entry) or any(r["suppressed"] for r in published)):
+        if platform and any(r["suppressed"] for r in published):
             continue
         for row in published:
             if row["date"] < since.date().isoformat():

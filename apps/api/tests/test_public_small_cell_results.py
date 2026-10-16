@@ -61,8 +61,8 @@ def test_public_results_flag_off_preserves_exact_payload(monkeypatch, raw):
     assert suppress_cell(1) == {"count": 1, "suppressed": False}
 
 
-@pytest.mark.parametrize("counts,total", [([8, 1, 0, 0], None), ([9, 10, 10, 10], 39),
-                                          ([100, 10, 10, 1], 121), ([10, 10, 10, 0], 30)])
+@pytest.mark.parametrize("counts,total", [([8, 1, 0, 0], None), ([9, 10, 10, 10], None),
+                                          ([100, 10, 10, 1], None), ([10, 10, 10, 0], None)])
 def test_public_results_secondary_suppression_prevents_total_minus_other_cells(counts, total):
     result = publish(counts)
     assert result["total"] == total
@@ -72,11 +72,13 @@ def test_public_results_secondary_suppression_prevents_total_minus_other_cells(c
     assert result["suppressed"] is True and result["suppression_k"] == 10
 
 
-def test_public_results_threshold_is_inclusive_and_partitions_are_independent():
+def test_public_results_threshold_requires_complete_source_evidence():
     original = dict(zip(CHOICES, [10] * 4), total=40, tier1=30, zk=10, yes_pct=25)
     result = suppress_public_cells(original, choices=CHOICES, total="total",
-                                   percentages=("yes_pct",), partitions=("tier1", "zk"))
-    assert result == {**original, "suppressed": False, "suppression_k": 10}
+                                   percentages=("yes_pct",), partitions=("tier1", "zk"), public_source_total=10)
+    assert result["suppressed"] is True and result["total"] is None
+    safe = VoteTotals(20, 20, 20, 20, 40, 40, sources=((10,)*4, (10,)*4))
+    assert safe.publishable
     assert suppress_cell(9) == {"count": None, "suppressed": True}
     assert suppress_cell(10) == {"count": 10, "suppressed": False}
 
@@ -137,7 +139,7 @@ def aggregate(monkeypatch, module, counts):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("counts,total", [([8, 1, 0, 0], None), ([39, 1, 10, 10], 60)])
+@pytest.mark.parametrize("counts,total", [([8, 1, 0, 0], None), ([39, 1, 10, 10], None)])
 async def test_public_and_ordinary_results_suppress_counts_shares_and_derived_values(monkeypatch, counts, total):
     bill = bill_fixture()
     for module in (public_api, voting, analytics):
@@ -178,15 +180,16 @@ async def test_public_results_http_response_preserves_nulls_and_schema(monkeypat
 async def test_public_results_latest_and_in_progress_cannot_leak_shares(monkeypatch):
     bill = bill_fixture()
     aggregate(monkeypatch, voting, [39, 1, 10, 10])
-    latest = await voting.get_latest_result(db=Db(rows=[[bill]]))
-    assert latest["total_votes"] == 60 and latest["yes_pct"] is None
+    latest = await voting.get_latest_result(db=Db(rows=[[], [bill]]))
+    assert latest["total_votes"] is None and latest["yes_pct"] is None
     db = Db(rows=[[dict(id=bill.id, title_el=bill.title_el, title_en=bill.title_en,
                        status="OPEN_END", governance_level="NATIONAL", total_votes=60,
                        yes_count=39, no_count=1, abstain_count=10, unknown_count=10)]])
     monkeypatch.setenv("VOTES_IN_PROGRESS_THRESHOLD", "1")
+    db.rows.insert(0, [])
     ticker = await voting.get_votes_in_progress(db=db)
     assert ticker["threshold"] == 10
-    assert ticker["bills"][0]["yes_pct"] is None
+    assert ticker["bills"] == []
 
 
 def export_db():
@@ -195,11 +198,11 @@ def export_db():
     mixed = bill_fixture()
     safe = bill_fixture()
     safe.id = "SAFE"
-    return Db(rows=[[below, mixed, safe], [
-        (below.id, VoteChoice.YES, 9),
-        *[(mixed.id, choice, count) for choice, count in zip(VoteChoice, [39, 1, 10, 10])],
-        *[(safe.id, choice, 10) for choice in VoteChoice],
-    ], []])
+    days = [SimpleNamespace(bill_id=bill.id, vote=c.value, count=n, zk=0,
+                            day=datetime(2026, 10, 15))
+            for bill, counts in [(below, [9,0,0,0]), (mixed, [39,1,10,10]), (safe, [10]*4)]
+            for c, n in zip(VoteChoice, counts) if n]
+    return Db(rows=[[below, mixed, safe], days])
 
 
 @pytest.mark.asyncio
@@ -212,12 +215,8 @@ async def test_export_results_caller_cannot_bypass_threshold(min_votes):
         response = await client.get(f"/api/v1/export/results.json?min_votes={min_votes}")
     assert response.status_code == 200
     rows = response.json()["data"]
-    assert len(rows) == 2 and all(r["citizen_total"] >= 10 for r in rows)
-    mixed = next(r for r in rows if r["bill_id"] == "GR-PRIVACY")
-    assert mixed["citizen_yes"] is None and mixed["no_pct"] is None
-    assert mixed["divergence_score"] is None and mixed["suppressed"] is True
-    safe = next(r for r in rows if r["bill_id"] == "SAFE")
-    assert safe["citizen_yes"] == 10 and safe["yes_pct"] == 25
+    assert len(rows) == 1 and rows[0]["bill_id"] == "SAFE"
+    assert rows[0]["citizen_yes"] == 10 and rows[0]["yes_pct"] == 25
 
 
 @pytest.mark.asyncio
@@ -231,7 +230,7 @@ async def test_export_population_includes_zk_and_csv_omits_suppressed_scores():
     assert "suppressed,suppression_k" in body
     response = await export.export_bills_csv(db=export_db())
     body = "".join([chunk async for chunk in response.body_iterator])
-    assert "GR-PRIVACY" in body and "True,10" in body and "BELOW" not in body
+    assert "GR-PRIVACY" not in body and "False,10" in body and "BELOW" not in body
 
 
 @pytest.mark.asyncio
@@ -251,7 +250,7 @@ async def test_analytics_timeline_suppresses_small_and_complementary_buckets(bil
         assert all(bucket[c] is None for c in CHOICES)
         assert bucket["suppressed"] is True
     totals = [b["total"] for b in result["timeline"]]
-    assert totals == ([None, None] if sum(small) < 10 else [sum(small), 40])
+    assert totals == [None, None]
 
 
 @pytest.mark.asyncio
@@ -263,14 +262,14 @@ async def test_analytics_divergence_rankings_and_weekday_buckets(monkeypatch):
     assert trends["trends"] == [] and ranked["data"] == []
     result = await analytics.bill_analytics(bill.id, db=Db(rows=[[
         SimpleNamespace(weekday=0, count=1), SimpleNamespace(weekday=1, count=59)]]))
-    assert [r["count"] for r in result["by_weekday"]] == [None, None]
+    assert result["by_weekday"] == []
 
 
 @pytest.mark.asyncio
 async def test_municipal_public_totals_and_complementary_cells():
     decision = SimpleNamespace(ada="ADA", subject="Test", organization_label="Test", dimos_id=1,
                                decision_type_uid="x", publish_timestamp=None, document_url=None)
-    for counts, total in [([8, 1, 0], None), ([40, 1, 10], 51), ([10, 10, 10], 30)]:
+    for counts, total in [([8, 1, 0], None), ([40, 1, 10], None), ([10, 10, 10], 30)]:
         result = await municipal.get_voteable_decisions(dimos_id=1, days=90,
                                                        db=Db(rows=[[decision]], scalars=counts))
         votes = result["decisions"][0]["votes"]
@@ -282,7 +281,7 @@ async def test_municipal_public_totals_and_complementary_cells():
 async def test_mp_public_breakdown_does_not_reveal_withheld_choice(monkeypatch):
     aggregate(monkeypatch, mp, [39, 10, 10, 1])
     result = await mp.bill_party_breakdown("GR-PRIVACY", db=Db(rows=[[]]))
-    assert result["citizen_votes"]["total"] == 60
+    assert result["citizen_votes"]["total"] is None
     assert result["citizen_votes"]["yes_pct"] is None
     assert result["citizen_votes"]["majority"] is None
     assert all(p["match_citizens"] is None for p in result["party_votes"])
@@ -291,7 +290,7 @@ async def test_mp_public_breakdown_does_not_reveal_withheld_choice(monkeypatch):
 def test_future_arweave_public_audit_results_are_suppressed():
     result = arweave.build_audit_trail(bill_fixture(), [],
                                      {"yes": 39, "no": 1, "abstain": 10, "unknown": 10, "total": 60}, 0.35)
-    assert result["citizen_votes"]["total"] == 60
+    assert result["citizen_votes"]["total"] is None
     assert result["citizen_votes"]["yes"] is None
     assert result["divergence_score"] is None
 
@@ -351,7 +350,7 @@ async def test_public_stats_and_overview_do_not_publish_small_counters(monkeypat
     result = await public_api.public_stats(_key=None, db=Db(scalars=[1] * 7))
     assert result["stats"]["total_votes"] is None and result["stats"]["suppressed"] is True
     monkeypatch.setattr(analytics, "count_public_votes", count)
-    result = await analytics.analytics_overview(db=Db(scalars=[1] * 3, rows=[[]]))
+    result = await analytics.analytics_overview(db=Db(scalars=[1] * 3, rows=[[], []]))
     assert all(result["votes"][key] is None for key in ("total", "last_7_days", "today", "avg_per_bill"))
 
 
@@ -388,35 +387,25 @@ async def test_future_public_newsletter_does_not_bypass_result_suppression(monke
 @pytest.mark.asyncio
 @pytest.mark.parametrize("raw", [None, "0", "invalid", "-1"])
 async def test_flag_off_http_results_match_origin_main_bytes(monkeypatch, raw):
-    """Exercise both routers through FastAPI response-model serialization."""
-    import subprocess
-    import types
-    import sys
+    """Bytes captured from main 7e9dba6cc19a5b2e6d329d49c622b454386b0a1a.
 
+    The committed fixture keeps shallow CI checkouts independent of git refs.
+    """
+    from pathlib import Path
     if raw is None:
         monkeypatch.delenv("PUBLIC_RESULTS_MIN_COUNT")
     else:
         monkeypatch.setenv("PUBLIC_RESULTS_MIN_COUNT", raw)
-    source = subprocess.check_output(
-        ["git", "show", "origin/main:apps/api/routers/voting.py"], text=True)
-    baseline = types.ModuleType("routers._main_voting")
-    baseline.__file__ = voting.__file__
-    monkeypatch.setitem(sys.modules, baseline.__name__, baseline)
-    exec(compile(source, voting.__file__, "exec"), baseline.__dict__)
-    responses = []
-    for module in (baseline, voting):
-        aggregate(monkeypatch, module, [8, 1, 0, 0])
-        app = FastAPI()
-        app.include_router(module.router)
-        app.dependency_overrides[get_db] = lambda: Db(rows=[[bill_fixture()]])
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            response = await client.get("/api/v1/vote/GR-PRIVACY/results")
-            assert response.status_code == 200
-            responses.append(response)
-    assert responses[0].json() == responses[1].json()
-    assert responses[0].content == responses[1].content
-    assert "suppressed" not in responses[1].json()
-    assert "suppression_k" not in responses[1].json()
+    aggregate(monkeypatch, voting, [8, 1, 0, 0])
+    app = FastAPI()
+    app.include_router(voting.router)
+    app.dependency_overrides[get_db] = lambda: Db(rows=[[bill_fixture()]])
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/api/v1/vote/GR-PRIVACY/results")
+    assert response.status_code == 200
+    expected = Path(__file__).with_name("fixtures").joinpath("public_results_main.json").read_bytes()
+    assert response.content == expected
+    assert "suppressed" not in response.json() and "suppression_k" not in response.json()
 
 
 @pytest.mark.asyncio
@@ -431,7 +420,7 @@ async def test_cplm_one_yes_is_withheld_in_compute_cache_and_http_history(monkey
     legacy = await cplm.compute_cplm(Db(rows=[[(vote, bill)], []]))
     assert (legacy["total_votes"], legacy["total_voters"], legacy["x"]) == (1, 1, 0.05)
     monkeypatch.setenv("PUBLIC_RESULTS_MIN_COUNT", "10")
-    computed = await cplm.compute_cplm(Db(rows=[[(vote, bill)], []]))
+    computed = await cplm.compute_cplm(Db(rows=[[], [(vote, bill)]]))
     assert computed["x"] is None and computed["total_voters"] is None
 
     class Redis:
@@ -451,7 +440,7 @@ async def test_cplm_one_yes_is_withheld_in_compute_cache_and_http_history(monkey
     for point in (aggregate_response, history[0]):
         assert point["suppressed"] is True and point["suppression_k"] == 10
         assert all(point[key] is None for key in ("x", "y", "quadrant", "total_votes", "total_voters", "trend"))
-    assert history[1]["x"] == 0.05 and history[1]["suppressed"] is False
+    assert history[1]["x"] is None and history[1]["suppressed"] is True
 
 
 @pytest.mark.asyncio
@@ -487,8 +476,9 @@ async def test_alltime_11_10_10_10_minus_seven_day_10_each_withholds_windows(mon
     async def count(_db, *, since=None):
         return public_window_count(bills, since=since)
     monkeypatch.setattr(analytics, "count_public_votes", count)
-    result = await analytics.analytics_overview(db=Db(scalars=[1, 0, 0], rows=[[]]))
+    result = await analytics.analytics_overview(db=Db(scalars=[1, 0, 0], rows=[[], rows]))
     assert result["votes"]["total"] == 41
+    assert result["votes"]["avg_per_bill"] == 41
     assert result["votes"]["today"] is None and result["votes"]["last_7_days"] is None
     assert result["votes"]["suppressed"] is True
 
@@ -501,7 +491,7 @@ async def test_40_public_zk_receipts_cannot_be_subtracted_from_combined_41(monke
         monkeypatch.setattr(module, "aggregate_bill_vote_totals", fake)
     result = await voting.get_results("GR-PRIVACY", db=Db(rows=[[bill_fixture()]]))
     assert result.total_votes is None and result.yes_count is None
-    result = await voting.get_latest_result(db=Db(rows=[[bill_fixture()]]))
+    result = await voting.get_latest_result(db=Db(rows=[[], [bill_fixture()]]))
     assert result["total_votes"] is None and result["yes_pct"] is None
     result = await public_api.public_bill_results("GR-PRIVACY", _key=None, db=Db())
     assert result["citizen_votes"]["total"] is None and result["divergence_score"] is None
@@ -514,26 +504,33 @@ async def test_40_public_zk_receipts_cannot_be_subtracted_from_combined_41(monke
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("count", [0, 1, 9, 10, 40])
-async def test_zk_receipt_enumeration_gates_scope_before_pagination(monkeypatch, count):
+@pytest.mark.parametrize("ordinary,counts,hidden", [
+    ([], [0]*4, True), ([], [1,0,0,0], True), ([], [39,1,10,10], True),
+    ([], [10]*4, False), ([1,10,10,10], [10]*4, True),
+    ([10]*4, [39,1,10,10], True), ([10]*4, [10]*4, False),
+])
+async def test_zk_receipt_enumeration_gates_scope_before_pagination(monkeypatch, ordinary, counts, hidden):
     from routers import zk
     async def public(*_):
         pass
     monkeypatch.setattr(zk, "_ensure_scope_public_or_safe_canary", public)
-    monkeypatch.setattr(zk, "build_public_zk_receipt_from_storage", lambda r: {"choice": r})
+    monkeypatch.setattr(zk, "build_public_zk_receipt_from_storage", lambda _: {"choice": "YES"})
+    db = Db(rows=[list(zip(VoteChoice, ordinary)), list(zip([c.value for c in VoteChoice], counts)), [object()]])
     app = FastAPI()
     app.include_router(zk.router)
-    app.dependency_overrides[get_db] = lambda: Db(rows=[["YES"]], scalars=[count])
+    app.dependency_overrides[get_db] = lambda: db
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get("/api/v1/zk/receipts/bill:GR-PRIVACY?offset=100&limit=1")
     assert response.status_code == 200
     data = response.json()
-    assert data["receipts"] == (None if count < 10 else [{"choice": "YES"}])
-    assert data["suppressed"] is (count < 10)
+    assert data["receipts"] == (None if hidden else [{"choice": "YES"}])
+    assert data["suppressed"] is hidden
+    assert len(db.queries) == (2 if hidden else 3)
 
 
 @pytest.mark.asyncio
-async def test_zk_arweave_withholds_scope_with_one_receipt_before_any_publication(monkeypatch):
+@pytest.mark.parametrize("ordinary,counts", [([], [1,0,0,0]), ([], [39,1,10,10]), ([1,10,10,10], [10]*4)])
+async def test_zk_arweave_withholds_small_choice_before_any_publication(monkeypatch, ordinary, counts):
     from services import zk_arweave_publisher as publisher
     monkeypatch.setenv("ZK_ARWEAVE_PUBLICATION_ENABLED", "true")
     monkeypatch.setenv("ZK_CANARY_ENABLED", "false")
@@ -541,14 +538,15 @@ async def test_zk_arweave_withholds_scope_with_one_receipt_before_any_publicatio
     async def public(*_):
         pass
     monkeypatch.setattr(publisher, "ensure_public_parliament_scope", public)
-    db = Db(scalars=[1])
+    db = Db(rows=[list(zip(VoteChoice, ordinary)), list(zip([c.value for c in VoteChoice], counts))])
     with pytest.raises(publisher.ZkArweavePublicationError, match="withheld"):
         await publisher.publish_pending_zk_receipts_for_scope(db, vote_scope_id="bill:GR-PRIVACY")
-    assert not db.queries  # No pending records read or external publication attempted.
+    assert len(db.queries) == 2
+    assert all("arweave_pending" not in str(q) for q in db.queries)
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("scenario", ["platform", "windows", "sources", "source_windows"])
+@pytest.mark.parametrize("scenario", ["platform", "windows", "sources", "source_windows", "source_cells", "zk_choice"])
 async def test_exact_reproductions_execute_real_public_aggregate_sql(scenario):
     from datetime import timedelta
     from sqlalchemy import event, text
@@ -572,21 +570,30 @@ async def test_exact_reproductions_execute_real_public_aggregate_sql(scenario):
                 "INSERT INTO parliament_bills (id,source,status,results_visibility,admin_hidden) VALUES ('SAFE','PARLIAMENT','OPEN_END','ALWAYS',0),('SMALL','PARLIAMENT','OPEN_END','ALWAYS',0)",
             ]:
                 await connection.execute(text(sql))
-            if scenario in ("sources", "source_windows"):
+            if scenario in ("sources", "source_windows", "source_cells", "zk_choice"):
                 await connection.execute(text("INSERT INTO zk_vote_receipts (vote_scope_id,vote_commitment,created_at) VALUES ('bill:SAFE',:vote,:day)"),
-                                         [{"vote": c.upper(), "day": today} for c in CHOICES for _ in range(10)])
+                                         [{"vote": c.upper(), "day": today} for c, n in zip(CHOICES, [39,1,10,10] if scenario == "zk_choice" else [10]*4) for _ in range(n)])
                 tier = [{"bill": "SAFE", "vote": "YES", "day": today}]
+                if scenario == "source_cells":
+                    tier += [{"bill": "SAFE", "vote": c.upper(), "day": today} for c in CHOICES[1:] for _ in range(10)]
+                if scenario == "zk_choice":
+                    tier = []
                 if scenario == "source_windows":
                     tier += [{"bill": "SAFE", "vote": c.upper(), "day": old} for c in CHOICES for _ in range(10)]
             else:
                 tier = [{"bill": "SAFE", "vote": c.upper(), "day": today} for c in CHOICES for _ in range(10)]
                 tier += [{"bill": "SMALL" if scenario == "platform" else "SAFE", "vote": "YES", "day": today if scenario == "platform" else old}]
-            await connection.execute(text("INSERT INTO citizen_votes (bill_id,vote,created_at) VALUES (:bill,:vote,:day)"), tier)
+            if tier:
+                await connection.execute(text("INSERT INTO citizen_votes (bill_id,vote,created_at) VALUES (:bill,:vote,:day)"), tier)
         async with AsyncSession(engine) as db:
+            from services.zk_vote_aggregation import aggregate_bill_vote_totals, zk_scope_publishable
+            totals = await aggregate_bill_vote_totals(db, "SAFE", include_zk=True)
+            assert totals.publishable is (scenario not in ("sources", "source_cells", "zk_choice"))
+            assert await zk_scope_publishable(db, "bill:SAFE") is totals.publishable
             total = await count_public_votes(db)
-            assert total == {"platform": 40, "windows": 41, "sources": 0, "source_windows": 81}[scenario]
+            assert total == {"platform": 40, "windows": 41, "sources": 0, "source_windows": 81, "source_cells": 0, "zk_choice": 0}[scenario]
             window = await count_public_votes(db, since=now-timedelta(days=7))
-            assert window == {"platform": 40, "windows": None, "sources": 0, "source_windows": None}[scenario]
+            assert window == {"platform": 40, "windows": None, "sources": 0, "source_windows": None, "source_cells": 0, "zk_choice": 0}[scenario]
             bills = await load_public_vote_days(db)
             timeline = public_daily_series(bills, since=now-timedelta(days=7), platform=True)
             if scenario == "platform":
@@ -624,3 +631,68 @@ async def test_lifecycle_notification_cannot_publish_41_minus_40_receipts(monkey
     await bill_lifecycle._hook_telegram_community(bill, BillStatus.PARLIAMENT_VOTED, db=Db())
     assert len(messages) == 1 and "— ψήφοι" in messages[0]
     assert "41" not in messages[0]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("ordinary,zk_counts", [([1,0,0,0], [0]*4), ([1,10,10,10], [10]*4)])
+async def test_cplm_safe_economic_plus_one_social_vote_never_enters_compute_cache_history(monkeypatch, ordinary, zk_counts):
+    import json
+    from services import cplm
+    safe, small = bill_fixture(), bill_fixture()
+    safe.id, small.id = 'SAFE', 'SMALL'
+    small.title_en = 'social'
+    days = [SimpleNamespace(bill_id=b.id, day=datetime(2026,10,15), vote=c.value, count=n, zk=zk)
+            for b, zk, counts in [(safe, 0, [10]*4), (small, 0, ordinary), (small, 1, zk_counts)]
+            for c, n in zip(VoteChoice, counts) if n]
+    votes = [(SimpleNamespace(nullifier_hash=f'{c}-{i}', vote=c), safe)
+             for c in VoteChoice for i in range(10)]
+    votes += [(SimpleNamespace(nullifier_hash=f'small-{c}-{i}', vote=c), small)
+              for c, n in zip(VoteChoice, ordinary) for i in range(n)]
+    computed = await cplm.compute_cplm(Db(rows=[days, votes, []]))
+    assert computed['total_votes'] == computed['total_voters'] == 40
+    assert computed['x'] == computed['y'] == 0 and computed['suppressed'] is False
+    keys = []
+    class Redis:
+        async def get(self, key):
+            keys.append(key)
+            return cplm._store_snapshot(computed, 10)
+        async def lrange(self, key, *_):
+            keys.append(key)
+            return [cplm._store_snapshot(computed, 10), json.dumps({**computed, 'total_votes': 41, 'y': .0012})]
+        async def aclose(self):
+            pass
+    monkeypatch.setattr(cplm.aioredis, 'from_url', lambda *_, **__: Redis())
+    assert await cplm.get_cplm_cached(Db()) == computed
+    history = await cplm.get_cplm_history()
+    assert history[0] == computed
+    assert history[1]['total_votes'] is None and history[1]['y'] is None
+    assert all(':publishable-v1:k10' in key for key in keys)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('min_votes', [0, 40, 41, 42, 71, 72])
+@pytest.mark.parametrize('ordinary', [[1,0,0,0], [1,10,10,10]])
+async def test_export_source_choice_suppression_precedes_min_votes_and_divergence_csv(min_votes, ordinary):
+    bill = bill_fixture()
+    rows = [SimpleNamespace(bill_id=bill.id, day=datetime(2026,10,15), vote=c.value, count=n, zk=zk)
+            for zk, counts in [(0, ordinary), (1, [10]*4)]
+            for c, n in zip(VoteChoice, counts)]
+    assert await export.get_all_results(Db(rows=[[bill], rows]), min_votes=min_votes) == []
+    response = await export.export_divergence_csv(min_votes=min_votes, db=Db(rows=[[bill], rows]))
+    body = ''.join([chunk async for chunk in response.body_iterator])
+    assert bill.id not in body
+
+
+@pytest.mark.asyncio
+async def test_milestone_total_alone_cannot_authorize_a_suppressed_bill(monkeypatch):
+    from routers import notifications
+    published = []
+    async def capture(*args):
+        published.append(args)
+    monkeypatch.setattr(notifications, 'publish_bill_event', capture)
+    await notifications.publish_vote_milestone('GR-PRIVACY', 100)
+    await notifications.publish_vote_milestone('GR-PRIVACY', 100, db=Db(rows=[[]]))
+    assert published == []
+    monkeypatch.setenv('PUBLIC_RESULTS_MIN_COUNT', '0')
+    await notifications.publish_vote_milestone('GR-PRIVACY', 100)
+    assert len(published) == 1
