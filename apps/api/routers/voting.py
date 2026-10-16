@@ -430,6 +430,22 @@ def _tier1_requested(req: "VoteRequest | CorrectionRequest") -> bool:
     return any(field is not None for field in _tier1_request_fields(req))
 
 
+def tier1_metadata_accepted() -> bool:
+    """ADR-006 D6: Tier-1 metadata proves no link to an enrolled root or
+    commitment, so it is ignored (not validated, not stored) unless explicitly
+    re-enabled. The mandatory identity signature still authorises the vote."""
+    return os.getenv("TIER1_METADATA_ACCEPTED", "false").strip().lower() == "true"
+
+
+def _tier1_effective(req: "VoteRequest | CorrectionRequest") -> bool:
+    if not _tier1_requested(req):
+        return False
+    if not tier1_metadata_accepted():
+        logger.info("Tier-1 metadata ignored (ADR-006 D6)")
+        return False
+    return True
+
+
 async def _tier1_vote_nullifier_used(
     db: AsyncSession,
     *,
@@ -691,7 +707,7 @@ async def submit_vote(
     # The identity signature above stays mandatory; Tier-1 adds a second, ephemeral
     # signature so pk_eph/vote_nullifier/linkage_tag are never stored unauthenticated.
     tier1: Tier1Fields | None = None
-    if _tier1_requested(req):
+    if _tier1_effective(req):
         tier1 = await _enforce_tier1_vote(db, req, bill_id=req.bill_id, vote_choice=vote_choice)
 
     # 5. Bestehende Stimme prüfen (Stimmänderung) — Zeile gegen parallele Änderung sperren
@@ -943,7 +959,7 @@ async def correct_vote(bill_id: str, req: CorrectionRequest, db: AsyncSession = 
 
     # 6b. Tier-1: the stored tier is kept; a Tier-1 vote needs a fresh signed payload.
     tier1: Tier1Fields | None = None
-    if _tier1_requested(req):
+    if _tier1_effective(req):
         tier1 = await _enforce_tier1_vote(db, req, bill_id=bill_id, vote_choice=new_choice)
     _ensure_same_tier(existing, tier1)
 

@@ -115,7 +115,11 @@ function normalizePhone(raw: string): string {
 
 /**
  * Derive nullifier_root from phone number using the current PBKDF2-SHA256 fallback.
- * This is the master secret — stored in hardware keystore.
+ *
+ * @deprecated FORBIDDEN for registration (ADR-006 D1): the salt is public, so
+ * anyone who knows or enumerates a phone number derives the root and every
+ * child (vote nullifiers, per-bill private signing seeds). Kept only for the
+ * KAT vectors; a guard test fails if application code calls it.
  */
 export async function deriveNullifierRoot(phone: string): Promise<Uint8Array> {
   const normalized = normalizePhone(phone);
@@ -857,21 +861,14 @@ export function signVoteEphemeral(
  * 3. Store nullifier_root in hardware keystore
  * 4. Return identity_commitment for server registration
  */
-export async function registerTier1(phone: string): Promise<{
+/**
+ * @deprecated FORBIDDEN (ADR-006 D1): phone-derived client roots must never be
+ * created. Any future Tier-1 root is 32 random device bytes enrolled with
+ * identity-key or OTP authorisation. This function always throws.
+ */
+export async function registerTier1(_phone: string): Promise<{
   identity_commitment: string;
   version: string;
 }> {
-  const nullifierRoot = await deriveNullifierRoot(phone);
-  const commitment = deriveIdentityCommitment(nullifierRoot);
-
-  await storeNullifierRoot(nullifierRoot);
-  await storeIdentityCommitment(commitment);
-
-  // Zero phone-derived material from JS memory (best-effort)
-  nullifierRoot.fill(0);
-
-  return {
-    identity_commitment: commitment,
-    version: PROTO_VERSION,
-  };
+  throw new Error("registerTier1 is forbidden: phone-derived roots are disabled (ADR-006 D1)");
 }
