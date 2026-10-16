@@ -58,6 +58,7 @@ The privacy page and landing say "pseudonymous" (correct). App texts (onboarding
 Effect: (a) exposure reduced. Personal reads still depend on EVA-001, and aggregate inference remains until the shared release policy is implemented and checked. k ≥ 10 alone does not close (a). (b) and (c) unchanged except for backups and roles.
 
 ### Stage 2: keyed vote store against DB leaks (S5)
+- Protocol and migration contract: [ADR-007a](ADR-007a-keyed-ballot-store-contract.md).
 - Votes, relevance, consensus, municipal votes, evaluations and `bill_flags` get stored under a **scoped pseudonym** `P = HMAC(K_ballot, anchor ‖ scope)` instead of `nullifier_hash`. `K_ballot` sits **outside** DB and backups, separate from `K_dedupe` (ADR-006) and `SERVER_SALT`.
 - The identity signature is **verified, not stored**; timestamps are coarsened (day).
 - Correction, status and receipts compute `P` per request in the API. This resists the direct anchor join in a DB/backup leak without `K_ballot`. The operator can still compute the join.
