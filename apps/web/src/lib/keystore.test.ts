@@ -332,3 +332,21 @@ describe("review round 2 (Codex)", () => {
     expect((await loadProfile({ aesKey: (await getCompassKey())! })).selectedModel).toBe("left-right");
   });
 });
+
+describe("review round 3 (Codex)", () => {
+  it("an operational HKDF failure keeps the legacy key instead of skipping Compass", async () => {
+    legacyBrowser();
+    await saveProfile({ ...createEmptyProfile(), selectedModel: "left-right" } as ReturnType<typeof createEmptyProfile>, PRIV);
+    const realDerive = crypto.subtle.deriveKey.bind(crypto.subtle);
+    let failed = false;
+    vi.spyOn(crypto.subtle, "deriveKey").mockImplementation(((...args: Parameters<SubtleCrypto["deriveKey"]>) => {
+      if (!failed) { failed = true; return Promise.reject(new Error("OperationError")); }
+      return realDerive(...args);
+    }) as SubtleCrypto["deriveKey"]);
+    expect(await migrateLegacyWebKey(deps())).toBe("retry_later");
+    expect(ls.get("ekklesia_private_key")).toBe(PRIV);
+    expect(await migrateLegacyWebKey(deps())).toBe("migrated");
+    const { loadProfile } = await import("./compass/storage");
+    expect((await loadProfile({ aesKey: (await getCompassKey())! })).selectedModel).toBe("left-right");
+  });
+});

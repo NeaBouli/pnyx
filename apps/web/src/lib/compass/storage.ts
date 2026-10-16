@@ -126,11 +126,17 @@ export async function reencryptLegacyCompassBlob(legacyPrivateKeyHex: string, ae
   } catch {
     // continue with the legacy key
   }
+  let legacyKey: CryptoKey;
+  try {
+    legacyKey = await deriveAesKey(legacyPrivateKeyHex);
+  } catch {
+    return false; // operational crypto failure: keep the legacy key and retry
+  }
   let json: string;
   try {
-    json = await decrypt(blob, await deriveAesKey(legacyPrivateKeyHex));
+    json = await decrypt(blob, legacyKey);
   } catch {
-    return true;
+    return true; // genuinely not decryptable with the legacy key (corrupt/foreign)
   }
   try {
     const next = await encrypt(json, aesKey);
