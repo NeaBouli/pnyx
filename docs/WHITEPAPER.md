@@ -17,13 +17,13 @@
 ## Περίληψη / Abstract
 
 Η **Ekklesia.gr** είναι μια ανοιχτού κώδικα πλατφόρμα άμεσης ψηφιακής
-δημοκρατίας για τον Έλληνα πολίτη. Επιτρέπει την ανώνυμη, επαληθευμένη
+δημοκρατίας για τον Έλληνα πολίτη. Επιτρέπει την ψευδώνυμη, επαληθευμένη
 συμμετοχή στις πολιτικές διαδικασίες μέσω δύο βασικών λειτουργιών: της
 **Πολιτικής Πυξίδας** (σύγκριση πολιτικών θέσεων) και της **Ψηφοφορίας Πολιτών**
 (αντικατοπτρισμός κοινοβουλευτικών αποφάσεων).
 
 **Ekklesia.gr** is an open-source platform for digital direct democracy for
-Greek citizens. It enables anonymous, verified participation in political
+Greek citizens. It enables pseudonymous, verified participation in political
 processes through two core functions: the **VoteCompass** (political position
 comparison) and **Citizen Voting** (mirroring parliamentary decisions).
 
@@ -49,7 +49,7 @@ comparison) and **Citizen Voting** (mirroring parliamentary decisions).
 1. Μια **Πολιτική Πυξίδα** που βοηθά πολίτες να κατανοήσουν τις πολιτικές τους θέσεις
 2. Ένα σύστημα **παράλληλης ψηφοφορίας** για κοινοβουλευτικά νομοσχέδια
 3. Έναν **Δείκτη Απόκλισης** που ποσοτικοποιεί τη διαφορά Βουλής-Πολιτών
-4. Πλήρη **ανωνυμία** μέσω κρυπτογραφικών πρωτοκόλλων
+4. **Ψευδωνυμία**: οι ψήφοι αποθηκεύονται με κρυπτογραφικό κωδικό, όχι με όνομα ή τηλέφωνο· δημοσιεύονται μόνο συγκεντρωτικά
 
 ---
 
@@ -103,7 +103,7 @@ comparison) and **Citizen Voting** (mirroring parliamentary decisions).
 
 Η ταυτότητα στην Ekklesia.gr βασίζεται σε τρεις αρχές:
 1. **Μοναδικότητα**: Ένας αριθμός = μία ψήφος
-2. **Ανωνυμία**: Κανένα προσωπικό δεδομένο δεν αποθηκεύεται
+2. **Ψευδωνυμία**: δεν αποθηκεύεται όνομα ή αριθμός τηλεφώνου· ο ψευδώνυμος κωδικός και οι ψήφοι του είναι προσωπικά δεδομένα κατά τον GDPR
 3. **Επαληθευσιμότητα**: Κάθε ψήφος είναι κρυπτογραφικά επαληθεύσιμη
 
 ### 3.2 Ροή Επαλήθευσης Beta / Beta Verification Flow
@@ -242,8 +242,9 @@ Change only in WINDOW_24H  → 409 if ACTIVE
 
 ### 6.2 Αρχή k-Ανωνυμίας
 
-Τα δημογραφικά αποτελέσματα εμφανίζονται μόνο εφόσον `k ≥ 10` ψήφοι
-υπάρχουν στη συγκεκριμένη ομάδα — αποτρέποντας επαναναγνώριση.
+Το όριο `k ≥ 10` εφαρμόζεται σε συγκεκριμένα συγκεντρωτικά αποτελέσματα,
+όπου υλοποιείται ο σχετικός έλεγχος· δεν αποτελεί καθολική εγγύηση για κάθε
+δημοσίευση. Μειώνει, αλλά δεν εξαλείφει, τον κίνδυνο επαναναγνώρισης.
 
 ### 6.3 Servers & Δικαιοδοσία
 
@@ -348,9 +349,9 @@ TrueRepublic (Blockchain Layer)
 
 Ο native Android Semaphore/Mopro prover έχει επαληθευτεί σε πραγματική συσκευή S10. Το κρυφό canary scope `ZK-CANARY-001` ολοκληρώθηκε end-to-end με πραγματικό S10 proof: opt-in, δημοσιευμένο group root, server verification, rejected mutation checks και δοκιμαστική ZK ψήφος. Το πρώτο δημόσιο scoped rollout ολοκληρώθηκε για ένα συγκεκριμένο νομοσχέδιο (`bill:GR-d4c62ed4`) με πραγματική ZK ψήφο και δημόσιο receipt.
 
-Η ZK παραγωγή είναι ενεργή με φυλασσόμενο Parliament rollout: επιτρέπονται μόνο δημόσια scopes νομοσχεδίων Βουλής και test/canary/hidden scopes απορρίπτονται. Η δημοσίευση ZK verifier payloads στο Arweave είναι ενεργή μόνο για επιλέξιμα δημόσια Parliament scopes, με ελάχιστο μέγεθος ομάδας 5, ώστε να μειώνεται ο κίνδυνος συσχέτισης.
+Το guarded Parliament rollout και η ZK δημοσίευση στο Arweave είναι σε παύση από 03/10/2026 για έλεγχο ασφαλείας. Κατά την παύση δεν γίνονται δεκτές νέες ZK ψήφοι· η κανονική Tier-1 ψηφοφορία συνεχίζεται. Αν επανενεργοποιηθεί το rollout, η αυτόματη ZK δημοσίευση αφορά μόνο επιλέξιμα δημόσια Parliament scopes με ομάδα τουλάχιστον 5 ατόμων. Test, canary, hidden και μη-Parliament scopes παραμένουν αποκλεισμένα.
 
-Native Android Semaphore/Mopro proving, hidden S10 canary, and the first public one-bill scoped rollout have passed. Guarded Parliament ZK rollout is live, and ZK Arweave auto-publication is enabled only for eligible public Parliament scopes with minimum group size 5.
+Native Android Semaphore/Mopro proving, hidden S10 canary, and the first public one-bill scoped rollout have passed. The guarded Parliament rollout and ZK publication to Arweave have been paused since 2026-10-03 for a security review. No new ZK votes are accepted during the pause; ordinary Tier-1 voting continues. If the rollout is re-enabled, automatic ZK publication applies only to eligible public Parliament scopes with group size at least 5. Test, canary, hidden, and non-Parliament scopes remain blocked.
 
 ---
 

@@ -129,12 +129,12 @@ ALLOWED_R5_INLINE_SCRIPTS = {
     },
     3: {
         "index": 3,
-        # T-9106 (EVA-001/002/006/015, Gio approved "correct now"): the legal
-        # modal's privacy text only. Votes are pseudonymous, age/gender are not
-        # stored, and the GDPR line no longer
-        # claims "no personal data on server". No behavior change.
-        "sha256": "7ab5831a0c2160dc634020f38663598e33eac9972553440ea9e295a99e173651",
-        "bytes": 3539,
+        # T-9106 / T-9132 review: legal-modal copy describes pseudonymous
+        # storage, expiring IP counters versus size-rotated logs, ordinary
+        # Arweave aggregates versus paused ZK, and key replacement with the
+        # nullifier retained. No behavior change.
+        "sha256": "d5dc177aa0f9ca9460ba46af7048c880db44ca97d75f9d28e2c57789caf8fc01",
+        "bytes": 4216,
     },
     4: {
         "index": 4,
@@ -208,6 +208,9 @@ ALLOWED_T9106_CLAIMS_BILINGUAL_REMOVALS = Counter({
     ("Πλήρης Ανωνυμία", "Full Anonymity"): 2,
 })
 ALLOWED_T9106_CLAIMS_BILINGUAL_REMOVALS.update({
+    # T-9132 review: signatures do not conceal vote choices from the server.
+    ("Κάθε ψήφος υπογράφεται ψηφιακά. Ο server δεν γνωρίζει τι ψηφίσατε.",
+     "Every vote is digitally signed. The server never knows what you voted."),
     ("Πλήρης συμμόρφωση", "Fully compliant"),
     ("Ed25519 κλειδί μόνο στη συσκευή σας.", "Ed25519 key only on your device."),
     ("Ed25519 κρυπτογραφία. Κανένα προσωπικό δεδομένο στον server.",
