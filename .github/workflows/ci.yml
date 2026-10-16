@@ -175,6 +175,7 @@ jobs:
         working-directory: scripts/redesign
         run: |
           python -m unittest discover -p 'test_*.py' -v
+          python ../csp-inventory.py --check
 
       - name: Run Node documentation gates
         run: node --test scripts/public-seo.check.mjs scripts/static-docs-remote-sinks.check.mjs scripts/redesign/community_payment_status.check.mjs
