@@ -64,7 +64,7 @@ footer a{color:var(--gray-400);text-decoration:none}
 
 <div class="content">
   <h1>Δημοτικές Ψηφοφορίες</h1>
-  <p class="sub">Ψηφίστε ανώνυμα για τα θέματα του Δήμου σας — Demo περιβάλλον</p>
+  <p class="sub">Ψηφίστε χωρίς όνομα (ψευδώνυμα) για τα θέματα του Δήμου σας — Demo περιβάλλον</p>
 
   <div class="filters" id="filters"></div>
   <div id="billsList"></div>
@@ -124,7 +124,7 @@ function renderBills() {
       html += '<button class="vote-btn no" onclick="castVote(\'' + b.id + '\',\'NO\')">ΟΧΙ</button>';
       html += '<button class="vote-btn abs" onclick="castVote(\'' + b.id + '\',\'ABSTAIN\')">ΑΠΟΧΗ</button>';
       html += '</div>';
-      html += '<div class="info-hint">ℹ️ Σε μια πραγματική node, η ψήφος υπογράφεται κρυπτογραφικά με Ed25519 και αποστέλλεται ανώνυμα στον server.</div>';
+      html += '<div class="info-hint">ℹ️ Σε μια πραγματική node, η ψήφος υπογράφεται κρυπτογραφικά με Ed25519 και αποστέλλεται στον server με ψευδώνυμο κωδικό, χωρίς όνομα ή τηλέφωνο.</div>';
     } else if (userVote) {
       html += '<div class="voted-msg">✅ Έχετε ψηφίσει: ' + userVote + ' (demo — αποθηκευμένο τοπικά)</div>';
     }

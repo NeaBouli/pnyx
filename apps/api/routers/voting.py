@@ -677,7 +677,7 @@ async def submit_vote(
 
     Stimmänderung:
     - ACTIVE: keine Änderung (Stimme gesperrt)
-    - WINDOW_24H: Änderung erlaubt
+    - WINDOW_24H: identische Wiederholung ohne Änderung; Korrektur nur über /correct
     """
     # HTTP requests receive an injected Request; the default preserves existing
     # direct unit calls with the limiter disabled. Shared HMAC-IP buckets allow
@@ -757,21 +757,22 @@ async def submit_vote(
     existing_vote = existing_result.scalar_one_or_none()
 
     if existing_vote:
-        # Stimmänderung nur in WINDOW_24H erlaubt
         if bill.status == BillStatus.ACTIVE:
             raise HTTPException(
                 status_code=409,
                 detail="Η ψήφος έχει ήδη καταχωρηθεί. Αλλαγή μόνο στο 24ωρο παράθυρο."
             )
-        _ensure_same_tier(existing_vote, tier1)
-        existing_vote.vote = vote_choice
-        existing_vote.signature_hex = req.signature_hex
-        _apply_tier1_fields(existing_vote, tier1)
-        existing_vote.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
-        await _commit_vote_write(db)
+        if existing_vote.vote != vote_choice:
+            raise HTTPException(
+                status_code=409,
+                detail="Η ψήφος έχει ήδη καταχωρηθεί. Χρησιμοποιήστε τη λειτουργία διόρθωσης "
+                       "για μία μόνο αλλαγή στο 24ωρο παράθυρο.",
+            )
+        # A retry must not consume a correction or rewrite signatures, timestamps
+        # or Tier-1 metadata. All identity/crypto/ZK guards above still apply.
         return VoteResponse(
             success=True,
-            message="Η ψήφος άλλαξε επιτυχώς.",
+            message="Η ψήφος έχει ήδη καταχωρηθεί επιτυχώς.",
             bill_id=req.bill_id,
             vote=vote_choice.value
         )
@@ -993,6 +994,15 @@ async def correct_vote(bill_id: str, req: CorrectionRequest, db: AsyncSession = 
         bill_source=getattr(bill, "source", None),
         nullifier_hash=req.nullifier_hash,
     )
+
+    # Replaying the original signature must not spend the one-time correction
+    # or alter any metadata, including legacy Tier-1 fields.
+    if existing.vote == new_choice:
+        raise HTTPException(
+            409,
+            "Η επιλογή είναι ίδια με την καταχωρημένη ψήφο. Η ψήφος δεν άλλαξε "
+            "και η εφάπαξ διόρθωση παραμένει διαθέσιμη.",
+        )
 
     # 6b. Tier-1: the stored tier is kept; a Tier-1 vote needs a fresh signed payload.
     tier1: Tier1Fields | None = None

@@ -1,9 +1,11 @@
-"""T-410: Tier-1 vote_nullifier atomicity and all-or-nothing vote changes.
+"""Tier-1 vote_nullifier atomicity and one-time vote corrections.
 
 Real PostgreSQL only (PNYX_TEST_POSTGRES_URL, loopback, pnyx_test_* database).
 Each request runs in its own AsyncSession/connection. A barrier inside
 AsyncSession.commit() holds racing requests until all have passed the router's
 nullifier pre-check, so the unique index — not the pre-check — decides.
+Mixed POST/QR-correction races also verify PostgreSQL actually blocks the
+second request on the vote row, in both acquisition orders.
 """
 from __future__ import annotations
 
@@ -31,7 +33,7 @@ from models import (
     ParliamentBill,
     VoteChoice,
 )
-from routers import voting
+from routers import polis_qr, voting
 from tests.pg_vote_schema import (
     disposable_postgres_url,
     drop_vote_schema,
@@ -43,7 +45,7 @@ pytestmark = requires_postgres
 
 BILL_A = "GR-T410-A"
 BILL_B = "GR-T410-B"
-BILL_W = "GR-T410-W"  # WINDOW_24H: vote change + one-time correction allowed
+BILL_W = "GR-T410-W"  # WINDOW_24H: changes only through one-time correction
 NULLIFIER = "ab" * 32
 OTHER_NULLIFIER = "cd" * 32
 
@@ -379,17 +381,22 @@ async def test_legacy_null_rows_unaffected(engine: AsyncEngine, citizens: list[C
         await _submit(engine, vote_request(person, BILL_W, "YES"))
     await _submit(engine, vote_request(carol, BILL_W, "NO", NULLIFIER))
 
-    # Tier-0 change stays Tier-0; Tier-0 correction stays Tier-0.
-    await _submit(engine, vote_request(alice, BILL_W, "NO"))
+    # POST cannot change Tier-0 votes; a correction stays Tier-0.
+    before = await _vote_row(engine, alice, BILL_W)
+    with pytest.raises(HTTPException) as exc:
+        await _submit(engine, vote_request(alice, BILL_W, "NO"))
+    assert exc.value.status_code == 409
+    assert "λειτουργία διόρθωσης" in exc.value.detail
+    assert await _vote_row(engine, alice, BILL_W) == before
     result = await _correct(engine, BILL_W, correction_request(bob, BILL_W, "ABSTAIN"))
     assert result["new_vote"] == "ABSTAIN"
-    for person, expected in ((alice, VoteChoice.NO), (bob, VoteChoice.ABSTAIN)):
+    for person, expected in ((alice, VoteChoice.YES), (bob, VoteChoice.ABSTAIN)):
         row = await _vote_row(engine, person, BILL_W)
         assert row["vote"] == expected
         assert row["vote_nullifier"] is None and row["pk_eph"] is None
 
 
-# ── Tier-1 vote changes: all fields or nothing ───────────────────────────────
+# ── Tier-1 corrections: all fields or nothing ───────────────────────────────
 
 _TIER1_COLUMNS = (
     "vote", "signature_hex", "pk_eph", "vote_nullifier", "linkage_tag", "timestamp_ms",
@@ -402,7 +409,7 @@ def _snapshot(row: dict[str, Any]) -> dict[str, Any]:
 
 
 @pytest.mark.parametrize("path", ["correct", "resubmit"])
-async def test_yes_to_no_with_fresh_tier1_payload_updates_all_fields(
+async def test_only_correction_can_change_vote_with_fresh_tier1_payload(
     engine: AsyncEngine, citizens: list[Citizen], path: str,
 ) -> None:
     alice = citizens[0]
@@ -422,7 +429,12 @@ async def test_yes_to_no_with_fresh_tier1_payload_updates_all_fields(
             nullifier_hash=alice.nullifier_hash, bill_id=BILL_W, vote="NO",
             signature_hex=alice.identity_signature(BILL_W, "NO"), **fields,
         )
-        await _submit(engine, req)
+        with pytest.raises(HTTPException) as exc:
+            await _submit(engine, req)
+        assert exc.value.status_code == 409
+        assert "λειτουργία διόρθωσης" in exc.value.detail
+        assert await _vote_row(engine, alice, BILL_W) == before
+        return
 
     after = await _vote_row(engine, alice, BILL_W)
     assert after["id"] == before["id"]
@@ -520,9 +532,33 @@ async def test_replayed_or_older_tier1_payload_is_refused(
             ))
         else:
             await _submit(engine, vote_request(alice, BILL_W, "NO", NULLIFIER, timestamp_ms=t0))
-    assert exc.value.status_code == 400
-    assert "STALE_PAYLOAD" in exc.value.detail
+    assert exc.value.status_code == (400 if path == "correct" else 409)
+    assert ("STALE_PAYLOAD" if path == "correct" else "λειτουργία διόρθωσης") in exc.value.detail
     assert _snapshot(await _vote_row(engine, alice, BILL_W)) == before
+
+
+@pytest.mark.parametrize("tier1", [False, True], ids=["tier0", "tier1"])
+async def test_original_signature_replayed_as_correction_does_not_spend_it(
+    engine: AsyncEngine, citizens: list[Citizen], tier1: bool,
+) -> None:
+    alice = citizens[0]
+    nullifier = NULLIFIER if tier1 else None
+    original = vote_request(
+        alice, BILL_W, "YES", nullifier, timestamp_ms=int(time.time() * 1000) - 1_000,
+    )
+    await _submit(engine, original)
+    before = await _vote_row(engine, alice, BILL_W)
+    with pytest.raises(HTTPException) as exc:
+        await _correct(engine, BILL_W, voting.CorrectionRequest(**original.model_dump()))
+    assert exc.value.status_code == 409
+    assert "διόρθωση παραμένει διαθέσιμη" in exc.value.detail
+    assert await _vote_row(engine, alice, BILL_W) == before
+
+    result = await _correct(engine, BILL_W, correction_request(alice, BILL_W, "NO", nullifier))
+    assert result["new_vote"] == "NO"
+    after = await _vote_row(engine, alice, BILL_W)
+    assert after["is_correction"] is True
+    assert after["original_vote"] == "YES"
 
 
 async def test_parallel_corrections_one_wins(engine: AsyncEngine, citizens: list[Citizen]) -> None:
@@ -540,3 +576,146 @@ async def test_parallel_corrections_one_wins(engine: AsyncEngine, citizens: list
     row = await _vote_row(engine, alice, BILL_W)
     assert row["vote"].value == winners[0]["new_vote"]
     assert row["original_vote"] == "YES"
+
+
+class _PausedVoteReadSession(AsyncSession):
+    """Pause with the vote row locked, before the router acts on its contents."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.acquired = asyncio.Event()
+        self.release = asyncio.Event()
+
+    async def execute(self, statement: Any, *args: Any, **kwargs: Any) -> Any:
+        result = await super().execute(statement, *args, **kwargs)
+        if (
+            getattr(statement, "_for_update_arg", None) is not None
+            and any(
+                column.get("entity") is CitizenVote
+                for column in getattr(statement, "column_descriptions", ())
+            )
+        ):
+            self.acquired.set()
+            await self.release.wait()
+        return result
+
+
+class _AuthenticatedQRSession:
+    """Only Redis is faked; both competing vote transactions use PostgreSQL."""
+
+    def __init__(self, citizen: Citizen) -> None:
+        self.data = {
+            "status": "authenticated", "purpose": "vote", "bill_id": BILL_W,
+            "nullifier_hash": citizen.nullifier_hash,
+            "public_key_hex": citizen.key.verify_key.encode().hex(),
+        }
+        self.claims = 0
+
+    async def hgetall(self, _key: str) -> dict[str, str]:
+        return dict(self.data)
+
+    async def eval(self, *_args: Any) -> int:
+        self.claims += 1
+        self.data["status"] = "processing"
+        return 1
+
+    async def hset(self, _key: str, *, mapping: dict[str, str]) -> None:
+        self.data.update(mapping)
+
+    async def hdel(self, _key: str, *fields: str) -> None:
+        for field in fields:
+            self.data.pop(field, None)
+
+    async def expire(self, *_args: Any) -> bool:
+        return True
+
+
+async def _wait_for_row_lock(engine: AsyncEngine, waiter: int, holder: int) -> None:
+    async with asyncio.timeout(10):
+        async with engine.connect() as conn:
+            while holder not in await conn.scalar(select(func.pg_blocking_pids(waiter))):
+                await asyncio.sleep(0.01)
+
+
+@pytest.mark.parametrize("endpoint", ["post", "qr"])
+@pytest.mark.parametrize("correction_first", [False, True], ids=["retry-first", "correction-first"])
+@pytest.mark.parametrize("choice", ["YES", "NO", "ABSTAIN"], ids=["original", "corrected", "different"])
+@pytest.mark.parametrize("tier1", [False, True], ids=["tier0", "tier1"])
+async def test_post_or_qr_racing_correction_preserves_the_corrected_vote(
+    engine: AsyncEngine, citizens: list[Citizen], monkeypatch: pytest.MonkeyPatch,
+    endpoint: str, correction_first: bool, choice: str, tier1: bool,
+) -> None:
+    alice = citizens[0]
+    nullifier = NULLIFIER if tier1 else None
+    await _submit(engine, vote_request(
+        alice, BILL_W, "YES", nullifier, timestamp_ms=int(time.time() * 1000) - 1_000,
+    ))
+    before = await _vote_row(engine, alice, BILL_W)
+    correction = correction_request(alice, BILL_W, "NO", nullifier)
+    retry = vote_request(alice, BILL_W, choice, nullifier)
+    redis = _AuthenticatedQRSession(alice)
+
+    async def get_redis() -> _AuthenticatedQRSession:
+        return redis
+
+    monkeypatch.setattr(polis_qr, "_redis", get_redis)
+    first = _PausedVoteReadSession(engine, expire_on_commit=False)
+    second = AsyncSession(engine, expire_on_commit=False)
+    correction_db, retry_db = (first, second) if correction_first else (second, first)
+
+    async def correct() -> Any:
+        async with correction_db:
+            return await _outcome(voting.correct_vote(BILL_W, correction, correction_db))
+
+    async def post_or_qr() -> Any:
+        async with retry_db:
+            if endpoint == "post":
+                return await _outcome(voting.submit_vote(retry, retry_db))
+            return await _outcome(polis_qr.qr_web_vote(polis_qr.QRVoteRequest(
+                session_id="t9133-qr-session", bill_id=BILL_W, vote=choice,
+            ), retry_db))
+
+    tasks = []
+    try:
+        holder = await first.scalar(select(func.pg_backend_pid()))
+        waiter = await second.scalar(select(func.pg_backend_pid()))
+        assert holder != waiter
+        tasks.append(asyncio.create_task(correct() if correction_first else post_or_qr()))
+        await asyncio.wait_for(first.acquired.wait(), timeout=10)
+        tasks.append(asyncio.create_task(post_or_qr() if correction_first else correct()))
+        await _wait_for_row_lock(engine, waiter, holder)
+        assert not any(task.done() for task in tasks)
+        first.release.set()
+        outcomes = await asyncio.wait_for(asyncio.gather(*tasks), timeout=30)
+    finally:
+        first.release.set()
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        await first.close()
+        await second.close()
+
+    corrected, retried = outcomes if correction_first else reversed(outcomes)
+    assert isinstance(corrected, dict) and corrected["status"] == "corrected", outcomes
+    retry_succeeds = choice == ("NO" if correction_first else "YES")
+    if retry_succeeds:
+        assert (retried.success if endpoint == "post" else retried["success"]) is True
+    else:
+        assert retried == 409, outcomes
+    if endpoint == "qr":
+        assert redis.claims == int(retry_succeeds)
+        assert redis.data["status"] == ("used" if retry_succeeds else "authenticated")
+
+    after = await _vote_row(engine, alice, BILL_W)
+    assert after["id"] == before["id"]
+    assert after["created_at"] == before["created_at"]
+    assert after["vote"] == VoteChoice.NO
+    assert after["original_vote"] == "YES"
+    assert after["is_correction"] is True
+    assert after["corrected_at"].isoformat() == corrected["corrected_at"]
+    assert after["signature_hex"] == correction.signature_hex
+    for field in ("pk_eph", "vote_nullifier", "linkage_tag", "timestamp_ms"):
+        assert after[field] == getattr(correction, field)
+    async with AsyncSession(engine) as db:
+        assert await db.scalar(select(func.count()).select_from(CitizenVote)) == 1

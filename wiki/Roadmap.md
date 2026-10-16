@@ -50,7 +50,7 @@
 - My MP evolution built on MOD-12 MP Comparison; no separate runtime module ID is active
 - WebSocket Live Counter (WINDOW_24H)
 - Deliberation Layer (pol.is model)
-- Semaphore ZK Voting — Android prover, hidden S10 canary, security review, and first public one-bill scoped rollout passed; guarded Parliament rollout live; ZK Arweave auto-publication active for eligible public Parliament scopes with minimum group size 5
+- Semaphore ZK Voting — Android prover, hidden S10 canary, security review, and first public one-bill scoped rollout passed; guarded Parliament rollout and ZK Arweave auto-publication paused since 2026-10-03 for a security review; ordinary Tier-1 voting continues; if re-enabled, ZK auto-publication applies only to eligible public Parliament scopes with minimum group size 5
 - Commit-Reveal ZK voting
 
 ## Ekklesia Platform V2 — Minima (παράλληλη έρευνα / parallel research)

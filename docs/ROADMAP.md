@@ -47,7 +47,7 @@ nicht die neue Plattformgeneration.
       separate aktive Runtime-Modul-ID
 - [ ] Deliberation (pol.is-Modell)
 - [ ] Commit-Reveal Abstimmung
-- [x] Semaphore ZK Voting — Android prover, hidden S10 canary, Security Review und erster öffentlicher One-Bill-Scope (`bill:GR-d4c62ed4`) bestanden. Guarded Parliament rollout ist live; ZK-Arweave-Auto-Publikation ist live für eligible öffentliche Parliament scopes ab `group_size >= 5`.
+- [x] Semaphore ZK Voting — Android prover, hidden S10 canary, Security Review und erster öffentlicher One-Bill-Scope (`bill:GR-d4c62ed4`) bestanden. Guarded Parliament rollout und ZK-Arweave-Auto-Publikation sind seit 03.10.2026 für eine Sicherheitsprüfung pausiert; Tier-1 läuft weiter. Bei Reaktivierung gilt die automatische ZK-Publikation nur für eligible öffentliche Parliament scopes ab `group_size >= 5`.
 - [ ] packages/crypto-rs (Rust + WASM)
 
 ## Ekklesia Platform V2 - paralleler Minima-Zweig
