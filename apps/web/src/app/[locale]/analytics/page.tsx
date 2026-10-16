@@ -39,7 +39,7 @@ export default function AnalyticsPage() {
         {overview && (
           <div className="grid grid-cols-3 gap-3 mb-8">
             <div className="bg-white rounded-xl p-4 border border-gray-200 text-center">
-              <div className="text-2xl font-black text-blue-600">{overview.votes?.total?.toLocaleString() ?? 0}</div>
+              <div className="text-2xl font-black text-blue-600">{overview.votes?.total?.toLocaleString() ?? "—"}</div>
               <div className="text-xs text-gray-500 mt-1">{el("Ψήφοι", "Votes")}</div>
             </div>
             <div className="bg-white rounded-xl p-4 border border-gray-200 text-center">

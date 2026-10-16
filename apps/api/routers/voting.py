@@ -15,7 +15,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Header, Query, Request, Response, status
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_serializer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import and_, or_, select, func, union, update, text
 from sqlalchemy.exc import IntegrityError
@@ -334,6 +334,14 @@ class BillResults(BaseModel):
     parliament_vote_date: str | None = None
     disclaimer_el:    str
 
+    @model_serializer(mode="wrap")
+    def serialize_public_results(self, handler):
+        data = handler(self)
+        if not small_cell_k():
+            data.pop("suppressed", None)
+            data.pop("suppression_k", None)
+        return data
+
 class RelevanceRequest(BaseModel):
     nullifier_hash: str
     signal:         int  = Field(..., description="+1 wichtig / -1 unwichtig")
@@ -348,6 +356,7 @@ def publish_bill_results(result: BillResults) -> BillResults:
         percentages=("yes_percent", "no_percent", "abstain_percent", "unknown_percent"),
         partitions=("tier1_vote_count", "zk_vote_count"),
         derived=("divergence",),
+        public_source_total=result.zk_vote_count or 0,
     )
     if published["total_votes"] is None:
         published["representativity"] = None
@@ -1075,7 +1084,8 @@ async def get_latest_result(db: AsyncSession = Depends(get_db)):
         "yes": totals.yes, "no": totals.no,
         "abstain": totals.abstain, "unknown": totals.unknown,
     }, choices=("yes", "no", "abstain", "unknown"), total="total_votes",
-        percentages=("yes_pct", "no_pct", "abstain_pct", "unknown_pct"))
+        percentages=("yes_pct", "no_pct", "abstain_pct", "unknown_pct"),
+        public_source_total=totals.zk_total)
     for key in ("yes", "no", "abstain", "unknown"):
         published.pop(key)
     return published
@@ -1097,6 +1107,7 @@ async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
             b.status::text AS status,
             b.governance_level::text AS governance_level,
             (COALESCE(tier.total_votes, 0) + COALESCE(zk.total_votes, 0))::int AS total_votes,
+            COALESCE(zk.total_votes, 0)::int AS zk_total,
             (COALESCE(tier.yes_count, 0) + COALESCE(zk.yes_count, 0))::int AS yes_count,
             (COALESCE(tier.no_count, 0) + COALESCE(zk.no_count, 0))::int AS no_count,
             (COALESCE(tier.abstain_count, 0) + COALESCE(zk.abstain_count, 0))::int AS abstain_count,
@@ -1156,7 +1167,8 @@ async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
             "unknown_pct": vote_percent(unknown, total),
             "yes": yes, "no": no, "abstain": abstain, "unknown": unknown,
         }, choices=("yes", "no", "abstain", "unknown"), total="total_votes",
-            percentages=("yes_pct", "no_pct", "abstain_pct", "unknown_pct"))
+            percentages=("yes_pct", "no_pct", "abstain_pct", "unknown_pct"),
+            public_source_total=row.get("zk_total", 0))
         for key in ("yes", "no", "abstain", "unknown"):
             published.pop(key)
         bills.append(published)

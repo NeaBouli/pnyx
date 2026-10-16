@@ -35,7 +35,7 @@ from services.bill_visibility import (
     results_hidden,
 )
 from services.zk_vote_aggregation import VoteTotals, aggregate_bill_vote_totals, count_public_votes
-from services.small_cell import suppress_public_cells, choices_suppressed
+from services.small_cell import suppress_public_cells, choices_suppressed, source_complement_suppressed
 from models import (
     ParliamentBill, CitizenVote, Party,
     BillStatus, VoteChoice
@@ -404,7 +404,8 @@ async def public_bill_results(
     def pct(n): return round(n / total * 100, 1) if total > 0 else 0.0
 
     divergence = None
-    if total > 0 and bill.party_votes_parliament and not choices_suppressed((yes, no, abstain, unknown)):
+    if (total > 0 and bill.party_votes_parliament and not choices_suppressed((yes, no, abstain, unknown))
+            and not source_complement_suppressed(total, totals.zk_total)):
         yes_pct = yes / total
         parl_yes = sum(1 for v in bill.party_votes_parliament.values() if v in ("ΝΑΙ", "YES"))
         parl_no  = sum(1 for v in bill.party_votes_parliament.values() if v in ("ΟΧΙ", "NO"))
@@ -426,7 +427,7 @@ async def public_bill_results(
             "unknown_pct": pct(unknown),
         }, choices=("yes", "no", "abstain", "unknown"), total="total",
             percentages=("yes_pct", "no_pct", "abstain_pct", "unknown_pct"),
-            partitions=("tier1_total", "zk_total")),
+            partitions=("tier1_total", "zk_total"), public_source_total=totals.zk_total),
         "results_hidden": hidden,
         "parliament_votes": bill.party_votes_parliament,
         "divergence_score": divergence,

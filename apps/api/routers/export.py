@@ -59,6 +59,12 @@ async def get_all_results(db: AsyncSession, min_votes: int = 0) -> list[dict]:
     for bill_id, vote, count in vote_result.all():
         vote_counts.setdefault(bill_id, {})[VoteChoice(vote)] = count
 
+    zk_totals = {}
+    if threshold:
+        result = await db.execute(select(ZkVoteReceipt.vote_scope_id, func.count())
+                                  .group_by(ZkVoteReceipt.vote_scope_id))
+        zk_totals = {scope: count for scope, count in result.all()}
+
     rows = []
     for bill in bills:
         # A running vote with hidden results exports no counts (T-599).
@@ -105,7 +111,8 @@ async def get_all_results(db: AsyncSession, min_votes: int = 0) -> list[dict]:
             "arweave_url":          f"https://arweave.net/{bill.arweave_tx_id}" if bill.arweave_tx_id else "",
         }, choices=("citizen_yes", "citizen_no", "citizen_abstain", "citizen_unknown"),
             total="citizen_total", percentages=("yes_pct", "no_pct", "abstain_pct"),
-            derived=("divergence_score",), k=threshold))
+            derived=("divergence_score",), k=threshold,
+            public_source_total=zk_totals.get("bill:" + bill.id, 0) if threshold and (getattr(bill, "source", None) or "PARLIAMENT") == "PARLIAMENT" else 0))
 
     return rows
 

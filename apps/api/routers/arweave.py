@@ -49,7 +49,8 @@ def build_audit_trail(
         citizen_votes["unknown"] = vote_results.get(
             "unknown", citizen_votes["total"] - sum(citizen_votes[c] for c in ("yes", "no", "abstain")))
         citizen_votes = suppress_public_cells(
-            citizen_votes, choices=("yes", "no", "abstain", "unknown"), total="total")
+            citizen_votes, choices=("yes", "no", "abstain", "unknown"), total="total",
+            public_source_total=vote_results.get("zk_total", 0))
         if citizen_votes["yes"] is None:
             divergence_score = None
     return {

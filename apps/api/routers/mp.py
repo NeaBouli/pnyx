@@ -44,6 +44,9 @@ async def citizen_majority_for(db: AsyncSession, bill_id: str, bill=None):
         totals = await aggregate_bill_vote_totals(db, bill_id, include_zk=include_zk_for_bill(bill))
         majority = None if choices_suppressed((totals.yes, totals.no, totals.abstain, totals.unknown)) else (
             "YES" if totals.yes >= totals.no else "NO")
+        # A published receipt count is an independently visible source cell.
+        if totals.zk_total >= small_cell_k() and totals.tier1_total < small_cell_k():
+            return None, None, None, None
         return majority, totals.yes, totals.no, totals.total
     yes   = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.YES)) or 0
     no    = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.NO)) or 0
@@ -102,7 +105,7 @@ async def party_comparison(party_abbr: str, db: AsyncSession = Depends(get_db)):
         party_vote = normalize_vote(party_vote_raw)
         majority, yes, no_cnt, total = await citizen_majority_for(db, bill.id, bill)
 
-        if total < K_MIN or majority is None:
+        if majority is None or total < K_MIN:
             no_data += 1; continue
 
         match = (majority == "YES" and party_vote == "YES") or (majority == "NO" and party_vote == "NO")
@@ -165,7 +168,7 @@ async def party_ranking(db: AsyncSession = Depends(get_db)):
                 continue
             pv = normalize_vote(pvr)
             majority, yes, no_cnt, total = await citizen_majority_for(db, bill.id, bill)
-            if total < K_MIN or majority is None:
+            if majority is None or total < K_MIN:
                 continue
             if (majority == "YES" and pv == "YES") or (majority == "NO" and pv == "NO"):
                 agree += 1
@@ -212,7 +215,7 @@ async def bill_party_breakdown(bill_id: str, db: AsyncSession = Depends(get_db))
         party = party_map.get(abbr)
         vote = normalize_vote(vote_raw)
         match = None
-        if total >= K_MIN and majority in ("YES", "NO"):
+        if majority in ("YES", "NO") and total >= K_MIN:
             match = (majority == "YES" and vote == "YES") or (majority == "NO" and vote == "NO")
         breakdown.append({
             "party_abbr": abbr, "party_name": party.name_el if party else abbr,
@@ -223,8 +226,8 @@ async def bill_party_breakdown(bill_id: str, db: AsyncSession = Depends(get_db))
     breakdown.sort(key=lambda x: (x["vote"], x["party_abbr"]))
 
     citizen_votes = suppress_public_cells(
-        {"yes": yes, "no": no_cnt, "total": total, "majority": majority,
-         "yes_pct": round(yes / total * 100, 1) if total > 0 else 0},
+        {"yes": yes or 0, "no": no_cnt or 0, "total": total or 0, "majority": majority,
+         "yes_pct": round(yes / total * 100, 1) if total and total > 0 else 0},
         choices=("yes", "no"), total="total", percentages=("yes_pct",), derived=("majority",))
     if small_cell_k() and majority is None:
         citizen_votes.update(yes=None, no=None, yes_pct=None, suppressed=True)
@@ -233,7 +236,7 @@ async def bill_party_breakdown(bill_id: str, db: AsyncSession = Depends(get_db))
         "citizen_votes": citizen_votes,
         "party_votes": breakdown,
         "results_hidden": hidden,
-        "k_anonymity_met": total >= K_MIN, "data_license": "CC BY 4.0",
+        "k_anonymity_met": total is not None and total >= K_MIN, "data_license": "CC BY 4.0",
     }
 
 

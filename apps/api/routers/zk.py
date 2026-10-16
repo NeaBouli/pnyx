@@ -10,13 +10,15 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Path as FastAPIPath, Query, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_serializer
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
 from database import get_db
+from services.small_cell import small_cell_k
+from services.zk_vote_aggregation import count_zk_scope_receipts
 from dependencies import verify_admin_key
 from keypair import verify_signature
 from models import (
@@ -207,7 +209,17 @@ class ZkReceiptListResponse(BaseModel):
     vote_scope_id: str
     limit: int
     offset: int
-    receipts: list[dict[str, Any]]
+    receipts: list[dict[str, Any]] | None
+    suppressed: bool = False
+    suppression_k: int = 0
+
+    @model_serializer(mode="wrap")
+    def serialize_public_receipts(self, handler):
+        data = handler(self)
+        if not small_cell_k():
+            data.pop("suppressed", None)
+            data.pop("suppression_k", None)
+        return data
 
 
 class ZkRootResponse(BaseModel):
@@ -842,6 +854,10 @@ async def list_zk_receipts(
 ) -> ZkReceiptListResponse:
     scope = validate_vote_scope_id(vote_scope_id)
     await _ensure_scope_public_or_safe_canary(db, scope)
+    k = small_cell_k()
+    if k and await count_zk_scope_receipts(db, scope) < k:
+        return ZkReceiptListResponse(vote_scope_id=scope, limit=limit, offset=offset,
+                                     receipts=None, suppressed=True, suppression_k=k)
     result = await db.execute(
         select(ZkVoteReceipt)
         .where(ZkVoteReceipt.vote_scope_id == scope)
@@ -858,6 +874,7 @@ async def list_zk_receipts(
         limit=limit,
         offset=offset,
         receipts=receipts,
+        suppression_k=k,
     )
 
 

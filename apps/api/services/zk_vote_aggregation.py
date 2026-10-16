@@ -79,7 +79,7 @@ async def count_public_votes(
     db: AsyncSession,
     *,
     since: datetime | None = None,
-) -> int:
+) -> int | None:
     """Count public Tier-1 and ZK votes with identical bill visibility rules.
 
     Votes of a running vote with hidden results are not counted, so global turnout counters
@@ -87,30 +87,8 @@ async def count_public_votes(
     """
     threshold = small_cell_k()
     if threshold:
-        # Sum publishable bill totals only. Otherwise global turnout minus
-        # the visible bills could recover a bill whose total is below k.
-        tier_events = (
-            select(CitizenVote.bill_id.label("bill_id"))
-            .join(ParliamentBill, CitizenVote.bill_id == ParliamentBill.id)
-            .where(public_bill_filter(), results_visible_filter(), ~CitizenVote.bill_id.like("DEMO-%"))
-        )
-        zk_events = (
-            select(ParliamentBill.id.label("bill_id"))
-            .join(ZkVoteReceipt, ZkVoteReceipt.vote_scope_id == func.concat("bill:", ParliamentBill.id))
-            .where(public_bill_filter(), results_visible_filter(),
-                   func.coalesce(ParliamentBill.source, "PARLIAMENT") == "PARLIAMENT",
-                   ~ParliamentBill.id.like("DEMO-%"),
-                   ZkVoteReceipt.vote_commitment.in_([choice.value for choice in VoteChoice]))
-        )
-        if since is not None:
-            tier_events = tier_events.where(CitizenVote.created_at >= since)
-            zk_events = zk_events.where(ZkVoteReceipt.created_at >= since)
-        events = union_all(tier_events, zk_events).subquery("public_count_events")
-        eligible = (
-            select(func.count().label("count")).select_from(events)
-            .group_by(events.c.bill_id).having(func.count() >= threshold)
-        ).subquery("publishable_bill_counts")
-        return int(await db.scalar(select(func.sum(eligible.c.count))) or 0)
+        from services.public_result_windows import load_public_vote_days, public_window_count
+        return public_window_count(await load_public_vote_days(db), since=since)
 
     tier1_query = (
         select(func.count(CitizenVote.id))
@@ -151,6 +129,11 @@ async def _count_tier1_votes(db: AsyncSession, bill_id: str) -> dict[VoteChoice,
     for vote, count in result.all():
         counts[VoteChoice(vote)] = int(count or 0)
     return counts
+
+
+async def count_zk_scope_receipts(db: AsyncSession, scope: str) -> int:
+    return int(await db.scalar(select(func.count(ZkVoteReceipt.id))
+                              .where(ZkVoteReceipt.vote_scope_id == scope)) or 0)
 
 
 async def _count_zk_votes(db: AsyncSession, bill_id: str) -> dict[VoteChoice, int]:

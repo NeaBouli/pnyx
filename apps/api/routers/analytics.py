@@ -17,6 +17,7 @@ from sqlalchemy import DateTime, String, cast, select, func, and_, extract, Inte
 from database import get_db
 from services.small_cell import (
     choices_suppressed, small_cell_k, suppress_public_cells, suppress_public_series,
+    source_complement_suppressed,
 )
 from models import ParliamentBill, CitizenVote, BillStatus, VoteChoice, ZkVoteReceipt
 from services.bill_visibility import (
@@ -54,7 +55,8 @@ async def compute_divergence(
     total = totals.total
 
     if (total < K_ANONYMITY_MIN or not bill.party_votes_parliament
-            or choices_suppressed((totals.yes, totals.no, totals.abstain, totals.unknown))):
+            or choices_suppressed((totals.yes, totals.no, totals.abstain, totals.unknown))
+            or source_complement_suppressed(totals.total, totals.zk_total)):
         return None
 
     yes_pct = totals.yes / total
@@ -102,10 +104,13 @@ async def analytics_overview(db: AsyncSession = Depends(get_db)):
 
     avg_divergence = round(sum(divergence_scores) / len(divergence_scores), 3) if divergence_scores else None
 
+    withheld_windows = small_cell_k() and (recent_votes is None or today_votes is None)
     votes = suppress_public_cells(
-        {"total": total_votes, "last_7_days": recent_votes, "today": today_votes,
+        {"total": total_votes, "last_7_days": recent_votes or 0, "today": today_votes or 0,
          "avg_per_bill": round(total_votes / total_bills, 1) if total_bills > 0 else 0},
         choices=(), total="total", partitions=("last_7_days", "today"))
+    if withheld_windows:
+        votes.update(last_7_days=None, today=None, suppressed=True)
     if votes["total"] is None:
         votes["avg_per_bill"] = None
     return {
@@ -235,6 +240,13 @@ async def votes_timeline(
             )
         )
         events = union_all(tier1_events, zk_events).subquery("public_vote_events")
+
+    if small_cell_k():
+        from services.public_result_windows import load_public_vote_days, public_daily_series
+        bills = await load_public_vote_days(db, bill_id=bill_id)
+        return {"period_days": days, "bill_id": bill_id,
+                "timeline": public_daily_series(bills, since=since, platform=bill_id is None),
+                "note": "Aggregiert nach Tag", "status": "ok"}
 
     day_col = func.date_trunc("day", events.c.created_at).label("day")
     query = (
@@ -375,7 +387,8 @@ async def bill_analytics(bill_id: str, db: AsyncSession = Depends(get_db)):
         ]
         if small_cell_k():
             threshold = max(K_ANONYMITY_MIN, small_cell_k())
-            hidden_weekdays = any(r.count < threshold for r in weekday_rows)
+            hidden_weekdays = (any(r.count < threshold for r in weekday_rows)
+                               or source_complement_suppressed(totals.total, totals.zk_total))
             by_weekday = [
                 {"day": DAYS[r.weekday], "count": None if hidden_weekdays else r.count,
                  "suppressed": hidden_weekdays, "suppression_k": threshold}
@@ -390,7 +403,7 @@ async def bill_analytics(bill_id: str, db: AsyncSession = Depends(get_db)):
                   "unknown_pct": pct(unknown)},
                   choices=("yes", "no", "abstain", "unknown"), total="total",
                   percentages=("yes_pct", "no_pct", "abstain_pct", "unknown_pct"),
-                  partitions=("tier1_total", "zk_total")),
+                  partitions=("tier1_total", "zk_total"), public_source_total=totals.zk_total),
         "divergence": {
             "score": divergence,
             "pct": round(divergence * 100, 1) if divergence is not None else None,
@@ -437,7 +450,7 @@ async def compute_cumulative_representation(db: AsyncSession) -> dict:
             continue
 
         # Do not include hidden bill totals in an otherwise reconstructable sum.
-        if total >= small_cell_k():
+        if total >= small_cell_k() and not source_complement_suppressed(total, totals.zk_total):
             total_citizen_votes += total
 
         # Compute divergence for this bill
