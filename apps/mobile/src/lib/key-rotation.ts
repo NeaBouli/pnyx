@@ -10,9 +10,11 @@
  *   3. POST /api/v2/identity/rotate-key, signed by the old AND the new key.
  *   4. On 200 commit the new key, mark the origin "device", drop the staging.
  *
- * Crash safety: the staging slot is the source of truth. If the stored key
- * already (partly) equals the staged key, the swap is finalised locally; else
- * the staged rotation is re-sent, which the server confirms idempotently.
+ * Crash safety: the staging slot (bound to nullifier + old key) is the source
+ * of truth. If the stored key already (partly) equals the staged key, the swap
+ * is finalised locally; if the stored key is still the old key, the staged
+ * rotation is re-sent and the server confirms it idempotently. Everything runs
+ * under the identity-state lock, so import/verification cannot interleave.
  * The write goes to API_BASE only — never to the read-only mirror.
  */
 import { ed25519 } from "@noble/curves/ed25519.js";
@@ -30,6 +32,8 @@ import {
   persistLegacyPolisSeed,
   storeKeypair,
   storeRotationStaging,
+  withIdentityStateLock,
+  type RotationStaging,
 } from "./crypto-native";
 import { isDemoMode } from "./demo";
 
@@ -48,6 +52,7 @@ export interface RotationDeps {
   fetchImpl: typeof fetch;
   randomBytes: (length: number) => Uint8Array;
   now: () => number;
+  timeoutMs: number;
 }
 
 const DEFAULT_DEPS: RotationDeps = {
@@ -55,6 +60,7 @@ const DEFAULT_DEPS: RotationDeps = {
   fetchImpl: (...args) => fetch(...args),
   randomBytes: (length) => Crypto.getRandomBytes(length),
   now: () => Date.now(),
+  timeoutMs: 15_000,
 };
 
 export function identityRotateMessage(
@@ -67,9 +73,20 @@ export function identityRotateMessage(
   return `ekklesia:identity-rotate:v1:${nullifierHash}:${oldPublicKeyHex}:${newPublicKeyHex}:${timestampMs}`;
 }
 
+async function fetchWithTimeout(deps: RotationDeps, url: string, init?: RequestInit): Promise<Response> {
+  // The identity lock is held across this call; never let it hang.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), deps.timeoutMs);
+  try {
+    return await deps.fetchImpl(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function serverSupportsRotation(deps: RotationDeps): Promise<boolean | null> {
   try {
-    const res = await deps.fetchImpl(`${deps.apiBase}/api/v1/app/version`);
+    const res = await fetchWithTimeout(deps, `${deps.apiBase}/api/v1/app/version`);
     if (!res.ok) return null;
     const body = (await res.json()) as { features?: { identity_rotate?: unknown } };
     return body?.features?.identity_rotate === true;
@@ -78,25 +95,35 @@ async function serverSupportsRotation(deps: RotationDeps): Promise<boolean | nul
   }
 }
 
-async function commit(staged: { privateKeyHex: string; publicKeyHex: string }): Promise<void> {
+async function commit(staged: RotationStaging): Promise<void> {
   await storeKeypair(staged.privateKeyHex, staged.publicKeyHex);
-  await markKeyOriginDevice();
+  await markKeyOriginDevice(staged.publicKeyHex);
   await clearRotationStaging();
 }
 
-export async function rotateLegacyKeyIfNeeded(deps: RotationDeps = DEFAULT_DEPS): Promise<RotationResult> {
+async function rotateUnlocked(deps: RotationDeps): Promise<RotationResult> {
   if (await isDemoMode()) return "skipped";
-  if ((await loadKeyOrigin()) === "device") return "not_needed";
 
   const current = await loadKeypair();
   const nullifier = await loadNullifier();
   let staged = await loadRotationStaging();
 
-  // Interrupted local commit: the stored key already (partly) is the staged key.
-  if (staged && current && (current.privateKeyHex === staged.privateKeyHex || current.publicKeyHex === staged.publicKeyHex)) {
-    await commit(staged);
-    return "finalized";
+  if (staged && current && staged.nullifier === nullifier) {
+    // Interrupted local commit: the stored key already (partly) is the staged key.
+    if (current.privateKeyHex === staged.privateKeyHex || current.publicKeyHex === staged.publicKeyHex) {
+      await commit(staged);
+      return "finalized";
+    }
   }
+  if (staged && (!current || staged.nullifier !== nullifier || staged.oldPublicKeyHex !== current.publicKeyHex)) {
+    // Belongs to credentials that are no longer installed (import, other
+    // number, or a server-issued re-verification key): the server key for the
+    // installed identity is the installed one, so the staged key is unused.
+    await clearRotationStaging();
+    staged = null;
+  }
+
+  if ((await loadKeyOrigin()) === "device") return "not_needed";
   if (!current || !nullifier) return "skipped";
 
   const supported = await serverSupportsRotation(deps);
@@ -107,8 +134,13 @@ export async function rotateLegacyKeyIfNeeded(deps: RotationDeps = DEFAULT_DEPS)
     await persistLegacyPolisSeed();
     const seed = deps.randomBytes(32);
     if (!(seed instanceof Uint8Array) || seed.length !== 32) return "retry_later";
-    staged = { privateKeyHex: bytesToHex(seed), publicKeyHex: bytesToHex(ed25519.getPublicKey(seed)) };
-    await storeRotationStaging(staged.privateKeyHex, staged.publicKeyHex);
+    staged = {
+      nullifier,
+      oldPublicKeyHex: current.publicKeyHex,
+      privateKeyHex: bytesToHex(seed),
+      publicKeyHex: bytesToHex(ed25519.getPublicKey(seed)),
+    };
+    await storeRotationStaging(staged);
   }
 
   const timestampMs = deps.now();
@@ -126,7 +158,7 @@ export async function rotateLegacyKeyIfNeeded(deps: RotationDeps = DEFAULT_DEPS)
 
   let res: Response;
   try {
-    res = await deps.fetchImpl(`${deps.apiBase}/api/v2/identity/rotate-key`, {
+    res = await fetchWithTimeout(deps, `${deps.apiBase}/api/v2/identity/rotate-key`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -155,6 +187,10 @@ export async function rotateLegacyKeyIfNeeded(deps: RotationDeps = DEFAULT_DEPS)
   // interrupted attempt may already have moved the server to the staged key,
   // so it is kept and re-sent next session.
   return res.status === 404 ? "unsupported" : "retry_later";
+}
+
+export function rotateLegacyKeyIfNeeded(deps: RotationDeps = DEFAULT_DEPS): Promise<RotationResult> {
+  return withIdentityStateLock(() => rotateUnlocked(deps));
 }
 
 let inFlight: Promise<RotationResult> | null = null;

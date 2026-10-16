@@ -32,6 +32,8 @@ vi.mock("./api", () => ({
 
 vi.mock("./crypto-native", () => ({
   signProfileLocation: vi.fn(),
+  prepareForServerIssuedKey: vi.fn(async () => {}),
+  withIdentityStateLock: <T,>(fn: () => Promise<T>) => fn(),
 }));
 
 import { importAccountCredentials } from "./import-account";

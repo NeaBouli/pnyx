@@ -15,7 +15,7 @@ import {
 import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
 import { verifyIdentity } from "../lib/api";
-import { resetKeyLifecycleForServerKey, storeKeypair, storeNullifier } from "../lib/crypto-native";
+import { prepareForServerIssuedKey, storeKeypair, storeNullifier, withIdentityStateLock } from "../lib/crypto-native";
 import { clearPendingProfileLocation, loadPendingProfileLocation } from "../lib/profile-location";
 import { isDemoNumber, activateDemo, clearDemo, DEMO_NULLIFIER_PREFIX } from "../lib/demo";
 import { normalizeGreekMobileInput } from "../lib/phone";
@@ -46,9 +46,11 @@ export default function VerifyScreen({ navigation }: Props) {
         const demoKey = "a".repeat(64);
         const demoPub = "b".repeat(64);
         const demoNullifier = DEMO_NULLIFIER_PREFIX + Date.now().toString(16);
-        await resetKeyLifecycleForServerKey(demoNullifier);
-        await storeKeypair(demoKey, demoPub);
-        await storeNullifier(demoNullifier);
+        await withIdentityStateLock(async () => {
+          await prepareForServerIssuedKey(demoNullifier);
+          await storeKeypair(demoKey, demoPub);
+          await storeNullifier(demoNullifier);
+        });
         await activateDemo();
         Alert.alert(
           "Demo Mode",
@@ -58,12 +60,17 @@ export default function VerifyScreen({ navigation }: Props) {
         return;
       }
 
-      const res = await verifyIdentity(normalizedPhone);
-
-      // Αποθήκευση στο Secure Enclave (server-issued key: reset rotation state first)
-      await resetKeyLifecycleForServerKey(res.nullifier_hash);
-      await storeKeypair(res.private_key_hex, res.public_key_hex);
-      await storeNullifier(res.nullifier_hash);
+      // Serialised with a background key rotation (EVA-001 PR4): the server
+      // re-key and the local write happen as one unit for this identity.
+      const res = await withIdentityStateLock(async () => {
+        const issued = await verifyIdentity(normalizedPhone);
+        // Αποθήκευση στο Secure Enclave (server-issued key; recovery state is
+        // only added to, never deleted, before the new key is durable)
+        await prepareForServerIssuedKey(issued.nullifier_hash);
+        await storeKeypair(issued.private_key_hex, issued.public_key_hex);
+        await storeNullifier(issued.nullifier_hash);
+        return issued;
+      });
       // A real identity ends any earlier demo session (audit F4).
       await clearDemo();
 

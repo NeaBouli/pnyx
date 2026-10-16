@@ -4,6 +4,7 @@ import { ed25519 } from "@noble/curves/ed25519.js";
 const state = vi.hoisted(() => ({
   values: new Map<string, string>(),
   demo: false,
+  failImport: false,
 }));
 
 vi.mock("expo-secure-store", () => ({
@@ -17,8 +18,11 @@ vi.mock("expo-secure-store", () => ({
 }));
 vi.mock("expo-crypto", () => ({ getRandomBytes: vi.fn() }));
 vi.mock("./demo", () => ({ isDemoMode: vi.fn(async () => state.demo) }));
+vi.mock("./profile-location", () => ({ storeProfileLocation: vi.fn(async () => {}) }));
+vi.mock("./bill-scope-storage", () => ({ loadUserBillScope: vi.fn(async () => { if (state.failImport) throw new Error("scope down"); }) }));
 
-import { getOrDerivePolisKey, resetKeyLifecycleForServerKey, storeKeypair } from "./crypto-native";
+import { getOrDerivePolisKey, loadKeyOrigin, prepareForServerIssuedKey, storeKeypair, storeNullifier } from "./crypto-native";
+import { importAccountCredentials } from "./import-account";
 import { identityRotateMessage, rotateLegacyKeyIfNeeded, type RotationDeps } from "./key-rotation";
 
 const hex = (b: Uint8Array) => Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
@@ -33,7 +37,7 @@ const API = "https://api.test";
 
 type Call = { url: string; init?: RequestInit };
 
-function deps(opts: { rotate?: number | Error; rotateBody?: unknown; feature?: boolean | "down" } = {}) {
+function deps(opts: { rotate?: number | Error; rotateBody?: unknown; feature?: boolean | "down"; gate?: Promise<void> } = {}) {
   const calls: Call[] = [];
   const fetchImpl = vi.fn(async (url: string, init?: RequestInit) => {
     calls.push({ url, init });
@@ -41,12 +45,13 @@ function deps(opts: { rotate?: number | Error; rotateBody?: unknown; feature?: b
       if (opts.feature === "down") throw new Error("offline");
       return new Response(JSON.stringify({ features: { identity_rotate: opts.feature ?? true } }), { status: 200 });
     }
+    if (opts.gate) await opts.gate;
     if (opts.rotate instanceof Error) throw opts.rotate;
     const status = opts.rotate ?? 200;
     const body = opts.rotateBody ?? (status === 200 ? { success: true, public_key_hex: NEW_PUB, already_rotated: false } : { detail: "x" });
     return new Response(JSON.stringify(body), { status });
   });
-  const d: RotationDeps = { apiBase: API, fetchImpl: fetchImpl as unknown as typeof fetch, randomBytes: () => NEW_SEED.slice(), now: () => 1_700_000_000_000 };
+  const d: RotationDeps = { apiBase: API, fetchImpl: fetchImpl as unknown as typeof fetch, randomBytes: () => NEW_SEED.slice(), now: () => 1_700_000_000_000, timeoutMs: 5_000 };
   return { d, calls };
 }
 
@@ -61,6 +66,7 @@ const rotateCalls = (calls: Call[]) => calls.filter((c) => c.url.endsWith("/rota
 beforeEach(() => {
   state.values.clear();
   state.demo = false;
+  state.failImport = false;
 });
 
 describe("rotateLegacyKeyIfNeeded", () => {
@@ -84,7 +90,8 @@ describe("rotateLegacyKeyIfNeeded", () => {
 
     expect(state.values.get("ekklesia_private_key")).toBe(NEW_PRIV);
     expect(state.values.get("ekklesia_public_key")).toBe(NEW_PUB);
-    expect(state.values.get("ekklesia_key_origin")).toBe("device");
+    expect(state.values.get("ekklesia_key_origin")).toBe(NEW_PUB);
+    expect(await loadKeyOrigin()).toBe("device");
     expect(state.values.has("ekklesia_rotation_staging")).toBe(false);
     // POLIS identity unchanged although the identity key changed.
     expect((await getOrDerivePolisKey())!.pkPolisHex).toBe(polisBefore);
@@ -107,7 +114,7 @@ describe("rotateLegacyKeyIfNeeded", () => {
   });
 
   it.each([
-    ["device origin", () => { legacyUser(); state.values.set("ekklesia_key_origin", "device"); }, "not_needed"],
+    ["device origin", () => { legacyUser(); state.values.set("ekklesia_key_origin", OLD_PUB); }, "not_needed"],
     ["demo identity", () => { legacyUser(); state.demo = true; }, "skipped"],
     ["no identity", () => {}, "skipped"],
   ])("skips for %s", async (_name, setup, expected) => {
@@ -158,12 +165,12 @@ describe("rotateLegacyKeyIfNeeded", () => {
     expect(await rotateLegacyKeyIfNeeded(d)).toBe("finalized");
     expect(calls).toHaveLength(0);
     expect(state.values.get("ekklesia_public_key")).toBe(NEW_PUB);
-    expect(state.values.get("ekklesia_key_origin")).toBe("device");
+    expect(await loadKeyOrigin()).toBe("device");
   });
 
   it("ignores a corrupt staging slot", async () => {
     legacyUser();
-    state.values.set("ekklesia_rotation_staging", JSON.stringify({ privateKeyHex: OLD_PRIV, publicKeyHex: NEW_PUB }));
+    state.values.set("ekklesia_rotation_staging", JSON.stringify({ nullifier: NULLIFIER, oldPublicKeyHex: OLD_PUB, privateKeyHex: OLD_PRIV, publicKeyHex: NEW_PUB }));
     const { d, calls } = deps();
     expect(await rotateLegacyKeyIfNeeded(d)).toBe("rotated");
     expect(JSON.parse(String(rotateCalls(calls)[0].init!.body)).new_public_key_hex).toBe(NEW_PUB);
@@ -186,35 +193,105 @@ describe("rotateLegacyKeyIfNeeded", () => {
   });
 });
 
-describe("resetKeyLifecycleForServerKey (v1 re-verification)", () => {
-  it("same identity: keeps pk_polis stable across a new server key and allows a later rotation", async () => {
+const C_SEED = Uint8Array.from({ length: 32 }, () => 0xcd);
+const C_PRIV = hex(C_SEED);
+const C_PUB = hex(ed25519.getPublicKey(C_SEED));
+const C_NULLIFIER = "3".repeat(64);
+
+describe("server-issued keys and import (Codex review scenarios)", () => {
+  it("same-identity re-verification keeps pk_polis and makes the new server key rotatable", async () => {
     legacyUser();
     const polisBefore = (await getOrDerivePolisKey())!.pkPolisHex;
     expect(await rotateLegacyKeyIfNeeded(deps().d)).toBe("rotated");
-    state.values.set("ekklesia_rotation_staging", "leftover");
 
-    // Re-verification of the same number issues a new server key.
-    await resetKeyLifecycleForServerKey(NULLIFIER);
-    await storeKeypair("cd".repeat(32), hex(ed25519.getPublicKey(Uint8Array.from({ length: 32 }, () => 0xcd))));
+    await prepareForServerIssuedKey(NULLIFIER);
+    await storeKeypair(C_PRIV, C_PUB);
 
-    expect(state.values.has("ekklesia_key_origin")).toBe(false);
-    expect(state.values.has("ekklesia_rotation_staging")).toBe(false);
+    expect(await loadKeyOrigin()).toBe("server"); // marker bound to the replaced key
     expect((await getOrDerivePolisKey())!.pkPolisHex).toBe(polisBefore);
   });
 
-  it("same identity without a prior rotation: persists the seed of the key being replaced", async () => {
+  it("same identity without a prior rotation persists the seed of the key being replaced", async () => {
     legacyUser();
     const polisBefore = (await getOrDerivePolisKey())!.pkPolisHex;
-    await resetKeyLifecycleForServerKey(NULLIFIER);
-    await storeKeypair("cd".repeat(32), hex(ed25519.getPublicKey(Uint8Array.from({ length: 32 }, () => 0xcd))));
+    await prepareForServerIssuedKey(NULLIFIER);
+    await storeKeypair(C_PRIV, C_PUB);
     expect((await getOrDerivePolisKey())!.pkPolisHex).toBe(polisBefore);
   });
 
-  it("different identity: drops the previous POLIS seed", async () => {
+  it("verification of another number deletes no recovery material before the new key is durable", async () => {
+    legacyUser();
+    // A->B applied on the server, response lost: A installed, B staged.
+    await rotateLegacyKeyIfNeeded(deps({ rotate: new Error("lost") }).d);
+    const before = new Map(state.values);
+    await prepareForServerIssuedKey(C_NULLIFIER);
+    expect(state.values).toEqual(before);
+    // Crash before the new credentials are written: the next start recovers B.
+    expect(await rotateLegacyKeyIfNeeded(deps({ rotateBody: { success: true, public_key_hex: NEW_PUB, already_rotated: true } }).d)).toBe("already_rotated");
+    expect(state.values.get("ekklesia_private_key")).toBe(NEW_PRIV);
+  });
+
+  it("a successful import of another identity does not inherit the old marker, seed or staging", async () => {
     legacyUser();
     expect(await rotateLegacyKeyIfNeeded(deps().d)).toBe("rotated");
-    await resetKeyLifecycleForServerKey("2".repeat(64));
-    expect(state.values.has("ekklesia_polis_seed")).toBe(false);
-    expect(state.values.has("ekklesia_key_origin")).toBe(false);
+    await importAccountCredentials({ privateKey: C_PRIV, publicKey: C_PUB, nullifier: C_NULLIFIER });
+
+    expect(await loadKeyOrigin()).toBe("server");
+    const cPolis = hex(ed25519.getPublicKey((await getOrDerivePolisKey())!.privateKey));
+    const { d, calls } = deps();
+    expect(await rotateLegacyKeyIfNeeded(d)).toBe("rotated");
+    expect(JSON.parse(String(rotateCalls(calls)[0].init!.body))).toMatchObject({ nullifier_hash: C_NULLIFIER, old_public_key_hex: C_PUB });
+    // C's POLIS key comes from C's own key, never from A's preserved seed.
+    expect(cPolis).not.toBe("");
+    const seed = JSON.parse(state.values.get("ekklesia_polis_seed")!);
+    expect(seed.nullifier).toBe(C_NULLIFIER);
+  });
+
+  it("import waits for an in-flight rotation, so a rollback cannot drop the server's new key", async () => {
+    legacyUser();
+    let release!: () => void;
+    const gate = new Promise<void>((r) => { release = r; });
+    const order: string[] = [];
+    const rotation = rotateLegacyKeyIfNeeded(deps({ gate }).d).then((r) => { order.push(`rotation:${r}`); return r; });
+    state.failImport = true;
+    const importing = importAccountCredentials({ privateKey: C_PRIV, publicKey: C_PUB, nullifier: C_NULLIFIER })
+      .then(() => order.push("import:ok"), () => order.push("import:rolled_back"));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(order).toEqual([]); // import is queued behind the rotation
+    release();
+    await Promise.all([rotation, importing]);
+    expect(order).toEqual(["rotation:rotated", "import:rolled_back"]);
+    // Rollback restored the post-rotation state: the server's key B is installed.
+    expect(state.values.get("ekklesia_private_key")).toBe(NEW_PRIV);
+    expect(await loadKeyOrigin()).toBe("device");
+  });
+
+  it("a rotation started during an import sees the imported identity, not a mix", async () => {
+    legacyUser();
+    await Promise.all([
+      importAccountCredentials({ privateKey: C_PRIV, publicKey: C_PUB, nullifier: C_NULLIFIER }),
+      (async () => {
+        const { d, calls } = deps();
+        await rotateLegacyKeyIfNeeded(d);
+        const body = JSON.parse(String(rotateCalls(calls)[0].init!.body));
+        expect([body.nullifier_hash, body.old_public_key_hex]).toEqual([C_NULLIFIER, C_PUB]);
+      })(),
+    ]);
+    expect(state.values.get("ekklesia_nullifier")).toBe(C_NULLIFIER);
+    expect(state.values.get("ekklesia_public_key")).toBe(NEW_PUB);
+  });
+
+  it("drops staging that belongs to credentials no longer installed", async () => {
+    legacyUser();
+    await rotateLegacyKeyIfNeeded(deps({ rotate: 500 }).d); // B staged for A
+    await storeKeypair(C_PRIV, C_PUB); // v1 re-verification of the same number issued C
+    const freshSeed = Uint8Array.from({ length: 32 }, (_, i) => 90 + i);
+    const { d, calls } = deps();
+    d.randomBytes = () => freshSeed.slice();
+    expect(await rotateLegacyKeyIfNeeded(d)).toBe("rotated");
+    const body = JSON.parse(String(rotateCalls(calls)[0].init!.body));
+    expect(body.old_public_key_hex).toBe(C_PUB);
+    // A fresh key, not the stale staging prepared for A.
+    expect(body.new_public_key_hex).toBe(hex(ed25519.getPublicKey(freshSeed)));
   });
 });

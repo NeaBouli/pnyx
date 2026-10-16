@@ -4,6 +4,7 @@ import { ed25519 } from "@noble/curves/ed25519.js";
 import { loadUserBillScope } from "./bill-scope-storage";
 import { storeProfileLocation } from "./profile-location";
 import { clearVoteMarks } from "./vote-marks";
+import { prepareForServerIssuedKey, withIdentityStateLock } from "./crypto-native";
 
 export interface ImportedAccountCredentials {
   privateKey: string;
@@ -66,7 +67,14 @@ async function restoreImportState(snapshot: Map<string, string | null>): Promise
  * server-authoritative identity status. Deep-link location fields are never
  * accepted as identity-bound scope data.
  */
-export async function importAccountCredentials(
+export function importAccountCredentials(
+  credentials: ImportedAccountCredentials,
+): Promise<void> {
+  // EVA-001 PR4: never interleave with a background key rotation (incl. rollback).
+  return withIdentityStateLock(() => importAccountCredentialsUnlocked(credentials));
+}
+
+async function importAccountCredentialsUnlocked(
   credentials: ImportedAccountCredentials,
 ): Promise<void> {
   requireHex32(credentials.privateKey, "private key");
@@ -79,6 +87,8 @@ export async function importAccountCredentials(
 
   const snapshot = await snapshotImportState();
   try {
+    // Same identity: keep pk_polis registered across the key replacement.
+    await prepareForServerIssuedKey(credentials.nullifier);
     await SecureStore.setItemAsync("ekklesia_private_key", credentials.privateKey);
     await SecureStore.setItemAsync("ekklesia_public_key", credentials.publicKey);
     await SecureStore.setItemAsync("ekklesia_nullifier", credentials.nullifier);

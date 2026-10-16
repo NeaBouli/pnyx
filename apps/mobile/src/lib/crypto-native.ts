@@ -52,9 +52,10 @@ const KEYS = {
   PUBLIC_KEY:  "ekklesia_public_key",
   NULLIFIER:   "ekklesia_nullifier",
   // EVA-001 PR4: key lifecycle
-  KEY_ORIGIN:        "ekklesia_key_origin",        // "device" after rotation; absent = server-generated
-  POLIS_SEED:        "ekklesia_polis_seed",        // legacy POLIS seed kept across identity-key rotation
-  ROTATION_STAGING:  "ekklesia_rotation_staging",  // new keypair until the server confirms the swap
+  // All three are bound to an identity so stale values are ignored, never trusted:
+  KEY_ORIGIN:        "ekklesia_key_origin",        // public key of the device-generated key
+  POLIS_SEED:        "ekklesia_polis_seed",        // {nullifier, seed}: legacy POLIS seed kept across rotation
+  ROTATION_STAGING:  "ekklesia_rotation_staging",  // {nullifier, oldPublicKeyHex, privateKeyHex, publicKeyHex}
 } as const;
 
 export const KEY_LIFECYCLE_STORE_KEYS = [KEYS.KEY_ORIGIN, KEYS.POLIS_SEED, KEYS.ROTATION_STAGING] as const;
@@ -325,8 +326,8 @@ export async function getOrDerivePolisKey(): Promise<{
   pkPolisHex: string;
 } | null> {
   // A POLIS seed preserved before an identity-key rotation keeps pk_polis stable.
-  const preservedSeed = await SecureStore.getItemAsync(KEYS.POLIS_SEED);
-  if (preservedSeed && /^[0-9a-f]{64}$/.test(preservedSeed)) {
+  const preservedSeed = await loadPolisSeedFor(await SecureStore.getItemAsync(KEYS.NULLIFIER));
+  if (preservedSeed) {
     const polisPriv = hexToBytes(preservedSeed);
     const polisPub = ed25519.getPublicKey(polisPriv);
     return { privateKey: polisPriv, publicKey: polisPub, pkPolisHex: bytesToHex(polisPub) };
@@ -348,65 +349,100 @@ export async function getOrDerivePolisKey(): Promise<{
   return null;
 }
 
-/**
- * EVA-001 PR4: before the identity key is rotated, persist the POLIS seed that
- * legacy clients derive from it, so pk_polis (and the POLIS handle) stay the
- * same afterwards. Users with a nullifier root derive POLIS from the root and
- * need nothing. Idempotent; never overwrites an existing seed.
- */
-export async function persistLegacyPolisSeed(): Promise<void> {
-  if (await SecureStore.getItemAsync(KEYS.POLIS_SEED)) return;
-  if (await loadNullifierRoot()) return;
-  const legacy = await loadKeypair();
-  if (!legacy) return;
-  const polisSeed = hmacSha256(hexToBytes(legacy.privateKeyHex), DOMAIN.POLIS_KEY);
-  await secureSet(KEYS.POLIS_SEED, bytesToHex(polisSeed));
-}
+// ─── EVA-001 PR4: identity key lifecycle ─────────────────────────────────────
+
+let identityStateQueue: Promise<unknown> = Promise.resolve();
 
 /**
- * EVA-001 PR4: call BEFORE storing a key the server issued (v1 verification or
- * demo). The new key is server-generated again, so any "device" marker and any
- * staged rotation of the previous key are dropped. For the same identity the
- * POLIS seed is kept (and persisted from the key about to be replaced) so
- * pk_polis stays registered; for a different identity it is removed.
+ * Serialise every read-modify-write of the identity credentials (rotation,
+ * verification, import incl. rollback, clearing). Not re-entrant: callers
+ * inside the lock use the plain helpers below.
  */
-export async function resetKeyLifecycleForServerKey(newNullifier: string): Promise<void> {
-  const previousNullifier = await SecureStore.getItemAsync(KEYS.NULLIFIER);
-  if (previousNullifier === newNullifier) {
-    await persistLegacyPolisSeed();
-  } else {
-    await SecureStore.deleteItemAsync(KEYS.POLIS_SEED);
-  }
-  await SecureStore.deleteItemAsync(KEYS.KEY_ORIGIN);
-  await SecureStore.deleteItemAsync(KEYS.ROTATION_STAGING);
+export function withIdentityStateLock<T>(fn: () => Promise<T>): Promise<T> {
+  const run = identityStateQueue.then(fn, fn);
+  identityStateQueue = run.then(() => undefined, () => undefined);
+  return run;
 }
 
-export async function loadKeyOrigin(): Promise<"device" | "server"> {
-  return (await SecureStore.getItemAsync(KEYS.KEY_ORIGIN)) === "device" ? "device" : "server";
-}
+const HEX32 = /^[0-9a-f]{64}$/;
 
-export async function markKeyOriginDevice(): Promise<void> {
-  await SecureStore.setItemAsync(KEYS.KEY_ORIGIN, "device");
-}
-
-export async function loadRotationStaging(): Promise<{ privateKeyHex: string; publicKeyHex: string } | null> {
-  const raw = await SecureStore.getItemAsync(KEYS.ROTATION_STAGING);
+async function loadPolisSeedFor(nullifier: string | null): Promise<string | null> {
+  if (!nullifier) return null;
+  const raw = await SecureStore.getItemAsync(KEYS.POLIS_SEED);
   if (!raw) return null;
   try {
-    const parsed = JSON.parse(raw) as { privateKeyHex?: unknown; publicKeyHex?: unknown };
-    const priv = parsed.privateKeyHex;
-    const pub = parsed.publicKeyHex;
-    if (typeof priv !== "string" || typeof pub !== "string") return null;
-    if (!/^[0-9a-f]{64}$/.test(priv) || !/^[0-9a-f]{64}$/.test(pub)) return null;
-    if (bytesToHex(ed25519.getPublicKey(hexToBytes(priv))) !== pub) return null;
-    return { privateKeyHex: priv, publicKeyHex: pub };
+    const parsed = JSON.parse(raw) as { nullifier?: unknown; seed?: unknown };
+    if (parsed.nullifier !== nullifier || typeof parsed.seed !== "string" || !HEX32.test(parsed.seed)) return null;
+    return parsed.seed;
   } catch {
     return null;
   }
 }
 
-export async function storeRotationStaging(privateKeyHex: string, publicKeyHex: string): Promise<void> {
-  await secureSet(KEYS.ROTATION_STAGING, JSON.stringify({ privateKeyHex, publicKeyHex }));
+/**
+ * Before the identity key of the CURRENT identity is replaced (rotation or a
+ * same-number re-verification), persist the POLIS seed legacy clients derive
+ * from it, bound to the nullifier, so pk_polis stays registered. Users with a
+ * nullifier root derive POLIS from the root and need nothing. Never overwrites
+ * the seed of the same identity; only adds.
+ */
+export async function persistLegacyPolisSeed(): Promise<void> {
+  const nullifier = await SecureStore.getItemAsync(KEYS.NULLIFIER);
+  if (!nullifier || (await loadPolisSeedFor(nullifier))) return;
+  if (await loadNullifierRoot()) return;
+  const legacy = await loadKeypair();
+  if (!legacy || !HEX32.test(legacy.privateKeyHex)) return;
+  const polisSeed = hmacSha256(hexToBytes(legacy.privateKeyHex), DOMAIN.POLIS_KEY);
+  await secureSet(KEYS.POLIS_SEED, JSON.stringify({ nullifier, seed: bytesToHex(polisSeed) }));
+}
+
+/**
+ * Call BEFORE storing a server-issued key (v1 verification or demo). Nothing
+ * is deleted here: a staged rotation and the marker of the old key stay as
+ * recovery material until the new credentials are durable, and they are
+ * ignored afterwards because they are bound to another key/nullifier.
+ */
+export async function prepareForServerIssuedKey(newNullifier: string): Promise<void> {
+  if ((await SecureStore.getItemAsync(KEYS.NULLIFIER)) === newNullifier) {
+    await persistLegacyPolisSeed();
+  }
+}
+
+/** "device" only while the stored public key is the device-generated one. */
+export async function loadKeyOrigin(): Promise<"device" | "server"> {
+  const marker = await SecureStore.getItemAsync(KEYS.KEY_ORIGIN);
+  const current = await SecureStore.getItemAsync(KEYS.PUBLIC_KEY);
+  return marker !== null && current !== null && marker === current ? "device" : "server";
+}
+
+export async function markKeyOriginDevice(publicKeyHex: string): Promise<void> {
+  await SecureStore.setItemAsync(KEYS.KEY_ORIGIN, publicKeyHex);
+}
+
+export interface RotationStaging {
+  nullifier: string;
+  oldPublicKeyHex: string;
+  privateKeyHex: string;
+  publicKeyHex: string;
+}
+
+export async function loadRotationStaging(): Promise<RotationStaging | null> {
+  const raw = await SecureStore.getItemAsync(KEYS.ROTATION_STAGING);
+  if (!raw) return null;
+  try {
+    const p = JSON.parse(raw) as Partial<Record<keyof RotationStaging, unknown>>;
+    const fields = [p.nullifier, p.oldPublicKeyHex, p.privateKeyHex, p.publicKeyHex];
+    if (!fields.every((v) => typeof v === "string" && HEX32.test(v))) return null;
+    const staging = p as RotationStaging;
+    if (bytesToHex(ed25519.getPublicKey(hexToBytes(staging.privateKeyHex))) !== staging.publicKeyHex) return null;
+    return staging;
+  } catch {
+    return null;
+  }
+}
+
+export async function storeRotationStaging(staging: RotationStaging): Promise<void> {
+  await secureSet(KEYS.ROTATION_STAGING, JSON.stringify(staging));
 }
 
 export async function clearRotationStaging(): Promise<void> {
@@ -594,6 +630,10 @@ export async function isVerified(): Promise<boolean> {
 }
 
 export async function clearKeys(): Promise<void> {
+  return withIdentityStateLock(clearKeysUnlocked);
+}
+
+async function clearKeysUnlocked(): Promise<void> {
   await SecureStore.deleteItemAsync(KEYS.NULLIFIER_ROOT);
   await SecureStore.deleteItemAsync(KEYS.IDENTITY_COMMITMENT);
   await SecureStore.deleteItemAsync(KEYS.PRIVATE_KEY);
