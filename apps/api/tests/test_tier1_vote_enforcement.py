@@ -530,3 +530,26 @@ def test_tier1_metadata_flag_defaults_off(monkeypatch) -> None:
     assert voting.tier1_metadata_accepted() is False
     monkeypatch.setenv("TIER1_METADATA_ACCEPTED", "true")
     assert voting.tier1_metadata_accepted() is True
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("send_tier1", [False, True])
+async def test_stored_tier1_row_can_be_updated_with_flag_off(monkeypatch, send_tier1):
+    monkeypatch.delenv("TIER1_METADATA_ACCEPTED", raising=False)
+    stored = _stored_vote(tier1=True, timestamp_ms=1)
+    extra = _tier1_fields(sign_choice="NO") if send_tier1 else {}
+    db = _FakeDb([_identity(), _window_bill(), stored])
+    await voting.submit_vote(_request(vote="NO", **extra), db)
+    assert db.commits == 1
+    assert (stored.pk_eph, stored.vote_nullifier, stored.linkage_tag, stored.timestamp_ms) == (None, None, None, None)
+
+
+@pytest.mark.asyncio
+async def test_stored_tier1_row_can_be_corrected_with_flag_off(monkeypatch):
+    monkeypatch.delenv("TIER1_METADATA_ACCEPTED", raising=False)
+    stored = _stored_vote(tier1=True, timestamp_ms=1)
+    req = voting.CorrectionRequest(nullifier_hash=NULLIFIER_HASH, bill_id=BILL_ID, vote="NO", signature_hex="b" * 128)
+    db = _FakeDb([_window_bill(), _identity(), stored, None, None, None])
+    await voting.correct_vote(BILL_ID, req, db)
+    assert db.commits == 1
+    assert stored.vote_nullifier is None and stored.pk_eph is None

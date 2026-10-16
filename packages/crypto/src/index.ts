@@ -7,13 +7,13 @@
 export * from "./types.js";
 
 // Voting (Tier 1)
+// ADR-006 D1: the phone-derived root functions (deriveNullifierRoot,
+// persistNullifierRoot, buildRegistrationPayload) are deliberately NOT part of
+// the public API any more; they remain in ./nullifier.ts for the KAT vectors.
 export {
-  deriveNullifierRoot,
-  persistNullifierRoot,
   loadNullifierRoot,
   isRegistered,
   deriveIdentityCommitment,
-  buildRegistrationPayload,
   deriveVoteNullifier,
   deriveLinkageTag,
   deriveEphemeralKeypair,

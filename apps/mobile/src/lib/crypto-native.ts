@@ -194,11 +194,13 @@ async function secureSet(key: string, value: string): Promise<void> {
  * Store nullifier_root in Android Keystore / iOS Keychain.
  * Uses biometrics if available, falls back gracefully.
  */
-export async function storeNullifierRoot(root: Uint8Array): Promise<void> {
-  const value = bytesToHex(root);
-  const previous = await SecureStore.getItemAsync(KEYS.NULLIFIER_ROOT);
-  await secureSet(KEYS.NULLIFIER_ROOT, value);
-  if (previous !== value) await clearVoteMarks();
+/**
+ * @deprecated FORBIDDEN (ADR-006 D1): no client root may be stored any more,
+ * so a phone-derived root can never come into existence on a device. Roots
+ * that already exist are still READ (POLIS compatibility). Always throws.
+ */
+export async function storeNullifierRoot(_root: Uint8Array): Promise<void> {
+  throw new Error("storeNullifierRoot is forbidden: client roots are disabled (ADR-006 D1)");
 }
 
 export async function loadNullifierRoot(): Promise<Uint8Array | null> {

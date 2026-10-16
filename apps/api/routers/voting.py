@@ -544,6 +544,17 @@ def _ensure_same_tier(existing: CitizenVote, tier1: Tier1Fields | None) -> None:
     A Tier-1 change needs a freshly signed payload for the new choice; replaying
     the stored (or an older) payload is refused.
     """
+    if not tier1_metadata_accepted():
+        # ADR-006 D6: Tier-1 metadata proves nothing, so a change converts a
+        # stored Tier-1 row into an ordinary signed vote (the mandatory identity
+        # signature has authorised it) instead of locking it forever.
+        if existing.vote_nullifier is not None:
+            logger.info("Tier-1 row converted to Tier-0 on change (ADR-006 D6)")
+            existing.pk_eph = None
+            existing.vote_nullifier = None
+            existing.linkage_tag = None
+            existing.timestamp_ms = None
+        return
     existing_is_tier1 = existing.vote_nullifier is not None
     if existing_is_tier1 != (tier1 is not None):
         logger.warning("Vote change rejected: TIER_MISMATCH")
