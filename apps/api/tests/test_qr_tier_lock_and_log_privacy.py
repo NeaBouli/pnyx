@@ -41,9 +41,11 @@ class _DB:
     def __init__(self):
         self.calls = 0
         self.added = []
+        self.statements = []
 
-    async def execute(self, _stmt, *_a, **_k):
+    async def execute(self, stmt, *_a, **_k):
         self.calls += 1
+        self.statements.append(str(stmt))
         if self.calls == 1:
             return _Result(SimpleNamespace(public_key_hex=PK, nullifier_hash=NULLIFIER, periferia_id=None, dimos_id=None))
         if self.calls == 2:
@@ -74,6 +76,31 @@ async def test_qr_vote_is_blocked_by_the_zk_tier_lock(monkeypatch):
         await polis_qr.qr_web_vote(QRVoteRequest(session_id="s" * 12, bill_id="GR-1", vote="YES"), db=db)
     assert exc.value.status_code == 409
     assert redis.claimed is False and db.added == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("guard,locked", [("true", True), ("false", False)])
+async def test_qr_vote_locks_the_bill_row_when_the_tier_guard_is_on(monkeypatch, guard, locked):
+    redis = _Redis()
+
+    async def fake_redis():
+        return redis
+
+    async def passes(_db, **_kw):
+        return None
+
+    monkeypatch.setenv("ZK_TIER1_GUARD_ENABLED", guard)
+    monkeypatch.setattr(polis_qr, "_redis", fake_redis)
+    monkeypatch.setattr(polis_qr, "is_public_bill", lambda _bill: True)
+    monkeypatch.setattr(polis_qr, "ensure_bill_scope_allowed", lambda *_a, **_k: None)
+    monkeypatch.setattr(voting, "raise_if_zk_tier1_locked", passes)
+    db = _DB()
+    try:
+        await polis_qr.qr_web_vote(QRVoteRequest(session_id="s" * 12, bill_id="GR-1", vote="YES"), db=db)
+    except Exception:
+        pass  # the fake DB stops after the checks; only the bill query matters here
+    bill_sql = db.statements[1]
+    assert ("FOR UPDATE" in bill_sql) is locked
 
 
 def _logger_call_sources(source: str) -> list[str]:

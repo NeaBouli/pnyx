@@ -327,10 +327,14 @@ async def qr_web_vote(req: QRVoteRequest, db: AsyncSession = Depends(get_db)):
     if identity.public_key_hex != data.get("public_key_hex", ""):
         raise HTTPException(403, "Session key is no longer current — scan QR again")
 
-    # Check bill is votable
-    bill_result = await db.execute(
-        select(ParliamentBill).where(ParliamentBill.id == req.bill_id)
-    )
+    # Check bill is votable. With the ZK tier guard on, lock the bill row like
+    # POST /vote and ZK opt-in do, and hold it through commit: a concurrent
+    # opt-in cannot slip between the tier-lock check and this vote (EVA-006).
+    from routers.voting import zk_tier1_guard_enabled
+    bill_query = select(ParliamentBill).where(ParliamentBill.id == req.bill_id)
+    if zk_tier1_guard_enabled():
+        bill_query = bill_query.with_for_update()
+    bill_result = await db.execute(bill_query)
     bill = bill_result.scalar_one_or_none()
     if not bill or not is_public_bill(bill):
         raise HTTPException(404, f"Bill {req.bill_id} not found")
