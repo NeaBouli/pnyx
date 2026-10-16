@@ -525,8 +525,8 @@ erst auf dem Hetzner Server unter app.ekklesia.gr.
 Wenn ein Gesetzentwurf den Status PARLIAMENT_VOTED erreicht:
 1. **Snapshot** der Bürgerstimmen wird mit Zeitstempel fixiert
 2. Snapshot wird auf Arweave + TrueRepublic/PNYX übermittelt
-3. Die Abstimmung ist danach geschlossen (OPEN_END) — Ergebnisse bleiben sichtbar
-4. Keine weiteren Stimmen oder Stimmänderungen; der offizielle Snapshot bleibt unverändert
+3. Die Abstimmung bleibt danach offen (OPEN_END) — weitere Stimmen möglich
+4. Spätere Stimmen sind sichtbar aber NICHT Teil des offiziellen Snapshots
 
 ### Was im Snapshot steht
 - Zeitstempel des Parlamentsbeschlusses
@@ -537,8 +537,8 @@ Wenn ein Gesetzentwurf den Status PARLIAMENT_VOTED erreicht:
 - NIEMALS: individuelle Stimmen, Nullifier Hashes, Public Keys
 
 ### Was NACH dem Snapshot passiert
-- OPEN_END: archiviert, Abstimmung geschlossen — Ergebnisse bleiben sichtbar
-- Anzeige zeigt die Ergebnisse zum Zeitpunkt des Beschlusses; keine Stimmen nach OPEN_END
+- OPEN_END: weitere Stimmen möglich — historisch, retrospektiv
+- Anzeige trennt klar: "Zum Zeitpunkt des Beschlusses" vs "Aktuell"
 - Snapshot ist unveränderlich auf Arweave/Blockchain
 
 ### TODO Frontend

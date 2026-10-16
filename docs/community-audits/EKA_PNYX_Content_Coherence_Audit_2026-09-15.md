@@ -161,9 +161,8 @@ even mislabels it as MOD-08 (which is Arweave). **Fix:** future tense + correct 
   community.html:631 crediting Claude Haiku for the same jobs.
 - HLR providers: `faq.html:368` names "HLR Lookups / Melrose Labs / Telnyx" — code has
   hlrlookup.com (primary) and hlr-lookups.com (fallback); Melrose optional, Telnyx absent.
-- Vote change (historical finding): FAQ and API disagreed about when changes end.
-  T-9127 (16.10.2026): changes only in WINDOW_24H; OPEN_END is archived, voting
-  is closed and results remain visible.
+- Vote change: `faq.html:238` (WINDOW_24H + OPEN_END — matches voting.py:467-483) vs
+  `faq.html:495` ("final after the window") — wrong for the main vote path.
 - HLR meaning: JSON-LD (:682) says HLR checks "whether a Greek SIM is active" while the
   page's own visible text (:305/:310) carefully says it does not prove SIM possession.
 - Section badge counts wrong: 8→9, 5→6, 6→10 actual items; the Semaphore item (:295) sits
