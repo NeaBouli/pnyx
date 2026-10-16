@@ -191,7 +191,7 @@ export default function BillsScreen() {
     try {
       await Share.share({
         title: bill.title_el,
-        message: `${bill.title_el}\n\nΨήφισε ανώνυμα στην εκκλησία:\nhttps://ekklesia.gr/el/bills/${bill.id}`,
+        message: `${bill.title_el}\n\nΨήφισε κι εσύ στην εκκλησία — χωρίς όνομα:\nhttps://ekklesia.gr/el/bills/${bill.id}`,
       });
     } catch {}
   };

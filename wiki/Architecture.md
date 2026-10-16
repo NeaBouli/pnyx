@@ -73,7 +73,9 @@ ANNOUNCED → ACTIVE → WINDOW_24H → PARLIAMENT_VOTED → OPEN_END
 | ACTIVE | ✅ | ❌ locked |
 | WINDOW_24H | ✅ | ✅ allowed |
 | PARLIAMENT_VOTED | ❌ | — |
-| OPEN_END | ✅ | ✅ always |
+| OPEN_END | ❌ closed | ❌ |
+
+OPEN_END = archived, results remain visible, voting is closed.
 
 ## V2 Planned
 

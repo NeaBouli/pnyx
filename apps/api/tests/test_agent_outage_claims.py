@@ -100,6 +100,8 @@ def test_legitimate_answers_are_not_flagged(text: str) -> None:
 @pytest.mark.asyncio
 @pytest.mark.parametrize("lang", ["el", "en"])
 async def test_ollama_outage_answer_is_replaced_with_honest_fallback(monkeypatch: pytest.MonkeyPatch, lang: str) -> None:
+    monkeypatch.setenv("AGENT_MODE", "hybrid")
+
     async def fake_context(question: str, lang: str, db: object):
         return [], [], False, []
 
@@ -132,6 +134,8 @@ async def test_ollama_outage_answer_is_replaced_with_honest_fallback(monkeypatch
 
 @pytest.mark.asyncio
 async def test_claude_outage_answer_is_replaced(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("AGENT_MODE", "hybrid")
+
     async def fake_context(question: str, lang: str, db: object):
         return [], [], False, []
 

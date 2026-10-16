@@ -73,16 +73,16 @@
       "source": "docs/wiki/faq.html",
       "changefreq": "monthly",
       "priority": "0.9",
-      "lastmod": "2026-10-11",
-      "sha256": "2d3ac72f5ac9bb0bf428d4402527222f8132a2c71172f637498c0a1e9072184c"
+      "lastmod": "2026-10-16",
+      "sha256": "bce0e58c115a75ecb1d10c9901efc9a579b9d6edebcbc7ba04f4fcb161a91cbc"
     },
     {
       "loc": "/wiki/whitepaper.html",
       "source": "docs/wiki/whitepaper.html",
       "changefreq": "monthly",
       "priority": "0.8",
-      "lastmod": "2026-10-11",
-      "sha256": "ce568c9ea88050c5aa8a1ce9d9e37fe825fe5f2e4a32cfbfbbb62abda5bd1679"
+      "lastmod": "2026-10-16",
+      "sha256": "7fb433fef99633c0b474c5abb25a6c036bacbc04011b78257963967059fb1823"
     },
     {
       "loc": "/wiki/privacy.html",
@@ -97,8 +97,8 @@
       "source": "docs/wiki/security.html",
       "changefreq": "monthly",
       "priority": "0.7",
-      "lastmod": "2026-10-11",
-      "sha256": "c8312aca72a41aed56d38b00a8d98bfd018c7f3057520baa6ee679e1b2ce9396"
+      "lastmod": "2026-10-16",
+      "sha256": "ca4f377ac1d518a59ce54afe5c91bfc650d9e05b9213272add78faa98ffa1f66"
     },
     {
       "loc": "/wiki/api.html",

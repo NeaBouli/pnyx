@@ -31,15 +31,32 @@ def test_private_key_seed_matches_canonical_platform_split() -> None:
         response = _canonical_response(key_entry[2], lang)
         assert response is not None
         assert response["answer"].startswith(content)
-    assert "Web Beta: it is kept in the browser's localStorage" in key_entry[4]
-    assert "not iOS Keychain or Android Keystore" in key_entry[4]
-    assert "Expo SecureStore" in key_entry[4]
+        web, mobile = content.split("Mobile app:" if lang == "en" else "Εφαρμογή κινητού:", 1)
+        assert "WebCrypto" in web and "IndexedDB" in web and "Web Locks" in web
+        assert "features.identity_key_check" in web
+        assert ("non-extractable" if lang == "en" else "μη εξαγώγιμο") in web
+        assert ("off by default" if lang == "en" else "ανενεργό από προεπιλογή") in web
+        assert "iOS Keychain" not in web and "Android Keystore" not in web
+        assert "Expo SecureStore" in mobile
+    assert "deletes the plaintext copy only after successful migration" in key_entry[4]
+    assert "plaintext in localStorage until migration completes" in key_entry[4]
+    assert "if the feature is off, unsupported or a check fails, the copy remains" in key_entry[4]
 
 
 def test_seed_does_not_claim_keychain_for_web_or_offer_payment_processors() -> None:
     anonymity_entry = _entry("How is my anonymity protected?")
     all_content = " ".join(str(value) for entry in ENTRIES for value in entry[3:5]).lower()
 
-    assert "web beta: browser localstorage; mobile app: expo securestore" in anonymity_entry[4].lower()
+    for lang, content in (("el", anonymity_entry[3]), ("en", anonymity_entry[4])):
+        web, mobile = content.split("Mobile app:" if lang == "en" else "Εφαρμογή κινητού:", 1)
+        assert "WebCrypto" in web and "IndexedDB" in web and "Web Locks" in web
+        assert "localStorage" in web and "features.identity_key_check" in web
+        assert ("non-extractable" if lang == "en" else "μη εξαγώγιμο") in web
+        assert ("off by default" if lang == "en" else "ανενεργό από προεπιλογή") in web
+        assert "iOS Keychain" not in web and "Android Keystore" not in web
+        assert "Expo SecureStore" in mobile
+    assert "IndexedDB after successful migration" in anonymity_entry[4]
+    assert "plaintext in localStorage until migration completes" in anonymity_entry[4]
+    assert "if the feature is off, unsupported or a check fails, the plaintext copy remains" in anonymity_entry[4]
     assert "stored only on your device" not in all_content
     assert "stripe" not in all_content and "paypal" not in all_content

@@ -171,7 +171,7 @@ ANNOUNCED → ACTIVE → WINDOW_24H → PARLIAMENT_VOTED → OPEN_END
 | ACTIVE | ✅ | ❌ Κλειδωμένη | Live counter |
 | WINDOW_24H | ✅ | ✅ Επιτρέπεται | WebSocket, push |
 | PARLIAMENT_VOTED | ❌ | — | OG Image, RSS, Divergence |
-| OPEN_END | ✅ | ✅ Πάντα | Trend analysis |
+| OPEN_END | ❌ Κλειστή — τα αποτελέσματα παραμένουν ορατά | — | Trend analysis |
 
 ### 4.2 Αυτόματη Δημοσίευση / Automatic Publication
 

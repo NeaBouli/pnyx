@@ -1,0 +1,238 @@
+{
+ "platform": {
+  "kw": [
+   "τι είναι",
+   "ποιος",
+   "διαχειρ*",
+   "φορέα*",
+   "κρατικ*",
+   "gov",
+   "επίσημ*",
+   "νομικ*",
+   "ισχύ*",
+   "δεσμευ*",
+   "δωρεάν",
+   "κόστ*",
+   "open source",
+   "κώδικ*",
+   "what is",
+   "who",
+   "operat*",
+   "government",
+   "official",
+   "legal*",
+   "binding",
+   "free",
+   "cost",
+   "source code",
+   "licen*"
+  ],
+  "el": "Η ekklesia.gr επιτρέπει σε πολίτες να ψηφίζουν ενημερωτικά για πραγματικά νομοσχέδια της Βουλής. Οι ψηφοφορίες δεν έχουν νομική δεσμευτικότητα. Είναι ανεξάρτητη πρωτοβουλία πολιτών χωρίς κρατική αναγνώριση ή έγκριση· δεν είναι υπηρεσία του gov.gr. Φορέας λειτουργίας: V-Labs IT Solutions & Development (Vendetta Labs), με συνεισφορές της κοινότητας (https://ekklesia.gr/legal.html). Η χρήση είναι δωρεάν και ο κώδικας είναι ανοιχτός με άδεια MIT (https://github.com/NeaBouli/pnyx).",
+  "en": "ekklesia.gr lets citizens cast informational votes on real Hellenic Parliament bills. The votes are not legally binding. It is an independent civic initiative without state recognition or approval; it is not a gov.gr service. Operator: V-Labs IT Solutions & Development (Vendetta Labs), with community contributions (https://ekklesia.gr/legal.html). Use is free and the source code is open under the MIT licence (https://github.com/NeaBouli/pnyx)."
+ },
+ "verification": {
+  "kw": [
+   "επαλήθ*",
+   "hlr",
+   "sms",
+   "κινητ*",
+   "τηλέφων*",
+   "αριθμ*",
+   "προσωπικ*",
+   "δεδομέν*",
+   "αποθηκ*",
+   "verif*",
+   "phone",
+   "number",
+   "mobile",
+   "personal data",
+   "store*",
+   "data"
+  ],
+  "el": "Η επαλήθευση γίνεται με έλεγχο HLR του ελληνικού αριθμού κινητού, χωρίς SMS. Ο αριθμός στέλνεται στον server της ekklesia, που ρωτά πάροχο HLR (hlrlookup.com, εφεδρικά hlr-lookups.com). Ο αριθμός τηλεφώνου δεν αποθηκεύεται στη βάση· αποθηκεύονται ένα nullifier hash (hash με μυστικό server salt) και το δημόσιο κλειδί σας. Αν επιλέξετε γεωγραφικό προφίλ, αποθηκεύονται επίσης η Περιφέρεια (periferia_id), ο Δήμος (dimos_id) και αν η επιλογή έχει κλειδωθεί (region_locked), συνδεδεμένα με την ταυτότητά σας. Ο έλεγχος HLR δεν αποδεικνύει ταυτότητα, κατοικία ή εκλογικό δικαίωμα. Νέα επαλήθευση με τον ίδιο αριθμό αντικαθιστά το κλειδί σας. Λεπτομέρειες: https://ekklesia.gr/wiki/privacy.html",
+  "en": "Verification uses an HLR check of your Greek mobile number, without SMS. The number is sent to the ekklesia server, which queries an HLR provider (hlrlookup.com, fallback hlr-lookups.com). The phone number is not stored in the database; a nullifier hash (a hash with a secret server salt) and your public key are stored. If you choose a geographic profile, your region (periferia_id), municipality (dimos_id) and whether that choice is locked (region_locked) are also stored and linked to your identity. The HLR check does not prove identity, residence or voting eligibility. Verifying again with the same number replaces your key. Details: https://ekklesia.gr/wiki/privacy.html"
+ },
+ "voting": {
+  "kw": [
+   "ψηφ*",
+   "ψήφ*",
+   "επιλογ*",
+   "υπέρ",
+   "κατά",
+   "αποχ*",
+   "δύο φορές",
+   "αλλάξ*",
+   "διόρθ*",
+   "ed25519",
+   "υπογραφ*",
+   "vote*",
+   "voting",
+   "choice*",
+   "twice",
+   "change*",
+   "correct*",
+   "signature*"
+  ],
+  "el": "Επιλογές ψήφου: Υπέρ, Κατά, Αποχή, «Δεν γνωρίζω αρκετά». Μετρά μία ψήφος ανά πολίτη και νομοσχέδιο· δεν μπορείτε να ψηφίσετε δύο φορές. Κάθε ψήφος υπογράφεται ψηφιακά με το κλειδί Ed25519 της συσκευής σας, ώστε ο server να ελέγχει ότι προέρχεται από επαληθευμένο πολίτη. Στην κατάσταση WINDOW_24H (τελευταίες 24 ώρες πριν την ψηφοφορία της Βουλής) η εφαρμογή επιτρέπει μία διόρθωση της ψήφου σας μέσω της λειτουργίας διόρθωσης. Ψηφίζετε στην εφαρμογή ή στον browser με το τοπικό σας κλειδί ή μέσω QR από την εφαρμογή.",
+  "en": "Vote choices: Yes, No, Abstain, \"Don't know enough\". One vote counts per citizen and bill; you cannot vote twice. Each vote is digitally signed with the Ed25519 key on your device so the server can check it comes from a verified citizen. In WINDOW_24H status (the last 24 hours before the Parliament vote) the app allows one correction of your vote through the correction function. You vote in the app, or in the browser with your local key or via a QR code confirmed in the app."
+ },
+ "anonymity": {
+  "kw": [
+   "ανώνυμ*",
+   "ποιος ψήφισε",
+   "βλέπ*",
+   "ιδιωτικ*",
+   "παρακολ*",
+   "anonym*",
+   "who voted",
+   "see how",
+   "privacy",
+   "track*",
+   "link*"
+  ],
+  "el": "Οι ψήφοι δεν αποθηκεύονται μαζί με όνομα ή αριθμό τηλεφώνου. Ο server μπορεί όμως να συνδέσει τις ψήφους της ίδιας ταυτότητας (μέσω του nullifier hash), άρα οι ψήφοι δεν είναι κρυπτογραφικά ανώνυμες απέναντι στον διαχειριστή. Δημόσια εμφανίζονται μόνο συγκεντρωτικά αποτελέσματα. Η ψηφοφορία με αποδείξεις μηδενικής γνώσης (ZK) είναι σε παύση για έλεγχο ασφαλείας από 03/10/2026.",
+  "en": "Votes are not stored together with a name or phone number. The server can, however, link votes of the same identity (through the nullifier hash), so votes are not cryptographically anonymous towards the operator. Only aggregate results are shown publicly. Zero-knowledge (ZK) voting has been paused for a security review since 2026-10-03."
+ },
+ "lifecycle": {
+  "kw": [
+   "κατάσταση",
+   "πότε",
+   "κλείνει",
+   "ανοίγει",
+   "λήγει",
+   "προθεσμ*",
+   "αποτελέσμ*",
+   "κρυφ*",
+   "μηδεν*",
+   "window",
+   "active",
+   "open_end",
+   "announced",
+   "when",
+   "close",
+   "open",
+   "deadline",
+   "status",
+   "result*",
+   "hidden",
+   "zero",
+   "lifecycle"
+  ],
+  "el": "Κύκλος νομοσχεδίου (με βάση την ημερομηνία ψηφοφορίας της Βουλής): ANNOUNCED → ACTIVE 14 ημέρες πριν, → WINDOW_24H 24 ώρες πριν, → PARLIAMENT_VOTED τη στιγμή της ψηφοφορίας της Βουλής, → OPEN_END 7 ημέρες μετά. Ψηφίζετε όσο το νομοσχέδιο είναι ACTIVE ή WINDOW_24H· η ψηφοφορία των πολιτών κλείνει τη στιγμή που ψηφίζει η Βουλή (PARLIAMENT_VOTED). Σε ACTIVE τα αποτελέσματα συνήθως είναι κρυφά και φαίνονται μηδενικά· σε WINDOW_24H, PARLIAMENT_VOTED και OPEN_END τα συγκεντρωτικά αποτελέσματα είναι ορατά. Χωρίς γνωστή ημερομηνία Βουλής οι αλλαγές γίνονται χειροκίνητα. Τρέχοντα νομοσχέδια: https://ekklesia.gr/el/bills",
+  "en": "Bill lifecycle (based on the Parliament vote date): ANNOUNCED → ACTIVE 14 days before, → WINDOW_24H 24 hours before, → PARLIAMENT_VOTED at the time of the Parliament vote, → OPEN_END 7 days after. You can vote while a bill is ACTIVE or WINDOW_24H; citizen voting closes when Parliament votes (PARLIAMENT_VOTED). In ACTIVE, results are usually hidden and shown as zero; in WINDOW_24H, PARLIAMENT_VOTED and OPEN_END the aggregate results are visible. Without a known Parliament date, transitions are manual. Current bills: https://ekklesia.gr/en/bills"
+ },
+ "private_key": {
+  "kw": [
+   "κλειδ*",
+   "χάσ*",
+   "απώλ*",
+   "ανάκτ*",
+   "key",
+   "keys",
+   "lose",
+   "lost",
+   "recover*"
+  ],
+  "el": "Web Beta: η νέα αποθήκευση κρατά το ιδιωτικό κλειδί ως μη εξαγώγιμο κλειδί WebCrypto στο IndexedDB και διαγράφει το απλό αντίγραφο μόνο μετά την επιτυχή μετάβαση. Η αυτόματη μετάβαση απαιτεί συμβατό browser με Ed25519 WebCrypto και Web Locks και ενεργοποίηση του ελέγχου κλειδιού από τον server (features.identity_key_check, ανενεργό από προεπιλογή). Παλιότερες εγγραφές, αλλά και νέα κλειδιά που δεν έχουν μεταφερθεί ακόμη, μπορεί να παραμένουν ως απλό κείμενο στο localStorage μέχρι να ολοκληρωθεί η μετάβαση· αν η λειτουργία είναι ανενεργή, δεν υποστηρίζεται ή αποτύχει κάποιος έλεγχος, το αντίγραφο παραμένει. Εφαρμογή κινητού: αποθηκεύεται μέσω Expo SecureStore, που χρησιμοποιεί Android Keystore και, στην υλοποιημένη διαδρομή κώδικα iOS, iOS Keychain. Ο server δημιουργεί το ζεύγος κλειδιών μία φορά κατά την επαλήθευση και σας παραδίδει το ιδιωτικό κλειδί μόνο μία φορά· δεν το αποθηκεύει και δεν μπορεί να το ανακτήσει αργότερα. Αν χαθεί, ακολουθείτε την επίσημη ροή επαλήθευσης/επανέκδοσης που παρέχει η εφαρμογή· δεν υπάρχει μυστική ανάκτηση από τον server.",
+  "en": "Web Beta: the new storage keeps the private key as a non-extractable WebCrypto key in IndexedDB and deletes the plaintext copy only after successful migration. The automatic move requires a compatible browser with Ed25519 WebCrypto and Web Locks, and server-enabled key checks (features.identity_key_check, off by default). Older state, and new keys that have not yet migrated, may remain as plaintext in localStorage until migration completes; if the feature is off, unsupported or a check fails, the copy remains. Mobile app: it is stored via Expo SecureStore, which uses Android Keystore and, in the implemented iOS code path, iOS Keychain. The server creates the key pair once during verification and hands you the private key a single time; it does not store it and cannot recover it later. If it is lost, use the official app re-verification/key-rotation flow; there is no hidden server-side recovery process."
+ },
+ "forum": {
+  "kw": [
+   "forum",
+   "φόρουμ",
+   "πνύκα",
+   "pnyx",
+   "συζήτ*",
+   "σχόλι*",
+   "discuss*",
+   "comment*",
+   "community",
+   "κοινότ*"
+  ],
+  "el": "Το Forum Πνύκα (https://pnyx.ekklesia.gr) είναι ο δημόσιος χώρος συζήτησης των νομοσχεδίων. Κοινότητα: https://ekklesia.gr/community.html",
+  "en": "The Pnyx Forum (https://pnyx.ekklesia.gr) is the public space for discussing bills. Community: https://ekklesia.gr/community.html"
+ },
+ "local": {
+  "kw": [
+   "δήμ*",
+   "περιφέρ*",
+   "διαύγ*",
+   "δημοτικ*",
+   "τοπικ*",
+   "municip*",
+   "region*",
+   "diavgeia",
+   "local"
+  ],
+  "el": "Μέσω Διαύγειας η πλατφόρμα δείχνει δημοτικές και περιφερειακές αποφάσεις και, όπου η λειτουργία είναι ενεργή, μη δεσμευτικές τοπικές ψηφοφορίες για πολίτες του αντίστοιχου Δήμου/Περιφέρειας.",
+  "en": "Through Diavgeia the platform shows municipal and regional decisions and, where the feature is active, non-binding local votes for citizens of the matching municipality/region."
+ },
+ "analytics": {
+  "kw": [
+   "cplm",
+   "divergence",
+   "απόκλισ*",
+   "καθρέφτ*",
+   "mirror",
+   "score",
+   "δείκτ*"
+  ],
+  "el": "Το CPLM (Citizens Political Liquid Mirror) είναι δημόσιο συγκεντρωτικό σήμα της πολιτικής θέσης των συμμετεχόντων με βάση τις ψήφους τους· δεν δείχνει μεμονωμένες ψήφους. Για το Divergence Score δείτε https://ekklesia.gr/wiki/faq.html",
+  "en": "CPLM (Citizens Political Liquid Mirror) is a public aggregate signal of participants' political position based on their votes; it shows no individual votes. For the Divergence Score see https://ekklesia.gr/wiki/faq.html"
+ },
+ "apps": {
+  "kw": [
+   "εφαρμογ*",
+   "android",
+   "apk",
+   "κατεβ*",
+   "λήψ*",
+   "f-droid",
+   "play",
+   "iphone",
+   "ios",
+   "app",
+   "apps",
+   "download*",
+   "install*"
+  ],
+  "el": "Android: άμεσο APK (https://ekklesia.gr/download/ekklesia-latest.apk), F-Droid (https://f-droid.org/packages/ekklesia.gr/) ή Google Play κλειστή δοκιμή. Εφαρμογή iOS δεν υπάρχει ακόμη. Ενημερώνετε από το ίδιο κανάλι· αλλαγή καναλιού απαιτεί απεγκατάσταση και νέα επαλήθευση. Χρησιμοποιείτε μόνο συνδέσμους από το ekklesia.gr.",
+  "en": "Android: direct APK (https://ekklesia.gr/download/ekklesia-latest.apk), F-Droid (https://f-droid.org/packages/ekklesia.gr/) or Google Play closed testing. There is no iOS app yet. Update through the same channel; switching channels requires uninstalling and verifying again. Use only links from ekklesia.gr."
+ },
+ "contact": {
+  "kw": [
+   "επικοιν*",
+   "email",
+   "στείλ*",
+   "υποστήρ*",
+   "πρόβλημα*",
+   "όρο*",
+   "πολιτική απορρ*",
+   "contact",
+   "support",
+   "problem",
+   "help",
+   "terms",
+   "privacy policy",
+   "uncertain*",
+   "αβέβαι*"
+  ],
+  "el": "Επικοινωνία: kaspartisan@proton.me· υποστήριξη μέσω αιτημάτων: https://ekklesia.gr/tickets/index.html. Πολιτική απορρήτου και Όροι: https://ekklesia.gr/wiki/privacy.html. Συχνές ερωτήσεις: https://ekklesia.gr/wiki/faq.html. Ο βοηθός μπορεί να κάνει λάθη· για σημαντικά θέματα ελέγχετε τις επίσημες σελίδες.",
+  "en": "Contact: kaspartisan@proton.me; support requests: https://ekklesia.gr/tickets/index.html. Privacy policy and terms: https://ekklesia.gr/wiki/privacy.html. FAQ: https://ekklesia.gr/wiki/faq.html. The assistant can make mistakes; for important matters check the official pages."
+ },
+ "other": {
+  "kw": [
+   "gov.gr",
+   "εκπρόσωπ*",
+   "αδα",
+   "δωρε*",
+   "πληρω*",
+   "representative*",
+   "ada",
+   "donat*",
+   "payment*"
+  ],
+  "el": "Η σύνδεση gov.gr είναι σχεδιασμένη αλλά δεν είναι ενεργή. Εκπρόσωποι επαληθεύονται μόνο με πρόσκληση διαχειριστή και αριθμό ΑΔΑ στη Διαύγεια. Οι δωρεές/πληρωμές είναι σε παύση.",
+  "en": "The gov.gr login is planned but not active. Representatives are verified only with an admin invitation plus an ADA number on Diavgeia. Donations/payments are paused."
+ }
+}

@@ -164,7 +164,9 @@ ANNOUNCED → ACTIVE → WINDOW_24H → PARLIAMENT_VOTED → OPEN_END
 | ACTIVE | ✅ | ❌ Κλειδωμένη | Live counter |
 | WINDOW_24H | ✅ | ✅ Επιτρέπεται | WebSocket, push |
 | PARLIAMENT_VOTED | ❌ | — | OG Image, RSS, Divergence |
-| OPEN_END | ✅ | ✅ Πάντα | Trend analysis |
+| OPEN_END | ❌ Κλειστή | ❌ | Αρχείο, ορατά αποτελέσματα |
+
+OPEN_END = αρχειοθετημένο, τα αποτελέσματα παραμένουν ορατά, η ψηφοφορία έχει κλείσει.
 
 ### 4.2 Αυτόματη Δημοσίευση / Automatic Publication
 

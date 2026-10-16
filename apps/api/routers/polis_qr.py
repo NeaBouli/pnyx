@@ -339,9 +339,9 @@ async def qr_web_vote(req: QRVoteRequest, db: AsyncSession = Depends(get_db)):
     if not bill or not is_public_bill(bill):
         raise HTTPException(404, f"Bill {req.bill_id} not found")
 
-    votable = [BillStatus.ACTIVE, BillStatus.WINDOW_24H, BillStatus.OPEN_END]
+    votable = [BillStatus.ACTIVE, BillStatus.WINDOW_24H]
     if bill.status not in votable:
-        raise HTTPException(400, f"Voting closed. Status: {bill.status.value}")
+        raise HTTPException(400, f"Η ψηφοφορία έχει κλείσει ή δεν έχει ανοίξει ακόμα. Κατάσταση: {bill.status.value}.")
 
     ensure_bill_scope_allowed(identity, bill)
 

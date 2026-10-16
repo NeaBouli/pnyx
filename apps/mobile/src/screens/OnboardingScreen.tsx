@@ -130,7 +130,7 @@ export default function OnboardingScreen({ navigation }: Props) {
       <View style={s.bullets}>
         <Text style={s.bullet}>📱 HLR έλεγχος SIM (χωρίς SMS, αριθμός ΠΟΤΕ δεν αποθηκεύεται)</Text>
         <Text style={s.bullet}>🔑 Ed25519 κρυπτογραφικό κλειδί (μόνο στη συσκευή σου)</Text>
-        <Text style={s.bullet}>🗳️ Ψήφισε ανώνυμα με κρυπτογραφική υπογραφή</Text>
+        <Text style={s.bullet}>🗳️ Ψήφισε χωρίς όνομα, με κρυπτογραφική υπογραφή</Text>
         <Text style={s.bullet}>📊 Δες τα αποτελέσματα σε πραγματικό χρόνο</Text>
       </View>
       <View style={s.disclaimer}>

@@ -399,7 +399,7 @@ export default function VoteScreen({ route, navigation }: Props) {
     try {
       await Share.share({
         title: displayTitle,
-        message: `${displayTitle}\n\nΨήφισε ανώνυμα στην εκκλησία:\nhttps://ekklesia.gr/el/bills/${billId}`,
+        message: `${displayTitle}\n\nΨήφισε κι εσύ στην εκκλησία — χωρίς όνομα:\nhttps://ekklesia.gr/el/bills/${billId}`,
       });
     } catch {}
   };

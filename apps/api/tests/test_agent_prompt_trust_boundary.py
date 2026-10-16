@@ -403,6 +403,7 @@ def test_fail_closed_texts_are_neutral_and_bilingual():
 # ── API flow (ask_agent) ─────────────────────────────────────────────────────
 
 async def _ask(monkeypatch, *, ollama, claude=None, lang="en") -> tuple[dict, list]:
+    monkeypatch.setenv("AGENT_MODE", "hybrid")
     calls: list = []
 
     async def build_context(question, lang, db):

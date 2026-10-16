@@ -103,7 +103,7 @@ function renderBills() {
     var noPct = Math.round(b.no_count / total * 100);
     var absPct = 100 - yesPct - noPct;
     var userVote = demoGetVote(b.id);
-    var votable = b.status === "ACTIVE" || b.status === "WINDOW_24H" || b.status === "OPEN_END";
+    var votable = b.status === "ACTIVE" || b.status === "WINDOW_24H";
 
     html += '<div class="bill-card">';
     html += '<div class="bill-header"><span class="badge" style="background:' + s.bg + ';color:' + s.color + '">' + s.el + '</span><span class="bill-id">' + b.id + '</span></div>';

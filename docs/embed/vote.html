@@ -167,7 +167,7 @@ function render(b,vr){
   var st=b.status||'ANNOUNCED';
   var sc={'ACTIVE':'status-active','ANNOUNCED':'status-announced','PARLIAMENT_VOTED':'status-voted','OPEN_END':'status-open','WINDOW_24H':'status-active'};
   var sl={'ACTIVE':el?'Ανοιχτή':'Active','ANNOUNCED':el?'Ανακοινώθηκε':'Announced','PARLIAMENT_VOTED':el?'Ψηφίστηκε':'Voted','OPEN_END':el?'Αρχείο':'Archive','WINDOW_24H':el?'24ω':'24h'};
-  var votable=st==='ACTIVE'||st==='WINDOW_24H'||st==='OPEN_END';
+  var votable=st==='ACTIVE'||st==='WINDOW_24H';
   var h='<span class="status '+(sc[st]||'status-announced')+'">'+(sl[st]||st)+'</span>';
   h+='<div class="title">'+(b.title_el||b.title_en||billId)+'</div>';
   if(b.pill_el)h+='<div class="pill">'+b.pill_el+'</div>';
