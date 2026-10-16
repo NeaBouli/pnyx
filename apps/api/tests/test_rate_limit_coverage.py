@@ -2,22 +2,25 @@
 
 Defaults do not cover included routers in our FastAPI/SlowAPI combination.
 An entry in the limiter registry alone is insufficient: the registered route
-must also contain its decorator wrapper (decorator order matters).
+must also contain its decorator wrapper (decorator order matters). Token
+authentication dependencies must be preceded by a limiter dependency.
 """
 
 from collections.abc import Iterator
 from typing import Any
 
-from fastapi import APIRouter, Depends, FastAPI
+from fastapi import APIRouter, Depends, FastAPI, Request
+import pytest
 
 import main
 from dependencies import verify_admin_key
-from rate_limit import limiter
+from rate_limit import enforce_route_limit, limiter
 from routers import admin, representative
 
 
 WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 ADMIN_GUARDS = {verify_admin_key, admin.verify_admin, representative._verify_admin}
+AUTH_GUARDS = {representative.verify_rep_token}
 
 # Preserve established Redis policies without installing a second counter.
 # Provider callbacks deliberately have no citizen-IP quota: providers share
@@ -118,8 +121,8 @@ def iter_api_routes(routes: Any) -> Iterator[Any]:
 
 def dependency_calls(dependant: Any) -> Iterator[Any]:
     for dependency in dependant.dependencies:
-        yield dependency.call
         yield from dependency_calls(dependency)
+        yield dependency.call
 
 
 def is_admin(route: Any) -> bool:
@@ -139,6 +142,18 @@ def has_explicit_limit(endpoint: Any, method: str) -> bool:
     return False
 
 
+def has_route_limit(route: Any, method: str) -> bool:
+    if not has_explicit_limit(route.endpoint, method):
+        return False
+    # FastAPI resolves dependencies before calling the decorated endpoint.
+    # A wrapper alone cannot count rejected credentials or bound auth DB work.
+    calls = list(dependency_calls(route.dependant))
+    return all(
+        enforce_route_limit in calls[:index]
+        for index, call in enumerate(calls) if call in AUTH_GUARDS
+    )
+
+
 def uncovered_routes(app: FastAPI) -> list[tuple[str, str]]:
     missing = []
     for route in iter_api_routes(app.routes):
@@ -146,7 +161,7 @@ def uncovered_routes(app: FastAPI) -> list[tuple[str, str]]:
             continue
         for method in route.methods & WRITE_METHODS:
             key = (method, route.path)
-            if key not in WRITE_EXCEPTIONS and not has_explicit_limit(route.endpoint, method):
+            if key not in WRITE_EXCEPTIONS and not has_route_limit(route, method):
                 missing.append(key)
     return sorted(missing)
 
@@ -162,7 +177,7 @@ def test_every_public_router_get_has_a_limit_or_reviewed_reason() -> None:
     for route in iter_api_routes(main.app.routes):
         if "GET" not in route.methods or not route.endpoint.__module__.startswith("routers.") or is_admin(route):
             continue
-        if route.path not in READ_EXCEPTIONS and not has_explicit_limit(route.endpoint, "GET"):
+        if route.path not in READ_EXCEPTIONS and not has_route_limit(route, "GET"):
             missing.append(route.path)
     assert not missing, f"Unreviewed public GETs: {missing}"
 
@@ -203,3 +218,25 @@ def test_rate_limit_audit_requires_the_registered_decorator_wrapper() -> None:
                     if r.path == "/api/v1/vote/{bill_id}/correct")
     assert has_explicit_limit(endpoint, "PUT")
     assert not has_explicit_limit(endpoint.__wrapped__, "PUT")
+
+
+@pytest.mark.parametrize("guard_order", ["missing", "after_auth", "before_auth"])
+def test_rate_limit_audit_requires_throttling_before_auth_dependency(guard_order: str) -> None:
+    app = FastAPI()
+    auth = Depends(representative.verify_rep_token)
+    guard = Depends(enforce_route_limit)
+    dependencies = {
+        "missing": [auth], "after_auth": [auth, guard], "before_auth": [guard, auth],
+    }[guard_order]
+
+    @app.api_route("/api/v1/authenticated", methods=["GET", "POST"], dependencies=dependencies)
+    @limiter.limit("30/minute")
+    async def authenticated(request: Request):
+        return {}
+
+    route = next(iter_api_routes(app.routes))
+    assert has_explicit_limit(route.endpoint, "POST")
+    assert has_route_limit(route, "GET") == (guard_order == "before_auth")
+    assert uncovered_routes(app) == (
+        [] if guard_order == "before_auth" else [("POST", "/api/v1/authenticated")]
+    )

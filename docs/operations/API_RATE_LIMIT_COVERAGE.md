@@ -8,7 +8,7 @@ Every public GET is classified. Limits are per IP unless a valid-key or identity
 
 | Class of the 62 newly limited GETs | Count | Original staged policy | Corrected policy |
 | --- | ---: | --- | --- |
-| (a) Personal/identity/token oracle or auth-session operation | 13 | Usually 10/min; QR status 30/min | Keep 10/min; QR status 120/min for polling |
+| (a) Personal/identity/token oracle or auth-session operation | 13 | Usually 10/min; QR status 30/min | Keep 10/min; QR status 30/min/validated session plus 600/min/IP |
 | (b) Expensive download, live provider probe, detailed representative analysis or SSE subscription | 13 | 5–30/min | 30/min |
 | (c) Public cacheable read | 36 | 10–120/min | Remove the new per-IP decorator; restore main behavior |
 
@@ -40,21 +40,26 @@ The audit grepped `apps/web/src` for `fetch`, axios/API calls, server components
 | Web bills server page → `getInitialBills` | GET `/api/v1/bills?limit=11&offset=0&include_institutional=true[&status=…]` | V views/minute = V requests/minute from one server IP. No new limit; same as main. |
 | Web results server page → `getInitialResults` | GET `/api/v1/export/results.json?min_votes=1` | V views/minute = V requests/minute from one server IP. The staged 10/min would reject view 11. No new limit. Client fallback uses the same endpoint. |
 | Web bill/results/trending/analytics/MP/municipal clients | Public results, bills, analytics, MP and consensus aggregates | Shared public data; class (c), no new per-IP limit. The staged latest/result 120/min decorators were new, not established exceptions. |
-| Web `QRCodeVoteStub` and SSO QR page | GET `/api/v1/polis/qr-session/{session_id}` every 2500 ms | 60,000 / 2,500 = 24 polls/minute per flow; conservatively add one initial request. Four concurrent flows use at most 4 × 25 = 100, below 120/minute/IP. Session IDs share one handler bucket; rotating IDs does not reset it. |
+| Web `QRCodeVoteStub` and SSO QR page | GET `/api/v1/polis/qr-session/{session_id}` every 2500 ms | 24 polls/minute/session plus one initial poll fits 30/minute/session. Six concurrent sessions use at most 6 × 25 = 150, below 600/minute/IP. The IP ceiling supports up to 24 such views including initial polls; arbitrary session rotation cannot reset it. |
 | QR session creation | GET `/api/v1/polis/qr-session` once per user attempt | 10/minute; polling never creates another session. Normal 5-minute QR sessions do not approach this quota. |
 | Mobile `VoteScreen` | GET `/api/v1/zk/scopes/{scope}/status` immediately, then every 5000 ms while a root is pending | 12 polls/minute plus initial/status-load requests already exceeds staged 10/minute. Public scope state is class (c); limit removed. |
 | Mobile `UpdateBanner` | GET `/api/v1/app/version` initially, then every 30 minutes | One initial request + 1/30 request/minute; existing no-limit policy retained. |
 | Mobile QR scanner | POST `/api/v1/polis/qr-auth` after scan | One authentication per scan; no mobile QR-status polling loop exists in current source. Existing new 10/minute write guard retained. |
-| Personal vote/identity/key/evaluation reads | User action or screen load; no periodic loop found | Tight 10/minute (existing signed key-check 30/minute); the 5-second mobile loop reads public ZK scope status, not personal vote status. |
+| Web `submitSignedVote` | POST `/api/v1/vote/{bill_id}/status` before every vote or correction | 120/minute/IP, matching the vote allowance across signed identities and bill IDs sharing a network. Legacy unsigned status GET remains 10/minute/IP. |
+| Other personal vote/identity/key/evaluation reads | User action or screen load; no periodic loop found | Tight 10/minute (existing signed key-check 30/minute); the 5-second mobile loop reads public ZK scope status. |
 | Web `LiveNotifications` | One browser EventSource GET `/api/v1/notifications/stream` per mount | 30/minute counts connections, not messages/30-second heartbeats. One browser's default 3-second reconnect is at most 20 attempts/minute. No SSR call. |
 | Static community page provider tiles | Mirrors every 30s; Arweave and DeepL every 60s | At most 3, 2 and 2 requests respectively in a minute including the initial load, each below its separate 30/minute handler quota. Public scraper health is loaded once. HLR/newsletter/finance/budget public state has no new quota. |
 
-QR status retains a finite shared-IP budget: the calculation covers four concurrent polling views with 20 requests/minute to spare, not arbitrary NAT concurrency. No remaining new limiter is on an SSR API path or on the mobile 5-second poll. CSV/representative/live-scraper GETs have no web SSR or mobile periodic caller. No newly limited POST/PUT/PATCH/DELETE is called server-side by the web app. Web identity migration, vote/status/correction/relevance/consensus, VAA match, QR and SSO writes run in client effects or event handlers.
+QR polling first checks the 600/minute HMAC-IP ceiling, then loads the session from Redis. Only an existing server-issued session creates a 30/minute Redis counter, keyed by a daily HMAC of its ID and shared across client IPs. Unknown/expired IDs return the existing expired response and cannot allocate session counters. Counters use atomic INCR/EXPIRE with a 60-second lifetime; polling does not extend the session lifetime. Both quotas honor `RATE_LIMIT_ENABLED`. Six concurrent sessions are covered by the HTTP regression at the real 2500-ms interval using a simulated clock.
+
+No remaining new limiter is on an SSR API path or on the mobile 5-second poll. CSV/representative/live-scraper GETs have no web SSR or mobile periodic caller. No newly limited POST/PUT/PATCH/DELETE is called server-side by the web app. Web identity migration, vote/status/correction/relevance/consensus, VAA match, QR and SSO writes run in client effects or event handlers.
 
 ## Policy and privacy
 
 - The configured SlowAPI default remains **60/minute**. FastAPI 0.142.2 lazy included routers and SlowAPI 0.1.10 do not apply it to these router endpoints; no row claims default protection. Direct app routes such as `/health` retain their established behavior.
 - Parameterized limited routes use fixed-scope `shared_limit`; changing target IDs cannot mint fresh IP budgets. The shared limiter, daily HMAC-IP keys, trusted-proxy logic, Redis storage and memory fallback policy are unchanged.
+- Representative results/divergence (30/minute), enable-evaluation (20/minute) and my-scores (10/minute) execute `enforce_route_limit` as the first route dependency, before `verify_rep_token` and its DB lookup. Rejected, missing and malformed credentials consume the same IP bucket; rejected requests beyond quota perform no DB query. The SlowAPI completion flag prevents double counting successful authentication in the endpoint wrapper. The public bill-list exception is unchanged.
+- Mandatory signed vote-status preflight allows 120/minute/IP, independently of the vote-write bucket. Eleven correctly signed identities sharing an IP succeed, and the regression exercises all 120 allowed preflights before rejecting request 121 without further DB work.
 - Ordinary new writes retain 20–30/minute; personal/auth/proof writes retain 10/minute. Established revocation/rotation (10), signed key-check (30), agent (5) and voting/POLIS/bill-flag (120) decorators are unchanged.
 - Atomic HLR, mail, API-key and push Redis guards remain single-counted. Verified Stripe/PayPal/Brevo webhooks retain provider retries and bursts without a new shared-source-IP quota.
 
@@ -92,7 +97,7 @@ QR status retains a finite shared-IP budget: the calculation covers four concurr
 | `public_api.py` | POST `/api/v1/public/keys/generate` | None; Redis | None; Redis — Existing Redis guard: 5/IP/hour before generating a key. |
 | `public_api.py` | POST `/api/v1/public/share` | None | Explicit: 30 per 1 minute |
 | `representative.py` | POST `/api/v1/rep/auth` | None | Explicit: 10 per 1 minute |
-| `representative.py` | POST `/api/v1/rep/enable-evaluation` | None | Explicit: 20 per 1 minute |
+| `representative.py` | POST `/api/v1/rep/enable-evaluation` | None | Explicit: 20 per 1 minute, before token authentication |
 | `representative.py` | POST `/api/v1/rep/verify` | None | Explicit: 10 per 1 minute |
 | `sso.py` | POST `/api/v1/sso/discourse/callback` | None | Explicit: 10 per 1 minute |
 | `sso.py` | POST `/api/v1/sso/discourse/qr-complete` | None | Explicit: 10 per 1 minute |
@@ -103,7 +108,7 @@ QR status retains a finite shared-IP budget: the calculation covers four concurr
 | `voting.py` | PUT `/api/v1/vote/{bill_id}/correct` | None | Explicit: 20 per 1 minute |
 | `voting.py` | POST `/api/v1/vote/{bill_id}/receipt` | None | Explicit: 10 per 1 minute |
 | `voting.py` | POST `/api/v1/vote/{bill_id}/relevance` | None | Explicit: 30 per 1 minute |
-| `voting.py` | POST `/api/v1/vote/{bill_id}/status` | None | Explicit: 10 per 1 minute |
+| `voting.py` | POST `/api/v1/vote/{bill_id}/status` | None | Explicit: 120 per 1 minute — mandatory signed vote/correction preflight |
 | `zk.py` | POST `/api/v1/zk/opt-in` | None | Explicit: 10 per 1 minute |
 | `zk.py` | POST `/api/v1/zk/verify` | None | Explicit: 10 per 1 minute |
 | `zk.py` | POST `/api/v1/zk/vote` | None | Explicit: 20 per 1 minute |
@@ -165,7 +170,7 @@ QR status retains a finite shared-IP budget: the calculation covers four concurr
 | `payments.py` | GET `/api/v1/payments/public/finance` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
 | `payments.py` | GET `/api/v1/payments/status` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
 | `polis_qr.py` | GET `/api/v1/polis/qr-session` | (a) | None | 10/minute | Explicit: 10 per 1 minute — auth-session creation (state-changing GET). |
-| `polis_qr.py` | GET `/api/v1/polis/qr-session/{session_id}` | (a) | None | 30/minute | Explicit: 120 per 1 minute — polling allowance; 24/min/flow. |
+| `polis_qr.py` | GET `/api/v1/polis/qr-session/{session_id}` | (a) | None | 30/minute | Explicit: 600/minute/IP plus Redis 30/minute/validated session — 24/min/flow with initial/retry room. |
 | `polis_tickets.py` | GET `/api/v1/polis/tickets` | (c) | None | None | None — Public ticket list capped at 100 records. |
 | `public_api.py` | GET `/api/v1/public/bills` | (c) | None; Redis | None; Redis | None; Redis — existing combined 100/min/IP or 1000/min/valid key. |
 | `public_api.py` | GET `/api/v1/public/bills/{bill_id}/results` | (c) | None; Redis | None; Redis | None; Redis — existing combined 100/min/IP or 1000/min/valid key. |
@@ -180,9 +185,9 @@ QR status retains a finite shared-IP budget: the calculation covers four concurr
 | `public_api.py` | GET `/api/v1/public/stats` | (c) | None; Redis | None; Redis | None; Redis — existing combined 100/min/IP or 1000/min/valid key. |
 | `public_api.py` | GET `/api/v1/public/vaa/parties` | (c) | None; Redis | None; Redis | None; Redis — existing combined 100/min/IP or 1000/min/valid key. |
 | `representative.py` | GET `/api/v1/rep/bills` | (c) | None | None | None — Representative-authenticated public bill list capped at 100 records. |
-| `representative.py` | GET `/api/v1/rep/divergence/{bill_id}` | (b) | None | 30/minute | Explicit: 30 per 1 minute — Representative-token-protected detailed divergence analysis. |
-| `representative.py` | GET `/api/v1/rep/my-scores` | (a) | None | 10/minute | Explicit: 10 per 1 minute — personal/token/auth operation. |
-| `representative.py` | GET `/api/v1/rep/results/{bill_id}` | (b) | None | 30/minute | Explicit: 30 per 1 minute — Representative-token-protected detailed results and hourly timeline. |
+| `representative.py` | GET `/api/v1/rep/divergence/{bill_id}` | (b) | None | 30/minute | Explicit: 30 per 1 minute before token auth — detailed divergence analysis. |
+| `representative.py` | GET `/api/v1/rep/my-scores` | (a) | None | 10/minute | Explicit: 10 per 1 minute before token auth — personal scores. |
+| `representative.py` | GET `/api/v1/rep/results/{bill_id}` | (b) | None | 30/minute | Explicit: 30 per 1 minute before token auth — detailed results and hourly timeline. |
 | `scraper.py` | GET `/api/v1/scraper/jobs` | (c) | None | 10/minute | None — public cacheable read; SSR shares one IP |
 | `scraper.py` | GET `/api/v1/scraper/parliament/freshness` | (b) | None | 5/minute | Explicit: 30 per 1 minute — Live external Parliament freshness scrape. |
 | `scraper.py` | GET `/api/v1/scraper/parliament/latest` | (b) | None | 5/minute | Explicit: 30 per 1 minute — Live external Parliament scrape. |
@@ -206,9 +211,18 @@ QR status retains a finite shared-IP budget: the calculation covers four concurr
 
 ## Verification
 
-The audit walks the registered FastAPI app and nested effective route contexts. It checks both limiter registration and the wrapper actually bound to each route, catches reversed decorators, and identifies admin routes by dependencies. Unreviewed GETs and unprotected writes fail; stale, redundant or reasonless allowlist entries fail too.
+The audit walks the registered FastAPI app and nested effective route contexts. It checks both limiter registration and the wrapper actually bound to each route, catches reversed decorators, and identifies admin routes by dependencies. For representative authentication, it checks dependency execution order: endpoint-only throttling and a guard after auth both fail coverage. Unreviewed GETs and unprotected writes fail; stale, redundant or reasonless allowlist entries fail too.
 
-HTTP regressions use the original limiter with isolated memory storage on the real app. They exercise write/oracle limit+1 enforcement, independent client IPs, target/key rotation, rejection before DB/Redis handler work, HMAC-only storage, 150 public GETs from one shared SSR source and four concurrent QR polling flows. CSV coverage now checks the 30/minute policy. Existing quota/privacy/auth/visibility tests remain in the requested API slice. No production handler body changed.
+HTTP regressions use the original limiter with isolated memory storage on the real app. They exercise write/oracle limit+1 enforcement, independent client IPs, target/key rotation, representative rejection before authentication DB work, single-counted successful authentication, eleven signed voting identities behind one IP, and HMAC-only storage. QR coverage includes six real server-created sessions, session limits across IPs, counter expiry, unknown-ID allocation prevention, and the IP ceiling for both existing and unknown session rotation. The public-read and CSV regressions are retained.
+
+Current correction validation: `cd apps/api && /private/tmp/t9097venv/bin/python -m pytest -q tests -k "rate or limit or vote or qr or representative"` (existing environment, no installation or external services).
+
+- Requested API slice: **623 passed, 61 skipped, 2277 deselected, 3 xfailed**, 11 warnings in 178.80s.
+- Focused coverage/enforcement tests: **40 passed**.
+- Documentation: sitemap drift check passed; public SEO **29 passed**; wiki preservation/facts **62 passed**.
+- Working-tree and staged whitespace checks passed.
+
+### Previous round validation (before this correction)
 
 Adding `public` to the selected API tests exposed two existing incomplete Redis mocks in the invalid-key and key-roundtrip tests. A local in-memory Redis hash stub now supplies those tests' reads/writes, alongside the already-staged key-generation stub. Their first run failed on sandbox-blocked `localhost:6379` access; production key storage and quotas are unchanged.
 

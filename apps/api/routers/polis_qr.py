@@ -23,6 +23,7 @@ from sqlalchemy import select
 import redis.asyncio as aioredis
 
 from database import get_db
+from ip_utils import hashed_rate_subject, redis_fixed_window_limit
 from rate_limit import limiter
 from services.bill_visibility import is_public_bill
 from services.vote_scope import ScopeAction, ensure_bill_scope_allowed
@@ -178,7 +179,7 @@ async def create_qr_session(
 
 
 @router.get("/qr-session/{session_id}")
-@limiter.shared_limit("120/minute", scope="polis_qr:poll_qr_session")
+@limiter.shared_limit("600/minute", scope="polis_qr:poll_qr_session")
 async def poll_qr_session(session_id: str, request: Request = None):
     """Poll QR session status. Returns pending/authenticated/expired/used."""
     r = await _redis()
@@ -186,6 +187,13 @@ async def poll_qr_session(session_id: str, request: Request = None):
 
     if not data:
         return {"status": "expired", "session_id": session_id}
+
+    # Only server-issued, still-existing sessions may create a session bucket.
+    # 24 polls/min at the clients' 2500-ms interval fits with initial/retry room.
+    # The outer IP ceiling bounds lookups even when arbitrary IDs are rotated.
+    if limiter.enabled:
+        subject = hashed_rate_subject(session_id, "polis-qr-poll")
+        await redis_fixed_window_limit(r, f"ratelimit:polis-qr-poll:{subject}", 30, 60)
 
     status = data.get("status", "pending")
     result = {

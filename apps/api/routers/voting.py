@@ -869,7 +869,8 @@ async def get_vote_status(
 
 
 @router.post("/{bill_id}/status", response_model=VoteStatusResponse)
-@limiter.shared_limit("10/minute", scope="voting:post_vote_status")
+# Every signed vote/correction preflights here; allow the voting IP budget.
+@limiter.shared_limit("120/minute", scope="voting:post_vote_status")
 async def post_vote_status(
     bill_id: str,
     req: VoteStatusReadRequest,

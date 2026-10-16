@@ -38,3 +38,15 @@ limiter = Limiter(
     key_prefix="ekklesia-api",
     enabled=os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true",
 )
+
+
+async def enforce_route_limit(request: Request) -> None:
+    """Run the endpoint's registered policy before expensive dependencies.
+
+    Install as a route dependency before authentication. Reuse SlowAPI's
+    storage/fallback and completion flag so the endpoint wrapper does not
+    consume a second request from the same bucket.
+    """
+    if limiter.enabled and not getattr(request.state, "_rate_limiting_complete", False):
+        limiter._check_request_limit(request, request.scope["endpoint"], False)
+        request.state._rate_limiting_complete = True

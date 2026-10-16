@@ -17,7 +17,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from rate_limit import limiter
+from rate_limit import enforce_route_limit, limiter
 from dependencies import verify_admin_key
 from ip_utils import log_reference
 from services.invite_codes import invite_code_hash, invite_code_hint
@@ -456,7 +456,7 @@ async def get_rep_bills(
     return response
 
 
-@router.get("/results/{bill_id}")
+@router.get("/results/{bill_id}", dependencies=[Depends(enforce_route_limit)])
 @limiter.shared_limit("30/minute", scope="representative:get_rep_results")
 async def get_rep_results(
     bill_id: str,
@@ -514,7 +514,7 @@ async def get_rep_results(
     }
 
 
-@router.get("/divergence/{bill_id}")
+@router.get("/divergence/{bill_id}", dependencies=[Depends(enforce_route_limit)])
 @limiter.shared_limit("30/minute", scope="representative:get_rep_divergence")
 async def get_rep_divergence(
     bill_id: str,
@@ -567,7 +567,7 @@ async def get_rep_divergence(
 # ─── NEA-189: Evaluation Consent ────────────────────────────────────────────
 
 
-@router.post("/enable-evaluation")
+@router.post("/enable-evaluation", dependencies=[Depends(enforce_route_limit)])
 @limiter.limit("20/minute")
 async def enable_evaluation(
     rep: dict = Depends(verify_rep_token),
@@ -594,7 +594,7 @@ async def enable_evaluation(
     return {"ada_number": rep["ada_number"], "evaluation_enabled": True}
 
 
-@router.get("/my-scores")
+@router.get("/my-scores", dependencies=[Depends(enforce_route_limit)])
 @limiter.limit("10/minute")
 async def get_my_scores(
     rep: dict = Depends(verify_rep_token),
