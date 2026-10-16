@@ -169,7 +169,8 @@ async def register_polis_key(
         await db.rollback()
         raise HTTPException(status_code=409, detail="KEY_CONFLICT: Registration conflict")
 
-    logger.info("[POLIS] Key registered: %s → %s", req.nullifier_hash[:8], get_short_handle(req.pk_polis))
+    # EVA-006: no identity prefix next to the POLIS handle (that would bridge the two).
+    logger.info("[POLIS] Key registered")
     return {"status": "registered", "handle": get_short_handle(req.pk_polis)}
 
 
@@ -277,7 +278,7 @@ async def create_ticket(
         await db.rollback()
         raise HTTPException(status_code=409, detail="DUPLICATE_TICKET: Ticket already exists")
 
-    logger.info("[POLIS] Ticket created: %s by %s", ticket_id, get_short_handle(req.pk_polis))
+    logger.info("[POLIS] Ticket created: %s", ticket_id)
     return {"id": ticket_id, "handle": get_short_handle(req.pk_polis), "status": "pending"}
 
 
@@ -358,5 +359,5 @@ async def vote_ticket(
         await db.rollback()
         raise HTTPException(status_code=409, detail="DUPLICATE_VOTE: Already voted on this ticket")
 
-    logger.info("[POLIS] Vote %s on ticket %s by %s", req.vote, ticket_id, get_short_handle(req.pk_polis))
+    logger.info("[POLIS] Vote recorded on ticket %s", ticket_id)
     return {"vote_id": vote_id, "vote": req.vote}

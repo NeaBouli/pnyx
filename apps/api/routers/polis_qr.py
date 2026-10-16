@@ -341,6 +341,16 @@ async def qr_web_vote(req: QRVoteRequest, db: AsyncSession = Depends(get_db)):
 
     ensure_bill_scope_allowed(identity, bill)
 
+    # EVA-006/NEA-249: the QR path must honour the same ZK cross-tier lock as
+    # POST /vote, otherwise a ZK opt-in voter could also vote here (Tier 1).
+    from routers.voting import raise_if_zk_tier1_locked
+    await raise_if_zk_tier1_locked(
+        db,
+        bill_id=req.bill_id,
+        bill_source=getattr(bill, "source", None),
+        nullifier_hash=nullifier_hash,
+    )
+
     vote_choice = VoteChoice(req.vote)
 
     # Check for existing vote
@@ -386,8 +396,8 @@ async def qr_web_vote(req: QRVoteRequest, db: AsyncSession = Depends(get_db)):
 
     await _mark_session_used(r, session_key)
 
-    logger.info("QR web vote: bill=%s vote=%s nullifier=%s...",
-                req.bill_id, req.vote, nullifier_hash[:8])
+    # EVA-006: never log the choice next to an identity reference.
+    logger.info("QR web vote accepted: bill=%s", req.bill_id)
 
     return {"success": True, "message": msg, "bill_id": req.bill_id, "vote": req.vote}
 
@@ -486,8 +496,7 @@ async def qr_web_consensus(req: QRConsensusRequest, db: AsyncSession = Depends(g
 
     await _mark_session_used(r, session_key)
 
-    logger.info("QR consensus: bill=%s score=%d nullifier=%s...",
-                req.bill_id, req.score, nullifier_hash[:8])
+    logger.info("QR consensus accepted: bill=%s", req.bill_id)
 
     return {
         "success": True,
