@@ -69,7 +69,7 @@ APPROVED_WIKI_INVENTORY_HASH = {
     "docs/wiki/contributing.html": "bb4048480c3b75cb98ee668305833fe36b2c939f29ef27f1f8bec230c9d49d88",
     "docs/wiki/database.html": "08ac70323ffa6a6db969f41678ad8de9afd5fdd8f5b74981665cbf8e38afb9f9",
     "docs/wiki/delete-account.html": "23e161c6767392c8c7507a68ad4240b66e8e2e5bedb34a63d050b85f6e1a89a9",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
-    "docs/wiki/faq.html": "6427c63a93d3bc840755c446b1309e53098752aad51710e13c44653a7cb36863",
+    "docs/wiki/faq.html": "e7f10396775bc2075021c65fa1dc52b25e70a8a46ce02c50ad845bbb090e5e83",  # T-9117: operator (V-Labs) and HLR providers match legal page/code
     "docs/wiki/index.html": "ea418f9164a41aafa72721bdc8feaf7612a26fc83a32e7e781d7f166fe278419",  # T-9047/T-9048: named code region, contrast, headings and document language; T-9106: legal-modal claims text
     "docs/wiki/modules.html": "dd1f4addfdc25337790028ac3f3d4d608832a11ad682c9068dae1c9b0a265544",  # T-9072: neutral unknown health dots, MOD-23/25 mapping, localized status labels; T-9106: legal-modal claims text
     "docs/wiki/privacy.html": "53017decbc23d65f3f794573b001b00e29a48b5e636d7fceec32763d4de71ad6",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
