@@ -106,11 +106,15 @@ async def notify_window_24h(bill_id: str, title: str, governance_level: str | No
     )
 
 
-async def notify_parliament_voted(bill_id: str, title: str, citizen_votes: int = 0) -> None:
+async def notify_parliament_voted(bill_id: str, title: str, citizen_votes: int | None = 0) -> None:
+    from services.small_cell import small_cell_k, suppress_cell
+    threshold = small_cell_k()
+    published = None if citizen_votes is None else suppress_cell(citizen_votes, k=threshold)["count"]
+    turnout = "—" if citizen_votes is None else f"λιγότερες από {threshold}" if published is None else str(published)
     await _send(
         f"<b>🏛 Η Βουλή ψήφισε</b>\n\n"
         f"{title}\n\n"
-        f"📊 Πολίτες: {citizen_votes} ψήφοι\n"
+        f"📊 Πολίτες: {turnout} ψήφοι\n"
         f"👉 <a href=\"https://ekklesia.gr/el/results\">Αποτελέσματα</a>",
         group_thread_id=TOPICS["parliament"],
     )

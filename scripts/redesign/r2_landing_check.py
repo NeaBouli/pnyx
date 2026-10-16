@@ -122,10 +122,11 @@ ALLOWED_R5_INLINE_SCRIPTS = {
     },
     1: {
         "index": 1,
+        # T-9128: nullable CPLM hides dot/arrow and clears stale bilingual labels.
         # T-9039: owner-confirmed CPLM quadrant language follows currentLang
         # and the existing data-el/data-en toggle, including delayed responses.
-        "sha256": "6fe520730691e4008650826b6b0b9211d77dddf848548cd0535c523bc8188016",
-        "bytes": 2394,
+        "sha256": "3b3cc40c0cad6c65fabb6d655dbb3ec1199d8478c39b7eff4d4a1a5913484b4e",
+        "bytes": 2903,
     },
     3: {
         "index": 3,
@@ -148,8 +149,9 @@ ALLOWED_R5_INLINE_SCRIPTS = {
         # T-394 (EKA-14): ticket login/avatar rendered via DOM properties with
         # an https GitHub-avatar allowlist instead of innerHTML concatenation.
         # #356: six-phase cycle status labels and live result bars.
-        "sha256": "0af548dfe1002913413ca85b22dc4bc8c3ac9652dc8f4534d02bc454f060da1a",
-        "bytes": 20761,
+        # T-9128: nullable latest-result/ticker counts, shares and participation.
+        "sha256": "f0758af21846772ff7a7512a8f70c115aa862b92b90d187ffa2cb901dc36d353",
+        "bytes": 21493,
     },
     6: {
         "index": 6,

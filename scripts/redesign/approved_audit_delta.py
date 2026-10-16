@@ -61,6 +61,7 @@ import r0_inventory
 # region is self-declared and locked, GDPR/"no personal data" badges are replaced
 # by factual minimization statements, and TrueRepublic/iOS are labelled planned /
 # not available. community.html: "Data minimization." and pseudonymous POLIS identity.
+# T-9128: community result counters render null as withheld.
 # T-9132 (Gio approved 2026-10-16, ADR-007 S1): ordinary votes use no-name /
 # pseudonymous wording; retention, VAA, IP handling and scoped k>=10 assurances
 # follow the code. Ordinary Arweave aggregates are distinguished from paused ZK.
@@ -68,7 +69,7 @@ import r0_inventory
 # retention period. FAQ default Greek matches EL/JSON-LD, votes are pseudonymous,
 # and FAQ/roadmap ZK status follows the security-review pause since 2026-10-03.
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/community.html": "d3b543a9482915ed5a3100cf616ba2861c29238d84bdeae82d5661f836b1d2c0",  # T-9048: scoped contrast, heading semantics and document-language toggle; T-9106: legal-modal claims text
+    "docs/community.html": "070111774fa4640a4bde4857a2aca7bbf73f0a06db73e748e73c5e045422084f",  # T-9048: scoped contrast, heading semantics and document-language toggle; T-9106: legal-modal claims text
     "docs/wiki/api.html": "e56012799245533915b72606ffc8955bd4c3ce61f3ba5f9926fd07abb101106c",
     "docs/wiki/architecture.html": "1af2aa9c102d66887e52627c277ebfea03935a2ff3b772235cf07ed3d4313f0b",
     "docs/wiki/broadcasting.html": "eb345ed4551a94220e47aeb4b40c7c745bf6dfeaa5f330eac6f629a09d31f716",

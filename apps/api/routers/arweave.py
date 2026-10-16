@@ -21,6 +21,7 @@ from database import get_db
 from models import ParliamentBill, BillStatusLog
 from config import settings
 from services.bill_visibility import is_public_bill
+from services.small_cell import suppress_public_cells, small_cell_k
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/arweave", tags=["MOD-08 Arweave"])
@@ -38,6 +39,21 @@ def build_audit_trail(
     Enthält: Bill Metadata, Lifecycle, Citizen Votes (aggregiert), Divergence Score.
     NIEMALS: Individual Votes, Nullifier Hashes.
     """
+    citizen_votes = {
+        "yes": vote_results.get("yes", 0),
+        "no": vote_results.get("no", 0),
+        "abstain": vote_results.get("abstain", 0),
+        "total": vote_results.get("total", 0),
+    }
+    if small_cell_k():
+        citizen_votes["unknown"] = vote_results.get(
+            "unknown", citizen_votes["total"] - sum(citizen_votes[c] for c in ("yes", "no", "abstain")))
+        citizen_votes = suppress_public_cells(
+            citizen_votes, choices=("yes", "no", "abstain", "unknown"), total="total",
+            public_source_total=vote_results.get("zk_total", 0),
+            publishable=vote_results.get("publishable"))
+        if citizen_votes["yes"] is None:
+            divergence_score = None
     return {
         "schema_version": "1.0",
         "published_by":   "ekklesia.gr",
@@ -63,12 +79,7 @@ def build_audit_trail(
             for log in status_logs
         ],
         "parliament_votes": bill.party_votes_parliament or {},
-        "citizen_votes": {
-            "yes":     vote_results.get("yes",     0),
-            "no":      vote_results.get("no",      0),
-            "abstain": vote_results.get("abstain", 0),
-            "total":   vote_results.get("total",   0),
-        },
+        "citizen_votes": citizen_votes,
         "divergence_score": divergence_score,
         "parliament_result": _parliament_result(bill.party_votes_parliament),
     }

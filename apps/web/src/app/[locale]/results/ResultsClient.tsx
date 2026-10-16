@@ -49,11 +49,12 @@ export default function ResultsClient({ initial }: { initial: PublishedResult[] 
       return score <= 0.2;
     })
     .sort((a, b) => {
-      if (sortBy === "votes") return b.citizen_total - a.citizen_total;
+      if (sortBy === "votes") return (b.citizen_total ?? -1) - (a.citizen_total ?? -1);
       return (scoreOf(b) ?? -1) - (scoreOf(a) ?? -1);
     }), [data, filter, sortBy]);
 
-  const totalVotes = data.reduce((sum, result) => sum + result.citizen_total, 0);
+  const totalVotes = data.some((result) => result.citizen_total === null) ? null
+    : data.reduce((sum, result) => sum + (result.citizen_total ?? 0), 0);
   const compared = data.filter((result) => scoreOf(result) !== null).length;
   const highDivergence = data.filter((result) => (scoreOf(result) ?? -1) > 0.4).length;
   const filters: Array<{ key: ResultFilter; el: string; en: string }> = [
@@ -75,7 +76,7 @@ export default function ResultsClient({ initial }: { initial: PublishedResult[] 
 
         <div className="mb-8 grid grid-cols-3 gap-3">
           {[
-            [totalVotes.toLocaleString(isEl ? "el-GR" : "en-US"), isEl ? "Ψήφοι" : "Votes", "text-blue-600"],
+            [totalVotes?.toLocaleString(isEl ? "el-GR" : "en-US") ?? "—", isEl ? "Ψήφοι" : "Votes", "text-blue-600"],
             [data.length, isEl ? "Θέματα" : "Bills", "text-gray-800"],
             [highDivergence, isEl ? "Έντονη απόκλιση" : "High divergence", "text-red-700"],
           ].map(([value, label, color]) => (
@@ -118,13 +119,16 @@ export default function ResultsClient({ initial }: { initial: PublishedResult[] 
                 className="block rounded-lg border border-gray-200 bg-white p-5 transition-colors hover:border-blue-400">
                 <div className="flex items-start justify-between gap-4">
                   <h2 className="font-bold leading-snug text-gray-900">{title}</h2>
-                  <span className="shrink-0 text-sm font-bold text-blue-700">{result.citizen_total} {isEl ? "ψήφοι" : "votes"}</span>
+                  <span className="shrink-0 text-sm font-bold text-blue-700">{result.citizen_total ?? `< ${result.suppression_k ?? 10}`} {isEl ? "ψήφοι" : "votes"}</span>
                 </div>
                 <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
-                  <div><span className="text-gray-500">{isEl ? "Υπέρ" : "Yes"}</span><strong className="ml-2 text-green-700">{result.yes_pct}%</strong></div>
-                  <div><span className="text-gray-500">{isEl ? "Κατά" : "No"}</span><strong className="ml-2 text-red-700">{result.no_pct}%</strong></div>
-                  <div><span className="text-gray-500">{isEl ? "Αποχή" : "Abstain"}</span><strong className="ml-2 text-gray-700">{result.abstain_pct}%</strong></div>
+                  <div><span className="text-gray-500">{isEl ? "Υπέρ" : "Yes"}</span><strong className="ml-2 text-green-700">{result.yes_pct === null ? "—" : `${result.yes_pct}%`}</strong></div>
+                  <div><span className="text-gray-500">{isEl ? "Κατά" : "No"}</span><strong className="ml-2 text-red-700">{result.no_pct === null ? "—" : `${result.no_pct}%`}</strong></div>
+                  <div><span className="text-gray-500">{isEl ? "Αποχή" : "Abstain"}</span><strong className="ml-2 text-gray-700">{result.abstain_pct === null ? "—" : `${result.abstain_pct}%`}</strong></div>
                 </div>
+                {result.yes_pct === null && <p className="mt-3 text-xs text-gray-500">{isEl
+                  ? `Σε τουλάχιστον μία επιλογή: λιγότερες από ${result.suppression_k ?? 10} ψήφοι. Η ανάλυση δεν δημοσιεύεται.`
+                  : `At least one choice has fewer than ${result.suppression_k ?? 10} votes. The breakdown is withheld.`}</p>}
                 <p className="mt-3 text-xs text-gray-500">
                   {score === null ? (isEl ? "Δεν υπάρχει ακόμη κοινοβουλευτικό αποτέλεσμα για σύγκριση." : "No parliamentary result is available for comparison yet.") : `${isEl ? "Απόκλιση" : "Divergence"}: ${Math.round(score * 100)}%`}
                 </p>

@@ -15,7 +15,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Header, Query, Request, Response, status
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_serializer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import and_, or_, select, func, union, update, text
 from sqlalchemy.exc import IntegrityError
@@ -47,6 +47,7 @@ from services.zk_tier_lock import (
     tier1_vote_blocked_by_zk_lock,
 )
 from services.zk_vote_aggregation import aggregate_bill_vote_totals
+from services.small_cell import suppress_public_cells, small_cell_k
 from services.vote_scope import ScopeAction, ensure_bill_scope_allowed
 
 import sys, os
@@ -314,27 +315,52 @@ class BillResults(BaseModel):
     parliament_url:   str | None = None
     official_source_url: str | None = None
     diavgeia_ada:     str | None = None
-    total_votes:      int
-    tier1_vote_count: int = 0
-    zk_vote_count:    int = 0
-    yes_count:        int
-    no_count:         int
-    abstain_count:    int
-    unknown_count:    int
-    yes_percent:      float
-    no_percent:       float
-    abstain_percent:  float
-    unknown_percent:  float
+    total_votes:      int | None
+    tier1_vote_count: int | None = 0
+    zk_vote_count:    int | None = 0
+    yes_count:        int | None
+    no_count:         int | None
+    abstain_count:    int | None
+    unknown_count:    int | None
+    yes_percent:      float | None
+    no_percent:       float | None
+    abstain_percent:  float | None
+    unknown_percent:  float | None
+    suppressed:       bool = False
+    suppression_k:    int = 0
     divergence:       DivergenceResult | None
     representativity: dict | None = None
     results_hidden:   bool = False
     parliament_vote_date: str | None = None
     disclaimer_el:    str
 
+    @model_serializer(mode="wrap")
+    def serialize_public_results(self, handler):
+        data = handler(self)
+        if not small_cell_k():
+            data.pop("suppressed", None)
+            data.pop("suppression_k", None)
+        return data
+
 class RelevanceRequest(BaseModel):
     nullifier_hash: str
     signal:         int  = Field(..., description="+1 wichtig / -1 unwichtig")
     signature_hex:  str  = Field(..., description="Ed25519 Signatur: relevance:{bill_id}:{signal}:{nullifier_hash}")
+
+
+def publish_bill_results(result: BillResults, *, publishable: bool | None = None) -> BillResults:
+    published = suppress_public_cells(
+        result.model_dump(),
+        choices=("yes_count", "no_count", "abstain_count", "unknown_count"),
+        total="total_votes",
+        percentages=("yes_percent", "no_percent", "abstain_percent", "unknown_percent"),
+        partitions=("tier1_vote_count", "zk_vote_count"),
+        derived=("divergence",),
+        public_source_total=result.zk_vote_count or 0, publishable=publishable,
+    )
+    if published["total_votes"] is None:
+        published["representativity"] = None
+    return BillResults(**published)
 
 
 # ─── Divergence Score ─────────────────────────────────────────────────────────
@@ -1030,13 +1056,17 @@ async def get_latest_result(db: AsyncSession = Depends(get_db)):
             .exists()
         ),
     )
+    allowed_filter = True
+    if small_cell_k():
+        from services.public_result_windows import load_publishable_bill_ids
+        allowed_filter = ParliamentBill.id.in_(await load_publishable_bill_ids(db))
     result = await db.execute(
         select(ParliamentBill)
         .join(candidate_bill_ids, candidate_bill_ids.c.bill_id == ParliamentBill.id)
         .where(ParliamentBill.status.in_([
             BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END, BillStatus.ACTIVE,
         ]))
-        .where(public_bill_filter())
+        .where(public_bill_filter(), allowed_filter)
         .where(results_visible_filter())
         .where(or_(tier1_vote_exists, parliament_zk_vote_exists))
         .order_by(desc(ParliamentBill.created_at))
@@ -1055,7 +1085,7 @@ async def get_latest_result(db: AsyncSession = Depends(get_db)):
     if total < 1:
         return {"bill_id": None, "total_votes": 0}
 
-    return {
+    published = suppress_public_cells({
         "bill_id": bill.id,
         "title_el": bill.title_el,
         "title_en": bill.title_en,
@@ -1065,18 +1095,31 @@ async def get_latest_result(db: AsyncSession = Depends(get_db)):
         "no_pct": round(totals.no / total * 100),
         "abstain_pct": round(totals.abstain / total * 100),
         "unknown_pct": round(totals.unknown / total * 100),
-    }
+        "yes": totals.yes, "no": totals.no,
+        "abstain": totals.abstain, "unknown": totals.unknown,
+    }, choices=("yes", "no", "abstain", "unknown"), total="total_votes",
+        percentages=("yes_pct", "no_pct", "abstain_pct", "unknown_pct"),
+        publishable=totals.publishable)
+    for key in ("yes", "no", "abstain", "unknown"):
+        published.pop(key)
+    return published
 
 
 @router.get("/results/in-progress")
 async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
     """Landing page ticker data. Aggregated counts only; no nullifiers or vote rows."""
-    threshold = votes_in_progress_threshold()
+    threshold = max(votes_in_progress_threshold(), small_cell_k())
     visibility_sql, visibility_params = public_bill_raw_sql(
         "b",
         param_prefix="in_progress_sensitive",
     )
-    result = await db.execute(text(f"""
+    allowed = None
+    if small_cell_k():
+        from services.public_result_windows import load_publishable_bill_ids
+        allowed = await load_publishable_bill_ids(db)
+        visibility_sql += " AND b.id IN :publishable_ids"
+        visibility_params["publishable_ids"] = list(allowed)
+    query = text(f"""
         SELECT
             b.id,
             b.title_el,
@@ -1084,6 +1127,7 @@ async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
             b.status::text AS status,
             b.governance_level::text AS governance_level,
             (COALESCE(tier.total_votes, 0) + COALESCE(zk.total_votes, 0))::int AS total_votes,
+            COALESCE(zk.total_votes, 0)::int AS zk_total,
             (COALESCE(tier.yes_count, 0) + COALESCE(zk.yes_count, 0))::int AS yes_count,
             (COALESCE(tier.no_count, 0) + COALESCE(zk.no_count, 0))::int AS no_count,
             (COALESCE(tier.abstain_count, 0) + COALESCE(zk.abstain_count, 0))::int AS abstain_count,
@@ -1122,15 +1166,21 @@ async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
           AND (COALESCE(tier.total_votes, 0) + COALESCE(zk.total_votes, 0)) >= :threshold
         ORDER BY (COALESCE(tier.total_votes, 0) + COALESCE(zk.total_votes, 0)) DESC, b.created_at DESC
         LIMIT 6
-    """), {"threshold": threshold, **visibility_params})
+    """)
+    if allowed is not None:
+        from sqlalchemy import bindparam
+        query = query.bindparams(bindparam("publishable_ids", expanding=True))
+    result = await db.execute(query, {"threshold": threshold, **visibility_params})
     bills = []
     for row in result.mappings():
+        if allowed is not None and row["id"] not in allowed:
+            continue
         total = row["total_votes"] or 0
         yes = row["yes_count"] or 0
         no = row["no_count"] or 0
         abstain = row["abstain_count"] or 0
         unknown = row["unknown_count"] or 0
-        bills.append({
+        published = suppress_public_cells({
             "bill_id": row["id"],
             "title_el": row["title_el"],
             "title_en": row["title_en"],
@@ -1141,7 +1191,13 @@ async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
             "no_pct": vote_percent(no, total),
             "abstain_pct": vote_percent(abstain, total),
             "unknown_pct": vote_percent(unknown, total),
-        })
+            "yes": yes, "no": no, "abstain": abstain, "unknown": unknown,
+        }, choices=("yes", "no", "abstain", "unknown"), total="total_votes",
+            percentages=("yes_pct", "no_pct", "abstain_pct", "unknown_pct"),
+            publishable=True if allowed is not None else None)
+        for key in ("yes", "no", "abstain", "unknown"):
+            published.pop(key)
+        bills.append(published)
     return {
         "threshold": threshold,
         "count": len(bills),
@@ -1168,7 +1224,7 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
     # Visibility check (shared with every public results surface)
     if results_hidden(bill):
         vote_date = bill.parliament_vote_date.strftime("%d/%m/%Y") if bill.parliament_vote_date else None
-        return BillResults(
+        return publish_bill_results(BillResults(
             bill_id=bill_id, title_el=bill.title_el, status=bill.status.value,
             source=bill.source or "PARLIAMENT",
             pill_el=bill.pill_el,
@@ -1187,7 +1243,7 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
             results_hidden=True,
             parliament_vote_date=vote_date,
             disclaimer_el="Τα αποτελέσματα θα είναι ορατά μετά τη λήξη της ψηφοφορίας.",
-        )
+        ))
 
     totals = await aggregate_bill_vote_totals(
         db,
@@ -1211,7 +1267,7 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
     )
 
     vote_date = bill.parliament_vote_date.strftime("%d/%m/%Y") if bill.parliament_vote_date else None
-    return BillResults(
+    result = BillResults(
         bill_id=bill_id,
         title_el=bill.title_el,
         status=bill.status.value,
@@ -1240,6 +1296,7 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
         parliament_vote_date=vote_date,
         disclaimer_el="Η ψηφοφορία αυτή δεν είναι νομικά δεσμευτική και εκφράζει μόνο τη γνώμη των εγγεγραμμένων χρηστών της πλατφόρμας.",
     )
+    return publish_bill_results(result, publishable=totals.publishable)
 
 
 @router.post("/{bill_id}/relevance")

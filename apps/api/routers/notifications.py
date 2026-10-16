@@ -57,8 +57,15 @@ async def publish_bill_event(event_type: str, bill_id: str, data: dict = {}):
     await event_bus.publish({"type": event_type, "bill_id": bill_id, **data})
 
 
-async def publish_vote_milestone(bill_id: str, total_votes: int):
+async def publish_vote_milestone(bill_id: str, total_votes: int, *, db=None):
     """Milestone bei 100/500/1000/5000 Stimmen."""
+    from services.small_cell import small_cell_k
+    if small_cell_k():
+        if db is None:
+            return
+        from services.public_result_windows import load_publishable_bill_ids
+        if bill_id not in await load_publishable_bill_ids(db):
+            return
     if total_votes in [100, 500, 1000, 5000, 10000]:
         await publish_bill_event("bill.vote_milestone", bill_id, {
             "milestone": total_votes,

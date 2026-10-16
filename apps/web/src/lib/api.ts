@@ -135,19 +135,22 @@ export interface BillResults {
   bill_id: string;
   title_el: string;
   status: string;
-  total_votes: number;
-  tier1_vote_count?: number;
-  zk_vote_count?: number;
-  yes_count: number;
-  no_count: number;
-  abstain_count: number;
-  unknown_count?: number;
-  yes_percent: number;
-  no_percent: number;
-  abstain_percent: number;
-  unknown_percent?: number;
+  total_votes: number | null;
+  tier1_vote_count?: number | null;
+  zk_vote_count?: number | null;
+  yes_count: number | null;
+  no_count: number | null;
+  abstain_count: number | null;
+  unknown_count?: number | null;
+  yes_percent: number | null;
+  no_percent: number | null;
+  abstain_percent: number | null;
+  unknown_percent?: number | null;
   divergence: DivergenceResult | null;
   disclaimer_el: string;
+  results_hidden?: boolean;
+  suppressed?: boolean;
+  suppression_k?: number;
 }
 
 export interface PublishedResult {
@@ -157,15 +160,17 @@ export interface PublishedResult {
   status: string;
   parliament_vote_date: string;
   parliament_result: string;
-  citizen_yes: number;
-  citizen_no: number;
-  citizen_abstain: number;
-  citizen_unknown: number;
-  citizen_total: number;
-  yes_pct: number;
-  no_pct: number;
-  abstain_pct: number;
-  divergence_score: number | "";
+  citizen_yes: number | null;
+  citizen_no: number | null;
+  citizen_abstain: number | null;
+  citizen_unknown: number | null;
+  citizen_total: number | null;
+  yes_pct: number | null;
+  no_pct: number | null;
+  abstain_pct: number | null;
+  divergence_score: number | "" | null;
+  suppressed?: boolean;
+  suppression_k?: number;
 }
 
 export interface PublishedResultsResponse {

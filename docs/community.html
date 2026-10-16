@@ -932,7 +932,7 @@
       var s=d.stats||{};
       document.getElementById("ss-parliament").textContent=s.parliament_bills||0;
       document.getElementById("ss-diavgeia").textContent=s.diavgeia_bills||0;
-      document.getElementById("ss-votes").textContent=s.total_votes||0;
+      document.getElementById("ss-votes").textContent=s.total_votes == null ? "—" : s.total_votes;
       document.getElementById("ss-arweave").textContent=s.arweave_archived||0;
       document.getElementById("ss-archived").textContent=s.archived_bills||0;
       document.getElementById("ss-forum").textContent=s.forum_topics||0;

@@ -5,26 +5,27 @@ import { useEffect, useState } from "react";
 interface Props {
   billId: string;
   titleEl: string;
-  totalVotes: number;
-  yesCount: number;
-  noCount: number;
-  abstainCount: number;
-  unknownCount: number;
-  yesPct: number;
-  noPct: number;
-  abstainPct: number;
-  unknownPct?: number;
+  totalVotes: number | null;
+  yesCount: number | null;
+  noCount: number | null;
+  abstainCount: number | null;
+  unknownCount: number | null;
+  yesPct: number | null;
+  noPct: number | null;
+  abstainPct: number | null;
+  unknownPct?: number | null;
   divergence: { score: number; label_el: string; citizen_majority: string; parliament_result: string | null; headline_el?: string } | null;
   representativity: { total_votes: number; eligible_voters: number | null; population: number | null; participation_pct: number | null; population_pct: number | null; scope_label_el?: string; level: string; color: string; label_el: string; is_representative: boolean; score: number; headline_el: string } | null;
   partyVotes: Record<string, string> | null;
   parliamentVoteDate: string | null;
+  suppressionK?: number;
   locale: string;
 }
 
 export default function BillResultReport({
   totalVotes, yesCount, noCount, abstainCount, yesPct, noPct, abstainPct,
   unknownCount, unknownPct,
-  divergence, representativity, partyVotes, parliamentVoteDate, locale,
+  divergence, representativity, partyVotes, parliamentVoteDate, suppressionK = 10, locale,
 }: Props) {
   const [repAnim, setRepAnim] = useState(0);
   const el = (a: string, b: string) => locale === "el" ? a : b;
@@ -94,13 +95,18 @@ export default function BillResultReport({
           </h3>
           <div className="bg-gray-800 rounded-xl p-4">
             <p className="text-sm text-gray-300 mb-4">
-              <strong className="text-white">{totalVotes.toLocaleString()}</strong>{" "}
+              <strong className="text-white">{totalVotes?.toLocaleString() ?? `< ${suppressionK}`}</strong>{" "}
               {el("πολίτες ψήφισαν", "citizens voted")}.{" "}
-              <strong className={yesPct > noPct ? "text-green-400" : "text-red-400"}>
+              {yesPct != null && noPct != null && <strong className={yesPct > noPct ? "text-green-400" : "text-red-400"}>
                 {yesPct > noPct ? el("Υπέρ", "Yes") : el("Κατά", "No")} ({Math.max(yesPct, noPct)}%)
-              </strong>
+              </strong>}
             </p>
-            {[
+            {yesCount == null || noCount == null || abstainCount == null || unknownCount == null || yesPct == null || noPct == null || abstainPct == null ? (
+              <p className="text-sm text-gray-300">{el(
+                `Σε τουλάχιστον μία επιλογή: λιγότερες από ${suppressionK} ψήφοι. Η ανάλυση δεν δημοσιεύεται.`,
+                `At least one choice has fewer than ${suppressionK} votes. The breakdown is withheld.`,
+              )}</p>
+            ) : [
               { label: el("Υπέρ", "Yes"), pct: yesPct, count: yesCount, color: "bg-green-500", tc: "text-green-400" },
               { label: el("Κατά", "No"), pct: noPct, count: noCount, color: "bg-red-500", tc: "text-red-400" },
               { label: el("Αποχή", "Abstain"), pct: abstainPct, count: abstainCount, color: "bg-gray-500", tc: "text-gray-400" },
@@ -111,7 +117,7 @@ export default function BillResultReport({
               <div key={b.label} className="mb-3">
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-gray-300">{b.label}</span>
-                  <span className={`font-black ${b.tc}`}>{b.pct}% <span className="text-gray-300 font-normal">({b.count.toLocaleString()})</span></span>
+                  <span className={`font-black ${b.tc}`}>{b.pct}% <span className="text-gray-300 font-normal">({b.count?.toLocaleString()})</span></span>
                 </div>
                 <div className="h-3 bg-gray-700 rounded-full overflow-hidden">
                   <div className={`h-full ${b.color} rounded-full transition-all duration-700`} style={{ width: `${b.pct}%` }} />
@@ -150,12 +156,12 @@ export default function BillResultReport({
               <p className="text-sm text-gray-300 mb-3">
                 {representativity.eligible_voters !== null && representativity.participation_pct !== null ? (
                   <>
-                    {totalVotes.toLocaleString()} / {representativity.eligible_voters.toLocaleString()} {el("εκλογείς", "voters")} ={" "}
+                    {totalVotes?.toLocaleString() ?? `< ${suppressionK}`} / {representativity.eligible_voters.toLocaleString()} {el("εκλογείς", "voters")} ={" "}
                     <strong style={{ color: repColor }}>{representativity.participation_pct.toFixed(4)}%</strong>.{" "}
                   </>
                 ) : representativity.population !== null && representativity.population_pct !== null ? (
                   <>
-                    {totalVotes.toLocaleString()} / {representativity.population.toLocaleString()} {el("κάτοικοι", "residents")} ={" "}
+                    {totalVotes?.toLocaleString() ?? `< ${suppressionK}`} / {representativity.population.toLocaleString()} {el("κάτοικοι", "residents")} ={" "}
                     <strong style={{ color: repColor }}>{representativity.population_pct.toFixed(4)}%</strong>.{" "}
                   </>
                 ) : null}

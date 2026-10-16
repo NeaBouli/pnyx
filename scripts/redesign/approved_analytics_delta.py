@@ -57,9 +57,10 @@ SECURITY_REMEDIATION_SHA256 = {
 # T-9132 review: demo discloses possible linkage through verification; demo and
 # govgr-dimos separate expiring daily HMAC counters from size-rotated IP logs.
 CONTENT_REMEDIATION_SHA256 = {
+    "docs/embed/results.html": "63689f8561e348cb00fa600f4170f3b42cebe2cbf72218b1b4b8f0359cde1cfd",  # T-9128: nullable public result cells
     "docs/demo/index.html": "0b5b6325ca36af9f8ffa056b171f197fc4daef520c17238923dfd1825779439e",  # T-9132: approved pseudonymous vote wording
     "docs/demo/bills.html": "bcc57f45c9e25c3ac3a6eb0fe9b17b29a2908c5863ad744407dc2cd56215dee8",  # T-9127: OPEN_END voting closed
-    "docs/embed/vote.html": "2afc2f067db2fb4adf91e7e9bbebaf69f155eff87aa429976d48b94d59667576",  # T-9127: OPEN_END voting closed
+    "docs/embed/vote.html": "79694a0db62fa63f93a8e0f0115ceed0db6ed65579695a54948f53db979c203f",  # T-9127: OPEN_END voting closed
     "docs/govgr-dimos.html": "2a688aeda5af19061db9d64e2a7180fa4a292511fdc201712e8f243d2616a176",
     "docs/legal.html": "42edc8e9c7db5d3fa4bb141adc915d47acc232ff93d405a38871b83ee1b5b4b7",
     "docs/municipality/article.html": "aebe3b819ec76fc9c3769ad38a847246657bd5d85b70c914cb84528d4b658123",
@@ -67,6 +68,7 @@ CONTENT_REMEDIATION_SHA256 = {
     "docs/tickets/index.html": "e7ac386295ade2c52c6d3826c89ade8ffc140f290dbc78ac8487d32394f2b225",
 }
 
+# T-9128: embed vote/results nullable counts and withheld breakdowns.
 # T-421 (EKA-48): landing head drops only the same-URL hreflang="en" alternate.
 # Pinned hash of the r0 "seo" category; any other SEO change fails the R2 gate.
 APPROVED_SEO_HASH = {

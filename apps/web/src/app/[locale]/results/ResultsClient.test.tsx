@@ -139,5 +139,18 @@ describe("ResultsClient first-page SSR seed", () => {
     const stat = [...container.querySelectorAll("div")].find((node) => node.textContent === label)!;
     expect(stat.previousElementSibling!.textContent).toBe(total);
   });
+  it("hydrates a suppressed result with a threshold message and no fabricated percentages", async () => {
+    const suppressed: PublishedResult = { ...result("PRIVATE", 60, ""),
+      citizen_yes: null, citizen_no: null, citizen_abstain: null, citizen_unknown: null,
+      yes_pct: null, no_pct: null, abstain_pct: null, divergence_score: null,
+      suppressed: true, suppression_k: 10 };
+    const { html, errors } = await serverThenHydrate([suppressed]);
+    expect(errors).toEqual([]);
+    expect(html).toContain("fewer than 10 votes");
+    expect(container.textContent).toContain("60 votes");
+    expect(container.textContent).not.toMatch(/null%|NaN|undefined/);
+    expect(context.getPublishedResults).not.toHaveBeenCalled();
+  });
+
 });
 
