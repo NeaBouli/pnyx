@@ -1,61 +1,79 @@
-# Runbook: encrypt off-site backups (ADR-007 S3)
+# Runbook: Backups verschlüsseln (ADR-007 S3)
 
-Status: prepared (code merged, **not active**). Activation is a Gio gate: the private key is a secret and stays with Gio only.
+Status: vorbereitet (Code bereit, **nicht aktiv**). Aktivierung = Gio-Gate. Der private Schlüssel ist ein Geheimnis und bleibt nur bei Gio.
 
-## Why
-The daily off-site backup (`scripts/backup-offsite.sh`, cron 04:00 UTC) uploads a full `pg_dump` + Redis snapshot. Without encryption, anyone with access to the backup host can read every identity ↔ vote link (EVA-006).
+---
 
-## How it works
-- `age` encrypts the archive **on the server** for a public key (`age1…`) **before** the upload. The server only holds the public key; it can encrypt but never decrypt.
-- Uploaded files end in `.tar.gz.age`.
-- `BACKUP_REQUIRE_ENCRYPTION=true`: without a valid key, or without `age` installed, the backup aborts **before** the upload. Nothing unencrypted leaves the server.
-- Local copies on the prod server (`/opt/backups/ekklesia`) stay unencrypted. They sit on the same host as the database itself and give no extra exposure.
+## Für Gio – einfach erklärt, Schritt für Schritt
 
-## 1. Generate the key (Gio, offline)
-On a trusted computer (ideally offline):
-```bash
-age-keygen -o ekklesia-backup-2026.key      # private key, NEVER on the server, in a chat, or in the repo
-grep "public key" ekklesia-backup-2026.key   # → age1…  (this public key is not a secret)
-```
-Storage (at least two separate places):
-1. offline (USB stick / paper copy of the key line) at Gio's;
-2. a copy on the Synology inside an encrypted folder/container.
+**Worum geht es?** Jede Nacht wird eine Sicherungskopie der Ekklesia-Datenbank auf einen zweiten Server geschickt. Bisher ist diese Kopie **unverschlüsselt**. Wer Zugriff auf den Backup-Server hätte, könnte darin lesen. Ab jetzt wird jede Kopie **vor** dem Versenden verschlüsselt, und **nur du** kannst sie wieder öffnen.
 
-Losing the private key = all encrypted backups are worthless. Test the restore (step 4) before relying on it.
+**Das Prinzip:** Es gibt zwei Schlüssel, die zusammengehören.
+- Ein **öffentlicher Schlüssel** (beginnt mit `age1…`). Damit kann man nur **zuschließen**. Er kommt auf den Server, und es ist nicht schlimm, wenn ihn jemand sieht.
+- Ein **privater Schlüssel** (beginnt mit `AGE-SECRET-KEY-…`). Damit kann man **aufschließen**. Den hast **nur du**: nie auf dem Server, nie im Chat, nie per E-Mail.
 
-## 2. Activate (server, after Gio's yes; the public key comes from Gio)
+**Was du tust (ca. 15 Minuten, gio-1c begleitet dich):**
+1. **Programm installieren** (auf deinem Mac): Im Terminal `brew install age` eingeben.
+2. **Schlüsselpaar erzeugen:** `age-keygen -o ekklesia-backup-2026.key`. Das erzeugt die Datei `ekklesia-backup-2026.key` und zeigt eine Zeile `Public key: age1…`.
+3. **Den öffentlichen Schlüssel weitergeben:** Nur die Zeile `age1…` an gio-1c oder gio-dd geben. Das ist kein Geheimnis.
+4. **Den privaten Schlüssel sichern (wichtig!):** Die Datei `ekklesia-backup-2026.key` an **zwei** sicheren Orten ablegen:
+   - auf einem USB-Stick, den du gut aufbewahrst (gern zusätzlich ausgedruckt: die Zeile `AGE-SECRET-KEY-…`);
+   - auf der Synology in einem **verschlüsselten** Ordner.
+
+   Danach die Datei vom Mac löschen, wenn du willst. **Ohne diesen Schlüssel sind alle verschlüsselten Backups wertlos.** Bitte also wirklich an zwei Orten.
+5. **Probe machen:** Wir schicken dir eine verschlüsselte Backup-Datei. Du öffnest sie einmal mit deinem Schlüssel (Befehl unten, Abschnitt 4). Klappt das, ist alles richtig eingerichtet.
+6. **Alte unverschlüsselte Backups löschen:** Erst wenn mindestens 7 verschlüsselte Backups da sind **und** die Probe geklappt hat, fragen wir dich nach einem Ja zum Löschen der alten, unverschlüsselten Kopien.
+
+---
+
+## Technischer Teil (für die Umsetzung)
+
+### Wie es funktioniert
+- `scripts/lib/backup-encrypt.sh` verschlüsselt das Archiv **auf dem Server** mit `age -r <öffentlicher Schlüssel>`, **bevor** es hochgeladen wird. Der Server kann nur verschlüsseln, nie entschlüsseln.
+- Hochgeladene Dateien heißen `ekklesia-backup-<ts>.tar.gz.age`.
+- `BACKUP_REQUIRE_ENCRYPTION=true`: Ohne gültigen Schlüssel oder ohne `age` bricht das Backup **vor** dem Upload ab. Nichts Unverschlüsseltes verlässt dann den Server.
+- `sftp -b -`: Ein fehlgeschlagener Upload lässt das Backup jetzt fehlschlagen. Vorher wurde er als Erfolg gemeldet. Die Retention-Alarmierung greift dann.
+- Lokale Kopien auf dem Prod-Server (`/opt/backups/ekklesia`) bleiben unverschlüsselt. Sie liegen auf demselben Host wie die Datenbank selbst.
+
+### 1. Aktivieren (Server, nach Gios Ja; öffentlicher Schlüssel von Gio)
 ```bash
 apt-get install -y age && age --version
-# in /etc/ekklesia-offsite-backup.env (root-only, mode 600):
-BACKUP_AGE_RECIPIENT=age1…            # public key from step 1
+# /etc/ekklesia-offsite-backup.env (root, Modus 600) ergänzen:
+BACKUP_AGE_RECIPIENT=age1…            # öffentlicher Schlüssel aus Schritt 2
 BACKUP_REQUIRE_ENCRYPTION=true
 ```
-Then run once manually: `/usr/local/sbin/ekklesia-run-offsite-backup`. The log should show `Uploading ekklesia-backup-…tar.gz.age`.
+Dann einmal manuell `/usr/local/sbin/ekklesia-run-offsite-backup` starten. Im Log muss `Uploading ekklesia-backup-…tar.gz.age` stehen.
 
-## 3. Adjust the follow-on scripts (same gate)
-- `/usr/local/sbin/ekklesia-offsite-retention`: extend the name pattern and the "newest backup > 1 MB" guard to `ekklesia-backup-*.tar.gz.age`.
-- Restore check: decrypt first (step 4); it can't run on the server any more without the private key. That's intentional.
+### 2. Folge-Skripte anpassen (gleiches Gate)
+- `/usr/local/sbin/ekklesia-offsite-retention`: Namensmuster und Wächter „neuestes Backup > 1 MB“ auf `ekklesia-backup-*.tar.gz.age` erweitern.
+- Der Restore-Check läuft auf dem Server ohne privaten Schlüssel absichtlich nicht mehr; er wird zur Offline-Probe (Abschnitt 4).
 
-## 4. Restore test (Gio, offline machine)
+### 3. Ziel-Parameter
+Upload-Ziel, Port, Pfad und SSH-Schlüssel kommen aus `/etc/ekklesia-offsite-backup.env`: `STORAGE_BOX_USER`, `STORAGE_BOX_HOST`, `STORAGE_BOX_PORT` (Skript-Default 23), `STORAGE_BOX_PATH` (Default `/backups/ekklesia`), `STORAGE_BOX_IDENTITY_FILE`. Für die Probe dieselben Werte verwenden. Nachsehen mit `grep -E "^STORAGE_BOX_(USER|HOST|PORT|PATH)=" /etc/ekklesia-offsite-backup.env`; der Identity-Pfad ist kein Geheimnis, die Schlüsseldatei selbst schon.
+
+### 4. Probe-Wiederherstellung (offline)
+gio-dd lädt eine Datei auf dem Prod-Server mit den Werten aus Abschnitt 3 herunter:
 ```bash
-sftp -P 22 <backup-user>@<backup-host>:backups/ekklesia/daily/ekklesia-backup-<ts>.tar.gz.age .
-age --decrypt -i ekklesia-backup-2026.key -o restore.tar.gz ekklesia-backup-<ts>.tar.gz.age
-tar -xzf restore.tar.gz            # db-<ts>.dump, redis-<ts>.rdb, alembic-<ts>.txt
-# import into a temporary PostgreSQL (not prod), compare counts
+sftp -P "$STORAGE_BOX_PORT" -i "$STORAGE_BOX_IDENTITY_FILE" "$STORAGE_BOX_USER@$STORAGE_BOX_HOST:$STORAGE_BOX_PATH/daily/ekklesia-backup-<ts>.tar.gz.age" /tmp/
 ```
+Sie geht an Gio (verschlüsselt, also unkritisch). Gio entschlüsselt sie auf seinem Rechner:
+```bash
+age --decrypt -i ekklesia-backup-2026.key -o restore.tar.gz ekklesia-backup-<ts>.tar.gz.age
+tar -tzf restore.tar.gz            # zeigt db-<ts>.dump, redis-<ts>.rdb, alembic-<ts>.txt
+```
+Optional: Wiederherstellung in eine temporäre PostgreSQL (nicht Prod) und Zählungen vergleichen.
 
-## 5. Old unencrypted backups
-The unencrypted archives on the backup host stay readable until they're deleted. Recommendation: once at least 7 encrypted dailies **and** a successful restore test (step 4) exist, delete the unencrypted files in `daily/weekly/monthly`. That's a separate Gio gate (deletion), with a list check like the retention cleanup.
+### 5. Alte unverschlüsselte Backups
+Sie bleiben lesbar, bis sie gelöscht werden. Das Löschen ist ein eigenes Gio-Gate. Voraussetzung: mindestens 7 verschlüsselte Dailies und eine erfolgreiche Probe (Abschnitt 4). Danach Listenabgleich wie bei der Retention-Bereinigung.
 
-## Rollback
-Remove `BACKUP_AGE_RECIPIENT` / `BACKUP_REQUIRE_ENCRYPTION` from the env file. The next backup is unencrypted again (log warning). Encrypted backups stay readable with the offline key.
+### Rollback
+`BACKUP_AGE_RECIPIENT` und `BACKUP_REQUIRE_ENCRYPTION` aus der env-Datei entfernen. Danach wird wieder unverschlüsselt gesichert (mit Log-Warnung). Bereits verschlüsselte Backups bleiben mit dem Offline-Schlüssel lesbar.
 
-## Evidence (16.10.)
-`scripts/tests/test_backup_encryption.py` (runs where `age` is installed; here in a `python:3.12-alpine` container with `age`):
-- encrypted upload, decryption with a test key gives an identical archive, no plaintext in the encrypted file;
-- with `REQUIRE` and no key: no upload;
-- invalid key: no upload;
-- `age` missing: no upload;
-- default unencrypted, with a warning.
+### Nachweis
+`scripts/tests/test_backup_encryption.py`, läuft in CI im API-Job mit `age`:
+- verschlüsselter Upload, Entschlüsselung mit Testschlüssel ergibt ein identisches Archiv, kein Klartext;
+- `REQUIRE` ohne Schlüssel, ungültiger Schlüssel, `age` fehlt, `age`-Fehler mit Teilausgabe, Ausgabe ohne age-Header, zu kleine Ausgabe: jeweils kein Upload und keine Rest-Datei;
+- fehlgeschlagener Upload lässt das Backup fehlschlagen;
+- Default unverschlüsselt mit Warnung.
 
-A mutation (encryption skipped) fails 3 tests.
+Mutation „Verschlüsselung übersprungen“ lässt 3 Tests fehlschlagen.

@@ -40,7 +40,14 @@ class BackupEncryptionTest(unittest.TestCase):
               cp*) exit 1 ;;
             esac
             """))
-        (self.bin / "sftp").write_text(f"#!/bin/bash\ncat >> {self.uploads}\n")
+        # sftp shim: records the batch; exits 1 when SFTP_FAIL_PUT is set and a put is requested.
+        (self.bin / "sftp").write_text(textwrap.dedent(f"""\
+            #!/bin/bash
+            input=$(cat)
+            printf '%s\\n' "$input" >> {self.uploads}
+            if [ -n "${{SFTP_FAIL_PUT:-}}" ] && printf '%s' "$input" | grep -q "put "; then exit 1; fi
+            case " $* " in *" -b - "*) ;; *) echo "sftp called without -b -" >&2; exit 2 ;; esac
+            """))
         for f in ("docker", "sftp"):
             os.chmod(self.bin / f, 0o755)
         # Script writes to /opt/backups/ekklesia; run a copy pointing at the temp dir.
@@ -98,6 +105,47 @@ class BackupEncryptionTest(unittest.TestCase):
         r = subprocess.run([shutil.which("bash"), str(self.script)], capture_output=True, text=True, env=env)
         self.assertNotEqual(r.returncode, 0)
         self.assertEqual(self.uploaded(), [])
+
+    def _age_shim(self, body: str) -> str:
+        shim_dir = self.tmp / "agefail"
+        shim_dir.mkdir(exist_ok=True)
+        (shim_dir / "age").write_text("#!/bin/bash\n" + body)
+        os.chmod(shim_dir / "age", 0o755)
+        return str(shim_dir)
+
+    def _run_with_age_shim(self, body: str) -> subprocess.CompletedProcess:
+        shim = self._age_shim(body)
+        env = {"PATH": f"{shim}:{self.bin}:{os.environ['PATH']}", "STORAGE_BOX_USER": "u", "STORAGE_BOX_HOST": "h",
+               "HOME": str(self.tmp), "BACKUP_AGE_RECIPIENT": self.recipient}
+        return subprocess.run(["bash", str(self.script)], capture_output=True, text=True, env=env)
+
+    def _no_encrypted_leftover(self) -> bool:
+        return not list(self.backups.glob("*.age"))
+
+    def test_age_failure_with_partial_output_uploads_nothing(self) -> None:
+        r = self._run_with_age_shim('out=""; while [ $# -gt 0 ]; do [ "$1" = "-o" ] && out="$2"; shift; done\n'
+                                    'printf "age-encryption.org/v1 partial" > "$out"; exit 1\n')
+        self.assertNotEqual(r.returncode, 0)
+        self.assertEqual(self.uploaded(), [])
+        self.assertTrue(self._no_encrypted_leftover())
+
+    def test_output_without_age_header_uploads_nothing(self) -> None:
+        r = self._run_with_age_shim('out=""; while [ $# -gt 0 ]; do [ "$1" = "-o" ] && out="$2"; shift; done\n'
+                                    'head -c 100000 /dev/zero > "$out"; exit 0\n')
+        self.assertNotEqual(r.returncode, 0)
+        self.assertEqual(self.uploaded(), [])
+        self.assertTrue(self._no_encrypted_leftover())
+
+    def test_undersized_output_uploads_nothing(self) -> None:
+        r = self._run_with_age_shim('out=""; while [ $# -gt 0 ]; do [ "$1" = "-o" ] && out="$2"; shift; done\n'
+                                    'printf "age-encryption.org/v1" > "$out"; exit 0\n')
+        self.assertNotEqual(r.returncode, 0)
+        self.assertEqual(self.uploaded(), [])
+        self.assertTrue(self._no_encrypted_leftover())
+
+    def test_failed_upload_fails_the_backup(self) -> None:
+        r = self.run_backup(BACKUP_AGE_RECIPIENT=self.recipient, SFTP_FAIL_PUT="1")
+        self.assertNotEqual(r.returncode, 0)
 
     def test_default_stays_unencrypted_with_a_warning(self) -> None:
         r = self.run_backup()

@@ -50,6 +50,9 @@ if [ -z "${STORAGE_BOX_USER}" ] || [ -z "${STORAGE_BOX_HOST}" ]; then
   exit 2
 fi
 
+# "-b -" (batch from stdin) makes sftp exit non-zero when a command such as
+# "put" fails; "-mkdir" lines stay tolerant. Without it a failed upload looked
+# successful (review of #605).
 SFTP_OPTS=(-P "${STORAGE_BOX_PORT}" -o BatchMode=yes)
 if [ -n "${STORAGE_BOX_IDENTITY_FILE}" ]; then
   SFTP_OPTS+=(-i "${STORAGE_BOX_IDENTITY_FILE}")
@@ -92,7 +95,7 @@ UPLOAD_FILE=$(basename "${UPLOAD_PATH}")
 
 # ─── 5. Upload to off-site target ────────────────────────────────────────────
 echo "${LOG_PREFIX} Uploading ${UPLOAD_FILE} to off-site target..."
-sftp "${SFTP_OPTS[@]}" "${STORAGE_BOX_USER}@${STORAGE_BOX_HOST}" <<SFTP
+sftp -b - "${SFTP_OPTS[@]}" "${STORAGE_BOX_USER}@${STORAGE_BOX_HOST}" <<SFTP
   -mkdir ${REMOTE_DIR}
   -mkdir ${REMOTE_DIR}/daily
   -mkdir ${REMOTE_DIR}/weekly
@@ -103,14 +106,14 @@ SFTP
 # ─── 6. Weekly + Monthly Copies ──────────────────────────────────────────────
 if [ "${DAY_OF_WEEK}" = "7" ]; then
   echo "${LOG_PREFIX} Sunday — creating weekly copy..."
-  sftp "${SFTP_OPTS[@]}" "${STORAGE_BOX_USER}@${STORAGE_BOX_HOST}" <<SFTP
+  sftp -b - "${SFTP_OPTS[@]}" "${STORAGE_BOX_USER}@${STORAGE_BOX_HOST}" <<SFTP
     put ${UPLOAD_PATH} ${REMOTE_DIR}/weekly/${UPLOAD_FILE}
 SFTP
 fi
 
 if [ "${DAY_OF_MONTH}" = "01" ]; then
   echo "${LOG_PREFIX} 1st of month — creating monthly copy..."
-  sftp "${SFTP_OPTS[@]}" "${STORAGE_BOX_USER}@${STORAGE_BOX_HOST}" <<SFTP
+  sftp -b - "${SFTP_OPTS[@]}" "${STORAGE_BOX_USER}@${STORAGE_BOX_HOST}" <<SFTP
     put ${UPLOAD_PATH} ${REMOTE_DIR}/monthly/${UPLOAD_FILE}
 SFTP
 fi
