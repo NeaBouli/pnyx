@@ -51,7 +51,13 @@ const KEYS = {
   PRIVATE_KEY: "ekklesia_private_key",
   PUBLIC_KEY:  "ekklesia_public_key",
   NULLIFIER:   "ekklesia_nullifier",
+  // EVA-001 PR4: key lifecycle
+  KEY_ORIGIN:        "ekklesia_key_origin",        // "device" after rotation; absent = server-generated
+  POLIS_SEED:        "ekklesia_polis_seed",        // legacy POLIS seed kept across identity-key rotation
+  ROTATION_STAGING:  "ekklesia_rotation_staging",  // new keypair until the server confirms the swap
 } as const;
+
+export const KEY_LIFECYCLE_STORE_KEYS = [KEYS.KEY_ORIGIN, KEYS.POLIS_SEED, KEYS.ROTATION_STAGING] as const;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -318,6 +324,13 @@ export async function getOrDerivePolisKey(): Promise<{
   publicKey: Uint8Array;
   pkPolisHex: string;
 } | null> {
+  // A POLIS seed preserved before an identity-key rotation keeps pk_polis stable.
+  const preservedSeed = await SecureStore.getItemAsync(KEYS.POLIS_SEED);
+  if (preservedSeed && /^[0-9a-f]{64}$/.test(preservedSeed)) {
+    const polisPriv = hexToBytes(preservedSeed);
+    const polisPub = ed25519.getPublicKey(polisPriv);
+    return { privateKey: polisPriv, publicKey: polisPub, pkPolisHex: bytesToHex(polisPub) };
+  }
   // Try nullifierRoot first (new path)
   const root = await loadNullifierRoot();
   if (root) {
@@ -333,6 +346,53 @@ export async function getOrDerivePolisKey(): Promise<{
     return { privateKey: polisPriv, publicKey: polisPub, pkPolisHex: bytesToHex(polisPub) };
   }
   return null;
+}
+
+/**
+ * EVA-001 PR4: before the identity key is rotated, persist the POLIS seed that
+ * legacy clients derive from it, so pk_polis (and the POLIS handle) stay the
+ * same afterwards. Users with a nullifier root derive POLIS from the root and
+ * need nothing. Idempotent; never overwrites an existing seed.
+ */
+export async function persistLegacyPolisSeed(): Promise<void> {
+  if (await SecureStore.getItemAsync(KEYS.POLIS_SEED)) return;
+  if (await loadNullifierRoot()) return;
+  const legacy = await loadKeypair();
+  if (!legacy) return;
+  const polisSeed = hmacSha256(hexToBytes(legacy.privateKeyHex), DOMAIN.POLIS_KEY);
+  await secureSet(KEYS.POLIS_SEED, bytesToHex(polisSeed));
+}
+
+export async function loadKeyOrigin(): Promise<"device" | "server"> {
+  return (await SecureStore.getItemAsync(KEYS.KEY_ORIGIN)) === "device" ? "device" : "server";
+}
+
+export async function markKeyOriginDevice(): Promise<void> {
+  await SecureStore.setItemAsync(KEYS.KEY_ORIGIN, "device");
+}
+
+export async function loadRotationStaging(): Promise<{ privateKeyHex: string; publicKeyHex: string } | null> {
+  const raw = await SecureStore.getItemAsync(KEYS.ROTATION_STAGING);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as { privateKeyHex?: unknown; publicKeyHex?: unknown };
+    const priv = parsed.privateKeyHex;
+    const pub = parsed.publicKeyHex;
+    if (typeof priv !== "string" || typeof pub !== "string") return null;
+    if (!/^[0-9a-f]{64}$/.test(priv) || !/^[0-9a-f]{64}$/.test(pub)) return null;
+    if (bytesToHex(ed25519.getPublicKey(hexToBytes(priv))) !== pub) return null;
+    return { privateKeyHex: priv, publicKeyHex: pub };
+  } catch {
+    return null;
+  }
+}
+
+export async function storeRotationStaging(privateKeyHex: string, publicKeyHex: string): Promise<void> {
+  await secureSet(KEYS.ROTATION_STAGING, JSON.stringify({ privateKeyHex, publicKeyHex }));
+}
+
+export async function clearRotationStaging(): Promise<void> {
+  await SecureStore.deleteItemAsync(KEYS.ROTATION_STAGING);
 }
 
 /**
@@ -521,6 +581,7 @@ export async function clearKeys(): Promise<void> {
   await SecureStore.deleteItemAsync(KEYS.PRIVATE_KEY);
   await SecureStore.deleteItemAsync(KEYS.PUBLIC_KEY);
   await SecureStore.deleteItemAsync(KEYS.NULLIFIER);
+  for (const key of KEY_LIFECYCLE_STORE_KEYS) await SecureStore.deleteItemAsync(key);
   // A new identity must never inherit a still-fresh push registration marker.
   await SecureStore.deleteItemAsync("push_registration_marker");
   await clearVoteMarks();

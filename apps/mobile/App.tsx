@@ -8,6 +8,7 @@ import {
   reconcileNotificationBadge,
   refreshUnreadFromPublicBills,
 } from "./src/lib/notifications";
+import { rotateLegacyKeyOnce } from "./src/lib/key-rotation";
 
 export default function App() {
   useEffect(() => {
@@ -19,6 +20,8 @@ export default function App() {
       refreshUnreadFromPublicBills().catch(() => {});
     };
     onActive();
+    // EVA-001 PR4: background, once per session, only if the server advertises it.
+    rotateLegacyKeyOnce()?.catch(() => {});
     const subscription = AppState.addEventListener("change", (state) => {
       if (state === "active") onActive();
     });

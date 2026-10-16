@@ -26,6 +26,10 @@ const IMPORT_STATE_KEYS = [
   "onboarding_completed",
   "user_profile_completed",
   "is_demo_mode",
+  // EVA-001 PR4: key lifecycle state belongs to the replaced identity.
+  "ekklesia_key_origin",
+  "ekklesia_polis_seed",
+  "ekklesia_rotation_staging",
 ] as const;
 
 function requireHex32(value: string, label: string): void {
