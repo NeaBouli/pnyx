@@ -20,7 +20,10 @@ jobs:
     services:
       redis:
         # Docker Official Image, Redis 8.10.2-alpine; digest matches Docker Hub.
-        image: public.ecr.aws/docker/library/redis@sha256:3811787313eba226a2ef38658c6ccb91cd5e110edc89c37767de373120a0e5a0
+        # Pulled via Google's Docker Hub mirror: ECR Public's anonymous data
+        # limit ("toomanyrequests: Data limit exceeded") blocked the shared
+        # GitHub runner IPs. Same digest pin, so the image is byte-identical.
+        image: mirror.gcr.io/library/redis@sha256:3811787313eba226a2ef38658c6ccb91cd5e110edc89c37767de373120a0e5a0
         ports:
           - 6379:6379
         options: >-
