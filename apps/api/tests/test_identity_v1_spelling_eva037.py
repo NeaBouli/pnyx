@@ -207,3 +207,77 @@ async def test_revoke_rejects_another_number() -> None:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post("/api/v1/identity/revoke", json={"nullifier_hash": anchor, "phone_number": "+306900000000"})
     assert response.status_code == 400
+
+
+from nullifier import generate_nullifier_hash_v2  # noqa: E402
+
+
+async def _insert(anchor: str, v2: str | None, pk: str = PUB_OLD) -> None:
+    async with _engine.begin() as conn:
+        await conn.execute(text(
+            "INSERT INTO identity_records (nullifier_hash, nullifier_hash_v2, nullifier_version, public_key_hex, status) "
+            "VALUES (:n, :v2, :ver, :p, 'ACTIVE')"),
+            {"n": anchor, "v2": v2, "ver": "v2" if v2 else "v1", "p": pk})
+
+
+@pytest.mark.asyncio
+async def test_existing_duplicate_rows_do_not_cause_500_and_v2_is_not_moved(monkeypatch) -> None:
+    # Pre-fix state: canonical row A (no v2) and a raw-spelling row B that owns the v2 anchor.
+    monkeypatch.setenv("IDENTITY_NULLIFIER_KDF_VERSION", "v2")
+    raw = "69 1234 5678"
+    canonical_v2 = generate_nullifier_hash_v2(CANONICAL)
+    await _insert(generate_nullifier_hash(CANONICAL), None)
+    await _insert(generate_nullifier_hash(raw), canonical_v2, pk="d" * 64)
+    response = await _verify(raw)
+    assert response.status_code == 200, response.text
+    rows = await _rows()
+    assert len(rows) == 2
+    assert rows[1][1] == canonical_v2  # B keeps its v2 anchor
+    assert rows[0][1] is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("kdf", ["v1", "v2"])
+async def test_row_created_from_the_leading_zero_form_is_found_canonically(monkeypatch, kdf) -> None:
+    # v2 keeps the leading zero of "069…", so such rows had different v1 AND v2 anchors.
+    monkeypatch.setenv("IDENTITY_NULLIFIER_KDF_VERSION", kdf)
+    zero_form = "06912345678"
+    await _insert(generate_nullifier_hash(zero_form), generate_nullifier_hash_v2(zero_form))
+    response = await _verify(CANONICAL)
+    assert response.status_code == 200, response.text
+    assert len(await _rows()) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("form", ["6912345678", "306912345678", "00306912345678", "06912345678"])
+async def test_v1_only_row_from_any_standard_form_is_found(monkeypatch, form) -> None:
+    monkeypatch.setenv("IDENTITY_NULLIFIER_KDF_VERSION", "v1")
+    await _insert(generate_nullifier_hash(form), None)
+    response = await _verify("+30 69 1234 5678")
+    assert response.status_code == 200, response.text
+    rows = await _rows()
+    assert len(rows) == 1 and rows[0][0] == generate_nullifier_hash(form)
+
+
+@pytest.mark.asyncio
+async def test_revoke_raw_anchor_with_canonical_spelling_via_v2(monkeypatch) -> None:
+    monkeypatch.setenv("IDENTITY_NULLIFIER_KDF_VERSION", "v2")
+    raw = "69 1234 5678"
+    anchor = generate_nullifier_hash(raw)
+    await _insert(anchor, generate_nullifier_hash_v2(CANONICAL))
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/v1/identity/revoke", json={"nullifier_hash": anchor, "phone_number": CANONICAL})
+    assert response.status_code == 200, response.text
+    assert (await _rows())[0][2] == "REVOKED"
+
+
+@pytest.mark.asyncio
+async def test_row_reachable_only_through_the_leading_zero_v2_anchor(monkeypatch) -> None:
+    # v1 from an exotic spelling (not one of the standard forms), v2 from "069…":
+    # only the always-looked-up leading-zero v2 variant can find it.
+    monkeypatch.setenv("IDENTITY_NULLIFIER_KDF_VERSION", "v2")
+    exotic = "069 1234 5678"
+    await _insert(generate_nullifier_hash(exotic), generate_nullifier_hash_v2(exotic))
+    response = await _verify(CANONICAL)
+    assert response.status_code == 200, response.text
+    assert len(await _rows()) == 1
