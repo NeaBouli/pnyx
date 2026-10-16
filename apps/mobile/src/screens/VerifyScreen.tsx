@@ -112,7 +112,7 @@ export default function VerifyScreen({ navigation }: Props) {
       <Text style={styles.heading}>Επαλήθευση Κινητού</Text>
       <Text style={styles.info}>
         Εισάγετε τον ελληνικό αριθμό κινητού σας. Μετά την επαλήθευση, ο αριθμός
-        διαγράφεται αμέσως — αποθηκεύεται μόνο ένα ανώνυμο αναγνωριστικό.
+        διαγράφεται αμέσως — αποθηκεύεται μόνο ένας ψευδώνυμος κωδικός, χωρίς όνομα ή τηλέφωνο.
       </Text>
       <View style={styles.reverifyNote}>
         <Text style={styles.reverifyText}>

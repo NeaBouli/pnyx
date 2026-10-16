@@ -291,7 +291,7 @@ export default function ProfileScreen() {
         onPress={async () => {
           try {
             await Share.share({
-              message: "Ψήφισε ανώνυμα για τα νομοσχέδια της Βουλής!\nekklesia.gr — Ψηφιακή Άμεση Δημοκρατία\nΚατέβασε την εφαρμογή: https://ekklesia.gr/download",
+              message: "Ψήφισε για τα νομοσχέδια της Βουλής — χωρίς όνομα!\nekklesia.gr — Ψηφιακή Άμεση Δημοκρατία\nΚατέβασε την εφαρμογή: https://ekklesia.gr/download",
             });
             fetch(`${process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr"}/api/v1/public/share`, { method: "POST" }).catch(() => {});
           } catch {}
