@@ -62,6 +62,14 @@ CREATE TABLE IF NOT EXISTS identity_records (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS uq_identity_records_active_public_key
     ON identity_records (public_key_hex) WHERE status = 'ACTIVE';
+CREATE TABLE IF NOT EXISTS polis_identity_keys (
+    nullifier_hash TEXT PRIMARY KEY,
+    pk_polis TEXT UNIQUE NOT NULL,
+    signature TEXT,
+    timestamp_ms INTEGER,
+    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_used_at TIMESTAMP
+);
 CREATE TABLE IF NOT EXISTS audit_log (
     id INTEGER PRIMARY KEY,
     action TEXT NOT NULL,
@@ -95,7 +103,7 @@ async def setup_db(monkeypatch):
     yield
     app.dependency_overrides.clear()
     async with _engine.begin() as conn:
-        for table in ("audit_log", "survey_responses", "identity_records"):
+        for table in ("audit_log", "polis_identity_keys", "survey_responses", "identity_records"):
             await conn.execute(text(f"DROP TABLE IF EXISTS {table}"))
 
 
@@ -274,3 +282,31 @@ def test_rotate_route_is_rate_limited() -> None:
     from rate_limit import limiter
     limits = limiter._route_limits.get("routers.identity.rotate_identity_key", [])
     assert [str(l.limit) for l in limits] == ["10 per 1 minute"]
+
+
+async def _register_polis(identity_key: SigningKey, pk_polis: str):
+    ts = _now_ms()
+    msg = f"polis-register:{pk_polis}:{NULLIFIER}:{ts}".encode()
+    body = {"nullifier_hash": NULLIFIER, "pk_polis": pk_polis, "timestamp_ms": ts,
+            "identity_signature": identity_key.sign(msg).signature.hex()}
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        return await client.post("/api/v1/polis/register-key", json=body)
+
+
+@pytest.mark.asyncio
+async def test_polis_binding_survives_rotation_without_a_second_polis_identity() -> None:
+    # Contract for PR4/PR6: the client keeps its POLIS key across a rotation; the
+    # server neither drops nor rebinds it (a rebind would allow a second POLIS
+    # vote per ticket, unique per (ticket_id, pk_polis)).
+    old, new = SigningKey.generate(), SigningKey.generate()
+    pk_polis = _pk(SigningKey.generate())
+    await _insert(NULLIFIER, _pk(old))
+    assert (await _register_polis(old, pk_polis)).status_code == 201
+    assert (await _post(_rotation(old, new))).status_code == 200
+
+    again = await _register_polis(new, pk_polis)
+    assert again.status_code == 201 and again.json()["status"] == "already_registered"
+    other = await _register_polis(new, _pk(SigningKey.generate()))
+    assert other.status_code == 409
+    stale = await _register_polis(old, pk_polis)
+    assert stale.status_code == 401  # the rotated-away identity key no longer authorises
