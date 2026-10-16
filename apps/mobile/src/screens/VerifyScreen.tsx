@@ -15,9 +15,9 @@ import {
 import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
 import { verifyIdentity } from "../lib/api";
-import { installServerIssuedCredentials, withIdentityStateLock } from "../lib/crypto-native";
+import { installServerIssuedCredentials, runExclusiveVerification, withIdentityStateLock } from "../lib/crypto-native";
 import { clearPendingProfileLocation, loadPendingProfileLocation } from "../lib/profile-location";
-import { isDemoNumber, activateDemo, clearDemo, DEMO_NULLIFIER_PREFIX } from "../lib/demo";
+import { isDemoNumber, DEMO_NULLIFIER_PREFIX } from "../lib/demo";
 import { normalizeGreekMobileInput } from "../lib/phone";
 import { colors } from "../theme";
 
@@ -46,8 +46,9 @@ export default function VerifyScreen({ navigation }: Props) {
         const demoKey = "a".repeat(64);
         const demoPub = "b".repeat(64);
         const demoNullifier = DEMO_NULLIFIER_PREFIX + Date.now().toString(16);
-        await withIdentityStateLock(() => installServerIssuedCredentials(demoKey, demoPub, demoNullifier));
-        await activateDemo();
+        await withIdentityStateLock(() =>
+          installServerIssuedCredentials(demoKey, demoPub, demoNullifier, { is_demo_mode: "true" }),
+        );
         Alert.alert(
           "Demo Mode",
           "Λειτουργία επίδειξης — δεν απαιτείται SIM.",
@@ -56,14 +57,20 @@ export default function VerifyScreen({ navigation }: Props) {
         return;
       }
 
-      const res = await verifyIdentity(normalizedPhone);
-      // Αποθήκευση στο Secure Enclave — EVA-001 PR4: one journaled install,
-      // serialised with a background key rotation; no network call under the lock.
-      await withIdentityStateLock(() =>
-        installServerIssuedCredentials(res.private_key_hex, res.public_key_hex, res.nullifier_hash),
-      );
-      // A real identity ends any earlier demo session (audit F4).
-      await clearDemo();
+      // EVA-001 PR4: one verification at a time; one journaled install
+      // (key pair + nullifier + end of any demo session), serialised with a
+      // background key rotation; no network call under the lock.
+      const res = await runExclusiveVerification(async () => {
+        const issued = await verifyIdentity(normalizedPhone);
+        await withIdentityStateLock(() =>
+          installServerIssuedCredentials(issued.private_key_hex, issued.public_key_hex, issued.nullifier_hash, {
+            is_demo_mode: null,
+          }),
+        );
+        return issued;
+      });
+      // A real identity ends any earlier demo session (audit F4): is_demo_mode
+      // is cleared inside the journaled install above.
 
       const pendingLocation = await loadPendingProfileLocation();
       const needsLocationConfirmation = pendingLocation.periferiaId !== null

@@ -27,9 +27,10 @@ import {
   clearRotationStaging,
   hexToBytes,
   installIdentityState,
+  hasPendingIdentityJournal,
   isConsistentKeypair,
   loadKeyOrigin,
-  loadKeypair,
+  loadKeypairRaw,
   loadNullifier,
   loadRotationStaging,
   persistLegacyPolisSeed,
@@ -75,12 +76,36 @@ export function identityRotateMessage(
   return `ekklesia:identity-rotate:v1:${nullifierHash}:${oldPublicKeyHex}:${newPublicKeyHex}:${timestampMs}`;
 }
 
-async function fetchWithTimeout(deps: RotationDeps, url: string, init?: RequestInit): Promise<Response> {
-  // The identity lock is held across this call; never let it hang.
+async function fetchJsonWithTimeout(
+  deps: RotationDeps,
+  url: string,
+  init?: RequestInit,
+): Promise<{ status: number; body: unknown }> {
+  // The identity lock is held across this call: the deadline covers the
+  // headers AND the body, so a stalled response cannot hold the lock.
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), deps.timeoutMs);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error("timeout"));
+    }, deps.timeoutMs);
+  });
   try {
-    return await deps.fetchImpl(url, { ...init, signal: controller.signal });
+    return await Promise.race([
+      (async () => {
+        const res = await deps.fetchImpl(url, { ...init, signal: controller.signal });
+        const text = await res.text();
+        let body: unknown = null;
+        try {
+          body = text ? JSON.parse(text) : null;
+        } catch {
+          body = null;
+        }
+        return { status: res.status, body };
+      })(),
+      deadline,
+    ]);
   } finally {
     clearTimeout(timer);
   }
@@ -88,9 +113,9 @@ async function fetchWithTimeout(deps: RotationDeps, url: string, init?: RequestI
 
 async function serverSupportsRotation(deps: RotationDeps): Promise<boolean | null> {
   try {
-    const res = await fetchWithTimeout(deps, `${deps.apiBase}/api/v1/app/version`);
-    if (!res.ok) return null;
-    const body = (await res.json()) as { features?: { identity_rotate?: unknown } };
+    const res = await fetchJsonWithTimeout(deps, `${deps.apiBase}/api/v1/app/version`);
+    if (res.status !== 200) return null;
+    const body = res.body as { features?: { identity_rotate?: unknown } } | null;
     return body?.features?.identity_rotate === true;
   } catch {
     return null;
@@ -112,7 +137,8 @@ async function rotateUnlocked(deps: RotationDeps): Promise<RotationResult> {
 
   // The lock already rolled any interrupted journal forward: the stored
   // credentials are complete and authoritative here.
-  const current = await loadKeypair();
+  if (await hasPendingIdentityJournal()) return "skipped"; // unreadable journal: never act destructively
+  const current = await loadKeypairRaw();
   const nullifier = await loadNullifier();
   if (!current || !nullifier) return "skipped";
   if (!isConsistentKeypair(current)) return "skipped"; // never rotate or mark a broken pair
@@ -161,9 +187,9 @@ async function rotateUnlocked(deps: RotationDeps): Promise<RotationResult> {
     new_signature_hex: bytesToHex(ed25519.sign(message, hexToBytes(staged.privateKeyHex))),
   };
 
-  let res: Response;
+  let res: { status: number; body: unknown };
   try {
-    res = await fetchWithTimeout(deps, `${deps.apiBase}/api/v2/identity/rotate-key`, {
+    res = await fetchJsonWithTimeout(deps, `${deps.apiBase}/api/v2/identity/rotate-key`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -173,12 +199,7 @@ async function rotateUnlocked(deps: RotationDeps): Promise<RotationResult> {
   }
 
   if (res.status === 200) {
-    let alreadyRotated = false;
-    try {
-      alreadyRotated = ((await res.json()) as { already_rotated?: unknown })?.already_rotated === true;
-    } catch {
-      // body is informational only
-    }
+    const alreadyRotated = (res.body as { already_rotated?: unknown } | null)?.already_rotated === true;
     await commit(staged);
     return alreadyRotated ? "already_rotated" : "rotated";
   }

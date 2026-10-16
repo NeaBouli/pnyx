@@ -33,6 +33,8 @@ vi.mock("./bill-scope-storage", () => ({ loadUserBillScope: vi.fn(async () => {
 import {
   getOrDerivePolisKey,
   installServerIssuedCredentials,
+  loadKeypair,
+  runExclusiveVerification,
   loadKeyOrigin,
   prepareForServerIssuedKey,
   recoverIdentityJournal,
@@ -390,5 +392,84 @@ describe("server-issued keys and import (Codex review scenarios)", () => {
     expect(body.old_public_key_hex).toBe(C_PUB);
     // A fresh key, not the stale staging prepared for A.
     expect(body.new_public_key_hex).toBe(hex(ed25519.getPublicKey(freshSeed)));
+  });
+});
+
+describe("round 3 (Codex) regressions", () => {
+  it("import rollback does not overwrite credentials installed after the import", async () => {
+    legacyUser();
+    let release!: () => void;
+    state.scopeGate = new Promise<void>((r) => { release = r; });
+    const importing = importAccountCredentials({ privateKey: C_PRIV, publicKey: C_PUB, nullifier: C_NULLIFIER });
+    await new Promise((r) => setTimeout(r, 10));
+    // A verification installs server key B for another number meanwhile.
+    await withIdentityStateLock(() => installServerIssuedCredentials(NEW_PRIV, NEW_PUB, "4".repeat(64)));
+    state.failWrite = "onboarding_completed"; // the import's completion write fails
+    release();
+    await expect(importing).rejects.toThrow();
+    expect(state.values.get("ekklesia_private_key")).toBe(NEW_PRIV);
+    expect(state.values.get("ekklesia_nullifier")).toBe("4".repeat(64));
+  });
+
+  it("import rollback still restores the previous identity when nothing else changed", async () => {
+    legacyUser();
+    state.failImport = true;
+    await expect(importAccountCredentials({ privateKey: C_PRIV, publicKey: C_PUB, nullifier: C_NULLIFIER })).rejects.toThrow();
+    expect(state.values.get("ekklesia_private_key")).toBe(OLD_PRIV);
+    expect(state.values.get("ekklesia_nullifier")).toBe(NULLIFIER);
+  });
+
+  it("only one verification can be in flight", async () => {
+    let release!: () => void;
+    const first = runExclusiveVerification(() => new Promise<string>((r) => { release = () => r("C"); }));
+    await expect(runExclusiveVerification(async () => "D")).rejects.toThrow("σε εξέλιξη");
+    release();
+    await expect(first).resolves.toBe("C");
+    await expect(runExclusiveVerification(async () => "E")).resolves.toBe("E");
+  });
+
+  it("a stalled response body cannot hold the lock beyond the timeout", async () => {
+    legacyUser();
+    const { d } = deps();
+    d.timeoutMs = 30;
+    d.fetchImpl = (async (url: string) => {
+      if (url.endsWith("/app/version")) {
+        return { status: 200, text: () => new Promise<string>(() => {}) } as unknown as Response;
+      }
+      throw new Error("unexpected");
+    }) as unknown as typeof fetch;
+    const started = Date.now();
+    expect(await rotateLegacyKeyIfNeeded(d)).toBe("retry_later");
+    expect(Date.now() - started).toBeLessThan(1000);
+    await expect(withIdentityStateLock(async () => "free")).resolves.toBe("free");
+  });
+
+  it("an unreadable journal is kept and blocks destructive rotation", async () => {
+    legacyUser();
+    await rotateLegacyKeyIfNeeded(deps({ rotate: new Error("lost") }).d); // B staged
+    state.values.set("ekklesia_identity_journal", "{not json");
+    const { d, calls } = deps();
+    expect(await rotateLegacyKeyIfNeeded(d)).toBe("skipped");
+    expect(calls).toHaveLength(0);
+    expect(state.values.get("ekklesia_identity_journal")).toBe("{not json");
+    expect(state.values.has("ekklesia_rotation_staging")).toBe(true);
+  });
+
+  it("signing readers never get a half-written pair", async () => {
+    legacyUser();
+    // A journaled install is mid-way: new private key on disk, old public key.
+    state.values.set("ekklesia_identity_journal", JSON.stringify({ ekklesia_private_key: NEW_PRIV, ekklesia_public_key: NEW_PUB }));
+    state.values.set("ekklesia_private_key", NEW_PRIV);
+    expect(await loadKeypair()).toEqual({ privateKeyHex: NEW_PRIV, publicKeyHex: NEW_PUB });
+  });
+
+  it("the demo flag is part of the journaled demo install", async () => {
+    state.failWrite = "is_demo_mode";
+    await withIdentityStateLock(() =>
+      installServerIssuedCredentials("a".repeat(64), "b".repeat(64), "demo_1", { is_demo_mode: "true" }),
+    ).catch(() => {});
+    await recoverIdentityJournal(); // restart
+    expect(state.values.get("is_demo_mode")).toBe("true");
+    expect(state.values.get("ekklesia_nullifier")).toBe("demo_1");
   });
 });

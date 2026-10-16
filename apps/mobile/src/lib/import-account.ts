@@ -128,7 +128,18 @@ async function importAccountCredentialsPhased(
   } catch (error) {
     if (snapshot) {
       const previous = snapshot as Map<string, string | null>;
-      await withIdentityStateLock(() => restoreImportState(previous));
+      await withIdentityStateLock(async () => {
+        // Roll back only our own install: if anything replaced the imported
+        // credentials meanwhile (e.g. a verification), that state is newer.
+        const [priv, pub, nullifier] = await Promise.all([
+          SecureStore.getItemAsync("ekklesia_private_key"),
+          SecureStore.getItemAsync("ekklesia_public_key"),
+          SecureStore.getItemAsync("ekklesia_nullifier"),
+        ]);
+        if (priv === credentials.privateKey && pub === credentials.publicKey && nullifier === credentials.nullifier) {
+          await restoreImportState(previous);
+        }
+      });
     }
     throw error;
   }

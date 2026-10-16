@@ -218,7 +218,19 @@ export async function storeKeypair(privateKeyHex: string, publicKeyHex: string):
   await SecureStore.setItemAsync(KEYS.PUBLIC_KEY, publicKeyHex);
 }
 
+/**
+ * Reader for signing flows (EVA-001 PR4): never hands out a half-written pair.
+ * An inconsistent pair means a credential write is in progress (or crashed);
+ * wait once for the identity lock, which completes/rolls it forward, and read
+ * again. Lock holders must use loadKeypairRaw (the lock is not re-entrant).
+ */
 export async function loadKeypair(): Promise<{ privateKeyHex: string; publicKeyHex: string } | null> {
+  const kp = await loadKeypairRaw();
+  if (!kp || isConsistentKeypair(kp)) return kp;
+  return withIdentityStateLock(loadKeypairRaw);
+}
+
+export async function loadKeypairRaw(): Promise<{ privateKeyHex: string; publicKeyHex: string } | null> {
   const priv = await SecureStore.getItemAsync(KEYS.PRIVATE_KEY);
   const pub = await SecureStore.getItemAsync(KEYS.PUBLIC_KEY);
   if (!priv || !pub) return null;
@@ -420,6 +432,11 @@ async function applyIdentityState(values: Record<string, string | null>): Promis
   }
 }
 
+/** True while a journal is present (e.g. one that could not be parsed). */
+export async function hasPendingIdentityJournal(): Promise<boolean> {
+  return (await SecureStore.getItemAsync(KEYS.IDENTITY_JOURNAL)) !== null;
+}
+
 export async function recoverIdentityJournal(): Promise<boolean> {
   const raw = await SecureStore.getItemAsync(KEYS.IDENTITY_JOURNAL);
   if (!raw) return false;
@@ -433,9 +450,13 @@ export async function recoverIdentityJournal(): Promise<boolean> {
   } catch {
     values = null;
   }
-  if (values) await applyIdentityState(values);
+  // A journal that cannot be read is KEPT: the credentials may be mixed, so
+  // destructive automatic decisions (rotation, staging cleanup) stay blocked
+  // until a full install (verification/import) replaces it.
+  if (!values) return false;
+  await applyIdentityState(values);
   await SecureStore.deleteItemAsync(KEYS.IDENTITY_JOURNAL);
-  return values !== null;
+  return true;
 }
 
 const HEX32 = /^[0-9a-f]{64}$/;
@@ -464,7 +485,7 @@ export async function persistLegacyPolisSeed(): Promise<void> {
   const nullifier = await SecureStore.getItemAsync(KEYS.NULLIFIER);
   if (!nullifier || (await loadPolisSeedFor(nullifier))) return;
   if (await loadNullifierRoot()) return;
-  const legacy = await loadKeypair();
+  const legacy = await loadKeypairRaw(); // called under the identity lock
   if (!legacy || !HEX32.test(legacy.privateKeyHex)) return;
   const polisSeed = hmacSha256(hexToBytes(legacy.privateKeyHex), DOMAIN.POLIS_KEY);
   await secureSet(KEYS.POLIS_SEED, JSON.stringify({ nullifier, seed: bytesToHex(polisSeed) }));
@@ -490,6 +511,7 @@ export async function installServerIssuedCredentials(
   privateKeyHex: string,
   publicKeyHex: string,
   nullifier: string,
+  extra: Record<string, string | null> = {},
 ): Promise<void> {
   const previousNullifier = await SecureStore.getItemAsync(KEYS.NULLIFIER);
   await prepareForServerIssuedKey(nullifier);
@@ -497,8 +519,28 @@ export async function installServerIssuedCredentials(
     [KEYS.PRIVATE_KEY]: privateKeyHex,
     [KEYS.PUBLIC_KEY]: publicKeyHex,
     [KEYS.NULLIFIER]: nullifier,
+    ...extra, // e.g. the demo flag, in the same journaled unit
   });
   if (previousNullifier !== nullifier) await clearVoteMarks();
+}
+
+let verificationInFlight = false;
+
+/**
+ * At most one server key issuance (v1 verification) at a time: overlapping
+ * requests could return in a different order than the server applied them,
+ * and the older response would overwrite the server's current key.
+ */
+export async function runExclusiveVerification<T>(fn: () => Promise<T>): Promise<T> {
+  if (verificationInFlight) {
+    throw new Error("Η επαλήθευση είναι ήδη σε εξέλιξη. Περιμένετε να ολοκληρωθεί.");
+  }
+  verificationInFlight = true;
+  try {
+    return await fn();
+  } finally {
+    verificationInFlight = false;
+  }
 }
 
 /** True when the stored public key really belongs to the stored private key. */
@@ -514,7 +556,7 @@ export function isConsistentKeypair(kp: { privateKeyHex: string; publicKeyHex: s
 /** "device" only while the stored, consistent key pair is the device-generated one. */
 export async function loadKeyOrigin(): Promise<"device" | "server"> {
   const marker = await SecureStore.getItemAsync(KEYS.KEY_ORIGIN);
-  const current = await loadKeypair();
+  const current = await loadKeypairRaw();
   return marker !== null && current !== null && marker === current.publicKeyHex && isConsistentKeypair(current)
     ? "device"
     : "server";
