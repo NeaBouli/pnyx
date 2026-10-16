@@ -4,7 +4,8 @@ import { useState, useEffect, use } from "react";
 import { useLocale } from "next-intl";
 import Link from "next/link";
 import { ekklesia, Bill, BillResults, submitSignedVote } from "@/lib/api";
-import { getSigner } from "@/lib/keystore";
+import { withSigner } from "@/lib/keystore";
+import { RequestTimeoutError, requestTimeoutMessage } from "@/lib/request-deadline";
 import StatusBadge from "@/components/StatusBadge";
 import RelevanceButtons from "@/components/RelevanceButtons";
 import BillResultReport from "@/components/BillResultReport";
@@ -87,16 +88,16 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
 
   async function handleVoteClick(choice: string) {
     // EVA-003: WebCrypto (non-extractable) signer, legacy plaintext only if not migrated
-    const signer = await getSigner();
-    const nullifier = signer?.nullifier ?? null;
-
-    // Path A: Local Ed25519 keys exist → sign and submit directly
-    if (signer && nullifier) {
-      setVoteLoading(true);
-      setVoteError(null);
-      setSelectedVote(choice);
-      try {
-        const { response: res, isCorrection } = await submitSignedVote(billId, choice, { ...signer, nullifier });
+    setVoteLoading(true);
+    setVoteError(null);
+    setSelectedVote(choice);
+    try {
+      const submitted = await withSigner(async (signer) => {
+        if (!signer?.nullifier) return null;
+        return submitSignedVote(billId, choice, { ...signer, nullifier: signer.nullifier });
+      });
+      if (submitted) {
+        const { response: res, isCorrection } = submitted;
         if (res.ok) {
           setVoteStatus("voted");
           try { const r = await ekklesia.getResults(billId); setResults(r.data); } catch {}
@@ -108,12 +109,14 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
         } else if (res.status === 409) { setVoteStatus("already"); }
         else if (res.status === 401) { setVoteStatus("invalid_sig"); }
         else { const e = await res.json().catch(() => ({})); setVoteError(e.detail || `Error ${res.status}`); setVoteStatus("error"); }
-      } catch (err) {
-        setVoteError(err instanceof Error ? err.message : "Network error");
-        setVoteStatus("error");
-      } finally { setVoteLoading(false); }
+        return;
+      }
+    } catch (err) {
+      setVoteError(err instanceof RequestTimeoutError ? requestTimeoutMessage(locale === "el")
+        : err instanceof Error ? err.message : "Network error");
+      setVoteStatus("error");
       return;
-    }
+    } finally { setVoteLoading(false); }
 
     // Path B: QR session authenticated → vote via session proxy
     if (qrSessionId) {

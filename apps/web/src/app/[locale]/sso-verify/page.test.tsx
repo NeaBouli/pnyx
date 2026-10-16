@@ -4,6 +4,9 @@ import { createRoot, hydrateRoot, type Root } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import SSOVerifyPage from "./page";
+import * as keystore from "@/lib/keystore";
+import { memoryLocks } from "@/lib/test-utils/web-locks";
+import { REQUEST_TIMEOUT_MS, requestTimeoutMessage } from "@/lib/request-deadline";
 
 const context = vi.hoisted(() => ({
   params: new URLSearchParams(), locale: "en", sign: vi.fn(() => "synthetic-signature"),
@@ -33,6 +36,7 @@ describe("forum SSO lifecycle", () => {
   let container: HTMLDivElement;
   let root: Root;
   let fetchMock: ReturnType<typeof vi.fn>;
+  let locks: ReturnType<typeof memoryLocks>;
 
   function params(nonce = "nonce-A", target = "https://pnyx.ekklesia.gr/session/sso_login") {
     context.params = new URLSearchParams({ nonce, return_url: target });
@@ -68,6 +72,8 @@ describe("forum SSO lifecycle", () => {
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     fetchMock = vi.fn(() => Promise.reject(new Error("Unexpected test request")));
     vi.stubGlobal("fetch", fetchMock);
+    locks = memoryLocks();
+    keystore.setLockManagerForTests(locks);
     localStorage.clear();
     history.replaceState({}, "", "/");
     params();
@@ -81,6 +87,7 @@ describe("forum SSO lifecycle", () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     container.remove();
+    keystore.setLockManagerForTests(undefined);
     vi.useRealTimers();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
@@ -123,6 +130,21 @@ describe("forum SSO lifecycle", () => {
     expect(window.location.hash).toBe("#authenticated");
   });
 
+  it("uses the current keystore key when rotation left a stale localStorage public-key hint", async () => {
+    keys();
+    const sign = vi.fn(async () => "rotated-signature");
+    vi.spyOn(keystore, "withSigner").mockImplementation(async (submit) => submit({
+      publicKeyHex: "rotated-public", nullifier: null, custody: "webcrypto", sign,
+    }));
+    fetchMock.mockResolvedValue(response({ redirect_url: "#authenticated" }));
+    await render();
+    expect(sign).toHaveBeenCalledWith("discourse_sso:nonce-A:rotated-public");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
+      nonce: "nonce-A", public_key_hex: "rotated-public", signature_hex: "rotated-signature",
+    });
+    expect(container.textContent).toContain("Login successful");
+  });
+
   it.each([404, 410])("preserves signed callback error %s", async (status) => {
     keys();
     fetchMock.mockResolvedValue(response({}, status));
@@ -144,6 +166,65 @@ describe("forum SSO lifecycle", () => {
     expect(container.textContent).not.toContain("Request timed out");
     if (signed) expect(container.textContent).toContain("Login successful");
     else expect(container.querySelector("[data-qr]")).not.toBeNull();
+  });
+
+  it.each(["en", "el"])("cancels SSO waiting behind rotation and offers retry in %s", async (locale) => {
+    context.locale = locale;
+    keys();
+    const acquired = deferred<void>();
+    const hold = deferred<void>();
+    const rotation = keystore.withKeystoreLock(async () => {
+      acquired.resolve();
+      await hold.promise;
+    });
+    await acquired.promise;
+    try {
+      await render(true);
+      const signal = locks.requested.mock.calls[1][1].signal as AbortSignal;
+      expect(signal).toBeDefined();
+      await tick(REQUEST_TIMEOUT_MS - 1);
+      expect(container.textContent).toContain(locale === "el" ? "Επαλήθευση ταυτότητας" : "Verifying identity");
+      await tick(1);
+      expect(signal.aborted).toBe(true);
+      expect(container.textContent).toContain(requestTimeoutMessage(locale === "el"));
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(context.sign).not.toHaveBeenCalled();
+      hold.resolve();
+      await rotation;
+      await tick(0);
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(context.sign).not.toHaveBeenCalled();
+      fetchMock.mockResolvedValue(response({ redirect_url: "#authenticated" }));
+      await click(locale === "el" ? "Δοκιμάστε ξανά" : "Try again");
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(container.textContent).toContain(locale === "el" ? "Επιτυχής σύνδεση" : "Login successful");
+    } finally {
+      hold.resolve();
+      await rotation;
+    }
+  });
+
+  it.each(["fetch", "body"])("releases the SSO lock when its %s ignores abort", async (stage) => {
+    keys();
+    const late = deferred<Response>();
+    fetchMock.mockReturnValueOnce(stage === "fetch" ? late.promise : Promise.resolve(new Response(new ReadableStream())))
+      .mockResolvedValue(response({ redirect_url: "#authenticated" }));
+    await render();
+    const signal = fetchMock.mock.calls[0][1].signal as AbortSignal;
+    const write = vi.fn(async () => undefined);
+    const compass = keystore.withKeystoreLock(write);
+    await tick(REQUEST_TIMEOUT_MS - 1);
+    expect(write).not.toHaveBeenCalled();
+    await tick(1);
+    await compass;
+    expect(write).toHaveBeenCalledTimes(1);
+    expect(signal.aborted).toBe(true);
+    expect(container.textContent).toContain(requestTimeoutMessage(false));
+    late.resolve(response({ redirect_url: "#stale" }));
+    await tick(800);
+    expect(window.location.hash).toBe("");
+    await click("Try again");
+    expect(container.textContent).toContain("Login successful");
   });
 
   it("offers retry when QR completion stalls after authentication", async () => {

@@ -3,6 +3,7 @@ import React, { act, Suspense } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import BillDetailPage from "./page";
+import { RequestTimeoutError, requestTimeoutMessage } from "@/lib/request-deadline";
 
 const context = vi.hoisted(() => ({ locale: "en", hasSigner: true, submit: vi.fn() }));
 vi.mock("next-intl", () => ({ useLocale: () => context.locale }));
@@ -15,7 +16,7 @@ vi.mock("@/lib/api", () => ({
   submitSignedVote: context.submit,
 }));
 vi.mock("@/lib/keystore", () => ({
-  getSigner: async () => context.hasSigner ? { nullifier: "a".repeat(64), sign: vi.fn() } : null,
+  withSigner: async (submit: (signer: unknown) => Promise<unknown>) => submit(context.hasSigner ? { nullifier: "a".repeat(64), sign: vi.fn() } : null),
 }));
 vi.mock("@/components/StatusBadge", () => ({ default: () => null }));
 vi.mock("@/components/RelevanceButtons", () => ({ default: () => null }));
@@ -82,6 +83,13 @@ describe("bill correction feedback", () => {
     await clickVote("en");
     expect(container.textContent).toContain("Semaphore ZK lock");
     expect(container.textContent).not.toContain("You have already corrected");
+  });
+
+  it.each(["el", "en"])("keeps voting retryable after a timeout in %s", async (language) => {
+    context.submit.mockRejectedValue(new RequestTimeoutError());
+    await clickVote(language);
+    expect(container.textContent).toContain(requestTimeoutMessage(language === "el"));
+    expect([...container.querySelectorAll("button")].some(button => button.disabled)).toBe(false);
   });
 
   it("shows a same-choice conflict without marking the correction as used or disabling a real change", async () => {

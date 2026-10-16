@@ -65,7 +65,7 @@ class MemoryStore implements KeyRecordStore {
 function memoryLocks() {
   const queues = new Map<string, Promise<unknown>>();
   return {
-    request<T>(name: string, cb: () => Promise<T>): Promise<T> {
+    request<T>(name: string, _options: { mode: "shared" | "exclusive" }, cb: () => Promise<T>): Promise<T> {
       const prev = queues.get(name) ?? Promise.resolve();
       const run = prev.then(cb, cb);
       queues.set(name, run.then(() => undefined, () => undefined));
@@ -120,7 +120,7 @@ beforeEach(() => {
   feature = true;
   serverChecks.length = 0;
 });
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe("migrateLegacyWebKey", () => {
   it("moves the key into non-extractable custody, re-encrypts Compass, then drops the plaintext", async () => {
@@ -197,6 +197,25 @@ describe("migrateLegacyWebKey", () => {
     expect(serverChecks).toHaveLength(1);
   });
 
+  it("retries an unreadable identity after plaintext removal instead of reporting no key", async () => {
+    legacyBrowser();
+    expect(await migrateLegacyWebKey(deps())).toBe("migrated");
+    store.failGetOnce = "identity";
+    expect(await migrateLegacyWebKey(deps())).toBe("retry_later");
+    expect(await migrateLegacyWebKey(deps())).toBe("not_needed");
+  });
+
+  it("retries an unreadable journal even when the active slot is absent", async () => {
+    store.failGetOnce = "pending-rotation";
+    expect(await migrateLegacyWebKey(deps())).toBe("retry_later");
+    expect(await migrateLegacyWebKey(deps())).toBe("no_legacy");
+  });
+
+  it("keeps blocked localStorage retryable instead of reporting no legacy key", async () => {
+    vi.spyOn(localStorage, "getItem").mockImplementation(() => { throw new Error("Storage blocked"); });
+    expect(await migrateLegacyWebKey(deps())).toBe("retry_later");
+  });
+
   it("refuses an inconsistent legacy pair (never stores a key the server cannot verify)", async () => {
     legacyBrowser();
     ls.set("ekklesia_public_key", "cd".repeat(32));
@@ -207,6 +226,21 @@ describe("migrateLegacyWebKey", () => {
 });
 
 describe("getSigner", () => {
+  it.each([true, false, "error"])("requests persistent storage once a key exists and records only its outcome (%s)", async (result) => {
+    const persist = result === "error" ? vi.fn().mockRejectedValue(new Error("denied")) : vi.fn().mockResolvedValue(result);
+    vi.stubGlobal("navigator", { storage: { persist } });
+    vi.resetModules();
+    const fresh = await import("./keystore");
+    fresh.setKeyRecordStoreForTests(store);
+    expect(await fresh.getSigner()).toBeNull();
+    expect(persist).not.toHaveBeenCalled();
+    legacyBrowser();
+    await fresh.getSigner();
+    await fresh.getSigner();
+    expect(persist).toHaveBeenCalledTimes(1);
+    expect(ls.get("ekklesia_storage_persistence")).toBe(result === "error" ? "error" : result ? "granted" : "denied");
+  });
+
   it("signs with the legacy key before migration", async () => {
     legacyBrowser();
     const signer = (await getSigner())!;
