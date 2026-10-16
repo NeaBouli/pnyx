@@ -4,7 +4,8 @@ import { useState, useEffect, use } from "react";
 import { useLocale } from "next-intl";
 import Link from "next/link";
 import { ekklesia, Bill, BillResults } from "@/lib/api";
-import { loadKeypair, loadNullifier, signVote } from "@/lib/crypto";
+import { buildVoteMessage } from "@/lib/crypto";
+import { getSigner } from "@/lib/keystore";
 import StatusBadge from "@/components/StatusBadge";
 import RelevanceButtons from "@/components/RelevanceButtons";
 import BillResultReport from "@/components/BillResultReport";
@@ -86,20 +87,21 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
   }, [billId]);
 
   async function handleVoteClick(choice: string) {
-    const keypair = loadKeypair();
-    const nullifier = loadNullifier();
+    // EVA-003: WebCrypto (non-extractable) signer, legacy plaintext only if not migrated
+    const signer = await getSigner();
+    const nullifier = signer?.nullifier ?? null;
 
     // Path A: Local Ed25519 keys exist → sign and submit directly
-    if (keypair && nullifier) {
+    if (signer && nullifier) {
       setVoteLoading(true);
       setVoteError(null);
       setSelectedVote(choice);
       try {
-        const signatureHex = signVote(keypair.privateKeyHex, {
+        const signatureHex = await signer.sign(buildVoteMessage({
           bill_id: billId,
           vote: choice,
           nullifier_hash: nullifier,
-        });
+        }));
         const res = await fetch(`${API_URL}/api/v1/vote`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },

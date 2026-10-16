@@ -5,7 +5,7 @@ Liefert aktuelle Version + Update-Info fuer Mobile Clients.
 """
 from fastapi import APIRouter
 
-from routers.identity import identity_rotate_enabled
+from routers.identity import identity_key_check_enabled, identity_rotate_enabled
 
 router = APIRouter(prefix="/api/v1/app", tags=["App Version"])
 
@@ -41,5 +41,5 @@ async def app_version():
         "playStoreUrl": PLAYSTORE_URL,
         # EVA-001 PR4: clients rotate legacy server-generated keys only when the
         # server advertises it (IDENTITY_ROTATE_ENABLED).
-        "features": {"identity_rotate": identity_rotate_enabled()},
+        "features": {"identity_rotate": identity_rotate_enabled(), "identity_key_check": identity_key_check_enabled()},
     }
