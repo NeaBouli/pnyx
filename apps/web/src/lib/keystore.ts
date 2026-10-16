@@ -189,13 +189,18 @@ export function hasLocalSignerHint(): boolean {
 
 /** Compass AES key (non-extractable), present once the identity is migrated. */
 export async function getCompassKey(): Promise<CryptoKey | null> {
-  if (typeof indexedDB === "undefined" && backend === null) return null;
   try {
-    const key = await store().get<CryptoKey>(COMPASS_RECORD);
-    return key instanceof CryptoKey ? key : null;
+    return await readCompassKeyStrict();
   } catch {
     return null;
   }
+}
+
+/** Like getCompassKey, but a failed read THROWS instead of looking like "absent". */
+async function readCompassKeyStrict(): Promise<CryptoKey | null> {
+  if (typeof indexedDB === "undefined" && backend === null) return null;
+  const key = await store().get<CryptoKey>(COMPASS_RECORD);
+  return key instanceof CryptoKey ? key : null;
 }
 
 // ─── Migration ──────────────────────────────────────────────────────────────
@@ -342,8 +347,14 @@ async function migrate(deps: MigrationDeps): Promise<MigrationResult> {
   }
   if (key.extractable || !(await selfTest(key, legacy.publicKeyHex))) return "retry_later";
 
-  // 2. Compass key: get-or-create under the lock, non-extractable.
-  let compassKey = await getCompassKey();
+  // 2. Compass key: get-or-create under the lock, non-extractable. A failed
+  //    read aborts (it must never be mistaken for "absent" and overwritten).
+  let compassKey: CryptoKey | null;
+  try {
+    compassKey = await readCompassKeyStrict();
+  } catch {
+    return "retry_later";
+  }
   if (!compassKey) {
     await store().put(COMPASS_RECORD, await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]));
     compassKey = await getCompassKey();

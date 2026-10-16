@@ -111,7 +111,11 @@ export function useCompass() {
     async function init() {
       try {
         const [loaded, pd] = await Promise.all([
-          getKeys().then((keys) => loadProfile(keys)),
+          // EVA-003: load (incl. its implicit plaintext migration save) under
+          // the cross-tab keystore lock, keys read inside it.
+          withKeystoreLock(async () => loadProfile(await getKeys())).then(
+            async (locked) => (locked ? locked.value : loadProfile(await getKeys())),
+          ),
           getPartyData(),
         ]);
         setProfile(loaded);

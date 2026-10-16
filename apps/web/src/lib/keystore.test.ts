@@ -43,7 +43,12 @@ class MemoryStore implements KeyRecordStore {
   data = new Map<string, unknown>();
   failPut = false;
   forgetOnGet = false;
+  failGetOnce: string | null = null;
   async get<T>(id: string) {
+    if (this.failGetOnce === id) {
+      this.failGetOnce = null;
+      throw new Error("idb read aborted");
+    }
     // Simulates IndexedDB losing the identity record (the Compass key stays).
     return (this.forgetOnGet && id === "identity" ? undefined : this.data.get(id)) as T | undefined;
   }
@@ -309,5 +314,21 @@ describe("review round 1 (Codex)", () => {
     await save;
     const { loadProfile } = await import("./compass/storage");
     expect((await loadProfile({ aesKey: (await getCompassKey())! })).selectedModel).toBe("party-match");
+  });
+});
+
+describe("review round 2 (Codex)", () => {
+  it("a failed Compass-key read aborts the migration instead of replacing the key", async () => {
+    legacyBrowser();
+    const k1 = (await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"])) as CryptoKey;
+    store.data.set("compass", k1);
+    await saveProfile({ ...createEmptyProfile(), selectedModel: "left-right" } as ReturnType<typeof createEmptyProfile>, { aesKey: k1 });
+    store.failGetOnce = "compass";
+    expect(await migrateLegacyWebKey(deps())).toBe("retry_later");
+    expect(store.data.get("compass")).toBe(k1);
+    expect(ls.get("ekklesia_private_key")).toBe(PRIV);
+    expect(await migrateLegacyWebKey(deps())).toBe("migrated");
+    const { loadProfile } = await import("./compass/storage");
+    expect((await loadProfile({ aesKey: (await getCompassKey())! })).selectedModel).toBe("left-right");
   });
 });
