@@ -545,7 +545,8 @@ async def verify_identity(req: VerifyRequest, request: Request, db: AsyncSession
 
 
 @router.post("/revoke")
-async def revoke_identity(req: RevokeRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("10/minute")
+async def revoke_identity(req: RevokeRequest, request: Request, db: AsyncSession = Depends(get_db)):
     """
     Key Revokation: alter Key wird ungültig, neuer Nullifier-Check.
     Telefonnummer wird nach Hash-Generierung sofort gelöscht.
@@ -553,26 +554,25 @@ async def revoke_identity(req: RevokeRequest, db: AsyncSession = Depends(get_db)
     # EVA-037: the number may be spelled differently than at registration.
     # The phone proves ownership of the record behind the provided anchor if
     # it yields that v1 anchor (canonical or raw spelling) or the record's v2.
-    normalized_number = normalize_greek_number(req.phone_number)
-    v1_candidates = {generate_nullifier_hash(req.phone_number)}
-    v2_candidates: set[str] = set()
-    if normalized_number:
-        canonical_v1, legacy_v1 = _v1_anchors(req.phone_number, normalized_number)
-        canonical_v2, legacy_v2 = _v2_anchors(req.phone_number, normalized_number)
-        v1_candidates.update(a for a in (canonical_v1, *legacy_v1) if a)
-        v2_candidates.update(a for a in (canonical_v2, *legacy_v2) if a)
-        del normalized_number
-    del req.phone_number
-    gc.collect()
-
+    # Cheap checks first; the memory-hard v2 derivation runs only when a row
+    # with this anchor exists, carries a v2 anchor and no v1 form matched.
     new_nullifier = req.nullifier_hash
     result = await db.execute(
         select(IdentityRecord).where(IdentityRecord.nullifier_hash == new_nullifier)
     )
     record = result.scalar_one_or_none()
-    owns = new_nullifier in v1_candidates or (
-        record is not None and record.nullifier_hash_v2 is not None and record.nullifier_hash_v2 in v2_candidates
-    )
+    normalized_number = normalize_greek_number(req.phone_number)
+    v1_candidates = {generate_nullifier_hash(req.phone_number)}
+    if normalized_number:
+        canonical_v1, legacy_v1 = _v1_anchors(req.phone_number, normalized_number)
+        v1_candidates.update((canonical_v1, *legacy_v1))
+    owns = new_nullifier in v1_candidates
+    if not owns and normalized_number and record is not None and record.nullifier_hash_v2 is not None:
+        canonical_v2, legacy_v2 = _v2_anchors(req.phone_number, normalized_number)
+        owns = record.nullifier_hash_v2 in {a for a in (canonical_v2, *legacy_v2) if a}
+    del normalized_number
+    del req.phone_number
+    gc.collect()
     if not owns:
         raise HTTPException(status_code=400, detail="Ο Nullifier δεν αντιστοιχεί στον αριθμό.")
 

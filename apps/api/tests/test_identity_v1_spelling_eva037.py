@@ -281,3 +281,21 @@ async def test_row_reachable_only_through_the_leading_zero_v2_anchor(monkeypatch
     response = await _verify(CANONICAL)
     assert response.status_code == 200, response.text
     assert len(await _rows()) == 1
+
+
+@pytest.mark.asyncio
+async def test_revoke_with_unknown_anchor_never_runs_the_memory_hard_kdf(monkeypatch) -> None:
+    monkeypatch.setenv("IDENTITY_NULLIFIER_KDF_VERSION", "v2")
+    calls: list[str] = []
+    real = identity.generate_nullifier_hash_v2
+    monkeypatch.setattr(identity, "generate_nullifier_hash_v2", lambda p: (calls.append(p), real(p))[1])
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/v1/identity/revoke", json={"nullifier_hash": "f" * 64, "phone_number": CANONICAL})
+    assert response.status_code == 400
+    assert calls == []
+
+
+def test_revoke_route_is_rate_limited() -> None:
+    from rate_limit import limiter
+    limits = limiter._route_limits.get("routers.identity.revoke_identity", [])
+    assert [str(l.limit) for l in limits] == ["10 per 1 minute"]
