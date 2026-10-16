@@ -275,6 +275,58 @@ async def test_identical_signed_vote_retry_still_requires_valid_identity_signatu
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("legacy_metadata", [False, True])
+@pytest.mark.parametrize("level", LEVELS)
+async def test_same_choice_correction_replay_preserves_the_real_correction(voter, legacy_metadata, level):
+    key, identity = voter
+    stored = _stored_vote()
+    if legacy_metadata:
+        stored.pk_eph = "1" * 64
+        stored.vote_nullifier = "2" * 64
+        stored.linkage_tag = "3" * 64
+        stored.timestamp_ms = 1
+    before = dict(vars(stored))
+    bill = _bill(BillStatus.WINDOW_24H, level)
+    db = _Db([bill, identity, stored])
+    signature = key.sign(f"{BILL_ID}:YES:{NULLIFIER}".encode()).signature.hex()
+    req = voting.CorrectionRequest(
+        nullifier_hash=NULLIFIER, bill_id=BILL_ID, vote="yes", signature_hex=signature,
+    )
+    with pytest.raises(HTTPException) as exc:
+        await voting.correct_vote(BILL_ID, req, db)
+    assert exc.value.status_code == 409
+    assert "ίδια" in exc.value.detail
+    assert "διόρθωση παραμένει διαθέσιμη" in exc.value.detail
+    assert vars(stored) == before
+    assert db.commits == 0
+
+    signature = key.sign(f"{BILL_ID}:NO:{NULLIFIER}".encode()).signature.hex()
+    result = await voting.correct_vote(BILL_ID, voting.CorrectionRequest(
+        nullifier_hash=NULLIFIER, bill_id=BILL_ID, vote="NO", signature_hex=signature,
+    ), _Db([bill, identity, stored]))
+    assert result["status"] == "corrected"
+    assert stored.vote == VoteChoice.NO
+    assert stored.is_correction is True
+    assert stored.original_vote == "YES"
+
+
+@pytest.mark.asyncio
+async def test_same_choice_correction_still_requires_valid_signature(voter):
+    key, identity = voter
+    stored = _stored_vote()
+    before = dict(vars(stored))
+    db = _Db([_bill(BillStatus.WINDOW_24H, GovernanceLevel.NATIONAL), identity, stored])
+    signature = key.sign(f"{BILL_ID}:NO:{NULLIFIER}".encode()).signature.hex()
+    with pytest.raises(HTTPException) as exc:
+        await voting.correct_vote(BILL_ID, voting.CorrectionRequest(
+            nullifier_hash=NULLIFIER, bill_id=BILL_ID, vote="YES", signature_hex=signature,
+        ), db)
+    assert exc.value.status_code == 401
+    assert vars(stored) == before
+    assert db.commits == 0
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("bill_status", list(BillStatus))
 @pytest.mark.parametrize("level", LEVELS)
 async def test_vote_correction_remains_window_only(voter, bill_status, level):

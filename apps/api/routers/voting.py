@@ -969,6 +969,15 @@ async def correct_vote(bill_id: str, req: CorrectionRequest, db: AsyncSession = 
         nullifier_hash=req.nullifier_hash,
     )
 
+    # Replaying the original signature must not spend the one-time correction
+    # or alter any metadata, including legacy Tier-1 fields.
+    if existing.vote == new_choice:
+        raise HTTPException(
+            409,
+            "Η επιλογή είναι ίδια με την καταχωρημένη ψήφο. Η ψήφος δεν άλλαξε "
+            "και η εφάπαξ διόρθωση παραμένει διαθέσιμη.",
+        )
+
     # 6b. Tier-1: the stored tier is kept; a Tier-1 vote needs a fresh signed payload.
     tier1: Tier1Fields | None = None
     if _tier1_effective(req):

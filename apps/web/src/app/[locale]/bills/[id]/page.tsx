@@ -421,8 +421,8 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
             {voteStatus === "already" && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-yellow-800 text-sm">
                 {locale === "el"
-                  ? "Έχετε ήδη ψηφίσει για αυτό το νομοσχέδιο."
-                  : "You have already voted on this bill."}
+                  ? "Έχετε ήδη ψηφίσει για αυτό το νομοσχέδιο. Μπορείτε να αλλάξετε την ψήφο σας μία φορά μέσω της εφαρμογής στο 24ωρο παράθυρο διόρθωσης."
+                  : "You have already voted on this bill. You can change your vote once in the app during the 24-hour correction window."}
               </div>
             )}
 

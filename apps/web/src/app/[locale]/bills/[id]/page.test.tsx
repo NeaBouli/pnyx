@@ -4,7 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import BillDetailPage from "./page";
 
-const context = vi.hoisted(() => ({ locale: "en", submit: vi.fn() }));
+const context = vi.hoisted(() => ({ locale: "en", hasSigner: true, submit: vi.fn() }));
 vi.mock("next-intl", () => ({ useLocale: () => context.locale }));
 vi.mock("next/link", () => ({ default: ({ children }: { children: React.ReactNode }) => <span>{children}</span> }));
 vi.mock("@/lib/api", () => ({
@@ -14,11 +14,17 @@ vi.mock("@/lib/api", () => ({
   },
   submitSignedVote: context.submit,
 }));
-vi.mock("@/lib/keystore", () => ({ getSigner: async () => ({ nullifier: "a".repeat(64), sign: vi.fn() }) }));
+vi.mock("@/lib/keystore", () => ({
+  getSigner: async () => context.hasSigner ? { nullifier: "a".repeat(64), sign: vi.fn() } : null,
+}));
 vi.mock("@/components/StatusBadge", () => ({ default: () => null }));
 vi.mock("@/components/RelevanceButtons", () => ({ default: () => null }));
 vi.mock("@/components/BillResultReport", () => ({ default: () => null }));
-vi.mock("@/components/QRCodeVoteStub", () => ({ default: () => null }));
+vi.mock("@/components/QRCodeVoteStub", () => ({
+  default: ({ onAuthenticated }: { onAuthenticated: (session: string) => void }) => (
+    <button data-testid="qr-auth" onClick={() => onAuthenticated("t9133-qr-session")}>Authenticate QR</button>
+  ),
+}));
 
 describe("bill correction feedback", () => {
   let container: HTMLDivElement;
@@ -26,6 +32,7 @@ describe("bill correction feedback", () => {
 
   beforeEach(() => {
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+    context.hasSigner = true;
     context.submit.mockReset();
     container = document.createElement("div");
     document.body.appendChild(container);
@@ -42,6 +49,9 @@ describe("bill correction feedback", () => {
     context.locale = language;
     const params = Promise.resolve({ id: "GR-9133" });
     await act(async () => root.render(<Suspense><BillDetailPage params={params} /></Suspense>));
+    if (!context.hasSigner) {
+      await act(async () => container.querySelector<HTMLButtonElement>('[data-testid="qr-auth"]')!.click());
+    }
     const button = [...container.querySelectorAll("button")].find(
       item => item.textContent?.trim() === (language === "el" ? "Κατά" : "No"),
     );
@@ -72,5 +82,34 @@ describe("bill correction feedback", () => {
     await clickVote("en");
     expect(container.textContent).toContain("Semaphore ZK lock");
     expect(container.textContent).not.toContain("You have already corrected");
+  });
+
+  it("shows a same-choice conflict without marking the correction as used or disabling a real change", async () => {
+    const detail = "Η επιλογή είναι ίδια με την καταχωρημένη ψήφο. Η ψήφος δεν άλλαξε και η εφάπαξ διόρθωση παραμένει διαθέσιμη.";
+    context.submit.mockResolvedValue({
+      isCorrection: true,
+      response: new Response(JSON.stringify({ detail }), { status: 409 }),
+    });
+    await clickVote("el");
+    expect(container.textContent).toContain(detail);
+    expect([...container.querySelectorAll("button")].some(button => button.disabled)).toBe(false);
+    expect(container.textContent).not.toContain("Η διόρθωση έχει ήδη χρησιμοποιηθεί");
+  });
+
+  it.each(["el", "en"])("explains app correction recovery after a QR 409 in %s", async language => {
+    context.hasSigner = false;
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      detail: "Already voted. Correction available during 24h window.",
+    }), { status: 409 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await clickVote(language);
+    expect(context.submit).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/api/v1/polis/qr-vote"), expect.objectContaining({
+      method: "POST",
+      body: JSON.stringify({ session_id: "t9133-qr-session", bill_id: "GR-9133", vote: "NO" }),
+    }));
+    expect(container.textContent).toContain(language === "el"
+      ? "Έχετε ήδη ψηφίσει για αυτό το νομοσχέδιο. Μπορείτε να αλλάξετε την ψήφο σας μία φορά μέσω της εφαρμογής στο 24ωρο παράθυρο διόρθωσης."
+      : "You have already voted on this bill. You can change your vote once in the app during the 24-hour correction window.");
   });
 });
