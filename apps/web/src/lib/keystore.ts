@@ -1,5 +1,5 @@
 /**
- * EVA-003 PR5 — browser key custody without a plaintext private key.
+ * EVA-003 PR5/PR6 — browser key custody and fresh device-key rotation.
  *
  * The identity key lives as a NON-EXTRACTABLE WebCrypto Ed25519 CryptoKey in
  * IndexedDB; page scripts (including an XSS) can use it to sign while the page
@@ -13,6 +13,9 @@
  * Any failure keeps the legacy key and the migration is retried on a later
  * visit, so a user's identity is never lost. Browsers without Ed25519
  * WebCrypto keep the legacy path (D2: QR/app login remains available).
+ * After migration, features.identity_rotate + identity_key_check gate a fresh
+ * non-extractable key. A durable pending-rotation slot survives until the API
+ * confirms the swap, key-check verifies the new key, and promotion completes.
  */
 import { ed25519 } from "@noble/curves/ed25519.js";
 
@@ -26,6 +29,7 @@ export const KEY_CUSTODY_MARKER = "ekklesia_key_custody";
 
 const IDENTITY_RECORD = "identity";
 const PENDING_IDENTITY_RECORD = "identity_pending";
+const PENDING_ROTATION_RECORD = "pending-rotation";
 /** Web Lock shared by the migration and Compass writes in every tab. */
 export const KEYSTORE_LOCK = "ekklesia-keystore";
 const COMPASS_RECORD = "compass";
@@ -44,6 +48,12 @@ interface IdentityRecord {
   privateKey: CryptoKey;
   publicKeyHex: string;
   nullifier: string;
+  /** Set only after a fresh, browser-generated key was confirmed by the API. */
+  origin?: "device";
+}
+
+interface PendingRotation extends IdentityRecord {
+  oldPublicKeyHex: string;
 }
 
 function indexedDbStore(): KeyRecordStore {
@@ -203,6 +213,12 @@ export async function readCompassKeyStrict(): Promise<CryptoKey | null> {
   return key instanceof CryptoKey ? key : null;
 }
 
+/** Legacy key access stays inside the keystore; migrated Compass uses its own AES key. */
+export async function readCompassKeys(): Promise<import("./compass/storage").CompassKeys> {
+  const aesKey = await readCompassKeyStrict(); // never hide an operational read failure
+  return { aesKey, legacyPrivateKeyHex: readLegacy().keypair?.privateKeyHex ?? null };
+}
+
 // ─── Migration ──────────────────────────────────────────────────────────────
 
 export type MigrationResult =
@@ -244,17 +260,30 @@ export async function supportsNonExtractableEd25519(): Promise<boolean> {
 
 async function fetchJson(deps: MigrationDeps, url: string, init?: RequestInit): Promise<{ status: number; body: unknown }> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), deps.timeoutMs);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error("timeout"));
+    }, deps.timeoutMs);
+  });
   try {
-    const res = await deps.fetchImpl(url, { ...init, signal: controller.signal });
-    const text = await res.text();
-    let body: unknown = null;
-    try {
-      body = text ? JSON.parse(text) : null;
-    } catch {
-      body = null;
-    }
-    return { status: res.status, body };
+    // Bound headers AND body while holding the cross-tab lock, even if a
+    // response implementation does not honour AbortSignal after headers.
+    return await Promise.race([
+      (async () => {
+        const res = await deps.fetchImpl(url, { ...init, signal: controller.signal });
+        const text = await res.text();
+        let body: unknown = null;
+        try {
+          body = text ? JSON.parse(text) : null;
+        } catch {
+          body = null;
+        }
+        return { status: res.status, body };
+      })(),
+      deadline,
+    ]);
   } finally {
     clearTimeout(timer);
   }
@@ -395,4 +424,126 @@ async function migrate(deps: MigrationDeps): Promise<MigrationResult> {
     return "retry_later";
   }
   return "migrated";
+}
+
+// ─── Fresh device key rotation (EVA-003 PR6) ────────────────────────────────
+
+export type RotationResult = "rotated" | "already_rotated" | "not_needed" | "unsupported" | "conflict" | "retry_later";
+
+export function identityRotateMessage(nullifier: string, oldPublicKeyHex: string, newPublicKeyHex: string, timestampMs: number): string {
+  return `ekklesia:identity-rotate:v1:${nullifier}:${oldPublicKeyHex}:${newPublicKeyHex}:${timestampMs}`;
+}
+
+/** Rotation must distinguish an absent slot from an unreadable/corrupt one. */
+async function readRotationIdentityStrict(id: string): Promise<IdentityRecord | undefined> {
+  const rec = await store().get<IdentityRecord>(id);
+  if (rec === undefined) return undefined;
+  if (!rec || !(rec.privateKey instanceof CryptoKey) || rec.privateKey.extractable
+    || rec.privateKey.type !== "private" || rec.privateKey.algorithm.name !== "Ed25519"
+    || !HEX32.test(rec.publicKeyHex) || !HEX32.test(rec.nullifier)) {
+    throw new Error("Invalid identity record");
+  }
+  return rec;
+}
+
+async function promoteRotation(deps: MigrationDeps, staged: PendingRotation): Promise<RotationResult> {
+  // key-check proves both possession and ACTIVE status using the staged key.
+  const confirmed = await serverConfirmsKey(deps, staged.privateKey, staged.nullifier, staged.publicKeyHex);
+  if (confirmed !== "ok") return confirmed === "mismatch" ? "conflict" : "retry_later";
+
+  // One IDB transaction replaces the active record (and therefore the old
+  // private key). The journal survives until re-read/self-test + hint cleanup.
+  await store().put<IdentityRecord>(IDENTITY_RECORD, {
+    privateKey: staged.privateKey,
+    publicKeyHex: staged.publicKeyHex,
+    nullifier: staged.nullifier,
+    origin: "device",
+  });
+  const published = await readRotationIdentityStrict(IDENTITY_RECORD);
+  if (!published || published.publicKeyHex !== staged.publicKeyHex || published.nullifier !== staged.nullifier
+    || published.origin !== "device" || !(await selfTest(published.privateKey, published.publicKeyHex))) return "retry_later";
+
+  // An interrupted PR5 cleanup may have left another copy of the old key.
+  const migrationPending = await readRotationIdentityStrict(PENDING_IDENTITY_RECORD);
+  if (migrationPending?.nullifier === staged.nullifier && migrationPending.publicKeyHex === staged.oldPublicKeyHex) {
+    await store().delete(PENDING_IDENTITY_RECORD);
+  }
+  localStorage.setItem(LEGACY_PUBLIC_KEY, published.publicKeyHex);
+  localStorage.setItem(KEY_CUSTODY_MARKER, "webcrypto");
+  await store().delete(PENDING_ROTATION_RECORD); // last: any earlier interruption rolls forward
+  return "rotated";
+}
+
+async function rotateMigratedKey(deps: MigrationDeps): Promise<RotationResult> {
+  // All reads, staging, API calls and promotion run inside KEYSTORE_LOCK.
+  const version = await fetchJson(deps, `${deps.apiUrl}/api/v1/app/version`);
+  if (version.status !== 200) return "retry_later";
+  const features = (version.body as { features?: { identity_rotate?: unknown; identity_key_check?: unknown } } | null)?.features;
+  if (features?.identity_rotate !== true || features.identity_key_check !== true) return "unsupported";
+
+  const current = await readRotationIdentityStrict(IDENTITY_RECORD);
+  if (!current) return "not_needed";
+  // Only a completed custody migration is eligible. A partial PR5 migration
+  // still needs its old plaintext key to recover/re-encrypt legacy Compass.
+  if (localStorage.getItem(LEGACY_PRIVATE_KEY) !== null) return "retry_later";
+  const pending = await readRotationIdentityStrict(PENDING_ROTATION_RECORD) as PendingRotation | undefined;
+  if (pending && (!HEX32.test(pending.oldPublicKeyHex) || pending.nullifier !== current.nullifier
+    || pending.publicKeyHex === pending.oldPublicKeyHex
+    || (pending.oldPublicKeyHex !== current.publicKeyHex && pending.publicKeyHex !== current.publicKeyHex))) return "conflict";
+  if (!pending && current.origin === "device") return "not_needed";
+  // This key is independent of Ed25519 and is NEVER replaced by rotation.
+  // Missing/unreadable AES state aborts instead of risking unreadable Compass.
+  if (!(await readCompassKeyStrict())) return "retry_later";
+
+  if (pending?.publicKeyHex === current.publicKeyHex) {
+    // Crash after active replacement: the old key is already gone. Verify the
+    // new key again, then finish the idempotent local commit.
+    const result = await promoteRotation(deps, pending);
+    return result === "rotated" ? "already_rotated" : result;
+  }
+  if (!(await selfTest(current.privateKey, current.publicKeyHex))) return "retry_later";
+
+  if (!pending) {
+    const pair = await crypto.subtle.generateKey({ name: "Ed25519" }, false, ["sign", "verify"]) as CryptoKeyPair;
+    const publicKeyHex = bytesToHex(new Uint8Array(await crypto.subtle.exportKey("raw", pair.publicKey)));
+    if (pair.privateKey.extractable || publicKeyHex === current.publicKeyHex) return "retry_later";
+    await store().put<PendingRotation>(PENDING_ROTATION_RECORD, {
+      privateKey: pair.privateKey, publicKeyHex, nullifier: current.nullifier, oldPublicKeyHex: current.publicKeyHex,
+    });
+  }
+  // Re-read the persisted CryptoKey before any server mutation. A failed read
+  // never causes a new staged key to overwrite an uncertain server outcome.
+  const staged = await readRotationIdentityStrict(PENDING_ROTATION_RECORD) as PendingRotation | undefined;
+  if (!staged || staged.nullifier !== current.nullifier || staged.oldPublicKeyHex !== current.publicKeyHex
+    || staged.publicKeyHex === current.publicKeyHex || !(await selfTest(staged.privateKey, staged.publicKeyHex))) return "retry_later";
+
+  const ts = deps.now();
+  const message = identityRotateMessage(current.nullifier, current.publicKeyHex, staged.publicKeyHex, ts);
+  const res = await fetchJson(deps, `${deps.apiUrl}/api/v2/identity/rotate-key`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      nullifier_hash: current.nullifier, old_public_key_hex: current.publicKeyHex, new_public_key_hex: staged.publicKeyHex,
+      timestamp_ms: ts, old_signature_hex: await webCryptoSign(current.privateKey, message),
+      new_signature_hex: await webCryptoSign(staged.privateKey, message),
+    }),
+  });
+  // Every uncertain response retains BOTH slots. Retrying the same old/new
+  // pair is idempotent at the API, including a lost successful response.
+  if (res.status !== 200) return res.status === 409 ? "conflict" : "retry_later";
+  const body = res.body as { success?: unknown; public_key_hex?: unknown; already_rotated?: unknown } | null;
+  if (body?.success !== true || body.public_key_hex !== staged.publicKeyHex) return "retry_later";
+  const result = await promoteRotation(deps, staged);
+  return result === "rotated" && body.already_rotated === true ? "already_rotated" : result;
+}
+
+/** Call after migrateLegacyWebKey succeeds, and on later visits to recover. */
+export async function rotateMigratedWebKey(deps: MigrationDeps = DEFAULT_DEPS): Promise<RotationResult> {
+  try {
+    if (typeof window === "undefined") return "not_needed";
+    const locked = await withKeystoreLock(() => rotateMigratedKey(deps));
+    return locked ? locked.value : "unsupported";
+  } catch {
+    return "retry_later"; // never log exceptions, request bodies, signatures or key material
+  }
 }

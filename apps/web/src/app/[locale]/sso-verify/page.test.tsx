@@ -4,6 +4,7 @@ import { createRoot, hydrateRoot, type Root } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import SSOVerifyPage from "./page";
+import * as keystore from "@/lib/keystore";
 
 const context = vi.hoisted(() => ({
   params: new URLSearchParams(), locale: "en", sign: vi.fn(() => "synthetic-signature"),
@@ -121,6 +122,21 @@ describe("forum SSO lifecycle", () => {
     expect(JSON.stringify(fetchMock.mock.calls)).not.toContain("synthetic-private");
     await tick(800);
     expect(window.location.hash).toBe("#authenticated");
+  });
+
+  it("uses the current keystore key when rotation left a stale localStorage public-key hint", async () => {
+    keys();
+    const sign = vi.fn(async () => "rotated-signature");
+    vi.spyOn(keystore, "getSigner").mockResolvedValue({
+      publicKeyHex: "rotated-public", nullifier: null, custody: "webcrypto", sign,
+    });
+    fetchMock.mockResolvedValue(response({ redirect_url: "#authenticated" }));
+    await render();
+    expect(sign).toHaveBeenCalledWith("discourse_sso:nonce-A:rotated-public");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
+      nonce: "nonce-A", public_key_hex: "rotated-public", signature_hex: "rotated-signature",
+    });
+    expect(container.textContent).toContain("Login successful");
   });
 
   it.each([404, 410])("preserves signed callback error %s", async (status) => {

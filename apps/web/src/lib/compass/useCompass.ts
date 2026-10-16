@@ -8,8 +8,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import type { CompassProfile, CompassModel, CompassResult } from "./types";
 import { createEmptyProfile, seedFromVAA, recordBillVote, computeResult, getDataPointCount } from "./engine";
 import { loadProfile, saveProfile, clearProfile as clearStorage, CompassStorageError, type CompassKeys } from "./storage";
-import { loadKeypair } from "../crypto";
-import { readCompassKeyStrict, withKeystoreLock } from "../keystore";
+import { readCompassKeys, withKeystoreLock } from "../keystore";
 
 interface PartyData {
   parties: Record<string, {
@@ -65,29 +64,12 @@ export function deriveCompassResult(
 }
 
 /**
- * Liest den privaten Schlüssel; ist WebStorage blockiert, wird ohne Schlüssel
- * weitergearbeitet (kein synchroner Throw vor den Safe-Wrappern).
- */
-export function readPrivateKeySafely(): string | null {
-  try {
-    return loadKeypair()?.privateKeyHex ?? null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Speichert und behandelt erwartbare Speicherfehler (kein Key, Storage/Krypto nicht
- * verfügbar), damit kein unbehandeltes Promise entsteht. Kein Klartext-Fallback.
- */
-/**
  * EVA-003: the non-extractable Compass key once migrated, else the legacy
  * identity key. A failed IndexedDB read REJECTS (it must not look like "no
  * key"): callers then neither load nor save, so stored data stays untouched.
  */
 export async function readCompassKeysSafely(): Promise<CompassKeys> {
-  const aesKey = await readCompassKeyStrict();
-  return { aesKey, legacyPrivateKeyHex: readPrivateKeySafely() };
+  return readCompassKeys();
 }
 
 export function saveProfileSafely(p: CompassProfile, keys: string | CompassKeys | null): Promise<void> {

@@ -10,7 +10,6 @@ import { getSigner, hasLocalSignerHint } from "@/lib/keystore";
 type State = "checking" | "nokey" | "verifying" | "success" | "error";
 type QrState = "idle" | "loading" | "ready" | "authenticated" | "expired" | "error";
 
-const LOCALSTORAGE_PUBKEY = "ekklesia_public_key";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.ekklesia.gr";
 const QR_LIFETIME = 5 * 60 * 1000;
 const REQUEST_TIMEOUT = 15000;
@@ -26,27 +25,21 @@ type InitialResult =
   | { kind: "error"; error: LoginError; qr: boolean };
 
 function initialSession(ready: boolean, nonce: string | null, returnUrl: string | null): {
-  state: State; error: LoginError | null; publicKey: string | null;
+  state: State; error: LoginError | null;
 } {
-  if (!ready) return { state: "checking", error: null, publicKey: null };
-  if (!nonce || !returnUrl) return { state: "error", error: { code: "missing" }, publicKey: null };
-  try {
-    const publicKey = localStorage.getItem(LOCALSTORAGE_PUBKEY);
-    // EVA-003: a migrated browser has no plaintext key but a WebCrypto signer.
-    return { state: publicKey && hasLocalSignerHint() ? "verifying" : "nokey", error: null, publicKey };
-  } catch {
-    // Browser storage restrictions must not prevent signing in with the mobile app.
-    return { state: "nokey", error: null, publicKey: null };
-  }
+  if (!ready) return { state: "checking", error: null };
+  if (!nonce || !returnUrl) return { state: "error", error: { code: "missing" } };
+  return { state: hasLocalSignerHint() ? "verifying" : "nokey", error: null };
 }
 
-async function startSession(nonce: string, publicKey: string | null): Promise<InitialResult> {
+async function startSession(nonce: string): Promise<InitialResult> {
   let qr = true;
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(new Error("Request timed out")), REQUEST_TIMEOUT);
   try {
-    const signer = publicKey ? await getSigner().catch(() => null) : null;
-    if (publicKey && signer && signer.publicKeyHex === publicKey) {
+    const signer = await getSigner().catch(() => null);
+    if (signer) {
+      const publicKey = signer.publicKeyHex;
       qr = false;
       const signatureHex = await signer.sign(`discourse_sso:${nonce}:${publicKey}`);
       const res = await fetch(`${API_URL}/api/v1/sso/discourse/callback`, {
@@ -191,7 +184,7 @@ function SSOSession({ nonce, returnUrl, ready, isEl, onRetry }: {
     }
 
     // Reuse the parsed result across StrictMode replay; never replay a nonce-consuming POST.
-    request.current ??= startSession(nonce, initial.publicKey);
+    request.current ??= startSession(nonce);
     void request.current.then((result) => {
       if (!active) return;
       if (result.kind === "redirect") redirect(result.url);
