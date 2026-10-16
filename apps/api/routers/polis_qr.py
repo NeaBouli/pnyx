@@ -363,22 +363,26 @@ async def qr_web_vote(req: QRVoteRequest, db: AsyncSession = Depends(get_db)):
         select(CitizenVote).where(
             CitizenVote.nullifier_hash == nullifier_hash,
             CitizenVote.bill_id == req.bill_id,
-        )
+        ).with_for_update()
     )
     existing_vote = existing.scalar_one_or_none()
 
     if existing_vote and bill.status == BillStatus.ACTIVE:
         raise HTTPException(409, "Already voted. Correction available during 24h window.")
+    if existing_vote and existing_vote.vote != vote_choice:
+        raise HTTPException(
+            409,
+            "Η ψήφος έχει ήδη καταχωρηθεί. Για μία μόνο αλλαγή στο 24ωρο παράθυρο, "
+            "χρησιμοποιήστε τη λειτουργία διόρθωσης στην εφαρμογή. Η διόρθωση μέσω QR δεν υποστηρίζεται.",
+        )
 
     session_key = f"polis_qr:{req.session_id}"
     await _claim_authenticated_session(r, session_key)
     try:
         if existing_vote:
-            from datetime import datetime, timezone
-            existing_vote.vote = vote_choice
-            existing_vote.signature_hex = f"qr-session:{req.session_id[:16]}"
-            existing_vote.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
-            msg = "Vote corrected via QR session."
+            # Identical WINDOW_24H retry: consume this authenticated session,
+            # but leave every vote field (including correction metadata) intact.
+            msg = "Η ψήφος έχει ήδη καταχωρηθεί επιτυχώς."
         else:
             new_vote = CitizenVote(
                 nullifier_hash=nullifier_hash,
@@ -388,7 +392,7 @@ async def qr_web_vote(req: QRVoteRequest, db: AsyncSession = Depends(get_db)):
             )
             db.add(new_vote)
             msg = "Vote submitted via QR session."
-        await db.commit()
+            await db.commit()
     except IntegrityError:
         await db.rollback()
         await _restore_authenticated_session(r, session_key)
