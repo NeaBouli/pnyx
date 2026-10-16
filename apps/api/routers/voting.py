@@ -645,13 +645,13 @@ async def submit_vote(
 
     Sicherheitskette:
     1. Nullifier muss ACTIVE sein
-    2. Bill muss in ACTIVE, WINDOW_24H oder OPEN_END sein
+    2. Bill muss in ACTIVE oder WINDOW_24H sein
     3. Ed25519 Signatur muss gültig sein
     4. UNIQUE(nullifier_hash, bill_id) verhindert Doppelstimme auf DB-Ebene
 
     Stimmänderung:
     - ACTIVE: keine Änderung (Stimme gesperrt)
-    - WINDOW_24H + OPEN_END: Änderung erlaubt
+    - WINDOW_24H: Änderung erlaubt
     """
     # HTTP requests receive an injected Request; the default preserves existing
     # direct unit calls with the limiter disabled. Shared HMAC-IP buckets allow
@@ -679,12 +679,12 @@ async def submit_vote(
     if not bill or not is_public_bill(bill):
         raise HTTPException(status_code=404, detail=f"Το νομοσχέδιο {req.bill_id} δεν βρέθηκε.")
 
-    votable_states = [BillStatus.ACTIVE, BillStatus.WINDOW_24H, BillStatus.OPEN_END]
+    votable_states = [BillStatus.ACTIVE, BillStatus.WINDOW_24H]
     if bill.status not in votable_states:
         raise HTTPException(
             status_code=400,
-            detail=f"Η ψηφοφορία δεν είναι δυνατή. Κατάσταση: {bill.status.value}. "
-                   f"Επιτρέπεται: ACTIVE, WINDOW_24H, OPEN_END."
+            detail=f"Η ψηφοφορία έχει κλείσει ή δεν έχει ανοίξει ακόμα. Κατάσταση: {bill.status.value}. "
+                   f"Επιτρέπεται: ACTIVE, WINDOW_24H."
         )
 
     # 2b. Geographic authorization uses the same fail-closed policy in every path.
@@ -731,7 +731,7 @@ async def submit_vote(
     existing_vote = existing_result.scalar_one_or_none()
 
     if existing_vote:
-        # Stimmänderung nur in WINDOW_24H und OPEN_END erlaubt
+        # Stimmänderung nur in WINDOW_24H erlaubt
         if bill.status == BillStatus.ACTIVE:
             raise HTTPException(
                 status_code=409,
