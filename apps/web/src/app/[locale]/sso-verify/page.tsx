@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useLocale } from "next-intl";
 import Image from "next/image";
 import { QRCodeSVG } from "qrcode.react";
-import { getSigner, hasLocalSignerHint } from "@/lib/keystore";
+import { withSigner, hasLocalSignerHint } from "@/lib/keystore";
 
 type State = "checking" | "nokey" | "verifying" | "success" | "error";
 type QrState = "idle" | "loading" | "ready" | "authenticated" | "expired" | "error";
@@ -37,8 +37,8 @@ async function startSession(nonce: string): Promise<InitialResult> {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(new Error("Request timed out")), REQUEST_TIMEOUT);
   try {
-    const signer = await getSigner().catch(() => null);
-    if (signer) {
+    const signedResult = await withSigner<InitialResult | null>(async (signer) => {
+      if (!signer) return null;
       const publicKey = signer.publicKeyHex;
       qr = false;
       const signatureHex = await signer.sign(`discourse_sso:${nonce}:${publicKey}`);
@@ -57,7 +57,8 @@ async function startSession(nonce: string): Promise<InitialResult> {
         return { kind: "redirect", url: data.redirect_url };
       }
       return { kind: "error", error: { code: "server", detail: typeof data?.detail === "string" ? data.detail : `Error ${res.status}` }, qr };
-    }
+    });
+    if (signedResult) return signedResult;
     const res = await fetch(`${API_URL}/api/v1/polis/qr-session?purpose=forum_login`, { signal: controller.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();

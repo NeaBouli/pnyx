@@ -13,9 +13,8 @@
  * Any failure keeps the legacy key and the migration is retried on a later
  * visit, so a user's identity is never lost. Browsers without Ed25519
  * WebCrypto keep the legacy path (D2: QR/app login remains available).
- * After migration, features.identity_rotate + identity_key_check gate a fresh
- * non-extractable key. A durable pending-rotation slot survives until the API
- * confirms the swap, key-check verifies the new key, and promotion completes.
+ * Feature flags gate starting a fresh rotation; journal recovery is independent
+ * of them. Strict IDB completion precedes server mutation and journal cleanup.
  */
 import { ed25519 } from "@noble/curves/ed25519.js";
 
@@ -30,7 +29,7 @@ export const KEY_CUSTODY_MARKER = "ekklesia_key_custody";
 const IDENTITY_RECORD = "identity";
 const PENDING_IDENTITY_RECORD = "identity_pending";
 const PENDING_ROTATION_RECORD = "pending-rotation";
-/** Web Lock shared by the migration and Compass writes in every tab. */
+/** Exclusive for migration/rotation/Compass writes; shared for signed requests. */
 export const KEYSTORE_LOCK = "ekklesia-keystore";
 const COMPASS_RECORD = "compass";
 const PKCS8_ED25519_PREFIX = "302e020100300506032b657004220420";
@@ -68,7 +67,16 @@ function indexedDbStore(): KeyRecordStore {
     const db = await open();
     try {
       return await new Promise<T>((resolve, reject) => {
-        const tx = db.transaction("keys", mode);
+        const tx = mode === "readwrite"
+          ? db.transaction("keys", mode, { durability: "strict" })
+          : db.transaction("keys", mode);
+        // Older engines may accept but ignore transaction options. Fail closed:
+        // keep the old key/journal and never mutate the server without a flush.
+        if (mode === "readwrite" && tx.durability !== "strict") {
+          tx.abort();
+          reject(new Error("Strict IndexedDB durability unavailable"));
+          return;
+        }
         const req = fn(tx.objectStore("keys"));
         tx.oncomplete = () => resolve(req.result as T);
         tx.onerror = () => reject(tx.error);
@@ -99,7 +107,7 @@ export function setKeyRecordStoreForTests(next: KeyRecordStore | null): void {
   backend = next;
 }
 
-type LockManagerLike = { request<T>(name: string, cb: () => Promise<T>): Promise<T> };
+type LockManagerLike = { request<T>(name: string, options: { mode: "shared" | "exclusive" }, cb: () => Promise<T>): Promise<T> };
 let lockOverride: LockManagerLike | null | undefined;
 
 function lockManager(): LockManagerLike | null {
@@ -119,7 +127,23 @@ export function setLockManagerForTests(next: LockManagerLike | null | undefined)
 export async function withKeystoreLock<T>(fn: () => Promise<T>): Promise<{ value: T } | null> {
   const locks = lockManager();
   if (!locks) return null;
-  return locks.request(KEYSTORE_LOCK, async () => ({ value: await fn() }));
+  return locks.request(KEYSTORE_LOCK, { mode: "exclusive" }, async () => ({ value: await fn() }));
+}
+
+let persistenceRequest: Promise<void> | undefined;
+
+/** Best effort, once per page after finding a key; record only the outcome. */
+function requestPersistentStorage(): void {
+  persistenceRequest ??= (async () => {
+    let outcome: "granted" | "denied" | "unsupported" | "error" = "unsupported";
+    try {
+      const storage = globalThis.navigator?.storage;
+      if (typeof storage?.persist === "function") outcome = await storage.persist() ? "granted" : "denied";
+    } catch {
+      outcome = "error";
+    }
+    try { localStorage.setItem("ekklesia_storage_persistence", outcome); } catch { /* best effort */ }
+  })();
 }
 
 // ─── Signing ────────────────────────────────────────────────────────────────
@@ -149,17 +173,20 @@ async function loadIdentityRecord(id: string = IDENTITY_RECORD): Promise<Identit
 }
 
 /** The signer for this browser: WebCrypto custody first, legacy plaintext as fallback. */
-function readLegacy(): { keypair: ReturnType<typeof loadKeypair>; nullifier: string | null } {
+function readLegacy(strict = false): { keypair: ReturnType<typeof loadKeypair>; nullifier: string | null } {
   try {
     return { keypair: loadKeypair(), nullifier: loadNullifier() };
-  } catch {
+  } catch (error) {
+    if (strict) throw error;
     return { keypair: null, nullifier: null }; // storage blocked
   }
 }
 
+/** Key snapshot. Application requests must use withSigner through submission. */
 export async function getSigner(): Promise<WebSigner | null> {
   const rec = await loadIdentityRecord();
   if (rec) {
+    requestPersistentStorage();
     return {
       publicKeyHex: rec.publicKeyHex,
       nullifier: rec.nullifier,
@@ -178,6 +205,7 @@ export async function getSigner(): Promise<WebSigner | null> {
   }
   const { keypair: legacy, nullifier } = readLegacy();
   if (!legacy) return null;
+  requestPersistentStorage();
   const privateKeyHex = legacy.privateKeyHex;
   return {
     publicKeyHex: legacy.publicKeyHex,
@@ -185,6 +213,14 @@ export async function getSigner(): Promise<WebSigner | null> {
     custody: "legacy",
     sign: async (payload) => signPayload(privateKeyHex, payload),
   };
+}
+
+/** Acquire, sign and submit inside this callback; never retain its signer. */
+export async function withSigner<T>(submit: (signer: WebSigner | null) => Promise<T>): Promise<T> {
+  const run = async () => submit(await getSigner());
+  const locks = lockManager();
+  // Rotation/migration cannot run without Web Locks, so legacy signing is safe.
+  return locks ? locks.request(KEYSTORE_LOCK, { mode: "shared" }, run) : run();
 }
 
 /** Synchronous hint for UI state: a key (legacy or WebCrypto) is present. */
@@ -258,7 +294,7 @@ export async function supportsNonExtractableEd25519(): Promise<boolean> {
   }
 }
 
-async function fetchJson(deps: MigrationDeps, url: string, init?: RequestInit): Promise<{ status: number; body: unknown }> {
+async function fetchJson(deps: MigrationDeps, url: string, init?: RequestInit): Promise<{ status: number; body: unknown; headers: Headers }> {
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   const deadline = new Promise<never>((_, reject) => {
@@ -280,7 +316,7 @@ async function fetchJson(deps: MigrationDeps, url: string, init?: RequestInit): 
         } catch {
           body = null;
         }
-        return { status: res.status, body };
+        return { status: res.status, body, headers: res.headers };
       })(),
       deadline,
     ]);
@@ -305,6 +341,22 @@ async function serverConfirmsKey(
     });
     if (res.status === 200 && (res.body as { ok?: unknown } | null)?.ok === true) return "ok";
     if (res.status === 409) return "mismatch";
+    if (res.status === 404) {
+      // Signed vote status verifies the ACTIVE identity key independently of
+      // identity feature flags. Discover a real public bill; never trust a 404
+      // (which could equally mean the verification route itself is disabled).
+      const bills = await fetchJson(deps, `${deps.apiUrl}/api/v1/bills?limit=1`, { cache: "no-store" });
+      const billId = bills.status === 200 && Array.isArray(bills.body) ? bills.body[0]?.id : null;
+      if (typeof billId !== "string" || !billId) return "unavailable";
+      const timestamp = deps.now();
+      const sig = await webCryptoSign(key, `vote-status-read:v1:${JSON.stringify([billId, nullifier, timestamp])}`);
+      const status = await fetchJson(deps, `${deps.apiUrl}/api/v1/vote/${encodeURIComponent(billId)}/status`, {
+        method: "POST", cache: "no-store", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nullifier_hash: nullifier, timestamp_ms: timestamp, signature_hex: sig }),
+      });
+      if (status.status === 200 && status.headers.get("X-Vote-Read-Integrity") === "signed"
+        && (status.body as { bill_id?: unknown } | null)?.bill_id === billId) return "ok";
+    }
     return "unavailable";
   } catch {
     return "unavailable";
@@ -341,7 +393,10 @@ export function migrateLegacyWebKey(deps: MigrationDeps = DEFAULT_DEPS): Promise
   migrationInFlight ??= (async () => {
     if (typeof window === "undefined") return "not_needed" as const;
     const locked = await withKeystoreLock(() => migrate(deps));
-    return locked ? locked.value : ("unsupported" as const); // no Web Locks: stay on legacy
+    if (locked) return locked.value;
+    if ((typeof indexedDB !== "undefined" || backend !== null)
+      && await readRotationIdentityStrict(PENDING_ROTATION_RECORD)) return "retry_later" as const;
+    return "unsupported" as const; // no Web Locks: stay on legacy
   })()
     .catch(() => "retry_later" as const)
     .finally(() => {
@@ -352,8 +407,15 @@ export function migrateLegacyWebKey(deps: MigrationDeps = DEFAULT_DEPS): Promise
 
 async function migrate(deps: MigrationDeps): Promise<MigrationResult> {
   // Runs under KEYSTORE_LOCK: another tab may have finished meanwhile.
-  const { keypair: legacy, nullifier } = readLegacy();
-  if (!legacy) return (await loadIdentityRecord()) ? "not_needed" : "no_legacy";
+  const { keypair: legacy, nullifier } = readLegacy(true);
+  if (!legacy) {
+    // Operational failures/corrupt records must reach the retry_later boundary.
+    const current = await readRotationIdentityStrict(IDENTITY_RECORD);
+    const pending = await readRotationIdentityStrict(PENDING_ROTATION_RECORD);
+    if (current || pending) { requestPersistentStorage(); return "not_needed"; }
+    return "no_legacy";
+  }
+  requestPersistentStorage();
   if (!nullifier || !HEX32.test(legacy.privateKeyHex) || !HEX32.test(legacy.publicKeyHex)) return "retry_later";
   if (!(await supportsNonExtractableEd25519())) return "unsupported";
 
@@ -451,6 +513,10 @@ async function promoteRotation(deps: MigrationDeps, staged: PendingRotation): Pr
   const confirmed = await serverConfirmsKey(deps, staged.privateKey, staged.nullifier, staged.publicKeyHex);
   if (confirmed !== "ok") return confirmed === "mismatch" ? "conflict" : "retry_later";
 
+  return publishRotation(staged);
+}
+
+async function publishRotation(staged: PendingRotation): Promise<RotationResult> {
   // One IDB transaction replaces the active record (and therefore the old
   // private key). The journal survives until re-read/self-test + hint cleanup.
   await store().put<IdentityRecord>(IDENTITY_RECORD, {
@@ -476,31 +542,36 @@ async function promoteRotation(deps: MigrationDeps, staged: PendingRotation): Pr
 
 async function rotateMigratedKey(deps: MigrationDeps): Promise<RotationResult> {
   // All reads, staging, API calls and promotion run inside KEYSTORE_LOCK.
+  const pending = await readRotationIdentityStrict(PENDING_ROTATION_RECORD) as PendingRotation | undefined;
+  const current = await readRotationIdentityStrict(IDENTITY_RECORD);
+  if (current || pending) requestPersistentStorage();
+  if (pending && (!HEX32.test(pending.oldPublicKeyHex)
+    || pending.publicKeyHex === pending.oldPublicKeyHex
+    || (current && (pending.nullifier !== current.nullifier
+      || (pending.oldPublicKeyHex !== current.publicKeyHex && pending.publicKeyHex !== current.publicKeyHex))))) return "conflict";
+  if (pending) {
+    if (!(await selfTest(pending.privateKey, pending.publicKeyHex)) || !(await readCompassKeyStrict())) return "retry_later";
+    // Recovery is a read + local commit, regardless of feature flags/version
+    // availability. A lost rotate response never requires another server swap.
+    const confirmed = await serverConfirmsKey(deps, pending.privateKey, pending.nullifier, pending.publicKeyHex);
+    if (confirmed === "ok") {
+      const result = await publishRotation(pending);
+      return result === "rotated" ? "already_rotated" : result;
+    }
+    if (confirmed === "unavailable" || pending.publicKeyHex === current?.publicKeyHex) return "retry_later";
+  }
+  if (!current) return pending ? "retry_later" : "not_needed";
+  if (!pending && current.origin === "device") return "not_needed";
   const version = await fetchJson(deps, `${deps.apiUrl}/api/v1/app/version`);
   if (version.status !== 200) return "retry_later";
   const features = (version.body as { features?: { identity_rotate?: unknown; identity_key_check?: unknown } } | null)?.features;
-  if (features?.identity_rotate !== true || features.identity_key_check !== true) return "unsupported";
-
-  const current = await readRotationIdentityStrict(IDENTITY_RECORD);
-  if (!current) return "not_needed";
-  // Only a completed custody migration is eligible. A partial PR5 migration
-  // still needs its old plaintext key to recover/re-encrypt legacy Compass.
+  if (features?.identity_rotate !== true || features.identity_key_check !== true) return pending ? "retry_later" : "unsupported";
+  // A partial custody migration still needs the plaintext for legacy Compass.
   if (localStorage.getItem(LEGACY_PRIVATE_KEY) !== null) return "retry_later";
-  const pending = await readRotationIdentityStrict(PENDING_ROTATION_RECORD) as PendingRotation | undefined;
-  if (pending && (!HEX32.test(pending.oldPublicKeyHex) || pending.nullifier !== current.nullifier
-    || pending.publicKeyHex === pending.oldPublicKeyHex
-    || (pending.oldPublicKeyHex !== current.publicKeyHex && pending.publicKeyHex !== current.publicKeyHex))) return "conflict";
-  if (!pending && current.origin === "device") return "not_needed";
   // This key is independent of Ed25519 and is NEVER replaced by rotation.
   // Missing/unreadable AES state aborts instead of risking unreadable Compass.
   if (!(await readCompassKeyStrict())) return "retry_later";
 
-  if (pending?.publicKeyHex === current.publicKeyHex) {
-    // Crash after active replacement: the old key is already gone. Verify the
-    // new key again, then finish the idempotent local commit.
-    const result = await promoteRotation(deps, pending);
-    return result === "rotated" ? "already_rotated" : result;
-  }
   if (!(await selfTest(current.privateKey, current.publicKeyHex))) return "retry_later";
 
   if (!pending) {
@@ -510,9 +581,13 @@ async function rotateMigratedKey(deps: MigrationDeps): Promise<RotationResult> {
     await store().put<PendingRotation>(PENDING_ROTATION_RECORD, {
       privateKey: pair.privateKey, publicKeyHex, nullifier: current.nullifier, oldPublicKeyHex: current.publicKeyHex,
     });
+  } else {
+    // Journals written by an older client may have used relaxed durability.
+    // Flush the same staged key strictly before retrying any server mutation.
+    await store().put(PENDING_ROTATION_RECORD, pending);
   }
-  // Re-read the persisted CryptoKey before any server mutation. A failed read
-  // never causes a new staged key to overwrite an uncertain server outcome.
+  // put resolves only after a STRICT transaction completes. Re-read before
+  // any server mutation. A failed read never replaces an uncertain staged key.
   const staged = await readRotationIdentityStrict(PENDING_ROTATION_RECORD) as PendingRotation | undefined;
   if (!staged || staged.nullifier !== current.nullifier || staged.oldPublicKeyHex !== current.publicKeyHex
     || staged.publicKeyHex === current.publicKeyHex || !(await selfTest(staged.privateKey, staged.publicKeyHex))) return "retry_later";
@@ -542,7 +617,10 @@ export async function rotateMigratedWebKey(deps: MigrationDeps = DEFAULT_DEPS): 
   try {
     if (typeof window === "undefined") return "not_needed";
     const locked = await withKeystoreLock(() => rotateMigratedKey(deps));
-    return locked ? locked.value : "unsupported";
+    if (locked) return locked.value;
+    // Without coordination we cannot promote, but an existing journal still
+    // needs retries if Web Locks become available again.
+    return await readRotationIdentityStrict(PENDING_ROTATION_RECORD) ? "retry_later" : "unsupported";
   } catch {
     return "retry_later"; // never log exceptions, request bodies, signatures or key material
   }

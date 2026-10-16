@@ -127,9 +127,9 @@ describe("forum SSO lifecycle", () => {
   it("uses the current keystore key when rotation left a stale localStorage public-key hint", async () => {
     keys();
     const sign = vi.fn(async () => "rotated-signature");
-    vi.spyOn(keystore, "getSigner").mockResolvedValue({
+    vi.spyOn(keystore, "withSigner").mockImplementation(async (submit) => submit({
       publicKeyHex: "rotated-public", nullifier: null, custody: "webcrypto", sign,
-    });
+    }));
     fetchMock.mockResolvedValue(response({ redirect_url: "#authenticated" }));
     await render();
     expect(sign).toHaveBeenCalledWith("discourse_sso:nonce-A:rotated-public");

@@ -49,3 +49,28 @@ it("retries an uncertain rotation on foreground after one minute, then stops aft
   await act(async () => { await vi.advanceTimersByTimeAsync(60_000); document.dispatchEvent(new Event("visibilitychange")); });
   expect(custody.rotate).toHaveBeenCalledTimes(2);
 });
+
+it("retries a storage read failure without remounting, then recovers the pending swap", async () => {
+  custody.migrate.mockResolvedValueOnce("retry_later").mockResolvedValue("not_needed");
+  custody.rotate.mockResolvedValue("already_rotated");
+  vi.spyOn(console, "info").mockImplementation(() => {});
+  await act(async () => root.render(createElement(KeyCustodyMigration)));
+  expect(custody.rotate).not.toHaveBeenCalled();
+  await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+  expect(custody.migrate).toHaveBeenCalledTimes(2);
+  expect(custody.rotate).toHaveBeenCalledTimes(1);
+  expect(vi.getTimerCount()).toBe(0);
+});
+
+it("backs off pending recovery retries and cancels the timer on unmount", async () => {
+  custody.rotate.mockResolvedValue("retry_later");
+  await act(async () => root.render(createElement(KeyCustodyMigration)));
+  await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+  expect(custody.rotate).toHaveBeenCalledTimes(2);
+  await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+  expect(custody.rotate).toHaveBeenCalledTimes(2);
+  await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+  expect(custody.rotate).toHaveBeenCalledTimes(3);
+  await act(async () => root.render(null));
+  expect(vi.getTimerCount()).toBe(0);
+});

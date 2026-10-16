@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { voteRelevance } from "@/lib/api";
-import { getSigner } from "@/lib/keystore";
+import { withSigner } from "@/lib/keystore";
 
 interface Props {
   billId: string;
@@ -24,17 +24,16 @@ export default function RelevanceButtons({
   async function handleVote(signal: 1 | -1) {
     if (voted !== null || loading) return;
 
-    const signer = await getSigner();
-    if (!signer || !signer.nullifier) return;
-    const nullifier = signer.nullifier;
-
-    // Sign: "relevance:{bill_id}:{signal}:{nullifier_hash}"
-    const payload = `relevance:${billId}:${signal}:${nullifier}`;
-    const sig = await signer.sign(payload);
-
     setLoading(true);
     try {
-      await voteRelevance(billId, signal, nullifier, sig);
+      const submitted = await withSigner(async (signer) => {
+        if (!signer?.nullifier) return false;
+        const nullifier = signer.nullifier;
+        const sig = await signer.sign(`relevance:${billId}:${signal}:${nullifier}`);
+        await voteRelevance(billId, signal, nullifier, sig);
+        return true;
+      });
+      if (!submitted) return;
       setScore((s) => s + signal);
       setVoted(signal);
     } catch {

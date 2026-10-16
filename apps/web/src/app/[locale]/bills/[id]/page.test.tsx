@@ -15,7 +15,7 @@ vi.mock("@/lib/api", () => ({
   submitSignedVote: context.submit,
 }));
 vi.mock("@/lib/keystore", () => ({
-  getSigner: async () => context.hasSigner ? { nullifier: "a".repeat(64), sign: vi.fn() } : null,
+  withSigner: async (submit: (signer: unknown) => Promise<unknown>) => submit(context.hasSigner ? { nullifier: "a".repeat(64), sign: vi.fn() } : null),
 }));
 vi.mock("@/components/StatusBadge", () => ({ default: () => null }));
 vi.mock("@/components/RelevanceButtons", () => ({ default: () => null }));

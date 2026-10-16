@@ -8,7 +8,7 @@ import { loadProfile, saveProfile } from "./compass/storage";
 import {
   KEYSTORE_LOCK, KEY_CUSTODY_MARKER, getSigner, identityKeyCheckMessage, identityRotateMessage,
   migrateLegacyWebKey, readCompassKeyStrict, readCompassKeys, rotateMigratedWebKey,
-  setKeyRecordStoreForTests, setLockManagerForTests, withKeystoreLock,
+  setKeyRecordStoreForTests, setLockManagerForTests, withKeystoreLock, withSigner,
   type KeyRecordStore, type MigrationDeps,
 } from "./keystore";
 
@@ -60,9 +60,9 @@ function memoryLocks() {
   const requested = vi.fn();
   return {
     requested,
-    request<T>(name: string, cb: () => Promise<T>): Promise<T> {
+    request<T>(name: string, options: { mode: "shared" | "exclusive" }, cb: () => Promise<T>): Promise<T> {
       expect(name).toBe(KEYSTORE_LOCK);
-      requested(name);
+      requested(name, options);
       const result = queue.then(cb, cb);
       queue = result.catch(() => undefined);
       return result;
@@ -71,6 +71,56 @@ function memoryLocks() {
 }
 
 const response = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => { resolve = done; });
+  return { promise, resolve };
+}
+
+/** Minimal IDB transaction boundary so these tests use the production backend. */
+function useIndexedDb(support: "strict" | "ignored" | "throws" = "strict", pauseStage = false) {
+  const staged = deferred<() => void>();
+  const writes: Array<{ id: string; durability: IDBTransactionDurability | undefined }> = [];
+  const db = {
+    close() {},
+    transaction(_name: string, mode: IDBTransactionMode, options?: IDBTransactionOptions) {
+      if (mode === "readwrite" && support === "throws") throw new TypeError("No transaction options");
+      const tx = {
+        durability: support === "ignored" ? "default" : options?.durability,
+        oncomplete: null as (() => void) | null,
+        abort() {},
+        objectStore: () => ({
+          get(id: string) {
+            const req = { result: store.data.get(id) };
+            queueMicrotask(() => tx.oncomplete?.());
+            return req;
+          },
+          put(value: unknown, id: string) {
+            writes.push({ id, durability: options?.durability });
+            const complete = () => { store.data.set(id, value); tx.oncomplete?.(); };
+            if (pauseStage && id === STAGING) staged.resolve(complete);
+            else queueMicrotask(complete);
+            return { result: id };
+          },
+          delete(id: string) {
+            queueMicrotask(() => { store.data.delete(id); tx.oncomplete?.(); });
+            return { result: undefined };
+          },
+        }),
+      };
+      return tx;
+    },
+  };
+  vi.stubGlobal("indexedDB", {
+    open() {
+      const req = { result: db, onsuccess: null as (() => void) | null };
+      queueMicrotask(() => req.onsuccess?.());
+      return req;
+    },
+  });
+  setKeyRecordStoreForTests(null);
+  return { staged, writes };
+}
 let store: MemoryStore;
 let locks: ReturnType<typeof memoryLocks>;
 let api: MigrationDeps;
@@ -135,6 +185,15 @@ beforeEach(async () => {
       if (checkStatus !== 200) return response({}, checkStatus);
       return response({ ok: true }, body.public_key_hex === serverKey ? 200 : 409);
     }
+    if (url.endsWith("/bills?limit=1")) return response([{ id: "GR-status-probe" }]);
+    if (url.endsWith("/vote/GR-status-probe/status")) {
+      const body = JSON.parse(String(init!.body));
+      const message = `vote-status-read:v1:${JSON.stringify(["GR-status-probe", body.nullifier_hash, body.timestamp_ms])}`;
+      const verified = ed25519.verify(bytes(body.signature_hex), new TextEncoder().encode(message), bytes(serverKey));
+      return new Response(JSON.stringify({ bill_id: "GR-status-probe", has_voted: false }), {
+        status: verified ? 200 : 401, headers: { "X-Vote-Read-Integrity": "signed" },
+      });
+    }
     throw new Error("Unexpected endpoint");
   });
   api = { apiUrl: "https://api.test", fetchImpl: fetchMock as typeof fetch, now: () => Date.now(), timeoutMs: 500 };
@@ -156,6 +215,36 @@ afterEach(() => {
 });
 
 describe("fresh browser identity rotation", () => {
+  it("waits for strict staging completion before server mutation and strictly commits promotion", async () => {
+    const idb = useIndexedDb("strict", true);
+    const rotation = rotateMigratedWebKey(api);
+    const complete = await idb.staged.promise;
+    expect(rotations).toHaveLength(0);
+    expect(store.data.has(STAGING)).toBe(false);
+    complete();
+    expect(await rotation).toBe("rotated");
+    expect(idb.writes).toEqual([
+      { id: STAGING, durability: "strict" }, { id: "identity", durability: "strict" },
+    ]);
+  });
+
+  it.each(["ignored", "throws"] as const)("keeps the old key and never rotates when strict durability is %s", async (support) => {
+    useIndexedDb(support);
+    expect(await rotateMigratedWebKey(api)).toBe("retry_later");
+    expect(rotations).toHaveLength(0);
+    expect(store.record().publicKeyHex).toBe(PUB);
+    expect(store.data.has(STAGING)).toBe(false);
+  });
+
+  it("keeps the journal when strict promotion is unavailable after a committed swap", async () => {
+    loseResponse = true;
+    expect(await rotateMigratedWebKey(api)).toBe("retry_later");
+    useIndexedDb("ignored");
+    expect(await rotateMigratedWebKey(api)).toBe("retry_later");
+    expect(store.data.has(STAGING)).toBe(true);
+    expect(store.record().publicKeyHex).toBe(PUB);
+  });
+
   it("rotates with both signatures, checks the new key, promotes and removes every persisted old key", async () => {
     store.data.set("identity_pending", store.record()); // PR5 cleanup previously interrupted
     expect(await rotateMigratedWebKey(api)).toBe("rotated");
@@ -192,7 +281,7 @@ describe("fresh browser identity rotation", () => {
     restarted.setKeyRecordStoreForTests(store);
     restarted.setLockManagerForTests(locks);
     expect(await restarted.rotateMigratedWebKey(api)).toBe("already_rotated");
-    expect(rotations.map((r) => r.new_public_key_hex)).toEqual([staged.publicKeyHex, staged.publicKeyHex]);
+    expect(rotations.map((r) => r.new_public_key_hex)).toEqual([staged.publicKeyHex]);
     expect((await restarted.getSigner())!.publicKeyHex).toBe(serverKey);
     expect(store.data.has(STAGING)).toBe(false);
   });
@@ -281,20 +370,43 @@ describe("fresh browser identity rotation", () => {
     expect(store.data.has(STAGING)).toBe(false);
   });
 
-  it("leaves an interrupted rotation untouched if the feature is switched off", async () => {
+  it.each(["rotate", "key-check", "both"])("recovers a committed swap with %s feature disabled", async (flag) => {
     loseResponse = true;
     expect(await rotateMigratedWebKey(api)).toBe("retry_later");
-    const before = new Map(store.data);
     const staged = store.record(STAGING);
-    rotateFeature = false;
+    if (flag !== "key-check") rotateFeature = false;
+    if (flag !== "rotate") { checkFeature = false; checkStatus = 404; }
     fetchMock.mockClear();
-    expect(await rotateMigratedWebKey(api)).toBe("unsupported");
-    expect(store.data).toEqual(before);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    loseResponse = false;
-    rotateFeature = true;
     expect(await rotateMigratedWebKey(api)).toBe("already_rotated");
     expect(store.record().publicKeyHex).toBe(staged.publicKeyHex);
+    expect(store.data.has(STAGING)).toBe(false);
+    expect(rotations).toHaveLength(1);
+    expect(fetchMock.mock.calls.some(([url]) => url.endsWith("/app/version"))).toBe(false);
+    expect((await getSigner())!.publicKeyHex).toBe(serverKey);
+  });
+
+  it("keeps an uncommitted staged key retryable when rotation is disabled", async () => {
+    rotateStatus = 500;
+    expect(await rotateMigratedWebKey(api)).toBe("retry_later");
+    const before = new Map(store.data);
+    rotateFeature = false;
+    expect(await rotateMigratedWebKey(api)).toBe("retry_later");
+    expect(store.data).toEqual(before);
+    expect(rotations).toHaveLength(1);
+  });
+
+  it("keeps retrying when key-check and signed status are both unavailable", async () => {
+    loseResponse = true;
+    expect(await rotateMigratedWebKey(api)).toBe("retry_later");
+    checkStatus = 404;
+    rotateFeature = checkFeature = false;
+    const realFetch = api.fetchImpl;
+    api.fetchImpl = (async (url: string, init?: RequestInit) => url.endsWith("/status")
+      ? response({}, 404) : realFetch(url, init)) as typeof fetch;
+    expect(await rotateMigratedWebKey(api)).toBe("retry_later");
+    expect(store.data.has(STAGING)).toBe(true);
+    api.fetchImpl = realFetch;
+    expect(await rotateMigratedWebKey(api)).toBe("already_rotated");
   });
 
   it("serializes independent tabs under the shared Web Lock", async () => {
@@ -325,6 +437,51 @@ describe("fresh browser identity rotation", () => {
     await withKeystoreLock(async () => saveProfile({ ...createEmptyProfile(), selectedModel: "party-match" }, await readCompassKeys()));
     expect((await loadProfile({ aesKey: aes })).selectedModel).toBe("party-match");
     expect((await readCompassKeys()).legacyPrivateKeyHex).toBeNull();
+  });
+
+  it("holds the signing lock from acquisition through submission before allowing rotation", async () => {
+    const acquired = deferred<void>();
+    const submit = deferred<void>();
+    const signing = withSigner(async (signer) => {
+      expect(signer!.publicKeyHex).toBe(PUB);
+      acquired.resolve();
+      await submit.promise;
+      const signature = await signer!.sign("discourse_sso:nonce:" + signer!.publicKeyHex);
+      expect(ed25519.verify(bytes(signature), new TextEncoder().encode("discourse_sso:nonce:" + signer!.publicKeyHex), bytes(serverKey))).toBe(true);
+    });
+    await acquired.promise;
+    const rotation = rotateMigratedWebKey(api);
+    await Promise.resolve();
+    expect(rotations).toHaveLength(0);
+    expect(locks.requested.mock.calls.map(([, options]) => options.mode)).toEqual(["shared", "exclusive"]);
+    submit.resolve();
+    await signing;
+    expect(await rotation).toBe("rotated");
+  });
+
+  it("a signing request made during rotation acquires the promoted key after the swap", async () => {
+    const rotating = deferred<void>();
+    const commit = deferred<void>();
+    const realFetch = api.fetchImpl;
+    api.fetchImpl = (async (url: string, init?: RequestInit) => {
+      if (url.endsWith("/rotate-key")) { rotating.resolve(); await commit.promise; }
+      return realFetch(url, init);
+    }) as typeof fetch;
+    const rotation = rotateMigratedWebKey(api);
+    await rotating.promise;
+    const sign = vi.fn();
+    const signing = withSigner(async (signer) => {
+      sign();
+      expect(signer!.publicKeyHex).toBe(serverKey);
+      const signature = await signer!.sign("vote");
+      expect(ed25519.verify(bytes(signature), new TextEncoder().encode("vote"), bytes(serverKey))).toBe(true);
+    });
+    await Promise.resolve();
+    expect(sign).not.toHaveBeenCalled();
+    commit.resolve();
+    expect(await rotation).toBe("rotated");
+    await signing;
+    expect(sign).toHaveBeenCalledTimes(1);
   });
 
   it.each(["identity", STAGING, "compass"])("preserves all slots on an unreadable %s slot", async (slot) => {
