@@ -6,7 +6,7 @@ Status: vorbereitet (Code bereit, **nicht aktiv**). Aktivierung = Gio-Gate. Der 
 
 ## Für Gio – einfach erklärt, Schritt für Schritt
 
-**Worum geht es?** Jede Nacht wird eine Sicherungskopie der Ekklesia-Datenbank auf einen zweiten Server geschickt. Bisher ist diese Kopie **unverschlüsselt**. Wer Zugriff auf den Backup-Server hätte, könnte darin lesen. Ab jetzt wird jede Kopie **vor** dem Versenden verschlüsselt, und **nur du** kannst sie wieder öffnen.
+**Worum geht es?** Jede Nacht wird eine Sicherungskopie der Ekklesia-Datenbank auf einen zweiten Server geschickt. Bisher ist diese Kopie **unverschlüsselt**. Wer Zugriff auf den Backup-Server hätte, könnte darin lesen. **Sobald du zugestimmt hast und wir es eingeschaltet haben**, wird jede Kopie **vor** dem Versenden verschlüsselt, und **nur du** kannst sie dann wieder öffnen. Bis dahin läuft das Backup unverändert (unverschlüsselt) weiter.
 
 **Das Prinzip:** Es gibt zwei Schlüssel, die zusammengehören.
 - Ein **öffentlicher Schlüssel** (beginnt mit `age1…`). Damit kann man nur **zuschließen**. Er kommt auf den Server, und es ist nicht schlimm, wenn ihn jemand sieht.
@@ -21,7 +21,7 @@ Status: vorbereitet (Code bereit, **nicht aktiv**). Aktivierung = Gio-Gate. Der 
    - auf der Synology in einem **verschlüsselten** Ordner.
 
    Danach die Datei vom Mac löschen, wenn du willst. **Ohne diesen Schlüssel sind alle verschlüsselten Backups wertlos.** Bitte also wirklich an zwei Orten.
-5. **Probe machen:** Wir schicken dir eine verschlüsselte Backup-Datei. Du öffnest sie einmal mit deinem Schlüssel (Befehl unten, Abschnitt 4). Klappt das, ist alles richtig eingerichtet.
+5. **Probe machen:** Wir schicken dir eine verschlüsselte Backup-Datei. Du öffnest sie einmal mit deinem Schlüssel (Befehl unten, Abschnitt 4), und wir spielen die Datenbank daraus testweise wieder ein (nicht in die echte). Erst wenn das klappt, ist alles richtig eingerichtet.
 6. **Alte unverschlüsselte Backups löschen:** Erst wenn mindestens 7 verschlüsselte Backups da sind **und** die Probe geklappt hat, fragen wir dich nach einem Ja zum Löschen der alten, unverschlüsselten Kopien.
 
 ---
@@ -61,10 +61,10 @@ Sie geht an Gio (verschlüsselt, also unkritisch). Gio entschlüsselt sie auf se
 age --decrypt -i ekklesia-backup-2026.key -o restore.tar.gz ekklesia-backup-<ts>.tar.gz.age
 tar -tzf restore.tar.gz            # zeigt db-<ts>.dump, redis-<ts>.rdb, alembic-<ts>.txt
 ```
-Optional: Wiederherstellung in eine temporäre PostgreSQL (nicht Prod) und Zählungen vergleichen.
+**Pflicht vor jedem Löschen alter Backups:** Den Dump `db-<ts>.dump` in eine temporäre, netzwerklose PostgreSQL (nicht Prod) einspielen (`pg_restore --no-owner --no-privileges`) und die Zeilenzahlen der Kerntabellen sowie `alembic_version` mit der Prod-DB zum Backup-Zeitpunkt vergleichen. Das ist dasselbe Verfahren wie beim Restore-Check vor Deploys. Entschlüsseln und `tar -t` allein reichen nicht.
 
 ### 5. Alte unverschlüsselte Backups
-Sie bleiben lesbar, bis sie gelöscht werden. Das Löschen ist ein eigenes Gio-Gate. Voraussetzung: mindestens 7 verschlüsselte Dailies und eine erfolgreiche Probe (Abschnitt 4). Danach Listenabgleich wie bei der Retention-Bereinigung.
+Sie bleiben lesbar, bis sie gelöscht werden. Das Löschen ist ein eigenes Gio-Gate. Voraussetzung: mindestens 7 verschlüsselte Dailies und eine erfolgreiche Probe-**Wiederherstellung** mit Zählungsvergleich (Abschnitt 4). Danach Listenabgleich wie bei der Retention-Bereinigung.
 
 ### Rollback
 `BACKUP_AGE_RECIPIENT` und `BACKUP_REQUIRE_ENCRYPTION` aus der env-Datei entfernen. Danach wird wieder unverschlüsselt gesichert (mit Log-Warnung). Bereits verschlüsselte Backups bleiben mit dem Offline-Schlüssel lesbar.
