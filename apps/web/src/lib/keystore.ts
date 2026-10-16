@@ -197,7 +197,7 @@ export async function getCompassKey(): Promise<CryptoKey | null> {
 }
 
 /** Like getCompassKey, but a failed read THROWS instead of looking like "absent". */
-async function readCompassKeyStrict(): Promise<CryptoKey | null> {
+export async function readCompassKeyStrict(): Promise<CryptoKey | null> {
   if (typeof indexedDB === "undefined" && backend === null) return null;
   const key = await store().get<CryptoKey>(COMPASS_RECORD);
   return key instanceof CryptoKey ? key : null;

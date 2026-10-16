@@ -350,3 +350,24 @@ describe("review round 3 (Codex)", () => {
     expect((await loadProfile({ aesKey: (await getCompassKey())! })).selectedModel).toBe("left-right");
   });
 });
+
+describe("review round 4 (Codex)", () => {
+  it("a failed Compass-key read during a normal load leaves the plaintext profile untouched", async () => {
+    // Migrated browser with a leftover plaintext profile (legacy key gone).
+    ls.set("ekklesia_public_key", PUB);
+    ls.set("ekklesia_compass_profile", JSON.stringify({ ...createEmptyProfile(), selectedModel: "left-right" }));
+    const k = (await crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"])) as CryptoKey;
+    store.data.set("compass", k);
+    const keystoreForCompass = await import("./keystore");
+    keystoreForCompass.setKeyRecordStoreForTests(store);
+    store.failGetOnce = "compass";
+    const { readCompassKeysSafely } = await import("./compass/useCompass");
+    await expect(readCompassKeysSafely()).rejects.toThrow();
+    expect(ls.get("ekklesia_compass_profile")).toContain("left-right"); // not taken/deleted
+    const keys = await readCompassKeysSafely(); // next attempt succeeds
+    const { loadProfile } = await import("./compass/storage");
+    expect((await loadProfile(keys)).selectedModel).toBe("left-right");
+    expect(ls.has("ekklesia_compass_profile")).toBe(false);
+    expect((await loadProfile({ aesKey: k })).selectedModel).toBe("left-right"); // now encrypted with k
+  });
+});

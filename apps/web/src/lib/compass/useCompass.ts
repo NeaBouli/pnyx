@@ -9,7 +9,7 @@ import type { CompassProfile, CompassModel, CompassResult } from "./types";
 import { createEmptyProfile, seedFromVAA, recordBillVote, computeResult, getDataPointCount } from "./engine";
 import { loadProfile, saveProfile, clearProfile as clearStorage, CompassStorageError, type CompassKeys } from "./storage";
 import { loadKeypair } from "../crypto";
-import { getCompassKey, withKeystoreLock } from "../keystore";
+import { readCompassKeyStrict, withKeystoreLock } from "../keystore";
 
 interface PartyData {
   parties: Record<string, {
@@ -80,14 +80,13 @@ export function readPrivateKeySafely(): string | null {
  * Speichert und behandelt erwartbare Speicherfehler (kein Key, Storage/Krypto nicht
  * verfügbar), damit kein unbehandeltes Promise entsteht. Kein Klartext-Fallback.
  */
-/** EVA-003: the non-extractable Compass key once migrated, else the legacy identity key. */
+/**
+ * EVA-003: the non-extractable Compass key once migrated, else the legacy
+ * identity key. A failed IndexedDB read REJECTS (it must not look like "no
+ * key"): callers then neither load nor save, so stored data stays untouched.
+ */
 export async function readCompassKeysSafely(): Promise<CompassKeys> {
-  let aesKey: CryptoKey | null = null;
-  try {
-    aesKey = await getCompassKey();
-  } catch {
-    aesKey = null;
-  }
+  const aesKey = await readCompassKeyStrict();
   return { aesKey, legacyPrivateKeyHex: readPrivateKeySafely() };
 }
 

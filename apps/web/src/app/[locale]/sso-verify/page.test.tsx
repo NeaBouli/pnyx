@@ -10,7 +10,12 @@ const context = vi.hoisted(() => ({
 }));
 vi.mock("next/navigation", () => ({ useSearchParams: () => context.params }));
 vi.mock("next-intl", () => ({ useLocale: () => context.locale }));
-vi.mock("@/lib/crypto", () => ({ signPayload: context.sign }));
+// EVA-003: the page signs via lib/keystore, which reads the legacy key through
+// lib/crypto; keep the real module and only observe/replace signPayload.
+vi.mock("@/lib/crypto", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/crypto")>()),
+  signPayload: context.sign,
+}));
 vi.mock("next/image", () => ({ default: ({ alt }: { alt: string }) => <span>{alt}</span> }));
 vi.mock("qrcode.react", () => ({ QRCodeSVG: ({ value }: { value: string }) => <span data-qr={value} /> }));
 
