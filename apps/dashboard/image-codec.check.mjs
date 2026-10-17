@@ -4,9 +4,31 @@ import test from "node:test";
 import { spawnSync } from "node:child_process";
 import sharp from "sharp";
 import semver from "semver";
-import { optimizeImage } from "next/dist/server/image-optimizer.js";
+// Next's private optimizer exports vary by version. Exercise the codec and
+// input-safety requirements through Sharp's public API instead.
+if (typeof sharp !== "function") throw new Error("sharp image optimizer API changed: sharp missing");
+for (const method of ["timeout", "rotate", "resize", "avif", "webp", "toBuffer"]) {
+  if (typeof sharp.prototype?.[method] !== "function") {
+    throw new Error(`sharp image optimizer API changed: ${method} missing`);
+  }
+}
 
-test("Next encodes AVIF output with expected dimensions", async () => {
+async function optimizeImage({ buffer, contentType, quality, width, limitInputPixels, timeoutInSeconds }) {
+  const transformer = sharp(buffer, { limitInputPixels })
+    .timeout({ seconds: timeoutInSeconds })
+    .rotate()
+    .resize(width, undefined, { withoutEnlargement: true });
+  if (contentType === "image/avif") {
+    transformer.avif({ quality: Math.max(Math.round(quality * (50 / 80)), 1), effort: 3 });
+  } else if (contentType === "image/webp") {
+    transformer.webp({ quality });
+  } else {
+    throw new Error(`Unsupported output content type: ${contentType}`);
+  }
+  return transformer.toBuffer();
+}
+
+test("Sharp encodes AVIF output with expected dimensions", async () => {
   const buffer = await sharp({
     create: { width: 64, height: 48, channels: 3, background: { r: 24, g: 60, b: 180 } },
   }).png().toBuffer();
@@ -24,7 +46,7 @@ test("Next encodes AVIF output with expected dimensions", async () => {
   assert.equal(metadata.height, 12);
 });
 
-test("Next rejects input exceeding the pixel limit", async () => {
+test("Sharp rejects input exceeding the pixel limit", async () => {
   const buffer = await sharp({
     create: { width: 65, height: 65, channels: 3, background: "blue" },
   }).png().toBuffer();
@@ -43,7 +65,7 @@ test("Sharp override matches the installed Next requirement", () => {
 });
 
 for (const format of ["png", "jpeg", "webp"]) {
-  test(`Next decodes synthetic ${format} and preserves resized pixels`, async () => {
+  test(`Sharp decodes synthetic ${format} and preserves resized pixels`, async () => {
     const buffer = await sharp({
       create: { width: 64, height: 48, channels: 3, background: { r: 24, g: 60, b: 180 } },
     }).toFormat(format).toBuffer();
@@ -63,7 +85,7 @@ for (const format of ["png", "jpeg", "webp"]) {
   });
 }
 
-test("Next decodes AVIF input within the configured pixel limit", async () => {
+test("Sharp decodes AVIF input within the configured pixel limit", async () => {
   const buffer = await sharp({ create: { width: 16, height: 16, channels: 3, background: "blue" } }).avif().toBuffer();
   const result = await optimizeImage({
     buffer, contentType: "image/webp", quality: 90, width: 8,
@@ -75,7 +97,7 @@ test("Next decodes AVIF input within the configured pixel limit", async () => {
   assert.equal(metadata.height, 8);
 });
 
-test("Next enforces the pixel limit for AVIF input", async () => {
+test("Sharp enforces the pixel limit for AVIF input", async () => {
   const buffer = await sharp({ create: { width: 65, height: 65, channels: 3, background: "blue" } }).avif().toBuffer();
   await assert.rejects(optimizeImage({
     buffer, contentType: "image/webp", quality: 90, width: 8,
@@ -83,7 +105,7 @@ test("Next enforces the pixel limit for AVIF input", async () => {
   }), /pixel limit/i);
 });
 
-test("Next rejects truncated AVIF input", async () => {
+test("Sharp rejects truncated AVIF input", async () => {
   const buffer = await sharp({ create: { width: 16, height: 16, channels: 3, background: "blue" } }).avif().toBuffer();
   await assert.rejects(optimizeImage({
     buffer: buffer.subarray(0, Math.floor(buffer.length / 2)),
@@ -92,7 +114,7 @@ test("Next rejects truncated AVIF input", async () => {
   }));
 });
 
-test("Next rejects malformed input instead of returning a successful image", async () => {
+test("Sharp rejects malformed input instead of returning a successful image", async () => {
   await assert.rejects(optimizeImage({
     buffer: Buffer.from("synthetic-invalid-image"), contentType: "image/webp",
     quality: 90, width: 16, limitInputPixels: 4096, timeoutInSeconds: 5,

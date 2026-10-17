@@ -80,7 +80,7 @@ APPROVED_WIKI_INVENTORY_HASH = {
     "docs/wiki/contributing.html": "bb4048480c3b75cb98ee668305833fe36b2c939f29ef27f1f8bec230c9d49d88",
     "docs/wiki/database.html": "08ac70323ffa6a6db969f41678ad8de9afd5fdd8f5b74981665cbf8e38afb9f9",
     "docs/wiki/delete-account.html": "3d7090ca86d5d17207477b664fa9d29066c0073a446d67e13dfd7eaf26822d1e",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
-    "docs/wiki/faq.html": "0d9583ac4244b4dfe44dbf96ceeff530adc1ed2d807c51df2d2984393296454f",  # T-9127: OPEN_END voting closed
+    "docs/wiki/faq.html": "6d30811a91c2ef6924e7d13a361de401d1a169c22c82dd9f1bd43e5f54676942",  # T-9117: current main operator/HLR, key custody, pseudonymous aggregates, lifecycle, rates; EL/EN/JSON-LD
     "docs/wiki/index.html": "ea418f9164a41aafa72721bdc8feaf7612a26fc83a32e7e781d7f166fe278419",  # T-9047/T-9048: named code region, contrast, headings and document language; T-9106: legal-modal claims text
     "docs/wiki/modules.html": "dd1f4addfdc25337790028ac3f3d4d608832a11ad682c9068dae1c9b0a265544",  # T-9072: neutral unknown health dots, MOD-23/25 mapping, localized status labels; T-9106: legal-modal claims text
     "docs/wiki/privacy.html": "58550c4a6d68fb39a43c46b2810819dcb8af70cc141f43d9fa5651aac4e990b8",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)

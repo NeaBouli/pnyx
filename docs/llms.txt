@@ -1,16 +1,17 @@
 # ekklesia.gr — Ψηφιακή Δημοκρατία στην Ελλάδα
 
-> Ανεξάρτητη πλατφόρμα ψηφιακής άμεσης δημοκρατίας. Οι πολίτες ψηφίζουν ανώνυμα σε πραγματικά νομοσχέδια χρησιμοποιώντας κρυπτογραφία Ed25519. Μη κυβερνητική, ανοιχτού κώδικα (MIT), χρηματοδοτούμενη από δωρεές πολιτών.
+> Ανεξάρτητη πλατφόρμα ψηφιακής άμεσης δημοκρατίας. Οι πολίτες ψηφίζουν ψευδώνυμα σε πραγματικά νομοσχέδια χρησιμοποιώντας κρυπτογραφία Ed25519. Δημόσια εμφανίζονται μόνο συγκεντρωτικά αποτελέσματα κανονικών ψήφων. Φορέας λειτουργίας: V-Labs IT Solutions & Development (Vendetta Labs), με συνεισφορές της κοινότητας. Μη κυβερνητική, ανοιχτού κώδικα (MIT).
 >
-> Independent digital direct democracy platform for Greece. Citizens vote anonymously on real parliamentary bills using Ed25519 cryptography. Non-governmental, open-source (MIT), funded by citizen donations.
+> Independent digital direct democracy platform for Greece. Citizens vote pseudonymously on real parliamentary bills using Ed25519 cryptography. Only aggregate ordinary-vote results are public. Operated by V-Labs IT Solutions & Development (Vendetta Labs), with community contributions. Non-governmental, open-source (MIT).
 
 ## Τι είναι η ekklesia;
 
-ekklesia.gr (εκκλησία του έθνους) is an independent civic initiative enabling Greek citizens to vote on real bills from the Hellenic Parliament and local government (Diavgeia). Votes are cryptographically signed (Ed25519), anonymous, and non-legally binding. The platform calculates a Divergence Score showing how much citizen opinion differs from parliamentary party votes.
+ekklesia.gr (εκκλησία του έθνους) is an independent civic initiative enabling participation on real bills from the Hellenic Parliament and local government decisions (Diavgeia). Ordinary votes are cryptographically signed (Ed25519), pseudonymous, and non-legally binding. Beta HLR verification checks Greek-number network status; it does not prove SIM possession, identity, or electoral eligibility. The platform calculates a Divergence Score showing how much citizen opinion differs from parliamentary party votes. Operator details: https://ekklesia.gr/legal.html
 
 ## Key Features
 
-- Anonymous voting on real parliamentary bills (Ed25519 signatures, HMAC nullifier chain)
+- Pseudonymous voting on real parliamentary bills (Ed25519 signatures, nullifiers); only aggregate ordinary-vote results are public
+- Voting is open only in ACTIVE and WINDOW_24H; one correction to an existing vote is allowed only in WINDOW_24H. PARLIAMENT_VOTED and OPEN_END are closed to voting; archived results remain subject to visibility rules
 - Divergence Score: citizen opinion vs. party votes
 - Πολιτική Αξιολόγηση: citizens evaluate elected representatives on 8 criteria (-5 to +5)
 - Local Government: municipal/regional decisions via Diavgeia integration
@@ -19,15 +20,24 @@ ekklesia.gr (εκκλησία του έθνους) is an independent civic initi
 - Public API (CC BY 4.0) for researchers
 - Arweave blockchain archiving for transparency
 - Mobile App (Android) + Progressive Web App
-- AI Assistant (local Ollama + Claude hybrid)
+- FAQ assistant: deterministic answers by default; Ollama + Claude hybrid only when explicitly configured for rollback
 
 ## Privacy
 
-- Phone number used ONLY for HLR verification, deleted immediately after nullifier generation
-- No accounts, no email, no cookies, no tracking
+- Phone number used for HLR verification and protected identity/rate-limit derivation; not retained by ekklesia.gr after the check. Providers: hlrlookup.com primary, hlr-lookups.com fallback; Melrose Labs is an alternative configuration
+- Ordinary participation requires no email/password account. Optional newsletter subscriptions use email; public voting pages have no tracking analytics
 - Versioned identity nullifiers: Argon2id v2 hash for new/reverified identities plus a legacy SHA256 compatibility anchor; public key stored, phone deleted
-- Private key stored only on user device (Android Keystore / iOS Keychain)
-- Votes cannot be linked to identity
+- Legacy v1 verification creates the Ed25519 key on the server and returns it once without storing it. Browser: after successful custody migration, a non-extractable WebCrypto CryptoKey in IndexedDB; the legacy localStorage key remains until migration succeeds. Mobile: Expo SecureStore. Fresh device-key rotation and v2 registration are feature-gated, not a blanket deployment claim
+- Ordinary votes are linked to a pseudonymous nullifier; the operator can associate choices under that code. They are not cryptographically anonymous towards the operator. Public results and ordinary Arweave snapshots contain aggregates, not individual votes, identity nullifiers, or public keys
+- Small-cell suppression is configurable via PUBLIC_RESULTS_MIN_COUNT (default 0/off); a universal k>=10 guarantee is not active by default. IP rate counters use expiring daily HMAC identifiers; access logs may contain IP addresses and rotate by size
+
+## Rate limits
+
+- Shared /api/v1/public data routes: 100 requests/minute per anonymous IP or 1000/minute per valid API key; this is not an API-wide quota
+- HLR verification: 5/IP/minute, 20/IP/day, 3/number/day, with a 300-second number cooldown
+- Vote submission and signed vote-status preflight: separate 120/IP/minute limits; vote correction: 20/IP/minute; legacy unsigned vote-status reads: 10/IP/minute
+- QR status polling: 30/minute per existing session plus 600/IP/minute; FAQ assistant: 5/IP/minute
+- Other writes and personal/expensive reads have endpoint-specific limits. The configured SlowAPI 60/minute default is not applied to every router endpoint; public cacheable reads have no new blanket IP quota. See https://ekklesia.gr/wiki/api.html
 
 ## Technology
 
@@ -35,19 +45,19 @@ ekklesia.gr (εκκλησία του έθνους) is an independent civic initi
 - Frontend: Next.js 16 (SSR, i18n el/en)
 - Mobile: Expo React Native (Android vC62 / v1.0.33 published for Direct download, live through the public API/latest-APK alias and live for testers in Play Closed Testing; icon notification counts are enabled where the Android launcher supports them; Play production access remains pending; F-Droid lists the app from its own independent build, which can trail the Direct release; Direct, Play and F-Droid stay separately routed)
 - Crypto: Ed25519 (PyNaCl + @noble/curves), HMAC nullifier chain
-- AI: Ollama (local) + Claude API (hybrid)
+- Assistant: deterministic FAQ by default (AGENT_MODE=hybrid explicitly restores Ollama + Claude); summaries and translations have separate provider paths
 - Forum: Discourse (pnyx.ekklesia.gr)
 - Generated-content ownership: system summaries/forum bodies refresh only while their SHA-256 ownership digest still matches; admin/moderator edits are preserved
 - Archiving: Arweave permanent storage
 - Hosting: Hetzner (Helsinki, EU)
-- ZK Voting V2: Semaphore-based; Android prover, hidden S10 canary, security review, and first public one-bill scoped rollout passed; guarded Parliament rollout and ZK Arweave auto-publication paused since 2026-10-03 for a security review; ordinary Tier-1 voting continues; if re-enabled, ZK auto-publication applies only to eligible public Parliament scopes with minimum group size 5
+- ZK Voting V2: Semaphore-based; guarded Parliament voting and ZK Arweave publication paused since 2026-10-03 for a security review. No new ZK votes are accepted during the pause; ordinary Tier-1 voting continues
 
 ## Status
 
 - Tier 1: Active (25 modules, 11+ containers)
 - Newsletter: Brevo + Telegram cross-publish
 - Monitor: 3-tier self-healing (API recovery, Docker restart, Telegram escalation)
-- ZK Voting V2: Hidden S10 canary passed and first public scoped rollout completed for one exact bill scope (`bill:GR-d4c62ed4`); guarded Parliament rollout and ZK Arweave auto-publication paused since 2026-10-03 for a security review; ordinary Tier-1 voting continues; if re-enabled, ZK auto-publication applies only to eligible public Parliament scopes with minimum group size 5
+- ZK Voting V2: Semaphore-based; guarded Parliament voting and ZK Arweave publication paused since 2026-10-03 for a security review. No new ZK votes are accepted during the pause; ordinary Tier-1 voting continues
 
 ## URLs
 
@@ -69,7 +79,7 @@ ekklesia.gr offers specialized tools for elected representatives (MPs, Mayors, M
 - Representative app (εκπρόσωπος): exclusive mobile app for viewing bills, citizen evaluations, and divergence scores for their region.
 - Commitment Declaration (Δήλωση Αυτοδέσμευσης): public document candidates sign before elections with measurable obligations: transparency, citizen will, accountability. PDF: https://ekklesia.gr/download/Autodesmefsi_Ekklesia_v6.pdf
 - Future Alpha 0.1 design for official gov.gr OAuth or holder-authenticated fresh challenge-bound QR/eSeal verification. It requires an official integration, DPIA, credential-migration design, independent security/privacy review and sandbox canary; it is not active in Beta.
-- Arweave immutable archiving of all voting results.
+- Arweave immutable archiving of aggregate ordinary-vote snapshots; ZK publication is paused with ZK voting since 2026-10-03.
 - Full page: https://ekklesia.gr/municipality/
 - Article: https://ekklesia.gr/municipality/article.html
 
