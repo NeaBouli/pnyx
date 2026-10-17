@@ -28,13 +28,14 @@ RESOURCE = {
 # change to public pages outside the R2-R4 redesign gates.
 # T-9138 (EVA-023): exact script-only externalization on mirror-setup and
 # tickets/auth/callback; source bodies are unchanged, execution order preserved.
+# Callback also sets no-referrer first in head to protect OAuth asset referrers.
 POST_REMOVAL_SHA256 = {
     "docs/govgr-dimos.html": "8fd6a06f5bbff423264fc64cb056cc48714825df8d8de7f26a1484aba7006444",
     "docs/mirror-setup.html": "5936e707c4c27d129add16e2cbc24f08b64eb462570b57bb7f8a8545cd6adfa5",
     "docs/municipality/article.html": "70b9fa2dea161c0efb1db00b0e7cc5a48f4b123aa08d448b50713623c2306090",
     "docs/municipality/index.html": "7b18713d511375a834bb1747856ba4303ac7f57ff8148b3636dcb659878956c2",
     "docs/sso-verify.html": "4c2f138fb4971fec0a25169f8a9701f6af31d9f1b062984dc32df3d4fccb5976",  # T-614: APK v1.0.33/vC62, Play vC62 closed testing
-    "docs/tickets/auth/callback.html": "d5cbfe3766798e70bd8fa42c57a02db78dbfccf28052935544a439a2c8c4785b",
+    "docs/tickets/auth/callback.html": "453482e7283f1b3d5c6c5bdf7be0322131fb4347ba98490fbcc12bdb316b6a61",
     "docs/tickets/index.html": "a39a982850a6c951cef2615694408c04b5570e50fee28fa1491a8bcab45ba9ab",
     "docs/votes/active.html": "3f0f66f9b994de76c70392eb04cf15f405f7892c731ae9230aec2937c343125a",
     "docs/votes/recent.html": "fc8beb7d125cc0d93824053c4759128391671a9bc59ce3d24a189f5b66109ab8",

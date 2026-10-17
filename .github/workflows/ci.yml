@@ -169,8 +169,11 @@ jobs:
         with:
           python-version: "3.12"
 
-      # Standard-library-only unittest gates for the static docs (R0 inventory,
-      # approved audit delta, R2 landing / R3 wiki checks, FAQ/wiki regressions).
+      - name: Set up CSP inventory YAML parser
+        run: python -m pip install PyYAML==6.0.3
+
+      # Static docs gates (R0 inventory, approved audit delta, R2/R3 checks,
+      # FAQ/wiki regressions) and active Compose CSP configuration/inventory.
       - name: Run redesign gates
         working-directory: scripts/redesign
         run: |

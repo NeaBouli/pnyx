@@ -8,7 +8,7 @@ Scope includes redirects, embeds, demos, and the live `wiki/audit.html` disclosu
 
 ## Policy and migration strategy
 
-The existing enforced CSP remains byte-identical in `infra/docker/docker-compose.prod.yml`. The same Traefik `ekklesia-headers` middleware adds `Content-Security-Policy-Report-Only` using `customResponseHeaders` (the existing compose mechanism also used for API response headers). It applies to the shared production origin, including static HTML paths that bypass the Next proxy matcher. Static hosting outside this Traefik deployment requires its own HTTP header configuration; an HTML meta tag cannot deliver Report-Only.
+The existing enforced CSP remains byte-identical in `infra/docker/docker-compose.prod.yml`. The same Traefik `ekklesia-headers` middleware adds `Content-Security-Policy-Report-Only` using `customResponseHeaders` (the existing compose mechanism also used for API response headers). The gate parses active Compose YAML with PyYAML, requires both policies on the enabled `web` service, and verifies the `ekklesia-web` router binds `ekklesia-headers`. The `ekklesia-www` router only redirects to the canonical host. The policies apply to the shared production origin, including static HTML paths that bypass the Next proxy matcher. Static hosting outside this Traefik deployment requires its own HTTP header configuration; an HTML meta tag cannot deliver Report-Only.
 
 The target changes `script-src 'self' 'unsafe-inline'` to `script-src 'self'` plus the two real SHA-256 sources below, and adds `object-src 'none'; base-uri 'self'`. `frame-ancestors 'none'` and all other existing directives are retained, including `style-src 'self' 'unsafe-inline'`. There is no `unsafe-hashes`, `unsafe-eval`, fixed nonce, or `strict-dynamic` escape hatch. The script hashes allow whole script blocks, never event attributes.
 
@@ -21,7 +21,7 @@ No CSP report receiver, `report-uri`, `report-to`, or Reporting-Endpoints config
 
 **Externalize** means move the exact body into a same-origin classic script at the same document position and preserve dependencies, then replace inline attributes/generated attributes with `addEventListener` (or CSS for hover decoration). A nonce or script hash does not authorize an `onclick` attribute. **Hash** means retain stable inline bytes and update the allowlist when they change. JSON-LD is inert structured data, listed separately from executable code: preserve it inline for SEO; hash it if the supported browser/consumer requires CSP authorization. **Nonce** is reserved for response-specific Next bootstrap/Flight scripts, not static files.
 
-This change moves `docs/mirror-setup.html`'s 292-character language toggle to `docs/assets/csp/mirror-setup.js` and the 2,264-character OAuth callback from `docs/tickets/auth/callback.html` to adjacent `callback.js`. Bodies are byte-identical, with no defer/module/async change; callback remains after `../config.js`. Mirror's existing inline click handler remains callable through its global `toggleLang`. Both asset locations are copied by the existing Dockerfile rules where their HTML is served. Only the two exact HTML hashes in `approved_analytics_delta.py` change; no frozen baseline or wiki/audit approvals change. These pages are absent from sitemap sources, so `node scripts/public-seo.mjs --update` correctly requires no sitemap/hash change.
+This change moves `docs/mirror-setup.html`'s 292-character language toggle to `docs/assets/csp/mirror-setup.js` and the 2,264-character OAuth callback from `docs/tickets/auth/callback.html` to adjacent `callback.js`. Bodies are byte-identical, with no defer/module/async change; callback remains after `../config.js`. The callback's first head element sets `no-referrer` before any resources, preventing OAuth query parameters from reaching same-origin asset-request referrers. Mirror's existing inline click handler remains callable through its global `toggleLang`. Both asset locations are copied by the existing Dockerfile rules where their HTML is served. Only the two exact HTML hashes in `approved_analytics_delta.py` change; no frozen baseline or wiki/audit approvals change. These pages are absent from sitemap sources, so no sitemap/hash change is needed.
 
 ## Counts by file
 
@@ -501,19 +501,26 @@ Externalizing a script alone does not remove the handlers it creates. These site
 
 ## Next.js app inventory and nonce prerequisite
 
-No authored inline `<script>`, `next/script`, string event-handler attribute, or `javascript:` URL occurs in production `apps/web/src`. React `onClick`/`onChange` callbacks are bundled functions registered by React, so they do not require `unsafe-inline`. Function-valued DOM `.onclick` assignments in docs scripts likewise do not constitute inline string handlers. The only authored `dangerouslySetInnerHTML` is a **style** in `src/app/[locale]/sso-verify/page.tsx:222`, outside this script hardening step.
+Source scan of 42 production JS/TS/JSX/TSX/MJS files in `apps/web/src` plus `apps/web/next.config.mjs` (tests excluded): **0 Inline scripts**, **0 next/script elements**, **0 beforeInteractive**, **1 dangerouslySetInnerHTML**, **0 String handlers**, **0 javascript: URLs**.
 
-| File / generated item | Inline script / string handler / javascript: counts | Plan |
+Counts are generated from source sites, including literal HTML strings; comments are ignored. Inline script elements include data blocks and `next/script` elements without `src`. Default imports of `next/script` are tracked by their local name; `beforeInteractive` is counted even for external scripts. All `dangerouslySetInnerHTML` sites are listed for review, including styles and non-script HTML. Categories can overlap. This conservative scan does not evaluate spreads, computed props or dynamically assembled HTML; inspect production output before enforcement. React callback props are counted separately and do not require `unsafe-inline`.
+
+| File | Inline scripts | next/script elements | beforeInteractive | dangerouslySetInnerHTML | String handlers | javascript: URLs |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `apps/web/next.config.mjs` | 0 | 0 | 0 | 0 | 0 | 0 |
+| `apps/web/src/app/[locale]/layout.tsx` | 0 | 0 | 0 | 0 | 0 | 0 |
+| `apps/web/src/app/[locale]/sso-verify/page.tsx` | 0 | 0 | 0 | 1 | 0 | 0 |
+| `apps/web/src/proxy.ts` | 0 | 0 | 0 | 0 | 0 | 0 |
+
+| File:line | Source site | Plan |
 | --- | --- | --- |
-| `apps/web/next.config.mjs` | 0 / 0 / 0 authored | No CSP here; Referrer/Permissions headers only. PWA auto-registration is enabled; inspect its built output for additional inline script and nonce compatibility. |
-| `apps/web/src/proxy.ts` (Next 16 middleware entry) | 0 / 0 / 0 authored | Nonce: create a fresh cryptographically random nonce per HTML response; pass the matching CSP and nonce through request headers to the Next renderer and attach that policy to the response. Preserve next-intl and all rewrite/redirect behavior. |
-| `apps/web/src/app/[locale]/layout.tsx` (only layout) | 0 / 0 / 0 authored | Nonce: ensure Next framework/bootstrap and any future authored script receive that request's nonce. Evaluate dynamic rendering, prefetches, streaming, error routes and caching. |
-| Other production `apps/web/src` files | 0 / 0 / 0 authored | Keep event callbacks in the bundle. See React callback counts below. |
-| Next-emitted bootstrap / hydration / Flight (`self.__next_f.push(...)`, etc.) | Response-dependent; unmeasured without a production build/render | Nonce for each response, not static hashes: contents vary with route, build and payload. No nonce is installed in this PR, so violations are expected. |
+| `apps/web/src/app/[locale]/sso-verify/page.tsx:222` | dangerouslySetInnerHTML on <code>&lt;style&gt;</code> | Style injection; outside this script hardening step. |
+
+Next-emitted bootstrap / hydration / Flight (`self.__next_f.push(...)`, etc.) remains response-dependent and unmeasured without a production build/render. Use a nonce for each response, since contents vary with route, build and payload. Generate a fresh cryptographically random nonce in `src/proxy.ts`, pass it with the matching CSP to the Next renderer, and apply the policy to the response. Ensure `src/app/[locale]/layout.tsx` and any authored scripts receive it. Preserve next-intl, redirects and rewrites; evaluate dynamic rendering, prefetches, streaming, error routes and caching. PWA auto-registration is enabled in `next.config.mjs`; inspect its built output for inline script and nonce compatibility.
 
 Current nonce plumbing is absent. A static Traefik label cannot create a per-request nonce or stamp it on Next scripts. Before enforcement, retain the static-docs policy at the edge and route dynamic HTML through a matching nonce-aware application policy; avoid a second static strict enforced policy that would still block Next even if its application policy allows the nonce. Never reuse a constant nonce, echo a client-supplied nonce, or cache nonce-bearing HTML independently of its header. Current PWA `StaleWhileRevalidate` document caching also needs review before serving per-response nonces. No Next code is changed in this PR; an offline production render was unavailable because this worktree has no installed web dependencies.
 
-React callback occurrences (source JSX; all emit zero string handler attributes):
+React callback occurrences (source JSX expressions; separate from string handlers):
 
 | File | Callback props |
 | --- | ---: |

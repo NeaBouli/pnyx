@@ -9,11 +9,22 @@ from html.parser import HTMLParser
 from pathlib import Path
 import re
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "docs/security/CSP_INVENTORY.md"
 EXCLUDED = {"animation-spec", "community-audits", "planning"}
 HASHED = {"docs/legal.html", "docs/municipality/article.html"}
 TEMPLATE_HANDLER = re.compile(r"\bon[a-z]+\s*=\s*['\"]", re.I)
+WEB_ROUTERS = ("ekklesia-web",)  # ekklesia-www only redirects to this router.
+NEXT_COLUMNS = {
+    "inline": "Inline scripts",
+    "next": "next/script elements",
+    "before": "beforeInteractive",
+    "html": "dangerouslySetInnerHTML",
+    "handlers": "String handlers",
+    "urls": "javascript: URLs",
+}
 
 
 class Page(HTMLParser):
@@ -61,6 +72,111 @@ def template_sites(body, start_line=1):
             for m in TEMPLATE_HANDLER.finditer(body)]
 
 
+def compose_labels(raw):
+    """Normalize both Compose label forms; reject ambiguous duplicate keys."""
+    if isinstance(raw, dict):
+        return raw
+    if not isinstance(raw, list):
+        raise ValueError("expected active web service labels")
+    labels = {}
+    for item in raw:
+        if not isinstance(item, str) or "=" not in item:
+            raise ValueError("expected key=value web label")
+        key, value = item.split("=", 1)
+        if key in labels:
+            raise ValueError(f"duplicate web label: {key}")
+        labels[key] = value
+    return labels
+
+
+def validate_policy(compose, hashes):
+    """Check policies on the active service and the routers serving web HTML."""
+    web = yaml.safe_load(compose)["services"]["web"]
+    labels = compose_labels(web.get("labels"))
+    if str(labels.get("traefik.enable")).lower() != "true":
+        raise ValueError("web service must be enabled in Traefik")
+    for router in WEB_ROUTERS:
+        prefix = f"traefik.http.routers.{router}."
+        bindings = {value.strip() for value in labels.get(prefix + "middlewares", "").split(",")}
+        if not labels.get(prefix + "rule") or not bindings.intersection({"ekklesia-headers", "ekklesia-headers@docker"}):
+            raise ValueError(f"{router} must bind the active ekklesia-headers middleware")
+    prefix = "traefik.http.middlewares.ekklesia-headers.headers."
+    enforced = labels.get(prefix + "contentSecurityPolicy")
+    report_only = labels.get(prefix + "customResponseHeaders.Content-Security-Policy-Report-Only")
+    if not enforced or not report_only:
+        raise ValueError("expected active enforced and Report-Only policy labels on web")
+    expected = enforced.replace("script-src 'self' 'unsafe-inline'", "script-src 'self' " + " ".join("'" + h + "'" for h in hashes.values()))
+    expected += "; object-src 'none'; base-uri 'self'"
+    if report_only != expected:
+        raise ValueError("Report-Only policy/hash drift: review the compose label and inventory")
+
+
+def source_tags(source):
+    """Locate source opening tags, keeping quoted '>' and JSX braces together.
+
+    This is a conservative source-site scan, not a JS evaluator. Literal HTML
+    strings are included because they can be injected into the DOM at runtime.
+    """
+    for match in re.finditer(r"<([A-Za-z][\w.:-]*)(?=[\s/>])", source):
+        pos = match.end()
+        start = pos
+        braces = 0
+        quote = None
+        while pos < len(source):
+            char = source[pos]
+            if quote:
+                if char == "\\":
+                    pos += 2
+                    continue
+                if char == quote:
+                    quote = None
+            elif char in "\"'`":
+                quote = char
+            elif char == "{":
+                braces += 1
+            elif char == "}":
+                braces -= 1
+            elif char == ">" and braces == 0:
+                yield match.start(), match[1], source[start:pos]
+                break
+            pos += 1
+
+
+def next_sites(source):
+    # Mask comments but preserve strings (including URLs) and line positions.
+    source = re.sub(r'''"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|//[^\n]*|/\*[\s\S]*?\*/''',
+                    lambda m: re.sub(r"[^\n]", " ", m[0]) if m[0].startswith(("//", "/*")) else m[0], source)
+    aliases = set(re.findall(r'''import\s+([A-Za-z_$][\w$]*)\s+from\s+['"]next/script['"]''', source))
+    aliases.update(re.findall(r'''import\s*\{\s*default\s+as\s+([A-Za-z_$][\w$]*)\s*\}\s*from\s*['"]next/script['"]''', source))
+    sites = []
+    for pos, tag, attrs in source_tags(source):
+        line = source[:pos].count("\n") + 1
+        kinds = []
+        if tag == "script" or tag in aliases:
+            if not re.search(r"\bsrc\s*=", attrs):
+                kinds.append("inline")
+            if tag in aliases:
+                kinds.append("next")
+            if re.search(r'''\bstrategy\s*=\s*\{?\s*['"]beforeInteractive['"]''', attrs):
+                kinds.append("before")
+        if re.search(r"\bdangerouslySetInnerHTML\s*=", attrs):
+            kinds.append("html")
+        kinds.extend("handlers" for _ in re.finditer(r'''\bon\w+\s*=\s*(?:['"]|\{\s*['"`])''', attrs))
+        kinds.extend("urls" for _ in re.finditer(r'''\b[\w-]+\s*=\s*\{?\s*['"`]\s*javascript\s*:''', attrs, re.I))
+        kinds.extend("callbacks" for _ in re.finditer(r"\bon[A-Z]\w*\s*=\s*\{(?!\s*['\"`])", attrs))
+        for kind in kinds:
+            sites.append((line, kind, tag))
+    return sites
+
+
+def next_inventory():
+    paths = [ROOT / "apps/web/next.config.mjs"]
+    paths += sorted(path for path in (ROOT / "apps/web/src").rglob("*")
+                    if path.suffix in {".js", ".jsx", ".ts", ".tsx", ".mjs"}
+                    and not re.search(r"\.(test|spec)\.", path.name) and "__tests__" not in path.parts)
+    return {path.relative_to(ROOT).as_posix(): next_sites(path.read_text(encoding="utf-8")) for path in paths}
+
+
 def render():
     pages = {}
     for path in sorted((ROOT / "docs").rglob("*.html")):
@@ -72,12 +188,7 @@ def render():
         assert len(scripts) == 1, f"review hashed scripts in {path}"
         hashes[path] = "sha256-" + base64.b64encode(hashlib.sha256(scripts[0]["body"].encode("utf-8")).digest()).decode("ascii")
     compose = (ROOT / "infra/docker/docker-compose.prod.yml").read_text(encoding="utf-8")
-    enforced = re.findall(r'ekklesia-headers\.headers\.contentSecurityPolicy=([^\n]+)"', compose)
-    report_only = re.findall(r'ekklesia-headers\.headers\.customResponseHeaders\.Content-Security-Policy-Report-Only=([^\n]+)"', compose)
-    assert len(enforced) == len(report_only) == 1, "expected exactly one enforced and one Report-Only policy"
-    expected = enforced[0].replace("script-src 'self' 'unsafe-inline'", "script-src 'self' " + " ".join("'" + h + "'" for h in hashes.values()))
-    expected += "; object-src 'none'; base-uri 'self'"
-    assert report_only[0] == expected, "Report-Only policy/hash drift: review the compose label and inventory"
+    validate_policy(compose, hashes)
     totals = Counter()
     generated = {}
     for path, page in pages.items():
@@ -97,7 +208,7 @@ def render():
              "Scope includes redirects, embeds, demos, and the live `wiki/audit.html` disclosure. Historical planning/community audit reports and `animation-spec/LANDING_SNIPPETS.html` (a design snippet, zero inline scripts/handlers) are excluded. The frozen `docs/planning/r0` inventory is unchanged. "
              "Production copies only the docs paths listed in `apps/web/Dockerfile.prod`; demos, mirror-setup and the legacy static sso-verify page are also inventoried because they are live docs pages on the static host.", "",
              "## Policy and migration strategy", "",
-             "The existing enforced CSP remains byte-identical in `infra/docker/docker-compose.prod.yml`. The same Traefik `ekklesia-headers` middleware adds `Content-Security-Policy-Report-Only` using `customResponseHeaders` (the existing compose mechanism also used for API response headers). It applies to the shared production origin, including static HTML paths that bypass the Next proxy matcher. Static hosting outside this Traefik deployment requires its own HTTP header configuration; an HTML meta tag cannot deliver Report-Only.", "",
+             "The existing enforced CSP remains byte-identical in `infra/docker/docker-compose.prod.yml`. The same Traefik `ekklesia-headers` middleware adds `Content-Security-Policy-Report-Only` using `customResponseHeaders` (the existing compose mechanism also used for API response headers). The gate parses active Compose YAML with PyYAML, requires both policies on the enabled `web` service, and verifies the `ekklesia-web` router binds `ekklesia-headers`. The `ekklesia-www` router only redirects to the canonical host. The policies apply to the shared production origin, including static HTML paths that bypass the Next proxy matcher. Static hosting outside this Traefik deployment requires its own HTTP header configuration; an HTML meta tag cannot deliver Report-Only.", "",
              "The target changes `script-src 'self' 'unsafe-inline'` to `script-src 'self'` plus the two real SHA-256 sources below, and adds `object-src 'none'; base-uri 'self'`. `frame-ancestors 'none'` and all other existing directives are retained, including `style-src 'self' 'unsafe-inline'`. There is no `unsafe-hashes`, `unsafe-eval`, fixed nonce, or `strict-dynamic` escape hatch. The script hashes allow whole script blocks, never event attributes.", "",
              "| Allowed inline script | SHA-256 source (exact UTF-8 body, including whitespace) |",
              "| --- | --- |",
@@ -105,7 +216,7 @@ def render():
              f"| `docs/municipality/article.html:{pages['docs/municipality/article.html'].scripts[-1]['line']}` — scroll reveals | `'{hashes['docs/municipality/article.html']}'` |", "",
              "No CSP report receiver, `report-uri`, `report-to`, or Reporting-Endpoints configuration exists in the inspected API/web/infra sources. No receiver or third party is added: violations are browser-console-only. Remaining inline scripts and handlers, including Next bootstrap, intentionally produce Report-Only violations; their execution still follows the unchanged enforced policy.", "",
              "**Externalize** means move the exact body into a same-origin classic script at the same document position and preserve dependencies, then replace inline attributes/generated attributes with `addEventListener` (or CSS for hover decoration). A nonce or script hash does not authorize an `onclick` attribute. **Hash** means retain stable inline bytes and update the allowlist when they change. JSON-LD is inert structured data, listed separately from executable code: preserve it inline for SEO; hash it if the supported browser/consumer requires CSP authorization. **Nonce** is reserved for response-specific Next bootstrap/Flight scripts, not static files.", "",
-             "This change moves `docs/mirror-setup.html`'s 292-character language toggle to `docs/assets/csp/mirror-setup.js` and the 2,264-character OAuth callback from `docs/tickets/auth/callback.html` to adjacent `callback.js`. Bodies are byte-identical, with no defer/module/async change; callback remains after `../config.js`. Mirror's existing inline click handler remains callable through its global `toggleLang`. Both asset locations are copied by the existing Dockerfile rules where their HTML is served. Only the two exact HTML hashes in `approved_analytics_delta.py` change; no frozen baseline or wiki/audit approvals change. These pages are absent from sitemap sources, so `node scripts/public-seo.mjs --update` correctly requires no sitemap/hash change.", "",
+             "This change moves `docs/mirror-setup.html`'s 292-character language toggle to `docs/assets/csp/mirror-setup.js` and the 2,264-character OAuth callback from `docs/tickets/auth/callback.html` to adjacent `callback.js`. Bodies are byte-identical, with no defer/module/async change; callback remains after `../config.js`. The callback's first head element sets `no-referrer` before any resources, preventing OAuth query parameters from reaching same-origin asset-request referrers. Mirror's existing inline click handler remains callable through its global `toggleLang`. Both asset locations are copied by the existing Dockerfile rules where their HTML is served. Only the two exact HTML hashes in `approved_analytics_delta.py` change; no frozen baseline or wiki/audit approvals change. These pages are absent from sitemap sources, so no sitemap/hash change is needed.", "",
              "## Counts by file", "", "| File | Executable blocks | JSON-LD | Empty | Literal handlers | Generated handler sites | javascript: URLs |",
              "| --- | ---: | ---: | ---: | ---: | ---: | ---: |"]
     for path, page in pages.items():
@@ -144,22 +255,34 @@ def render():
     for path, sites in external_generated.items():
         for line, value in sites:
             lines.append(f"| `{path}:{line}` | {code(value)} | Externalize to listeners / delegated events. |")
+    next_files = next_inventory()
+    next_totals = Counter(kind for sites in next_files.values() for _, kind, _ in sites)
     lines += ["", "## Next.js app inventory and nonce prerequisite", "",
-              "No authored inline `<script>`, `next/script`, string event-handler attribute, or `javascript:` URL occurs in production `apps/web/src`. React `onClick`/`onChange` callbacks are bundled functions registered by React, so they do not require `unsafe-inline`. Function-valued DOM `.onclick` assignments in docs scripts likewise do not constitute inline string handlers. The only authored `dangerouslySetInnerHTML` is a **style** in `src/app/[locale]/sso-verify/page.tsx:222`, outside this script hardening step.", "",
-              "| File / generated item | Inline script / string handler / javascript: counts | Plan |", "| --- | --- | --- |",
-              "| `apps/web/next.config.mjs` | 0 / 0 / 0 authored | No CSP here; Referrer/Permissions headers only. PWA auto-registration is enabled; inspect its built output for additional inline script and nonce compatibility. |",
-              "| `apps/web/src/proxy.ts` (Next 16 middleware entry) | 0 / 0 / 0 authored | Nonce: create a fresh cryptographically random nonce per HTML response; pass the matching CSP and nonce through request headers to the Next renderer and attach that policy to the response. Preserve next-intl and all rewrite/redirect behavior. |",
-              "| `apps/web/src/app/[locale]/layout.tsx` (only layout) | 0 / 0 / 0 authored | Nonce: ensure Next framework/bootstrap and any future authored script receive that request's nonce. Evaluate dynamic rendering, prefetches, streaming, error routes and caching. |",
-              "| Other production `apps/web/src` files | 0 / 0 / 0 authored | Keep event callbacks in the bundle. See React callback counts below. |",
-              "| Next-emitted bootstrap / hydration / Flight (`self.__next_f.push(...)`, etc.) | Response-dependent; unmeasured without a production build/render | Nonce for each response, not static hashes: contents vary with route, build and payload. No nonce is installed in this PR, so violations are expected. |", "",
+              f"Source scan of {len(next_files)} production JS/TS/JSX/TSX/MJS files in `apps/web/src` plus `apps/web/next.config.mjs` (tests excluded): "
+              + ", ".join(f"**{next_totals[kind]} {label}**" for kind, label in NEXT_COLUMNS.items()) + ".", "",
+              "Counts are generated from source sites, including literal HTML strings; comments are ignored. Inline script elements include data blocks and `next/script` elements without `src`. Default imports of `next/script` are tracked by their local name; `beforeInteractive` is counted even for external scripts. All `dangerouslySetInnerHTML` sites are listed for review, including styles and non-script HTML. Categories can overlap. This conservative scan does not evaluate spreads, computed props or dynamically assembled HTML; inspect production output before enforcement. React callback props are counted separately and do not require `unsafe-inline`.", "",
+              "| File | " + " | ".join(NEXT_COLUMNS.values()) + " |",
+              "| --- | " + " | ".join("---:" for _ in NEXT_COLUMNS) + " |"]
+    for path, sites in next_files.items():
+        counts = Counter(kind for _, kind, _ in sites)
+        if any(counts[kind] for kind in NEXT_COLUMNS) or path.endswith(("layout.tsx", "proxy.ts", "next.config.mjs")):
+            lines.append("| `" + path + "` | " + " | ".join(str(counts[kind]) for kind in NEXT_COLUMNS) + " |")
+    lines += ["", "| File:line | Source site | Plan |", "| --- | --- | --- |"]
+    for path, sites in next_files.items():
+        for line, kind, tag in sites:
+            if kind in NEXT_COLUMNS:
+                plan = "Review injected HTML; externalize scripts/handlers or provide the response nonce."
+                if kind == "html" and tag == "style":
+                    plan = "Style injection; outside this script hardening step."
+                lines.append(f"| `{path}:{line}` | {NEXT_COLUMNS[kind]} on {code('<' + tag + '>')} | {plan} |")
+    lines += ["",
+              "Next-emitted bootstrap / hydration / Flight (`self.__next_f.push(...)`, etc.) remains response-dependent and unmeasured without a production build/render. Use a nonce for each response, since contents vary with route, build and payload. Generate a fresh cryptographically random nonce in `src/proxy.ts`, pass it with the matching CSP to the Next renderer, and apply the policy to the response. Ensure `src/app/[locale]/layout.tsx` and any authored scripts receive it. Preserve next-intl, redirects and rewrites; evaluate dynamic rendering, prefetches, streaming, error routes and caching. PWA auto-registration is enabled in `next.config.mjs`; inspect its built output for inline script and nonce compatibility.", "",
               "Current nonce plumbing is absent. A static Traefik label cannot create a per-request nonce or stamp it on Next scripts. Before enforcement, retain the static-docs policy at the edge and route dynamic HTML through a matching nonce-aware application policy; avoid a second static strict enforced policy that would still block Next even if its application policy allows the nonce. Never reuse a constant nonce, echo a client-supplied nonce, or cache nonce-bearing HTML independently of its header. Current PWA `StaleWhileRevalidate` document caching also needs review before serving per-response nonces. No Next code is changed in this PR; an offline production render was unavailable because this worktree has no installed web dependencies.", "",
-              "React callback occurrences (source JSX; all emit zero string handler attributes):", "", "| File | Callback props |", "| --- | ---: |"]
-    for path in sorted((ROOT / "apps/web/src").rglob("*.tsx")):
-        if ".test." in path.name:
-            continue
-        callbacks = re.findall(r"\bon[A-Z]\w*\s*=\s*\{", path.read_text(encoding="utf-8"))
+              "React callback occurrences (source JSX expressions; separate from string handlers):", "", "| File | Callback props |", "| --- | ---: |"]
+    for path, sites in next_files.items():
+        callbacks = sum(kind == "callbacks" for _, kind, _ in sites)
         if callbacks:
-            lines.append(f"| `{path.relative_to(ROOT).as_posix()}` | {len(callbacks)} |")
+            lines.append(f"| `{path}` | {callbacks} |")
     lines += ["", "## Work remaining before enforcement", "",
               "1. Externalize the remaining executable blocks and all literal/generated handlers listed above, including language controls, FAQ/roadmap toggles, modals, newsletter/chat, demos, embeds and ticket rendering. Keep inert JSON-LD and approved stable hashes synchronized.",
               "2. Implement and verify the Next nonce path, rendering/cache/PWA behavior, and edge/application policy composition; exercise all locale routes, errors, hydration, navigation and offline/service-worker updates with the unchanged enforced policy plus the nonce-aware Report-Only candidate.",
@@ -168,11 +291,14 @@ def render():
     return "\n".join(lines)
 
 
-if __name__ == "__main__":
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="fail if the inventory needs regeneration")
-    args = parser.parse_args()
-    content = render()
+    args = parser.parse_args(argv)
+    try:
+        content = render()
+    except (ValueError, yaml.YAMLError) as error:
+        raise SystemExit(str(error)) from error
     if args.check:
         if not OUTPUT.is_file() or OUTPUT.read_text(encoding="utf-8") != content:
             raise SystemExit("CSP inventory drift: run python3 scripts/csp-inventory.py")
@@ -180,3 +306,7 @@ if __name__ == "__main__":
     else:
         OUTPUT.write_text(content, encoding="utf-8")
         print("wrote docs/security/CSP_INVENTORY.md")
+
+
+if __name__ == "__main__":
+    main()
