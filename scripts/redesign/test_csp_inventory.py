@@ -127,6 +127,31 @@ class InventoryGateTests(unittest.TestCase):
         with self.assertRaisesRegex(SystemExit, "CSP inventory drift"):
             csp.main(["--check"])
 
+    def test_data_src_inline_script_changes_inventory_and_fails_check(self):
+        path = self.root / LAYOUT
+        source = path.read_text(encoding="utf-8")
+        addition = '<script data-src="/deferred.js">{"window.added = true"}</script>'
+        path.write_text(source.replace("</head>", addition + "</head>"), encoding="utf-8")
+        self.assertIn(f"| `{LAYOUT}` | 1 |", csp.render())
+        with self.assertRaisesRegex(SystemExit, "CSP inventory drift"):
+            csp.main(["--check"])
+
+    def test_combined_script_imports_change_inventory_and_fail_check(self):
+        path = self.root / LAYOUT
+        source = path.read_text(encoding="utf-8")
+        for declaration, alias in (
+            ('import Script, { type ScriptProps } from "next/script";', "Script"),
+            ('import Boot, { type ScriptProps as Props } from "next/script";', "Boot"),
+            ('import { type ScriptProps, default as Boot } from "next/script";', "Boot"),
+            ('import Boot, { default as Early, type ScriptProps } from "next/script";', "Early"),
+        ):
+            with self.subTest(declaration=declaration):
+                addition = f'<{alias}>{{"window.added = true"}}</{alias}>'
+                path.write_text(declaration + "\n" + source.replace("</head>", addition + "</head>"), encoding="utf-8")
+                self.assertIn(f"| `{LAYOUT}` | 1 | 1 |", csp.render())
+                with self.assertRaisesRegex(SystemExit, "CSP inventory drift"):
+                    csp.main(["--check"])
+
 
 class NextSourceTests(unittest.TestCase):
     def test_script_kinds_are_counted_from_source(self):
@@ -153,6 +178,53 @@ const url = "https://example.org";
     def test_named_default_script_import_is_counted(self):
         sites = csp.next_sites('import { default as Boot } from "next/script";\n<Boot>{"run()"}</Boot>')
         self.assertEqual([(2, "inline", "Boot"), (2, "next", "Boot")], sites)
+
+    def test_only_src_attribute_excludes_inline_scripts(self):
+        for attrs in (
+            'data-src="/deferred.js"',
+            'custom-src="/deferred.js"',
+            'data-note="src=/deferred.js"',
+            'data-note=" src=/deferred.js"',
+            'data-note={" src=/deferred.js"}',
+            'data-note={{ src: "deferred", note: " src=ignored" }}',
+        ):
+            with self.subTest(attrs=attrs):
+                sites = csp.next_sites(f'<script {attrs}>{{"run()"}}</script>')
+                self.assertEqual([(1, "inline", "script")], sites)
+        for attrs in (
+            'src="/external.js"',
+            'src = {"/external.js"}',
+            'data-src="/deferred.js"\n src = "/external.js"',
+            'data-note={"escaped \\\" quote >"} src={external}',
+        ):
+            with self.subTest(attrs=attrs):
+                self.assertEqual([], csp.next_sites(f'<script {attrs}></script>'))
+
+    def test_combined_and_aliased_script_imports_are_counted(self):
+        for declaration in (
+            'import Boot, { type ScriptProps } from "next/script";',
+            "import Boot, { type ScriptProps as Props } from 'next/script';",
+            'import Boot,\n { type ScriptProps, }\n from "next/script";',
+            'import { type ScriptProps, default as Boot } from "next/script";',
+            'import { default as Boot, type ScriptProps } from "next/script";',
+            'import Other, { type ScriptProps, default as Boot } from "next/script";',
+        ):
+            with self.subTest(declaration=declaration):
+                line = declaration.count("\n") + 2
+                source = declaration + '\n<Boot data-src="/deferred.js">{"run()"}</Boot>'
+                self.assertEqual([(line, "inline", "Boot"), (line, "next", "Boot")], csp.next_sites(source))
+                source = declaration + '\n<Boot src="/early.js" strategy="beforeInteractive" />'
+                self.assertEqual([(line, "next", "Boot"), (line, "before", "Boot")], csp.next_sites(source))
+
+    def test_named_types_and_other_modules_are_not_script_aliases(self):
+        source = '''import Boot, { type ScriptProps as Props } from "next/script";
+import Other, { type ScriptProps } from "other/script";
+import type TypeOnly from "next/script";
+<Props />
+<Other />
+<TypeOnly />
+'''
+        self.assertEqual([], csp.next_sites(source))
 
     def test_duplicate_list_labels_are_rejected(self):
         with self.assertRaisesRegex(ValueError, "duplicate web label"):

@@ -142,18 +142,44 @@ def source_tags(source):
             pos += 1
 
 
+def has_src_attribute(attrs):
+    """Match a whole src attribute outside quoted values and JSX expressions."""
+    pos = 0
+    braces = 0
+    quote = None
+    while pos < len(attrs):
+        char = attrs[pos]
+        if quote:
+            if char == "\\":
+                pos += 2
+                continue
+            if char == quote:
+                quote = None
+        elif char in "\"'`":
+            quote = char
+        elif char == "{":
+            braces += 1
+        elif char == "}":
+            braces -= 1
+        elif braces == 0 and (pos == 0 or attrs[pos - 1].isspace()) and re.match(r"src\s*=", attrs[pos:]):
+            return True
+        pos += 1
+    return False
+
+
 def next_sites(source):
     # Mask comments but preserve strings (including URLs) and line positions.
     source = re.sub(r'''"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|//[^\n]*|/\*[\s\S]*?\*/''',
                     lambda m: re.sub(r"[^\n]", " ", m[0]) if m[0].startswith(("//", "/*")) else m[0], source)
-    aliases = set(re.findall(r'''import\s+([A-Za-z_$][\w$]*)\s+from\s+['"]next/script['"]''', source))
-    aliases.update(re.findall(r'''import\s*\{\s*default\s+as\s+([A-Za-z_$][\w$]*)\s*\}\s*from\s*['"]next/script['"]''', source))
+    aliases = set(re.findall(r'''import\s+([A-Za-z_$][\w$]*)\s*(?:,\s*\{[^}]*\}\s*)?from\s+['"]next/script['"]''', source))
+    for named in re.findall(r'''import\s*(?:[A-Za-z_$][\w$]*\s*,\s*)?\{([^}]*)\}\s*from\s*['"]next/script['"]''', source):
+        aliases.update(re.findall(r"(?:^|,)\s*default\s+as\s+([A-Za-z_$][\w$]*)\s*(?=,|$)", named))
     sites = []
     for pos, tag, attrs in source_tags(source):
         line = source[:pos].count("\n") + 1
         kinds = []
         if tag == "script" or tag in aliases:
-            if not re.search(r"\bsrc\s*=", attrs):
+            if not has_src_attribute(attrs):
                 kinds.append("inline")
             if tag in aliases:
                 kinds.append("next")
@@ -260,7 +286,7 @@ def render():
     lines += ["", "## Next.js app inventory and nonce prerequisite", "",
               f"Source scan of {len(next_files)} production JS/TS/JSX/TSX/MJS files in `apps/web/src` plus `apps/web/next.config.mjs` (tests excluded): "
               + ", ".join(f"**{next_totals[kind]} {label}**" for kind, label in NEXT_COLUMNS.items()) + ".", "",
-              "Counts are generated from source sites, including literal HTML strings; comments are ignored. Inline script elements include data blocks and `next/script` elements without `src`. Default imports of `next/script` are tracked by their local name; `beforeInteractive` is counted even for external scripts. All `dangerouslySetInnerHTML` sites are listed for review, including styles and non-script HTML. Categories can overlap. This conservative scan does not evaluate spreads, computed props or dynamically assembled HTML; inspect production output before enforcement. React callback props are counted separately and do not require `unsafe-inline`.", "",
+              "Counts are generated from source sites, including literal HTML strings; comments are ignored. Inline script elements include data blocks and `next/script` elements without an actual `src` attribute; `data-src` and mentions inside attribute values do not make a script external. Default imports of `next/script` are tracked by their local name, including combined default/named imports and `default as` aliases within named imports; `beforeInteractive` is counted even for external scripts. All `dangerouslySetInnerHTML` sites are listed for review, including styles and non-script HTML. Categories can overlap. This conservative scan does not evaluate spreads, computed props or dynamically assembled HTML; inspect production output before enforcement. React callback props are counted separately and do not require `unsafe-inline`.", "",
               "| File | " + " | ".join(NEXT_COLUMNS.values()) + " |",
               "| --- | " + " | ".join("---:" for _ in NEXT_COLUMNS) + " |"]
     for path, sites in next_files.items():
