@@ -4,7 +4,9 @@ import test from "node:test";
 import { spawnSync } from "node:child_process";
 import sharp from "sharp";
 import semver from "semver";
-import { optimizeImage } from "next/dist/server/image-optimizer.js";
+import imageOptimizerModule from "next/dist/server/image-optimizer.js";
+const { optimizeImage } = imageOptimizerModule;
+if (typeof optimizeImage !== "function") throw new Error("next image optimizer API changed: optimizeImage missing");
 
 test("Next encodes AVIF output with expected dimensions", async () => {
   const buffer = await sharp({
