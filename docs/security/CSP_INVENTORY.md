@@ -2,7 +2,7 @@
 
 Snapshot: 2026-10-17. Regenerate with `python3 scripts/csp-inventory.py`; verify with `--check`.
 
-The 35 live `docs/**/*.html` pages contain **55 executable inline blocks**, **25 JSON-LD blocks**, **1 empty block**, **230 literal event-handler attributes**, and **0 javascript: URLs** after this change. There are also **12 handler template sites** inside HTML script blocks and **6** in external docs JavaScript; runtime instances depend on data.
+The 35 live `docs/**/*.html` pages contain **55 executable inline blocks**, **25 JSON-LD blocks**, **1 empty block**, **231 literal event-handler attributes**, and **0 javascript: URLs** after this change. There are also **12 handler template sites** inside HTML script blocks and **6** in external docs JavaScript; runtime instances depend on data.
 
 Scope includes redirects, embeds, demos, and the live `wiki/audit.html` disclosure. Historical planning/community audit reports and `animation-spec/LANDING_SNIPPETS.html` (a design snippet, zero inline scripts/handlers) are excluded. The frozen `docs/planning/r0` inventory is unchanged. Production copies only the docs paths listed in `apps/web/Dockerfile.prod`; demos, mirror-setup and the legacy static sso-verify page are also inventoried because they are live docs pages on the static host.
 
@@ -54,7 +54,7 @@ This change moves `docs/mirror-setup.html`'s 292-character language toggle to `d
 | `docs/wiki/contributing.html` | 2 | 1 | 0 | 5 | 0 | 0 |
 | `docs/wiki/database.html` | 2 | 1 | 0 | 5 | 0 | 0 |
 | `docs/wiki/delete-account.html` | 2 | 1 | 0 | 5 | 0 | 0 |
-| `docs/wiki/faq.html` | 2 | 1 | 0 | 62 | 0 | 0 |
+| `docs/wiki/faq.html` | 2 | 1 | 0 | 63 | 0 | 0 |
 | `docs/wiki/index.html` | 2 | 1 | 0 | 5 | 0 | 0 |
 | `docs/wiki/modules.html` | 2 | 1 | 0 | 5 | 0 | 0 |
 | `docs/wiki/privacy.html` | 2 | 1 | 0 | 5 | 0 | 0 |
@@ -389,15 +389,15 @@ Locations refer to this tree. Identical handler bodies are grouped with every so
 
 | Location(s) | Category / item | Plan |
 | --- | --- | --- |
-| 533 | Executable: <code>var _privacyHtml='&lt;h2 style="margin-top:0"&gt;Πολιτική Απορρήτου&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;Τι ΔΕΝ αποθηκεύουμ</code> | Externalize; preserve globals and execution order. |
-| 541 | Executable: <code>var currentLang = "el";</code> | Externalize; preserve globals and execution order. |
-| 558 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
+| 538 | Executable: <code>var _privacyHtml='&lt;h2 style="margin-top:0"&gt;Πολιτική Απορρήτου&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;Τι ΔΕΝ αποθηκεύουμ</code> | Externalize; preserve globals and execution order. |
+| 546 | Executable: <code>var currentLang = "el";</code> | Externalize; preserve globals and execution order. |
+| 563 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
 | 188 | <code>onclick=toggleLang()</code> | Externalize to listeners. |
-| 203, 208, 213, 218, 223, 231, 236, 241, 246, 251, 256, 261, 266, 271, 279, 283, 287, 291, 295, 300, 308, 313, 318, 323, 328, 333, 338, 343, 351, 356, 361, 366, 371, 376, 384, 389, 394, 399, 404, 412, 417, 422, 427, 432, 440, 445, 450, 458, 463, 468, 473, 478, 483, 488, 493, 498, 503 | <code>onclick=this.parentElement.classList.toggle('open')</code> | Externalize to listeners. |
-| 521 | <code>onclick=openLegalModal('privacy');return false</code> | Externalize to listeners. |
-| 522 | <code>onclick=openLegalModal('delete');return false</code> | Externalize to listeners. |
-| 527 | <code>onclick=if(event.target===this)closeLegalModal()</code> | Externalize to listeners. |
-| 529 | <code>onclick=closeLegalModal()</code> | Externalize to listeners. |
+| 203, 208, 213, 218, 223, 231, 236, 241, 246, 251, 256, 261, 266, 271, 279, 283, 287, 291, 295, 300, 308, 313, 318, 323, 328, 333, 338, 343, 351, 356, 361, 366, 371, 376, 384, 389, 394, 399, 404, 409, 417, 422, 427, 432, 437, 445, 450, 455, 463, 468, 473, 478, 483, 488, 493, 498, 503, 508 | <code>onclick=this.parentElement.classList.toggle('open')</code> | Externalize to listeners. |
+| 526 | <code>onclick=openLegalModal('privacy');return false</code> | Externalize to listeners. |
+| 527 | <code>onclick=openLegalModal('delete');return false</code> | Externalize to listeners. |
+| 532 | <code>onclick=if(event.target===this)closeLegalModal()</code> | Externalize to listeners. |
+| 534 | <code>onclick=closeLegalModal()</code> | Externalize to listeners. |
 
 ### `docs/wiki/index.html`
 
