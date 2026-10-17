@@ -112,6 +112,10 @@ services:
       - traefik.http.middlewares.ekklesia-headers.headers.frameDeny=true
       - traefik.http.middlewares.ekklesia-headers.headers.browserXssFilter=true
       - "traefik.http.middlewares.ekklesia-headers.headers.contentSecurityPolicy=default-src 'self' https://api.ekklesia.gr; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api.qrserver.com https://avatars.githubusercontent.com; connect-src 'self' https://api.ekklesia.gr https://api.coingecko.com https://arweave.net https://api.github.com https://polis-oauth-proxy.bergamolia.workers.dev; frame-ancestors 'none'"
+      # T-9138 / EVA-023: strict script target, observation only; hashes pin the
+      # legal language toggle and municipality article reveal script. Next.js
+      # bootstrap needs per-response nonces before enforcement (see CSP inventory).
+      - "traefik.http.middlewares.ekklesia-headers.headers.customResponseHeaders.Content-Security-Policy-Report-Only=default-src 'self' https://api.ekklesia.gr; script-src 'self' 'sha256-Dj8kl3l3xRPY+CsP2kC3GsPGU1uHVf8DpiAitpCfAeQ=' 'sha256-VOp/zUPtScCqBHSO9r9FbsJDFk2RkAWNKFzns7sDCT4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api.qrserver.com https://avatars.githubusercontent.com; connect-src 'self' https://api.ekklesia.gr https://api.coingecko.com https://arweave.net https://api.github.com https://polis-oauth-proxy.bergamolia.workers.dev; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
       - traefik.http.routers.ekklesia-web.middlewares=ekklesia-headers
 
   ollama:
