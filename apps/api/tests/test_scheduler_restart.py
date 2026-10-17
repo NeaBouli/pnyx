@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock
 
 import pytest
+from apscheduler.events import EVENT_JOB_EXECUTED
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
@@ -49,6 +50,8 @@ class FakeRedis:
     async def eval(self, script, num_keys, key, token):
         assert num_keys == 1
         assert "redis.call('get', KEYS[1]) == ARGV[1]" in script
+        if self.state["down"]:
+            raise ConnectionError("Redis unavailable")
         if self.state["store"].get(key) == token:
             del self.state["store"][key]
             return 1
@@ -129,6 +132,56 @@ async def test_invalid_history_gets_startup_delay(state, history):
     assert NOW + timedelta(minutes=2) <= job.next_run_time <= NOW + timedelta(minutes=5)
 
 
+@pytest.mark.parametrize("history", [
+    (NOW + timedelta(minutes=5, microseconds=1)).isoformat(),
+    (NOW + timedelta(days=365)).isoformat(),
+    "9999-12-31T23:59:59+00:00",
+])
+async def test_future_history_uses_jitter_and_does_not_block_execution(state, caplog, history):
+    state["store"][RUN_KEY] = history
+
+    _, job, func = await register()
+
+    assert NOW + timedelta(minutes=2) <= job.next_run_time <= NOW + timedelta(minutes=5)
+    assert len(caplog.records) == 1
+    assert history not in caplog.text
+    assert caplog.records[0].exc_info is None
+
+    caplog.clear()
+    await job.func(**job.kwargs)
+
+    func.assert_awaited_once()
+    assert LOCK_KEY not in state["store"]
+    assert len(caplog.records) == 1
+    assert history not in caplog.text
+
+
+@pytest.mark.parametrize("skew", [timedelta(seconds=1), timedelta(minutes=5)])
+async def test_small_future_skew_is_clamped_to_now(state, skew):
+    state["store"][RUN_KEY] = (NOW + skew).isoformat()
+    scheduler, job, func = await register()
+
+    assert job.next_run_time == NOW + INTERVAL
+    await job.func(**job.kwargs)
+    await asyncio.sleep(0)
+
+    func.assert_not_awaited()
+    assert scheduler.get_job(NAME).next_run_time == NOW + INTERVAL
+
+
+async def test_interval_arithmetic_overflow_uses_jitter(state, caplog):
+    state["now"] = datetime(9999, 12, 30, tzinfo=timezone.utc)
+    state["store"][RUN_KEY] = state["now"].isoformat()
+
+    _, job, func = await register()
+
+    assert state["now"] + timedelta(minutes=2) <= job.next_run_time <= state["now"] + timedelta(minutes=5)
+    assert len(caplog.records) == 1
+    assert state["store"][RUN_KEY] not in caplog.text
+    await job.func(**job.kwargs)
+    func.assert_awaited_once()
+
+
 @pytest.mark.parametrize("seconds", [120, 300])
 def test_startup_jitter_boundaries(monkeypatch, seconds):
     def randint(low, high):
@@ -170,6 +223,8 @@ async def test_lifespan_restores_all_long_jobs_before_scheduler_starts(state, mo
             assert job.func is scheduler_state.run_interval_job
             assert job.kwargs["func"] is getattr(main, function_name)
             assert job.kwargs["name"] == name
+            assert job.coalesce is True
+            assert job.misfire_grace_time is None or job.misfire_grace_time >= 300
             assert f"scraper:{name}:last_run" in state["reads"]
             if history == "recent":
                 assert job.next_run_time == NOW + timedelta(hours=1)
@@ -279,15 +334,46 @@ async def test_running_scheduler_does_not_lose_due_tick_during_lease_cleanup(sta
         await asyncio.sleep(0)
 
 
-@pytest.mark.parametrize("error", [RuntimeError("provider failed"), asyncio.CancelledError()])
+async def test_restored_due_run_survives_slow_startup(state):
+    state["now"] = datetime.now(timezone.utc)
+    due = state["now"] + timedelta(milliseconds=100)
+    state["store"][RUN_KEY] = (due - INTERVAL).isoformat()
+    ran = asyncio.Event()
+
+    async def body():
+        await scraper_state.record_run(NAME)
+        ran.set()
+
+    scheduler, job, func = await register(func=AsyncMock(side_effect=body))
+    assert job.next_run_time == due
+    await asyncio.sleep(1.2)
+    state["now"] = datetime.now(timezone.utc)
+    scheduler.start()
+    try:
+        await asyncio.wait_for(ran.wait(), timeout=3)
+        func.assert_awaited_once()
+        assert scheduler.get_job(NAME).trigger.interval == INTERVAL
+    finally:
+        scheduler.shutdown()
+        await asyncio.sleep(0)
+
+
+@pytest.mark.parametrize("error", [
+    RuntimeError("provider failed"),
+    ConnectionError("provider failed"),
+    asyncio.CancelledError(),
+])
 async def test_failure_or_shutdown_releases_owned_lease(state, error):
-    _, job, _ = await register(func=AsyncMock(side_effect=error))
+    scheduler, job, _ = await register(func=AsyncMock(side_effect=error))
+    next_run = job.next_run_time
 
     with pytest.raises(type(error)):
         await job.func(**job.kwargs)
 
     assert LOCK_KEY not in state["store"]
     assert all(client.closed for client in state["clients"])
+    await asyncio.sleep(0)
+    assert scheduler.get_job(NAME).next_run_time == next_run
 
 
 async def test_release_does_not_delete_another_workers_lease(state):
@@ -300,13 +386,113 @@ async def test_release_does_not_delete_another_workers_lease(state):
     assert state["store"][LOCK_KEY] == "replacement-owner"
 
 
-async def test_redis_outage_defers_startup_and_prevents_unguarded_execution(state):
+@pytest.mark.parametrize("failure_at", ["client", "lease", "lease_response", "history", "close"])
+async def test_redis_outage_retries_until_recovery_without_unguarded_execution(state, monkeypatch, failure_at):
     state["down"] = True
 
-    _, job, func = await register()
+    async def body():
+        await scraper_state.record_run(NAME)
+
+    scheduler, job, func = await register(func=AsyncMock(side_effect=body))
 
     assert NOW + timedelta(minutes=2) <= job.next_run_time <= NOW + timedelta(minutes=5)
-    with pytest.raises(ConnectionError):
+    original_redis, original_set = scraper_state._redis, FakeRedis.set
+    original_close = FakeRedis.aclose
+
+    async def unavailable_client():
+        if state["down"]:
+            raise ConnectionError("Redis unavailable")
+        return await original_redis()
+
+    async def acquire_before_failed_read(client, *args, **kwargs):
+        state["down"] = False
+        try:
+            return await original_set(client, *args, **kwargs)
+        finally:
+            state["down"] = True
+
+    async def lost_lease_response(client, *args, **kwargs):
+        await acquire_before_failed_read(client, *args, **kwargs)
+        raise ConnectionError("Lease response lost")
+
+    async def failed_close(client):
+        await original_close(client)
+        raise ConnectionError("Close failed")
+
+    if failure_at == "client":
+        monkeypatch.setattr(scraper_state, "_redis", unavailable_client)
+    elif failure_at == "history":
+        monkeypatch.setattr(FakeRedis, "set", acquire_before_failed_read)
+    elif failure_at == "lease_response":
+        monkeypatch.setattr(FakeRedis, "set", lost_lease_response)
+    elif failure_at == "close":
+        monkeypatch.setattr(FakeRedis, "aclose", failed_close)
+
+    for _ in range(3):
+        state["now"] = scheduler.get_job(NAME).next_run_time
         await job.func(**job.kwargs)
-    func.assert_not_awaited()
+        await asyncio.sleep(0)
+        func.assert_not_awaited()
+        retry = scheduler.get_job(NAME)
+        assert state["now"] + timedelta(minutes=5) <= retry.next_run_time <= state["now"] + timedelta(minutes=10)
+        assert retry.trigger.interval == INTERVAL
+        assert (LOCK_KEY in state["store"]) == (failure_at in {"history", "lease_response"})
+
+    state["down"] = False
+    monkeypatch.setattr(FakeRedis, "set", original_set)
+    monkeypatch.setattr(FakeRedis, "aclose", original_close)
+    state["now"] = scheduler.get_job(NAME).next_run_time
+    await job.func(**job.kwargs)
+    await asyncio.sleep(0)
+
+    func.assert_awaited_once()
+    assert state["store"][RUN_KEY] == state["now"].isoformat()
+    assert LOCK_KEY not in state["store"]
+    assert "pending_release" not in scheduler.get_job(NAME).kwargs
     assert all(client.closed for client in state["clients"])
+
+
+async def test_retry_cleanup_preserves_another_workers_lease(state):
+    state["down"] = True
+    scheduler, job, func = await register()
+    await job.func(**job.kwargs)
+    await asyncio.sleep(0)
+    assert scheduler.get_job(NAME).kwargs["pending_release"]
+
+    state["down"] = False
+    state["store"][LOCK_KEY] = "another-worker"
+    await job.func(**job.kwargs)
+
+    func.assert_not_awaited()
+    assert state["store"][LOCK_KEY] == "another-worker"
+    assert all(client.closed for client in state["clients"])
+
+
+async def test_running_scheduler_retries_missed_body_after_redis_recovery(state, monkeypatch):
+    state["now"] = datetime.now(timezone.utc)
+    state["down"] = True
+    monkeypatch.setattr(scheduler_state, "COORDINATION_RETRY_SECONDS", (1, 1))
+    tick = asyncio.Event()
+    ran = asyncio.Event()
+
+    async def body():
+        await scraper_state.record_run(NAME)
+        ran.set()
+
+    scheduler, job, func = await register(func=AsyncMock(side_effect=body))
+    scheduler.add_listener(lambda event: tick.set(), EVENT_JOB_EXECUTED)
+    scheduler.modify_job(NAME, next_run_time=state["now"])
+    scheduler.start()
+    try:
+        await asyncio.wait_for(tick.wait(), timeout=3)
+        func.assert_not_awaited()
+        assert scheduler.get_job(NAME).next_run_time == state["now"] + timedelta(seconds=1)
+        state["down"] = False
+        state["now"] = datetime.now(timezone.utc)
+        await asyncio.wait_for(ran.wait(), timeout=3)
+        func.assert_awaited_once()
+        assert scheduler.get_job(NAME).trigger.interval == INTERVAL
+        assert scheduler.get_job(NAME).next_run_time >= state["now"] + INTERVAL
+    finally:
+        scheduler.shutdown()
+        await asyncio.sleep(0)
