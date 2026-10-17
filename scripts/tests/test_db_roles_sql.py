@@ -4,6 +4,7 @@ Set PNYX_TEST_POSTGRES_SOCKET and PGDATABASE=pnyx_test_* for a disposable
 socket-only cluster, with psql >= 15 on PATH. No cluster roles may preexist.
 """
 import importlib.util
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -40,7 +41,7 @@ class PsqlOperations:
         return self
 
     def execute(self, sql, params=None):
-        # This revision binds only role names and a list of creator names.
+        # This revision binds role/view names and a list of creator names.
         def literal(value):
             if isinstance(value, list):
                 return "ARRAY[" + ",".join(literal(v) for v in value) + "]::text[]"
@@ -85,7 +86,7 @@ class DatabaseRoleSQLTest(unittest.TestCase):
 
     def cleanup_database(self):
         self.admin.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public")
-        for role in ROLES:
+        for role in (*ROLES, "monitor_owner"):
             if self.admin.execute(f"SELECT EXISTS(SELECT FROM pg_roles WHERE rolname='ekklesia_{role}')").scalar():
                 self.admin.execute(f"DROP OWNED BY ekklesia_{role}; DROP ROLE ekklesia_{role}")
         self.admin.execute("ALTER DEFAULT PRIVILEGES REVOKE ALL ON TABLES FROM PUBLIC; ALTER DEFAULT PRIVILEGES REVOKE ALL ON SEQUENCES FROM PUBLIC")
@@ -168,6 +169,7 @@ class DatabaseRoleSQLTest(unittest.TestCase):
         reader = self.as_role("monitor")
         query = "SELECT receipt_count FROM public.monitor_zk_pending WHERE vote_scope_id='bill:safe'"
         self.assertEqual(reader.execute(query).scalar(), "40")
+        self.assertEqual(reader.execute("SELECT receipt_count FROM public.monitor_zk_pending_aggregate()").scalar(), "40")
         self.admin.execute("""
             INSERT INTO citizen_votes(bill_id,vote,created_at)
                 SELECT 'safe',choice,DATE_TRUNC('day',NOW() AT TIME ZONE 'UTC')-INTERVAL '2 days'
@@ -176,6 +178,7 @@ class DatabaseRoleSQLTest(unittest.TestCase):
         self.assertEqual(reader.execute(query).scalar(), "40")
         self.upgrade(25)
         self.assertEqual(reader.execute(query).all(), [])
+        self.assertEqual(reader.execute("SELECT * FROM public.monitor_zk_pending_aggregate()").all(), [])
         self.upgrade(10)
         # A reader-controlled setting cannot weaken the literal database rule.
         self.assertEqual(reader.execute("SET app.public_results_min_count='0'; " + query).all()[-1], ("40",))
@@ -203,6 +206,98 @@ class DatabaseRoleSQLTest(unittest.TestCase):
         self.admin.execute("DELETE FROM zk_vote_receipts WHERE id<>1")
         self.upgrade(0)
         self.assertEqual(reader.execute(query).scalar(), "1")
+
+    def test_explain_and_function_privilege_boundary(self):
+        self.bootstrap()
+        self.bootstrap()  # Reconcile the sole allowed migrator membership.
+        self.upgrade(10)
+        self.admin.execute("""
+            INSERT INTO parliament_bills(id,status,source,results_visibility)
+                VALUES ('small','ACTIVE','PARLIAMENT','ALWAYS');
+            INSERT INTO zk_merkle_roots VALUES ('bill:small','root',100,'OPEN');
+            INSERT INTO zk_vote_receipts(vote_scope_id,merkle_root,vote_commitment,arweave_pending,created_at)
+                VALUES ('bill:small','root','YES',TRUE,NOW()-INTERVAL '2 days');
+        """)
+        reader = self.as_role("monitor")
+        self.assertEqual(reader.execute("SELECT * FROM public.monitor_zk_pending_aggregate()").all(), [])
+        for view in self.revision.VIEWS:
+            with self.subTest(view=view):
+                output = reader.execute(f"EXPLAIN (ANALYZE, VERBOSE, FORMAT JSON) SELECT * FROM public.{view}")
+                plan = json.loads("\n".join(row[0] for row in output.all()))[0]["Plan"]
+                # No underlying plan, relation name, estimates or Actual Rows
+                # from a source table may be visible, even for a suppressed cell.
+                nodes = [plan]
+                for node in nodes:
+                    nodes.extend(node.get("Plans", []))
+                self.assertIn("Function Scan", [node["Node Type"] for node in nodes])
+                for node in nodes:
+                    self.assertIn(node["Node Type"], ("Function Scan", "Subquery Scan", "Result"))
+                    self.assertNotIn("Relation Name", node)
+                if view == "monitor_zk_pending":
+                    self.assertEqual(plan["Actual Rows"], 0)
+                function = f"public.{view}_aggregate()"
+                metadata = self.admin.execute(f"""
+                    SELECT r.rolname, p.prosecdef, array_to_string(p.proconfig, ';')
+                    FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner
+                    WHERE p.oid='{function}'::regprocedure
+                """).all()
+                self.assertEqual(metadata, [("ekklesia_monitor_owner", "t", "search_path=pg_catalog, public")])
+                self.assertEqual(self.admin.execute(f"""
+                    SELECT FROM pg_proc p CROSS JOIN LATERAL aclexplode(p.proacl) acl
+                    WHERE p.oid='{function}'::regprocedure AND acl.grantee=0
+                """).all(), [])
+                for role in ("api", "dashboard", "backup"):
+                    self.assertFalse(self.admin.execute(
+                        f"SELECT has_function_privilege('ekklesia_{role}', '{function}', 'EXECUTE')").scalar())
+                for role in ("api", "dashboard"):
+                    with self.assertRaises(subprocess.CalledProcessError):
+                        self.as_role(role).execute(f"SELECT * FROM {function}")
+        for role in ("monitor", "dashboard"):
+            for table in self.revision.AGGREGATE_SOURCES:
+                with self.subTest(role=role, table=table), self.assertRaises(subprocess.CalledProcessError):
+                    self.as_role(role).execute(f"EXPLAIN (ANALYZE, FORMAT JSON) SELECT * FROM public.{table}")
+            with self.assertRaises(subprocess.CalledProcessError):
+                self.as_role(role).execute("SET ROLE ekklesia_monitor_owner")
+        self.assertFalse(self.admin.execute("SELECT rolcanlogin FROM pg_roles WHERE rolname='ekklesia_monitor_owner'").scalar())
+        self.assertFalse(self.admin.execute("SELECT has_schema_privilege('ekklesia_monitor_owner','public','CREATE')").scalar())
+
+    def test_function_search_path_cannot_be_hijacked(self):
+        self.bootstrap()
+        self.upgrade(10)
+        self.admin.execute("""
+            INSERT INTO parliament_bills(id,status,source,results_visibility)
+                VALUES ('safe','ACTIVE','PARLIAMENT','ALWAYS');
+            INSERT INTO zk_merkle_roots VALUES ('bill:safe','root',100,'OPEN');
+            INSERT INTO zk_vote_receipts(vote_scope_id,merkle_root,vote_commitment,arweave_pending,created_at)
+                SELECT 'bill:safe','root',choice,TRUE,DATE_TRUNC('day',NOW())-INTERVAL '2 days'
+                FROM unnest(ARRAY['YES','NO','ABSTAIN','UNKNOWN']) choice CROSS JOIN generate_series(1,10);
+        """)
+        # Give the attacker an otherwise unavailable schema and TEMP privilege
+        # in this isolated fixture, so the test exercises real shadow objects.
+        database = self.admin.dialect.identifier_preparer.quote(self.env["PGDATABASE"])
+        self.admin.execute("""
+            CREATE SCHEMA attacker AUTHORIZATION ekklesia_monitor;
+            GRANT TEMP ON DATABASE """ + database + " TO ekklesia_monitor")
+        self.addCleanup(self.admin.execute, "DROP SCHEMA IF EXISTS attacker CASCADE")
+        # One connection is necessary for temporary objects and session GUCs.
+        self.as_role("monitor").execute("""
+            CREATE FUNCTION attacker.count() RETURNS bigint LANGUAGE sql AS 'SELECT 999::bigint';
+            CREATE FUNCTION attacker.now() RETURNS timestamptz LANGUAGE plpgsql AS
+                $$ BEGIN RAISE EXCEPTION 'hijacked now'; END $$;
+            CREATE FUNCTION attacker.date_trunc(text, timestamptz) RETURNS timestamptz LANGUAGE plpgsql AS
+                $$ BEGIN RAISE EXCEPTION 'hijacked date_trunc'; END $$;
+            CREATE TABLE attacker.zk_vote_receipts (private_value text);
+            CREATE TEMP TABLE zk_merkle_roots (status text);
+            INSERT INTO zk_merkle_roots VALUES ('INVALID');
+            SET search_path = attacker, pg_temp, public, pg_catalog;
+            DO $$ BEGIN
+                IF (SELECT invalid_roots FROM public.monitor_zk_health_aggregate()) <> 0
+                   OR (SELECT receipt_count FROM public.monitor_zk_pending_aggregate()) IS DISTINCT FROM 40::bigint THEN
+                    RAISE EXCEPTION 'shadow objects changed aggregate output';
+                END IF;
+                PERFORM * FROM public.monitor_bill_health_aggregate();
+            END $$;
+        """)
 
     def test_backup_components_work_with_real_libpq(self):
         self.bootstrap()

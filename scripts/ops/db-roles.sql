@@ -18,7 +18,9 @@ DO $$
 DECLARE role_name text;
 BEGIN
     FOREACH role_name IN ARRAY ARRAY['ekklesia_api', 'ekklesia_migrator', 'ekklesia_monitor', 'ekklesia_dashboard', 'ekklesia_backup'] LOOP
-        IF EXISTS (SELECT FROM pg_auth_members m JOIN pg_roles r ON r.oid = m.member WHERE r.rolname = role_name) THEN
+        IF EXISTS (SELECT FROM pg_auth_members m JOIN pg_roles r ON r.oid = m.member
+                   JOIN pg_roles parent ON parent.oid = m.roleid WHERE r.rolname = role_name
+                   AND NOT (role_name = 'ekklesia_migrator' AND parent.rolname = 'ekklesia_monitor_owner')) THEN
             RAISE EXCEPTION 'Role % has memberships; remove them before bootstrap', role_name;
         END IF;
         IF role_name <> 'ekklesia_migrator' AND EXISTS (
@@ -32,6 +34,21 @@ BEGIN
         EXECUTE format('ALTER ROLE %I LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS', role_name);
     END LOOP;
 END $$;
+-- Only the migrator may assume the aggregate owner, explicitly via SET ROLE.
+-- Runtime logins must never inherit its source-table privileges.
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'ekklesia_monitor_owner') THEN
+        CREATE ROLE ekklesia_monitor_owner;
+    END IF;
+    IF EXISTS (SELECT FROM pg_auth_members m JOIN pg_roles r ON r.oid = m.member
+               JOIN pg_roles parent ON parent.oid = m.roleid
+               WHERE r.rolname = 'ekklesia_monitor_owner'
+                  OR (parent.rolname = 'ekklesia_monitor_owner' AND r.rolname <> 'ekklesia_migrator')) THEN
+        RAISE EXCEPTION 'Unexpected aggregate-owner membership; resolve before bootstrap';
+    END IF;
+END $$;
+ALTER ROLE ekklesia_monitor_owner NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS PASSWORD NULL;
+GRANT ekklesia_monitor_owner TO ekklesia_migrator;
 ALTER ROLE ekklesia_api PASSWORD :'api_password';
 ALTER ROLE ekklesia_migrator PASSWORD :'migrator_password';
 ALTER ROLE ekklesia_monitor PASSWORD :'monitor_password';

@@ -11,12 +11,15 @@ remain the bootstrap credentials for the existing volume, not the API login.
 | --- | --- | --- |
 | `ekklesia_api` | SELECT/INSERT/UPDATE/DELETE on application base tables, sequence USAGE/SELECT; no ownership, schema CREATE, TEMP, TRUNCATE or Alembic writes | `API_DATABASE_URL` |
 | `ekklesia_migrator` | Owns application schema, tables, sequences, enum/domain types and reporting views; DDL | `MIGRATOR_DATABASE_URL`, one-shot Alembic service only |
-| `ekklesia_monitor` | SELECT on the six aggregate views below; no base tables or sequences | `MONITOR_DATABASE_URL` |
+| `ekklesia_monitor` | SELECT on the six aggregate views below and EXECUTE on their aggregate functions; no base tables or sequences | `MONITOR_DATABASE_URL` |
+| `ekklesia_monitor_owner` | NOLOGIN owner of the six definer functions; SELECT only on their five source tables; no schema CREATE after migration | No password or connection URL |
 | `ekklesia_dashboard` | CONNECT/USAGE only; no data grants | Reserved login; no credential delivered to dashboard |
-| `ekklesia_backup` | SELECT on all application tables/views and sequences, including private data and `alembic_version`; no writes | `BACKUP_DATABASE_URL` (backup cron) |
+| `ekklesia_backup` | SELECT on application base tables/sequences, including private data and `alembic_version`; pg_dump includes view/function definitions; no aggregate function EXECUTE or writes | `BACKUP_DATABASE_URL` (backup cron) |
 
 All logins are NOSUPERUSER, NOCREATEDB, NOCREATEROLE, NOREPLICATION,
-NOBYPASSRLS and NOINHERIT, with no role memberships. Default privileges for
+NOBYPASSRLS and NOINHERIT. Only migrator has a membership: it may explicitly
+`SET ROLE ekklesia_monitor_owner` to install/update/drop the functions. Runtime
+roles have no memberships and cannot assume that owner. Default privileges for
 migrator-created tables/sequences maintain API DML and backup reads. New views
 are never automatically granted to monitor/dashboard. PUBLIC loses application
 table/sequence/column grants, schema CREATE and database TEMP; the old bootstrap
@@ -51,7 +54,7 @@ published/nonpending complements cannot be recovered by subtraction. Hidden,
 demo, canary, non-Parliament and unknown scopes are withheld. Invalid choices,
 missing roots/timestamps and root sizes below k also withhold a scope.
 
-The threshold is embedded in owner-controlled view SQL from the migrator's
+The threshold is embedded in owner-controlled function SQL from the migrator's
 `PUBLIC_RESULTS_MIN_COUNT` at upgrade/reconciliation; readers cannot weaken it
 with `SET` or a connection option. Keep the API and migrator setting identical.
 Before **raising/enabling** the API threshold, reconcile this revision's
@@ -63,9 +66,19 @@ against observations as votes arrive.
 
 `pending_hours >= configured_hours` counts completed hours since the end of
 the fixed receipt hour. Alerts can be delayed by up to one additional hour,
-avoiding moving time boundaries that split an unchanged bucket. Owner-rights,
-security-barrier views intentionally allow
-aggregate reads without source-table grants. The monitor's API/Redis checks,
+avoiding moving time boundaries that split an unchanged bucket. All six views
+select only from `public.<view_name>_aggregate()` functions. Each is
+`SECURITY DEFINER`, owned by `ekklesia_monitor_owner`, with
+`SET search_path = pg_catalog, public` and schema-qualified source tables.
+PUBLIC, API, dashboard and backup have no function EXECUTE grant; only monitor
+does. Dashboard still has no database views or functions to read.
+The owner reads only `parliament_bills`, `bill_status_logs`, `citizen_votes`,
+`zk_vote_receipts` and `zk_merkle_roots` and owns no application tables.
+The functions return the final aggregates, including the complete ZK suppression
+rule. Their execution cannot be inlined: caller `EXPLAIN (ANALYZE, FORMAT JSON)`
+sees a Function Scan with only released row counts, never a source-table scan
+or pre-suppression cardinalities. A security-barrier view alone does **not**
+provide this plan boundary. The monitor's API/Redis checks,
 recovery actions and Telegram delivery still use their existing credentials.
 The dashboard has **no PostgreSQL driver or SQL**: `src/lib/api.ts`,
 `src/lib/overview.ts` and `src/app/api/proxy/[...path]/route.ts` use HTTP. There
@@ -123,10 +136,13 @@ SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
  WHERE n.nspname='public' AND c.relrowsecurity; -- no RLS tables: backup is NOBYPASSRLS
 SELECT count(*) FROM pg_largeobject_metadata; -- expected 0 (app does not use large objects)
 SELECT p.oid::regprocedure FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
- WHERE n.nspname='public' AND p.prosecdef; -- expected 0, review any privileged functions
+ WHERE n.nspname='public' AND p.prosecdef;
+-- Initial rollout: expected 0. Reconciliation: exactly the six *_aggregate()
+-- functions above, owned by ekklesia_monitor_owner; review anything else.
 SELECT r.rolname, parent.rolname AS member_of FROM pg_auth_members m
  JOIN pg_roles r ON r.oid=m.member JOIN pg_roles parent ON parent.oid=m.roleid
- WHERE r.rolname LIKE 'ekklesia_%'; -- new logins must have no memberships
+ WHERE r.rolname LIKE 'ekklesia_%';
+-- Only expected membership after bootstrap: migrator -> monitor_owner.
 SELECT owner.rolname AS creator, d.defaclnamespace::regnamespace AS schema,
        d.defaclobjtype, d.defaclacl
  FROM pg_default_acl d JOIN pg_roles owner ON owner.oid=d.defaclrole
@@ -224,6 +240,11 @@ The one-shot service runs `alembic upgrade head`. Alembic selects
 `MIGRATOR_DATABASE_URL or DATABASE_URL`, independently of `API_DATABASE_URL`.
 Use this service for **all future migrations**, never `exec api alembic`.
 The long-lived API has `MIGRATOR_DATABASE_URL` and `POSTGRES_PASSWORD` cleared.
+Bootstrap is required before applying/reconciling this revision, including on
+legacy single-login deployments: migration fails if the dedicated non-login
+owner is absent or has unsafe role attributes. No additional secret is needed.
+Existing installations must rerun the updated bootstrap to provision the owner,
+then reconcile this revision before switching service credentials.
 
 If `z901a2b3c4d5` was already applied with the legacy URL **before** the ops step,
 reconcile grants before switching any service (all services still use the old
@@ -238,8 +259,7 @@ This briefly removes the monitor views; schedule it between monitor checks.
 If needed, stop monitor during this reconciliation and restart after upgrade.
 Do not downgrade an installation containing later revisions just to reconcile
 ACLs; have its operator run this revision's idempotent `upgrade()` in an Alembic
-transaction instead. The migration creates no roles or passwords and is safe
-when roles are absent, so deployment may precede bootstrap. It must run before
+transaction instead. The migration creates no roles or passwords. It must run before
 the new monitor code; unset/empty API, migrator, monitor and backup URLs retain
 their existing single-user paths. Dashboard always keeps its HTTP-only setup.
 
@@ -331,6 +351,8 @@ SELECT * FROM public.diavgeia_votes LIMIT 0;
 SELECT * FROM public.bill_flags LIMIT 0;
 SELECT * FROM public.zk_vote_receipts LIMIT 0;
 SELECT * FROM public.parliament_bills LIMIT 0;
+EXPLAIN (ANALYZE, FORMAT JSON) SELECT * FROM public.citizen_votes;
+EXPLAIN (ANALYZE, FORMAT JSON) SELECT * FROM public.zk_vote_receipts;
 -- Enumerate every deployed polis_* table, then attempt SELECT * ... LIMIT 0:
 SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename LIKE 'polis\_%' ESCAPE '\';
 ```
@@ -346,7 +368,26 @@ SELECT has_schema_privilege(current_user, 'public', 'CREATE'),
        has_database_privilege(current_user, current_database(), 'TEMP'); -- false for runtime roles
 ```
 
-Monitor can SELECT all six named views; dashboard can SELECT none. API can DML
+As monitor, inspect each of the six plans (substitute each view name):
+
+```sql
+EXPLAIN (ANALYZE, VERBOSE, FORMAT JSON) SELECT * FROM public.monitor_zk_pending;
+-- Function Scan, optionally inside Subquery Scan/Result wrappers;
+-- no source relation nodes or raw row counts anywhere in the plan tree.
+SELECT * FROM public.monitor_zk_pending_aggregate(); -- same suppressed output
+SELECT p.oid::regprocedure, r.rolname, p.prosecdef, p.proconfig,
+       EXISTS (SELECT FROM aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) acl
+               WHERE acl.grantee=0 AND acl.privilege_type='EXECUTE') AS public_execute
+ FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+ JOIN pg_roles r ON r.oid=p.proowner
+ WHERE n.nspname='public' AND p.proname LIKE 'monitor_%_aggregate';
+-- Six rows: owner=ekklesia_monitor_owner, prosecdef=true,
+-- proconfig={"search_path=pg_catalog, public"}, public_execute=false.
+SET ROLE ekklesia_monitor_owner; -- must fail for both monitor and dashboard
+```
+
+Monitor can SELECT all six named views and execute the corresponding functions;
+dashboard can access none. API can DML
 base tables and use sequences but cannot update `alembic_version`, CREATE/ALTER
 objects, TRUNCATE, or `SET ROLE ekklesia_migrator`. Backup can SELECT all base
 tables and sequence values and produce a full pg_dump, but cannot DELETE, use
@@ -379,5 +420,5 @@ to the saved legacy value. Verify health and a backup restore again.
 Keep the new views during an env-only rollback: the updated monitor needs them
 with either login. Do not drop roles or reverse ownership during an incident.
 A schema downgrade is optional only when also reverting monitor code; it drops
-the six views and leaves ownership, API/backup DML/read grants and PUBLIC
+the six views and their functions and leaves ownership, API/backup DML/read grants and PUBLIC
 revocations in place. Reopening PUBLIC access is not part of rollback.

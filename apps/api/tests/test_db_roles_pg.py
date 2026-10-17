@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 from contextlib import contextmanager
 import importlib.util
+import json
 import os
 from pathlib import Path
 import re
@@ -68,7 +69,7 @@ async def db():
     url = disposable_postgres_url()
     engine = create_async_engine(url, poolclass=NullPool)
     async with engine.begin() as conn:
-        existing = await conn.exec_driver_sql("SELECT rolname FROM pg_roles WHERE rolname = ANY(ARRAY['ekklesia_api','ekklesia_migrator','ekklesia_monitor','ekklesia_dashboard','ekklesia_backup'])")
+        existing = await conn.exec_driver_sql("SELECT rolname FROM pg_roles WHERE rolname LIKE 'ekklesia_%'")
         assert not existing.all(), "Use a disposable cluster without existing ekklesia_* roles"
         await conn.exec_driver_sql("DROP SCHEMA public CASCADE")
         await conn.exec_driver_sql("CREATE SCHEMA public")
@@ -84,7 +85,7 @@ async def db():
         async with engine.begin() as conn:
             await conn.exec_driver_sql("DROP SCHEMA public CASCADE")
             await conn.exec_driver_sql("CREATE SCHEMA public")
-            for role in ROLES:
+            for role in (*ROLES, "monitor_owner"):
                 exists = await conn.exec_driver_sql(f"SELECT FROM pg_roles WHERE rolname = 'ekklesia_{role}'")
                 if exists.all():
                     await conn.exec_driver_sql(f"DROP OWNED BY ekklesia_{role}")
@@ -112,9 +113,12 @@ async def connect(url):
     return await asyncpg.connect(make_url(url).set(drivername="postgresql").render_as_string(hide_password=False))
 
 
-async def test_pre_ops_fallback_then_bootstrap_migrator_up_down(db):
+async def test_bootstrap_required_then_migrator_up_down(db):
     url, engine, passwords = db
-    # Deploy migration before the roles exist: current credentials still work.
+    # Functions must never fall back to a login/superuser as their owner.
+    with pytest.raises(RuntimeError, match="Missing non-login aggregate owner"):
+        await reapply(engine)
+    bootstrap(url, passwords)
     cli(url, "upgrade", TARGET)
     await reapply(engine)
     async with engine.connect() as conn:
@@ -157,6 +161,8 @@ async def test_permissions_defaults_and_dump_restore(db, tmp_path):
                 if role in ("monitor", "dashboard"):
                     with pytest.raises(asyncpg.InsufficientPrivilegeError):
                         await conn.fetch(f"SELECT * FROM public.{table} LIMIT 0")
+                    with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                        await conn.fetch(f"EXPLAIN (ANALYZE, FORMAT JSON) SELECT * FROM public.{table}")
                 else:
                     await conn.fetch(f"SELECT * FROM public.{table} LIMIT 0")
             if role != "migrator":
@@ -175,6 +181,8 @@ async def test_permissions_defaults_and_dump_restore(db, tmp_path):
                     await conn.fetch("SELECT * FROM public.parliament_bills LIMIT 0")
                 with pytest.raises(asyncpg.InsufficientPrivilegeError):
                     await conn.execute("SET ROLE ekklesia_migrator")
+                with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                    await conn.execute("SET ROLE ekklesia_monitor_owner")
             if role == "api":
                 await conn.execute("INSERT INTO public.db_roles_fixture(private_value) VALUES ('synthetic')")
                 await conn.execute("UPDATE public.db_roles_fixture SET private_value='updated'")
@@ -225,6 +233,91 @@ async def test_permissions_defaults_and_dump_restore(db, tmp_path):
         async with engine.connect() as conn:
             autocommit = await conn.execution_options(isolation_level="AUTOCOMMIT")
             await autocommit.exec_driver_sql("DROP DATABASE pnyx_test_t9142_restore")
+
+
+async def test_monitor_plans_only_released_aggregates_and_ignores_search_path(db, monkeypatch):
+    url, engine, passwords = db
+    bootstrap(url, passwords)
+    monkeypatch.setenv("PUBLIC_RESULTS_MIN_COUNT", "10")
+    cli(url, "upgrade", TARGET, migrator_url=url_for(url, "migrator", passwords["migrator"]))
+    async with engine.begin() as conn:
+        await conn.exec_driver_sql("""
+            INSERT INTO public.parliament_bills(id,title_el,status,governance_level,source,results_visibility)
+                VALUES ('safe','Public bill','ACTIVE','NATIONAL','PARLIAMENT','ALWAYS'),
+                       ('small','Public bill','ACTIVE','NATIONAL','PARLIAMENT','ALWAYS')
+        """)
+        await conn.exec_driver_sql("""
+            INSERT INTO public.zk_merkle_roots(vote_scope_id,merkle_root,merkle_depth,group_size)
+                VALUES ('bill:safe','root',20,100), ('bill:small','root',20,100)
+        """)
+        await conn.exec_driver_sql("""
+            INSERT INTO public.zk_vote_receipts(vote_scope_id,vote_commitment,semaphore_nullifier,
+                merkle_root,merkle_depth,signal_hash,external_nullifier,proof_public_json,
+                verifier_version,circuit_version,created_at)
+            SELECT 'bill:safe',choice,choice || n,'root',20,'fixture','fixture','{}'::jsonb,
+                   'fixture','fixture',DATE_TRUNC('day',NOW())-INTERVAL '2 days'
+            FROM unnest(ARRAY['YES','NO','ABSTAIN','UNKNOWN']) choice CROSS JOIN generate_series(1,10) n
+            UNION ALL SELECT 'bill:small','YES','small','root',20,'fixture','fixture','{}'::jsonb,
+                             'fixture','fixture',NOW()-INTERVAL '2 days'
+        """)
+    reader = await connect(url_for(url, "monitor", passwords["monitor"]))
+    try:
+        query = "SELECT vote_scope_id, receipt_count FROM public.monitor_zk_pending_aggregate()"
+        assert [tuple(row) for row in await reader.fetch(query)] == [("bill:safe", 40)]
+        with migration_module() as revision:
+            for view in revision.VIEWS:
+                plan = json.loads(await reader.fetchval(
+                    f"EXPLAIN (ANALYZE, VERBOSE, FORMAT JSON) SELECT * FROM public.{view}"))[0]["Plan"]
+                nodes = [plan]
+                for node in nodes:
+                    nodes.extend(node.get("Plans", []))
+                assert any(node["Node Type"] == "Function Scan" for node in nodes)
+                assert all(node["Node Type"] in ("Function Scan", "Subquery Scan", "Result")
+                           and "Relation Name" not in node for node in nodes)
+                metadata = await reader.fetchrow("""
+                    SELECT r.rolname, p.prosecdef, p.proconfig,
+                           EXISTS (SELECT FROM aclexplode(p.proacl) acl WHERE acl.grantee=0) AS public_grant
+                    FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner
+                    WHERE p.oid=$1::regprocedure
+                """, f"public.{view}_aggregate()")
+                assert tuple(metadata) == ("ekklesia_monitor_owner", True, ["search_path=pg_catalog, public"], False)
+        plan = json.loads(await reader.fetchval("""
+            EXPLAIN (ANALYZE, FORMAT JSON) SELECT * FROM public.monitor_zk_pending
+            WHERE vote_scope_id='bill:small'
+        """))[0]["Plan"]
+        assert plan["Actual Rows"] == 0
+        nodes = [plan]
+        for node in nodes:
+            nodes.extend(node.get("Plans", []))
+        assert any(node["Node Type"] == "Function Scan" for node in nodes)
+        assert all(node["Node Type"] in ("Function Scan", "Subquery Scan", "Result")
+                   and "Relation Name" not in node for node in nodes)
+        monkeypatch.setenv("PUBLIC_RESULTS_MIN_COUNT", "25")
+        await reapply(engine)
+        assert await reader.fetch(query) == []
+        monkeypatch.setenv("PUBLIC_RESULTS_MIN_COUNT", "10")
+        await reapply(engine)
+        async with engine.begin() as conn:
+            await conn.exec_driver_sql("CREATE SCHEMA db_roles_attacker AUTHORIZATION ekklesia_monitor")
+            quoted_database = conn.dialect.identifier_preparer.quote(make_url(url).database)
+            await conn.exec_driver_sql(f"GRANT TEMP ON DATABASE {quoted_database} TO ekklesia_monitor")
+        try:
+            await reader.execute("""
+                CREATE FUNCTION db_roles_attacker.now() RETURNS timestamptz LANGUAGE plpgsql AS
+                    $$ BEGIN RAISE EXCEPTION 'search_path hijacked'; END $$;
+                CREATE TABLE db_roles_attacker.zk_vote_receipts (private_value text);
+                CREATE TEMP TABLE zk_merkle_roots (status text);
+                INSERT INTO zk_merkle_roots VALUES ('INVALID');
+                SET search_path = db_roles_attacker, pg_temp, public, pg_catalog;
+                SET app.public_results_min_count = '0';
+            """)
+            assert [tuple(row) for row in await reader.fetch(query)] == [("bill:safe", 40)]
+            assert await reader.fetchval("SELECT invalid_roots FROM public.monitor_zk_health_aggregate()") == 0
+        finally:
+            async with engine.begin() as conn:
+                await conn.exec_driver_sql("DROP SCHEMA db_roles_attacker CASCADE")
+    finally:
+        await reader.close()
 
 
 class MonitorConnection:

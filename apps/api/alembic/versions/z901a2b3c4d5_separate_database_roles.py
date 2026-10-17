@@ -1,8 +1,8 @@
 """ADR-007 S4: aggregate monitor views and conditional least-privilege grants.
 
 Roles and secrets belong to scripts/ops/db-roles.sql, never to Alembic.
-Re-running upgrade() reconciles grants after an ops bootstrap. No role is
-required for the initial deployment with the legacy DATABASE_URL.
+Re-running upgrade() reconciles grants after an ops bootstrap. Bootstrap must
+provision the non-login aggregate owner before applying this revision.
 """
 from alembic import op
 import sqlalchemy as sa
@@ -13,8 +13,8 @@ down_revision = "y803a2b3c4d5"
 branch_labels = None
 depends_on = None
 
-# Owner-rights views are intentional: callers cannot read their source tables.
-# security_barrier prevents caller predicates from leaking source rows.
+# Queries run only inside non-inlined SECURITY DEFINER functions. A view's
+# security_barrier alone still exposes pre-suppression rows through EXPLAIN.
 VIEWS = {
     "monitor_bill_health": """
         SELECT MAX(created_at) AS latest_created_at,
@@ -151,6 +151,8 @@ VIEWS = {
     """,
 }
 RUNTIME_ROLES = ("ekklesia_api", "ekklesia_monitor", "ekklesia_dashboard", "ekklesia_backup")
+AGGREGATE_OWNER = "ekklesia_monitor_owner"
+AGGREGATE_SOURCES = ("parliament_bills", "bill_status_logs", "citizen_votes", "zk_vote_receipts", "zk_merkle_roots")
 
 
 def _exists(role: str) -> bool:
@@ -160,12 +162,61 @@ def _exists(role: str) -> bool:
 
 
 def upgrade() -> None:
+    if not _exists(AGGREGATE_OWNER):
+        raise RuntimeError("Missing non-login aggregate owner; run scripts/ops/db-roles.sh as bootstrap superuser first")
+    if op.get_bind().execute(sa.text("""
+        SELECT r.rolcanlogin OR r.rolsuper OR r.rolcreatedb OR r.rolcreaterole OR r.rolreplication OR r.rolbypassrls
+               OR EXISTS (SELECT FROM pg_auth_members m JOIN pg_roles member ON member.oid = m.member
+                          WHERE m.member = r.oid OR (m.roleid = r.oid AND member.rolname <> 'ekklesia_migrator'))
+        FROM pg_roles r WHERE r.rolname = :role
+    """), {"role": AGGREGATE_OWNER}).scalar():
+        raise RuntimeError("Unsafe aggregate owner; rerun scripts/ops/db-roles.sh as bootstrap superuser")
     # Freeze the release threshold in owner-controlled SQL. A reader must not
     # be able to weaken it via SET, a connection option or its own environment.
     threshold = str(small_cell_k())
+    # CREATE is needed only while installing functions as their dedicated owner.
+    op.execute(f"GRANT USAGE, CREATE ON SCHEMA public TO {AGGREGATE_OWNER}")
     for name, query in VIEWS.items():
         query = query.replace("__SUPPRESSION_K__", threshold)
+        # Infer the deployed column types, preserving typmods when replacing
+        # existing views. This raw definition is never committed: Alembic runs
+        # the entire reconciliation in one PostgreSQL transaction.
         op.execute(f"CREATE OR REPLACE VIEW public.{name} WITH (security_barrier = true) AS {query}")
+        columns = op.get_bind().execute(sa.text("""
+            SELECT attname, format_type(atttypid, atttypmod)
+            FROM pg_attribute WHERE attrelid = CAST(:view AS regclass)
+              AND attnum > 0 AND NOT attisdropped ORDER BY attnum
+        """), {"view": f"public.{name}"}).all()
+        quote = op.get_bind().dialect.identifier_preparer.quote
+        returns = ", ".join(f"{quote(column)} {kind}" for column, kind in columns)
+        projection = ", ".join(f"r.{quote(column)}::{kind} AS {quote(column)}" for column, kind in columns)
+        function = f"public.{name}_aggregate()"
+        # SET ROLE is confined to a single statement and restored even when
+        # reapplying as the NOINHERIT migrator. SECURITY DEFINER prevents SQL
+        # inlining, so caller EXPLAIN sees only released Function Scan rows.
+        grants = f"REVOKE ALL ON FUNCTION {function} FROM PUBLIC;"
+        for role in RUNTIME_ROLES:
+            if _exists(role):
+                grants += f" REVOKE ALL ON FUNCTION {function} FROM {role};"
+        if _exists("ekklesia_monitor"):
+            grants += f" GRANT EXECUTE ON FUNCTION {function} TO ekklesia_monitor;"
+        op.execute(f"""DO $install$
+            DECLARE installer name := current_user;
+            BEGIN
+                SET LOCAL ROLE {AGGREGATE_OWNER};
+                EXECUTE $ddl$CREATE OR REPLACE FUNCTION {function}
+                    RETURNS TABLE ({returns}) LANGUAGE sql SECURITY DEFINER
+                    SET search_path = pg_catalog, public
+                    AS $body${query}$body$ $ddl$;
+                {grants}
+                EXECUTE format('SET LOCAL ROLE %I', installer);
+            END $install$""")
+        op.execute(f"CREATE OR REPLACE VIEW public.{name} WITH (security_barrier = true) AS SELECT {projection} FROM {function} r")
+    op.execute(f"REVOKE CREATE ON SCHEMA public FROM {AGGREGATE_OWNER}")
+    op.execute(f"REVOKE ALL ON ALL TABLES IN SCHEMA public FROM {AGGREGATE_OWNER}")
+    op.execute(f"REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM {AGGREGATE_OWNER}")
+    for table in AGGREGATE_SOURCES:
+        op.execute(f"GRANT SELECT ON public.{table} TO {AGGREGATE_OWNER}")
 
     # PG14's public schema allows CREATE by default.
     op.execute("REVOKE CREATE ON SCHEMA public FROM PUBLIC")
@@ -251,3 +302,8 @@ def downgrade() -> None:
     # PUBLIC access would reopen sensitive data. Rollback uses the old URLs.
     for name in reversed(VIEWS):
         op.execute(f"DROP VIEW IF EXISTS public.{name}")
+        op.execute(f"""DO $drop$ DECLARE installer name := current_user; BEGIN
+            SET LOCAL ROLE {AGGREGATE_OWNER};
+            DROP FUNCTION IF EXISTS public.{name}_aggregate();
+            EXECUTE format('SET LOCAL ROLE %I', installer);
+        END $drop$""")

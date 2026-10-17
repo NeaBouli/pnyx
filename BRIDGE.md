@@ -1,5 +1,23 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-10-18 - T-9142 Round 2: Aggregate Plan Boundary
+
+- All six monitor views now select from SECURITY DEFINER aggregate functions
+  owned by the dedicated NOLOGIN `ekklesia_monitor_owner`. Only monitor has
+  EXECUTE; dashboard retains no SQL grants. Functions pin their search path
+  and keep the existing suppression rule inside the function boundary.
+- Updated bootstrap provisions the owner and grants only migrator permission
+  to assume it. Bootstrap must precede migration/reconciliation, including on
+  existing installations. The DB roles runbook includes the rollout and
+  EXPLAIN verification procedure.
+- Added PostgreSQL regressions for opaque Function Scan plans, raw-table
+  EXPLAIN denial, k-suppression, owner/EXECUTE privileges and search-path
+  shadow objects. Targeted checks: 23 passed, 4 PostgreSQL cases skipped;
+  10 credential-wrapper tests passed. Five socket-only SQL cases were also
+  skipped: local initdb cannot start because the sandbox denies shared-memory
+  creation. Actual PostgreSQL execution remains to be verified in an isolated
+  cluster. No network, push or deployment was performed.
+
 ## 2026-09-24 - R8b Audit Status Sync Accepted Live
 
 - PR #354 merged normally as `fe675823c03d5083f8c37e83b844cf536ae852ce`.
