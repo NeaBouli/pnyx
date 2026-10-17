@@ -5,11 +5,12 @@ GET  /api/v1/vaa/questions         — Alias für externe Clients
 GET  /api/v1/vaa/parties           — Alle Parteien
 POST /api/v1/vaa/match             — Matching-Algorithmus
 """
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from database import get_db
+from rate_limit import limiter
 from models import Party, Statement, PartyPosition
 
 router = APIRouter(prefix="/api/v1/vaa", tags=["MOD-02 VAA"])
@@ -132,7 +133,8 @@ async def get_parties(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/match", response_model=MatchResponse)
-async def match_parties(req: MatchRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("20/minute")
+async def match_parties(req: MatchRequest, db: AsyncSession = Depends(get_db), request: Request = None):
     """
     Berechnet die Übereinstimmung zwischen Nutzerantworten und Parteipositionen.
     Input:  { "answers": { "1": 1, "2": -1, "3": 0 } }

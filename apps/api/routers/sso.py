@@ -18,6 +18,7 @@ from sqlalchemy import select
 import redis.asyncio as aioredis
 
 from database import get_db
+from rate_limit import limiter
 from models import IdentityRecord, KeyStatus, Periferia, Dimos
 
 logger = logging.getLogger(__name__)
@@ -129,7 +130,8 @@ async def _build_discourse_redirect(
 
 
 @router.get("/discourse/initiate")
-async def discourse_sso_initiate(sso: str = Query(...), sig: str = Query(...)):
+@limiter.limit("10/minute")
+async def discourse_sso_initiate(sso: str = Query(...), sig: str = Query(...), request: Request = None):
     """Discourse redirects here → verify sig → store nonce → redirect to verify page."""
     if not _verify_sig(sso, sig):
         raise HTTPException(403, "Invalid SSO signature")
@@ -163,6 +165,7 @@ async def discourse_sso_initiate(sso: str = Query(...), sig: str = Query(...)):
 
 
 @router.post("/discourse/callback")
+@limiter.limit("10/minute")
 async def discourse_sso_callback(
     request: Request,
     nonce: str = Query(None),
@@ -224,9 +227,11 @@ class DiscourseQRCompleteRequest(BaseModel):
 
 
 @router.post("/discourse/qr-complete")
+@limiter.limit("10/minute")
 async def discourse_sso_qr_complete(
     req: DiscourseQRCompleteRequest,
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Complete DiscourseConnect after mobile app authenticated a forum_login QR session."""
     r = await _redis()

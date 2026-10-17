@@ -127,6 +127,11 @@ async function dbDelete(key: string): Promise<void> {
  * @param phone - Raw phone number (any common format accepted)
  * @returns 32-byte nullifier_root
  */
+/**
+ * @deprecated FORBIDDEN for registration (ADR-006 D1): public salt, so the root
+ * is computable from a phone number. Kept for KAT vectors only; application
+ * code must not import it (guard test in apps/mobile).
+ */
 export async function deriveNullifierRoot(phone: string): Promise<Uint8Array> {
   const normalized = normalizePhone(phone);
   const result     = await argon2id({

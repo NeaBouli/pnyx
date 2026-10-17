@@ -10,14 +10,17 @@ import logging
 from datetime import datetime, timezone, timedelta
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException, Header, Response, Request
+from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from rate_limit import enforce_route_limit, limiter
 from dependencies import verify_admin_key
 from ip_utils import log_reference
+from services.invite_codes import invite_code_hash, invite_code_hint
 from models import ParliamentBill, BillStatus
 from services.bill_visibility import is_public_bill, public_bill_filter
 from services.evaluation_integrity import (
@@ -131,26 +134,40 @@ def _verify_admin(key: bool = Depends(verify_admin_key)):
 @router.post("/admin/invite")
 async def create_invite(
     req: InviteRequest,
+    response: Response,
     _auth=Depends(_verify_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """Admin: Generate invite code for a representative."""
+    """Admin: Generate invite code for a representative.
+
+    EVA-033: only an HMAC of the code and a display hint are stored; the
+    plaintext is returned here exactly once and cannot be retrieved later.
+    """
     if req.role not in VALID_ROLES:
         raise HTTPException(400, f"Μη έγκυρος ρόλος. Επιτρέπεται: {', '.join(VALID_ROLES)}")
 
-    code = _generate_invite_code()
     expires = datetime.now(timezone.utc) + timedelta(hours=INVITE_TTL_HOURS)
-
-    await db.execute(text("""
-        INSERT INTO rep_invitations (invite_code, role, region, municipality, periferia_id, dimos_id, expires_at)
-        VALUES (:code, :role, :region, :municipality, :periferia_id, :dimos_id, :expires)
-    """), {
-        "code": code, "role": req.role,
-        "region": req.region, "municipality": req.municipality,
-        "periferia_id": req.periferia_id, "dimos_id": req.dimos_id,
-        "expires": expires.replace(tzinfo=None),
-    })
-    await db.commit()
+    for attempt in range(3):
+        code = _generate_invite_code()
+        try:
+            await db.execute(text("""
+                INSERT INTO rep_invitations (invite_code_hash, invite_code_hint, role, region, municipality,
+                                             periferia_id, dimos_id, expires_at)
+                VALUES (:code_hash, :code_hint, :role, :region, :municipality, :periferia_id, :dimos_id, :expires)
+            """), {
+                "code_hash": invite_code_hash(code), "code_hint": invite_code_hint(code), "role": req.role,
+                "region": req.region, "municipality": req.municipality,
+                "periferia_id": req.periferia_id, "dimos_id": req.dimos_id,
+                "expires": expires.replace(tzinfo=None),
+            })
+            await db.commit()
+            break
+        except IntegrityError:
+            # Hash collision with an existing code: retry with a fresh code.
+            await db.rollback()
+            if attempt == 2:
+                raise HTTPException(500, "Δεν ήταν δυνατή η δημιουργία κωδικού. Δοκιμάστε ξανά.")
+    response.headers["Cache-Control"] = "no-store"
 
     logger.info("[REP] Invite created: ref=%s role=%s region=%s", log_reference(code, "rep-invite"), req.role, req.region)
     return {
@@ -167,14 +184,14 @@ async def list_invites(
     _auth=Depends(_verify_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """Admin: List all invite codes."""
+    """Admin: List invites. EVA-033: codes are not retrievable, only a display hint."""
     result = await db.execute(text(
-        "SELECT id, invite_code, ada_number, role, region, municipality, used, expires_at, created_at, periferia_id, dimos_id "
+        "SELECT id, invite_code_hint, ada_number, role, region, municipality, used, expires_at, created_at, periferia_id, dimos_id "
         "FROM rep_invitations ORDER BY created_at DESC LIMIT 100"
     ))
     rows = result.fetchall()
     return [{
-        "id": r[0], "invite_code": r[1], "ada_number": r[2], "role": r[3],
+        "id": r[0], "invite_code_hint": r[1] or "****-****", "ada_number": r[2], "role": r[3],
         "region": r[4], "municipality": r[5], "used": r[6],
         "expired": r[7] < datetime.now() if r[7] else False,
         "expires_at": r[7].isoformat() if r[7] else None,
@@ -234,20 +251,21 @@ async def verify_rep_token(
 
 
 @router.post("/verify")
-async def verify_representative(req: VerifyRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("10/minute")
+async def verify_representative(req: VerifyRequest, db: AsyncSession = Depends(get_db), request: Request = None):
     """Verify representative via ADA number + admin invite code. Returns a 24h token."""
     # 1. Validate invite code
     inv_result = await db.execute(text(
         "SELECT id, role, region, municipality, used, expires_at, periferia_id, dimos_id FROM rep_invitations "
-        "WHERE invite_code = :code"
-    ), {"code": req.invite_code})
+        "WHERE invite_code_hash = :code_hash"
+    ), {"code_hash": invite_code_hash(req.invite_code)})
     invite = inv_result.fetchone()
 
     if not invite:
         raise HTTPException(403, "Μη έγκυρος κωδικός πρόσκλησης.")
     if invite[4]:  # used
         raise HTTPException(403, "Ο κωδικός πρόσκλησης έχει ήδη χρησιμοποιηθεί.")
-    if invite[5] and invite[5] < datetime.now():
+    if invite[5] and invite[5] < datetime.now(timezone.utc).replace(tzinfo=None):  # stored as naive UTC
         raise HTTPException(403, "Ο κωδικός πρόσκλησης έχει λήξει.")
 
     invite_id, role, region, municipality = invite[0], invite[1], invite[2], invite[3]
@@ -268,7 +286,19 @@ async def verify_representative(req: VerifyRequest, db: AsyncSession = Depends(g
         if not ada_info:
             raise HTTPException(403, "Ο αριθμός ADA δεν βρέθηκε στη Διαύγεια.")
 
-    # 4. Generate token + auto-detect role from org_label
+    # 4. Consume the invite atomically: of two concurrent redemptions only one
+    #    passes the used = FALSE condition (EVA-033 review: read-then-consume race).
+    #    Expiry is rechecked against a fresh timestamp taken after the Diavgeia
+    #    call (NOW() would be the transaction start); review of #594.
+    consumed = await db.execute(text(
+        "UPDATE rep_invitations SET used = TRUE, used_at = :now, ada_number = :ada "
+        "WHERE id = :id AND used = FALSE AND (expires_at IS NULL OR expires_at > :now) RETURNING id"
+    ), {"ada": req.ada_number, "id": invite_id, "now": datetime.now(timezone.utc).replace(tzinfo=None)})
+    if consumed.fetchone() is None:
+        await db.rollback()
+        raise HTTPException(403, "Ο κωδικός πρόσκλησης έχει ήδη χρησιμοποιηθεί ή έχει λήξει.")
+
+    # 5. Generate token + auto-detect role from org_label
     token = secrets.token_urlsafe(48)
     expires = datetime.now(timezone.utc) + timedelta(hours=TOKEN_TTL_HOURS)
     role_suggestion = detect_role_from_org_label(ada_info.get("org_label", ""))
@@ -288,10 +318,6 @@ async def verify_representative(req: VerifyRequest, db: AsyncSession = Depends(g
         "expires": expires.replace(tzinfo=None),
     })
 
-    # 5. Mark invite as used
-    await db.execute(text(
-        "UPDATE rep_invitations SET used = TRUE, used_at = NOW(), ada_number = :ada WHERE id = :id"
-    ), {"ada": req.ada_number, "id": invite_id})
     await db.commit()
 
     logger.info(
@@ -312,7 +338,8 @@ async def verify_representative(req: VerifyRequest, db: AsyncSession = Depends(g
 
 
 @router.post("/auth")
-async def auth_representative(req: AuthRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("10/minute")
+async def auth_representative(req: AuthRequest, db: AsyncSession = Depends(get_db), request: Request = None):
     """Authenticate with ADA + token."""
     rep = await _get_rep_token(req.token, db)
     if not rep or rep["ada_number"] != req.ada_number:
@@ -429,11 +456,13 @@ async def get_rep_bills(
     return response
 
 
-@router.get("/results/{bill_id}")
+@router.get("/results/{bill_id}", dependencies=[Depends(enforce_route_limit)])
+@limiter.shared_limit("30/minute", scope="representative:get_rep_results")
 async def get_rep_results(
     bill_id: str,
     rep: dict = Depends(verify_rep_token),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Detailed results for representatives including hourly timeline."""
     bill = (await db.execute(
@@ -485,11 +514,13 @@ async def get_rep_results(
     }
 
 
-@router.get("/divergence/{bill_id}")
+@router.get("/divergence/{bill_id}", dependencies=[Depends(enforce_route_limit)])
+@limiter.shared_limit("30/minute", scope="representative:get_rep_divergence")
 async def get_rep_divergence(
     bill_id: str,
     rep: dict = Depends(verify_rep_token),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Divergence analysis: citizens vs parliament by governance level."""
     bill = (await db.execute(
@@ -536,10 +567,12 @@ async def get_rep_divergence(
 # ─── NEA-189: Evaluation Consent ────────────────────────────────────────────
 
 
-@router.post("/enable-evaluation")
+@router.post("/enable-evaluation", dependencies=[Depends(enforce_route_limit)])
+@limiter.limit("20/minute")
 async def enable_evaluation(
     rep: dict = Depends(verify_rep_token),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Representative consents to being evaluated by verified citizens."""
     # EVA-012: the demo account must never enter public evaluation,
@@ -561,10 +594,12 @@ async def enable_evaluation(
     return {"ada_number": rep["ada_number"], "evaluation_enabled": True}
 
 
-@router.get("/my-scores")
+@router.get("/my-scores", dependencies=[Depends(enforce_route_limit)])
+@limiter.limit("10/minute")
 async def get_my_scores(
     rep: dict = Depends(verify_rep_token),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Representative views their own evaluation scores."""
     result = await db.execute(text("""

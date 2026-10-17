@@ -12,14 +12,16 @@ import csv
 import io
 import logging
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
 from database import get_db
+from rate_limit import limiter
 from models import ParliamentBill, CitizenVote, BillStatus, VoteChoice, Party
 from services.bill_visibility import public_bill_filter, results_hidden
+from services.small_cell import small_cell_k, suppress_public_cells
 from routers.voting import compute_divergence
 
 logger = logging.getLogger(__name__)
@@ -28,6 +30,7 @@ router = APIRouter(prefix="/api/v1/export", tags=["MOD-14 Data Export"])
 
 async def get_all_results(db: AsyncSession, min_votes: int = 0) -> list[dict]:
     """Aggregierte Ergebnisse aller Bills."""
+    threshold = small_cell_k()
     result = await db.execute(
         select(ParliamentBill).where(public_bill_filter()).order_by(
             ParliamentBill.parliament_vote_date.desc().nullslast()
@@ -35,16 +38,24 @@ async def get_all_results(db: AsyncSession, min_votes: int = 0) -> list[dict]:
     )
     bills = result.scalars().all()
 
-    vote_result = await db.execute(
-        select(CitizenVote.bill_id, CitizenVote.vote, func.count(CitizenVote.id))
-        .group_by(CitizenVote.bill_id, CitizenVote.vote)
-    )
-    vote_counts: dict[str, dict[VoteChoice, int]] = {}
-    for bill_id, vote, count in vote_result.all():
-        vote_counts.setdefault(bill_id, {})[vote] = count
+    if threshold:
+        from services.public_result_windows import load_public_vote_days, publishable_bill_ids
+        populations = await load_public_vote_days(db)
+        allowed = publishable_bill_ids(populations)
+        vote_counts = {bid: {choice: populations[bid]["totals"][choice.value.lower()]
+                             for choice in VoteChoice} for bid in allowed}
+    else:
+        vote_result = await db.execute(
+            select(CitizenVote.bill_id, CitizenVote.vote, func.count(CitizenVote.id))
+            .group_by(CitizenVote.bill_id, CitizenVote.vote))
+        vote_counts = {}
+        for bill_id, vote, count in vote_result.all():
+            vote_counts.setdefault(bill_id, {})[VoteChoice(vote)] = count
 
     rows = []
     for bill in bills:
+        if threshold and bill.id not in allowed:
+            continue
         # A running vote with hidden results exports no counts (T-599).
         counts = {} if results_hidden(bill) else vote_counts.get(bill.id, {})
         yes = counts.get(VoteChoice.YES, 0)
@@ -68,7 +79,7 @@ async def get_all_results(db: AsyncSession, min_votes: int = 0) -> list[dict]:
                 else "REJECTED"
             )
 
-        rows.append({
+        rows.append(suppress_public_cells({
             "bill_id":              bill.id,
             "title_el":             bill.title_el,
             "title_en":             bill.title_en or "",
@@ -87,13 +98,17 @@ async def get_all_results(db: AsyncSession, min_votes: int = 0) -> list[dict]:
             "divergence_score":     divergence.score if divergence is not None else "",
             "arweave_tx_id":        bill.arweave_tx_id or "",
             "arweave_url":          f"https://arweave.net/{bill.arweave_tx_id}" if bill.arweave_tx_id else "",
-        })
+        }, choices=("citizen_yes", "citizen_no", "citizen_abstain", "citizen_unknown"),
+            total="citizen_total", percentages=("yes_pct", "no_pct", "abstain_pct"),
+            derived=("divergence_score",), k=threshold,
+            publishable=True if threshold else None))
 
     return rows
 
 
 @router.get("/bills.csv")
-async def export_bills_csv(db: AsyncSession = Depends(get_db)):
+@limiter.limit("30/minute")
+async def export_bills_csv(db: AsyncSession = Depends(get_db), request: Request = None):
     """Alle Gesetzentwürfe als CSV. Lizenz: CC BY 4.0"""
     rows = await get_all_results(db)
 
@@ -121,7 +136,7 @@ async def export_bills_csv(db: AsyncSession = Depends(get_db)):
 
 @router.get("/results.json")
 async def export_results_json(
-    min_votes: int = Query(0, ge=0, description="Minimum aggregated citizen votes"),
+    min_votes: int = Query(0, ge=0, description="Minimum votes among publishable bills"),
     db: AsyncSession = Depends(get_db),
 ):
     """Alle Abstimmungsergebnisse als JSON. Lizenz: CC BY 4.0"""
@@ -144,16 +159,19 @@ async def export_results_json(
 
 
 @router.get("/divergence.csv")
+@limiter.limit("30/minute")
 async def export_divergence_csv(
-    min_votes: int = Query(10, description="Minimum Stimmen"),
-    db: AsyncSession = Depends(get_db)
+    min_votes: int = Query(10, ge=0, description="Minimum votes among publishable bills"),
+    db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Divergence Score Ranking als CSV. Sortiert nach höchster Abweichung."""
-    rows = await get_all_results(db)
+    rows = await get_all_results(db, min_votes=min_votes)
 
     diverge_rows = [
         r for r in rows
-        if r["citizen_total"] >= min_votes and r["divergence_score"] != ""
+        if r["divergence_score"] not in ("", None) and r["citizen_total"] is not None
+        and r["citizen_total"] >= min_votes
     ]
     diverge_rows.sort(
         key=lambda r: float(r["divergence_score"]) if r["divergence_score"] else 0,
@@ -169,6 +187,8 @@ async def export_divergence_csv(
         fields = ["bill_id", "title_el", "parliament_result", "citizen_yes", "citizen_no",
                   "citizen_total", "yes_pct", "no_pct", "divergence_score",
                   "parliament_vote_date", "arweave_tx_id"]
+        if small_cell_k():
+            fields.extend(["suppressed", "suppression_k"])
         writer = csv.DictWriter(output, fieldnames=fields, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(diverge_rows)

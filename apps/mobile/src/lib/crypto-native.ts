@@ -51,6 +51,21 @@ const KEYS = {
   PRIVATE_KEY: "ekklesia_private_key",
   PUBLIC_KEY:  "ekklesia_public_key",
   NULLIFIER:   "ekklesia_nullifier",
+  // EVA-001 PR4: key lifecycle
+  // All three are bound to an identity so stale values are ignored, never trusted:
+  KEY_ORIGIN:        "ekklesia_key_origin",        // public key of the device-generated key
+  POLIS_SEED:        "ekklesia_polis_seed",        // {nullifier, seed}: legacy POLIS seed kept across rotation
+  ROTATION_STAGING:  "ekklesia_rotation_staging",  // {nullifier, oldPublicKeyHex, privateKeyHex, publicKeyHex}
+  IDENTITY_JOURNAL:  "ekklesia_identity_journal",  // write-ahead record of a multi-key credential change
+} as const;
+
+export const KEY_LIFECYCLE_STORE_KEYS = [KEYS.KEY_ORIGIN, KEYS.POLIS_SEED, KEYS.ROTATION_STAGING, KEYS.IDENTITY_JOURNAL] as const;
+export const IDENTITY_STORE_KEYS = {
+  privateKey: KEYS.PRIVATE_KEY,
+  publicKey: KEYS.PUBLIC_KEY,
+  nullifier: KEYS.NULLIFIER,
+  keyOrigin: KEYS.KEY_ORIGIN,
+  rotationStaging: KEYS.ROTATION_STAGING,
 } as const;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -100,7 +115,11 @@ function normalizePhone(raw: string): string {
 
 /**
  * Derive nullifier_root from phone number using the current PBKDF2-SHA256 fallback.
- * This is the master secret — stored in hardware keystore.
+ *
+ * @deprecated FORBIDDEN for registration (ADR-006 D1): the salt is public, so
+ * anyone who knows or enumerates a phone number derives the root and every
+ * child (vote nullifiers, per-bill private signing seeds). Kept only for the
+ * KAT vectors; a guard test fails if application code calls it.
  */
 export async function deriveNullifierRoot(phone: string): Promise<Uint8Array> {
   const normalized = normalizePhone(phone);
@@ -175,11 +194,13 @@ async function secureSet(key: string, value: string): Promise<void> {
  * Store nullifier_root in Android Keystore / iOS Keychain.
  * Uses biometrics if available, falls back gracefully.
  */
-export async function storeNullifierRoot(root: Uint8Array): Promise<void> {
-  const value = bytesToHex(root);
-  const previous = await SecureStore.getItemAsync(KEYS.NULLIFIER_ROOT);
-  await secureSet(KEYS.NULLIFIER_ROOT, value);
-  if (previous !== value) await clearVoteMarks();
+/**
+ * @deprecated FORBIDDEN (ADR-006 D1): no client root may be stored any more,
+ * so a phone-derived root can never come into existence on a device. Roots
+ * that already exist are still READ (POLIS compatibility). Always throws.
+ */
+export async function storeNullifierRoot(_root: Uint8Array): Promise<void> {
+  throw new Error("storeNullifierRoot is forbidden: client roots are disabled (ADR-006 D1)");
 }
 
 export async function loadNullifierRoot(): Promise<Uint8Array | null> {
@@ -203,7 +224,19 @@ export async function storeKeypair(privateKeyHex: string, publicKeyHex: string):
   await SecureStore.setItemAsync(KEYS.PUBLIC_KEY, publicKeyHex);
 }
 
+/**
+ * Reader for signing flows (EVA-001 PR4): never hands out a half-written pair.
+ * An inconsistent pair means a credential write is in progress (or crashed);
+ * wait once for the identity lock, which completes/rolls it forward, and read
+ * again. Lock holders must use loadKeypairRaw (the lock is not re-entrant).
+ */
 export async function loadKeypair(): Promise<{ privateKeyHex: string; publicKeyHex: string } | null> {
+  const kp = await loadKeypairRaw();
+  if (!kp || isConsistentKeypair(kp)) return kp;
+  return withIdentityStateLock(loadKeypairRaw);
+}
+
+export async function loadKeypairRaw(): Promise<{ privateKeyHex: string; publicKeyHex: string } | null> {
   const priv = await SecureStore.getItemAsync(KEYS.PRIVATE_KEY);
   const pub = await SecureStore.getItemAsync(KEYS.PUBLIC_KEY);
   if (!priv || !pub) return null;
@@ -318,6 +351,13 @@ export async function getOrDerivePolisKey(): Promise<{
   publicKey: Uint8Array;
   pkPolisHex: string;
 } | null> {
+  // A POLIS seed preserved before an identity-key rotation keeps pk_polis stable.
+  const preservedSeed = await loadPolisSeedFor(await SecureStore.getItemAsync(KEYS.NULLIFIER));
+  if (preservedSeed) {
+    const polisPriv = hexToBytes(preservedSeed);
+    const polisPub = ed25519.getPublicKey(polisPriv);
+    return { privateKey: polisPriv, publicKey: polisPub, pkPolisHex: bytesToHex(polisPub) };
+  }
   // Try nullifierRoot first (new path)
   const root = await loadNullifierRoot();
   if (root) {
@@ -333,6 +373,233 @@ export async function getOrDerivePolisKey(): Promise<{
     return { privateKey: polisPriv, publicKey: polisPub, pkPolisHex: bytesToHex(polisPub) };
   }
   return null;
+}
+
+// ─── EVA-001 PR4: identity key lifecycle ─────────────────────────────────────
+
+let identityStateQueue: Promise<unknown> = Promise.resolve();
+let identityStateBusy = 0;
+let identityStateWaiters = 0;
+
+/**
+ * Serialise every read-modify-write of the identity credentials (rotation,
+ * verification install, import incl. rollback, clearing). Not re-entrant.
+ * Holders must not wait on unbounded network calls. Every holder first rolls
+ * an interrupted journal forward.
+ */
+export function withIdentityStateLock<T>(fn: () => Promise<T>): Promise<T> {
+  const task = async () => {
+    identityStateBusy += 1;
+    try {
+      await recoverIdentityJournal();
+      return await fn();
+    } finally {
+      identityStateBusy -= 1;
+    }
+  };
+  const run = identityStateQueue.then(task, task);
+  identityStateQueue = run.then(() => undefined, () => undefined);
+  return run;
+}
+
+/** Background work (key rotation) only runs when nobody holds or waits for the lock. */
+export function tryWithIdentityStateLock<T>(fn: () => Promise<T>): Promise<T> | null {
+  if (identityStateBusy > 0 || identityStateWaiters > 0) return null;
+  return withIdentityStateLock(fn);
+}
+
+/** Marks a multi-phase flow (import) during which background rotation must not start. */
+export async function holdIdentityStateWhile<T>(fn: () => Promise<T>): Promise<T> {
+  identityStateWaiters += 1;
+  try {
+    return await fn();
+  } finally {
+    identityStateWaiters -= 1;
+  }
+}
+
+/**
+ * Write-ahead journal for credential changes that span several SecureStore
+ * entries. The complete target state is written as ONE entry first, then
+ * applied, then the journal is removed. An interruption anywhere is completed
+ * by recoverIdentityJournal() (roll forward), so no mixed key pair, nullifier
+ * or marker can survive. null deletes the entry.
+ */
+export async function installIdentityState(values: Record<string, string | null>): Promise<void> {
+  await secureSet(KEYS.IDENTITY_JOURNAL, JSON.stringify(values));
+  await applyIdentityState(values);
+  await SecureStore.deleteItemAsync(KEYS.IDENTITY_JOURNAL);
+}
+
+async function applyIdentityState(values: Record<string, string | null>): Promise<void> {
+  for (const [key, value] of Object.entries(values)) {
+    if (value === null) await SecureStore.deleteItemAsync(key);
+    else await secureSet(key, value);
+  }
+}
+
+/** True while a journal is present (e.g. one that could not be parsed). */
+export async function hasPendingIdentityJournal(): Promise<boolean> {
+  return (await SecureStore.getItemAsync(KEYS.IDENTITY_JOURNAL)) !== null;
+}
+
+export async function recoverIdentityJournal(): Promise<boolean> {
+  const raw = await SecureStore.getItemAsync(KEYS.IDENTITY_JOURNAL);
+  if (!raw) return false;
+  let values: Record<string, string | null> | null = null;
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      && Object.values(parsed as Record<string, unknown>).every((v) => v === null || typeof v === "string")) {
+      values = parsed as Record<string, string | null>;
+    }
+  } catch {
+    values = null;
+  }
+  // A journal that cannot be read is KEPT: the credentials may be mixed, so
+  // destructive automatic decisions (rotation, staging cleanup) stay blocked
+  // until a full install (verification/import) replaces it.
+  if (!values) return false;
+  await applyIdentityState(values);
+  await SecureStore.deleteItemAsync(KEYS.IDENTITY_JOURNAL);
+  return true;
+}
+
+const HEX32 = /^[0-9a-f]{64}$/;
+
+async function loadPolisSeedFor(nullifier: string | null): Promise<string | null> {
+  if (!nullifier) return null;
+  const raw = await SecureStore.getItemAsync(KEYS.POLIS_SEED);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as { nullifier?: unknown; seed?: unknown };
+    if (parsed.nullifier !== nullifier || typeof parsed.seed !== "string" || !HEX32.test(parsed.seed)) return null;
+    return parsed.seed;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Before the identity key of the CURRENT identity is replaced (rotation or a
+ * same-number re-verification), persist the POLIS seed legacy clients derive
+ * from it, bound to the nullifier, so pk_polis stays registered. Users with a
+ * nullifier root derive POLIS from the root and need nothing. Never overwrites
+ * the seed of the same identity; only adds.
+ */
+export async function persistLegacyPolisSeed(): Promise<void> {
+  const nullifier = await SecureStore.getItemAsync(KEYS.NULLIFIER);
+  if (!nullifier || (await loadPolisSeedFor(nullifier))) return;
+  if (await loadNullifierRoot()) return;
+  const legacy = await loadKeypairRaw(); // called under the identity lock
+  if (!legacy || !HEX32.test(legacy.privateKeyHex)) return;
+  const polisSeed = hmacSha256(hexToBytes(legacy.privateKeyHex), DOMAIN.POLIS_KEY);
+  await secureSet(KEYS.POLIS_SEED, JSON.stringify({ nullifier, seed: bytesToHex(polisSeed) }));
+}
+
+/**
+ * Call BEFORE storing a server-issued key (v1 verification or demo). Nothing
+ * is deleted here: a staged rotation and the marker of the old key stay as
+ * recovery material until the new credentials are durable, and they are
+ * ignored afterwards because they are bound to another key/nullifier.
+ */
+export async function prepareForServerIssuedKey(newNullifier: string): Promise<void> {
+  if ((await SecureStore.getItemAsync(KEYS.NULLIFIER)) === newNullifier) {
+    await persistLegacyPolisSeed();
+  }
+}
+
+/**
+ * Install a server-issued key pair (v1 verification, demo) atomically via the
+ * journal. Call inside withIdentityStateLock, AFTER the network request.
+ */
+export async function installServerIssuedCredentials(
+  privateKeyHex: string,
+  publicKeyHex: string,
+  nullifier: string,
+  extra: Record<string, string | null> = {},
+): Promise<void> {
+  const previousNullifier = await SecureStore.getItemAsync(KEYS.NULLIFIER);
+  await prepareForServerIssuedKey(nullifier);
+  await installIdentityState({
+    [KEYS.PRIVATE_KEY]: privateKeyHex,
+    [KEYS.PUBLIC_KEY]: publicKeyHex,
+    [KEYS.NULLIFIER]: nullifier,
+    ...extra, // e.g. the demo flag, in the same journaled unit
+  });
+  if (previousNullifier !== nullifier) await clearVoteMarks();
+}
+
+let verificationInFlight = false;
+
+/**
+ * At most one server key issuance (v1 verification) at a time: overlapping
+ * requests could return in a different order than the server applied them,
+ * and the older response would overwrite the server's current key.
+ */
+export async function runExclusiveVerification<T>(fn: () => Promise<T>): Promise<T> {
+  if (verificationInFlight) {
+    throw new Error("Η επαλήθευση είναι ήδη σε εξέλιξη. Περιμένετε να ολοκληρωθεί.");
+  }
+  verificationInFlight = true;
+  try {
+    return await fn();
+  } finally {
+    verificationInFlight = false;
+  }
+}
+
+/** True when the stored public key really belongs to the stored private key. */
+export function isConsistentKeypair(kp: { privateKeyHex: string; publicKeyHex: string }): boolean {
+  try {
+    return HEX32.test(kp.privateKeyHex)
+      && bytesToHex(ed25519.getPublicKey(hexToBytes(kp.privateKeyHex))) === kp.publicKeyHex;
+  } catch {
+    return false;
+  }
+}
+
+/** "device" only while the stored, consistent key pair is the device-generated one. */
+export async function loadKeyOrigin(): Promise<"device" | "server"> {
+  const marker = await SecureStore.getItemAsync(KEYS.KEY_ORIGIN);
+  const current = await loadKeypairRaw();
+  return marker !== null && current !== null && marker === current.publicKeyHex && isConsistentKeypair(current)
+    ? "device"
+    : "server";
+}
+
+export async function markKeyOriginDevice(publicKeyHex: string): Promise<void> {
+  await SecureStore.setItemAsync(KEYS.KEY_ORIGIN, publicKeyHex);
+}
+
+export interface RotationStaging {
+  nullifier: string;
+  oldPublicKeyHex: string;
+  privateKeyHex: string;
+  publicKeyHex: string;
+}
+
+export async function loadRotationStaging(): Promise<RotationStaging | null> {
+  const raw = await SecureStore.getItemAsync(KEYS.ROTATION_STAGING);
+  if (!raw) return null;
+  try {
+    const p = JSON.parse(raw) as Partial<Record<keyof RotationStaging, unknown>>;
+    const fields = [p.nullifier, p.oldPublicKeyHex, p.privateKeyHex, p.publicKeyHex];
+    if (!fields.every((v) => typeof v === "string" && HEX32.test(v))) return null;
+    const staging = p as RotationStaging;
+    if (bytesToHex(ed25519.getPublicKey(hexToBytes(staging.privateKeyHex))) !== staging.publicKeyHex) return null;
+    return staging;
+  } catch {
+    return null;
+  }
+}
+
+export async function storeRotationStaging(staging: RotationStaging): Promise<void> {
+  await secureSet(KEYS.ROTATION_STAGING, JSON.stringify(staging));
+}
+
+export async function clearRotationStaging(): Promise<void> {
+  await SecureStore.deleteItemAsync(KEYS.ROTATION_STAGING);
 }
 
 /**
@@ -516,11 +783,16 @@ export async function isVerified(): Promise<boolean> {
 }
 
 export async function clearKeys(): Promise<void> {
+  return withIdentityStateLock(clearKeysUnlocked);
+}
+
+async function clearKeysUnlocked(): Promise<void> {
   await SecureStore.deleteItemAsync(KEYS.NULLIFIER_ROOT);
   await SecureStore.deleteItemAsync(KEYS.IDENTITY_COMMITMENT);
   await SecureStore.deleteItemAsync(KEYS.PRIVATE_KEY);
   await SecureStore.deleteItemAsync(KEYS.PUBLIC_KEY);
   await SecureStore.deleteItemAsync(KEYS.NULLIFIER);
+  for (const key of KEY_LIFECYCLE_STORE_KEYS) await SecureStore.deleteItemAsync(key);
   // A new identity must never inherit a still-fresh push registration marker.
   await SecureStore.deleteItemAsync("push_registration_marker");
   await clearVoteMarks();
@@ -591,21 +863,14 @@ export function signVoteEphemeral(
  * 3. Store nullifier_root in hardware keystore
  * 4. Return identity_commitment for server registration
  */
-export async function registerTier1(phone: string): Promise<{
+/**
+ * @deprecated FORBIDDEN (ADR-006 D1): phone-derived client roots must never be
+ * created. Any future Tier-1 root is 32 random device bytes enrolled with
+ * identity-key or OTP authorisation. This function always throws.
+ */
+export async function registerTier1(_phone: string): Promise<{
   identity_commitment: string;
   version: string;
 }> {
-  const nullifierRoot = await deriveNullifierRoot(phone);
-  const commitment = deriveIdentityCommitment(nullifierRoot);
-
-  await storeNullifierRoot(nullifierRoot);
-  await storeIdentityCommitment(commitment);
-
-  // Zero phone-derived material from JS memory (best-effort)
-  nullifierRoot.fill(0);
-
-  return {
-    identity_commitment: commitment,
-    version: PROTO_VERSION,
-  };
+  throw new Error("registerTier1 is forbidden: phone-derived roots are disabled (ADR-006 D1)");
 }

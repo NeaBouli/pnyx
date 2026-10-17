@@ -61,21 +61,28 @@ import r0_inventory
 # region is self-declared and locked, GDPR/"no personal data" badges are replaced
 # by factual minimization statements, and TrueRepublic/iOS are labelled planned /
 # not available. community.html: "Data minimization." and pseudonymous POLIS identity.
+# T-9128: community result counters render null as withheld.
+# T-9132 (Gio approved 2026-10-16, ADR-007 S1): ordinary votes use no-name /
+# pseudonymous wording; retention, VAA, IP handling and scoped k>=10 assurances
+# follow the code. Ordinary Arweave aggregates are distinguished from paused ZK.
+# T-9132 review: IP counters expire; access logs rotate by size with no fixed
+# retention period. FAQ default Greek matches EL/JSON-LD, votes are pseudonymous,
+# and FAQ/roadmap ZK status follows the security-review pause since 2026-10-03.
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/community.html": "01cadf7469b64df69c23c1ebff8bde67c7e6b5e0f4b2d12394509b5f20413b86",  # T-9048: scoped contrast, heading semantics and document-language toggle; T-9106: legal-modal claims text
-    "docs/wiki/api.html": "e56012799245533915b72606ffc8955bd4c3ce61f3ba5f9926fd07abb101106c",
+    "docs/community.html": "070111774fa4640a4bde4857a2aca7bbf73f0a06db73e748e73c5e045422084f",  # T-9048: scoped contrast, heading semantics and document-language toggle; T-9106: legal-modal claims text
+    "docs/wiki/api.html": "96fc5780f70af8945a5f3c7bded3e3a9bb206e806babebd83fb1e95adf807ecf",  # T-9136: signed preflight 120/IP; QR 30/session + 600/IP (EL/EN).
     "docs/wiki/architecture.html": "1af2aa9c102d66887e52627c277ebfea03935a2ff3b772235cf07ed3d4313f0b",
     "docs/wiki/broadcasting.html": "eb345ed4551a94220e47aeb4b40c7c745bf6dfeaa5f330eac6f629a09d31f716",
     "docs/wiki/contributing.html": "bb4048480c3b75cb98ee668305833fe36b2c939f29ef27f1f8bec230c9d49d88",
     "docs/wiki/database.html": "08ac70323ffa6a6db969f41678ad8de9afd5fdd8f5b74981665cbf8e38afb9f9",
-    "docs/wiki/delete-account.html": "23e161c6767392c8c7507a68ad4240b66e8e2e5bedb34a63d050b85f6e1a89a9",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
-    "docs/wiki/faq.html": "6427c63a93d3bc840755c446b1309e53098752aad51710e13c44653a7cb36863",
+    "docs/wiki/delete-account.html": "3d7090ca86d5d17207477b664fa9d29066c0073a446d67e13dfd7eaf26822d1e",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
+    "docs/wiki/faq.html": "0d9583ac4244b4dfe44dbf96ceeff530adc1ed2d807c51df2d2984393296454f",  # T-9127: OPEN_END voting closed
     "docs/wiki/index.html": "ea418f9164a41aafa72721bdc8feaf7612a26fc83a32e7e781d7f166fe278419",  # T-9047/T-9048: named code region, contrast, headings and document language; T-9106: legal-modal claims text
     "docs/wiki/modules.html": "dd1f4addfdc25337790028ac3f3d4d608832a11ad682c9068dae1c9b0a265544",  # T-9072: neutral unknown health dots, MOD-23/25 mapping, localized status labels; T-9106: legal-modal claims text
-    "docs/wiki/privacy.html": "53017decbc23d65f3f794573b001b00e29a48b5e636d7fceec32763d4de71ad6",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
-    "docs/wiki/roadmap.html": "84468c8a672a819d07e1d2649084356993d13fde0c41c1df4a26054c611b76a1",
-    "docs/wiki/security.html": "8ade2139559176c15551f19ce8c5d2aa8a09e0d66235ff326bf4fa13da71db97",
-    "docs/wiki/whitepaper.html": "495f7182ea35f22de6cdb18783c7dbf1f4d80b4991f10ad4ca9e40c124a32200",
+    "docs/wiki/privacy.html": "58550c4a6d68fb39a43c46b2810819dcb8af70cc141f43d9fa5651aac4e990b8",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
+    "docs/wiki/roadmap.html": "8fae28938db627f3cade818fc490e1fac5f1be3984544c72a16817fd9aa84ff5",
+    "docs/wiki/security.html": "0546a8aaf80b51cd4a9de72a33ce82059f8da96ce7ab2a20af7ad278932edc36",  # T-9127: OPEN_END voting closed
+    "docs/wiki/whitepaper.html": "c657de01e6cb47060bae0b28b2dab96349e0d663eb16e584daafc0940af56f1f",  # T-9127: OPEN_END voting closed
     "docs/wiki/zk-voting.html": "5dafa29250109c593a4aaabe65b7bc2a824d9f1efc90485d0278dd6325b07ccf",
 }
 # T-420 changed only the "24 Ώρες" footer target; T-421 only drops the same-URL

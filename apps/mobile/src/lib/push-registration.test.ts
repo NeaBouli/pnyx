@@ -347,13 +347,13 @@ describe("30-day registration marker", () => {
     expect(await loadVoteMarks(NOW)).toEqual({});
   });
 
-  it("clears legacy marks when a Tier-1 root replaces the identity", async () => {
+  it("refuses to store a Tier-1 root (ADR-006 D1)", async () => {
     seedIdentity();
     await recordVoteMark("old-bill", false, NULLIFIER, NOW);
 
-    await storeNullifierRoot(new Uint8Array(32).fill(7));
+    // ADR-006 D1: a client root can no longer be stored.
+    await expect(storeNullifierRoot(new Uint8Array(32).fill(7))).rejects.toThrow("ADR-006 D1");
 
-    expect(secureStore.has("ekklesia_vote_marks_v1")).toBe(false);
-    expect(await loadVoteMarks(NOW)).toEqual({});
+    expect(secureStore.has("ekklesia_nullifier_root")).toBe(false);
   });
 });

@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createEmptyProfile } from "./engine";
 import { CompassStorageError, saveProfile } from "./storage";
-import { readPrivateKeySafely, saveProfileSafely } from "./useCompass";
+import { readCompassKeysSafely, saveProfileSafely } from "./useCompass";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -26,10 +26,9 @@ describe("saveProfileSafely in a browser environment (Codex follow-up to #396)",
   });
 });
 
-describe("readPrivateKeySafely", () => {
-  it("returns null instead of throwing when WebStorage is blocked", () => {
+describe("readCompassKeysSafely", () => {
+  it("returns no legacy key when WebStorage is blocked", async () => {
     vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new DOMException("blocked", "SecurityError"); });
-    expect(() => readPrivateKeySafely()).not.toThrow();
-    expect(readPrivateKeySafely()).toBeNull();
+    expect((await readCompassKeysSafely()).legacyPrivateKeyHex).toBeNull();
   });
 });

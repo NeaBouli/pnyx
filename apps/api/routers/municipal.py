@@ -14,6 +14,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from rate_limit import limiter
+from services.small_cell import suppress_public_cells
 from models import (
     Periferia, Dimos, Decision, GovernanceLevel, BillStatus,
     DiavgeiaDecision, DiavgeiaVote, IdentityRecord, KeyStatus, VoteChoice,
@@ -173,7 +175,9 @@ async def get_voteable_decisions(
             "issue_date": d.publish_timestamp.isoformat() if d.publish_timestamp else None,
             "document_url": d.document_url,
             "governance_level": "MUNICIPAL",
-            "votes": {"yes": yes_c, "no": no_c, "abstain": abs_c, "total": total},
+            "votes": suppress_public_cells(
+                {"yes": yes_c, "no": no_c, "abstain": abs_c, "total": total},
+                choices=("yes", "no", "abstain"), total="total"),
         })
 
     return {"dimos_id": dimos_id, "decisions": items, "count": len(items)}
@@ -218,7 +222,8 @@ class DecisionVoteRequest(BaseModel):
 
 
 @router.post("/municipal/vote")
-async def vote_on_decision(req: DecisionVoteRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("20/minute")
+async def vote_on_decision(req: DecisionVoteRequest, db: AsyncSession = Depends(get_db), request: Request = None):
     """Cast a vote on a Diavgeia municipal decision. Requires Ed25519 signature."""
     from keypair import verify_signature
 

@@ -3,8 +3,9 @@
 import { useState, useEffect, use } from "react";
 import { useLocale } from "next-intl";
 import Link from "next/link";
-import { ekklesia, Bill, BillResults } from "@/lib/api";
-import { loadKeypair, loadNullifier, signVote } from "@/lib/crypto";
+import { ekklesia, Bill, BillResults, submitSignedVote } from "@/lib/api";
+import { withSigner } from "@/lib/keystore";
+import { RequestTimeoutError, requestTimeoutMessage } from "@/lib/request-deadline";
 import StatusBadge from "@/components/StatusBadge";
 import RelevanceButtons from "@/components/RelevanceButtons";
 import BillResultReport from "@/components/BillResultReport";
@@ -62,7 +63,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
   const [results, setResults]   = useState<BillResults | null>(null);
   const [loading, setLoading]   = useState(true);
   const [expanded, setExpanded] = useState<"short" | "long">("short");
-  const [voteStatus, setVoteStatus] = useState<"idle" | "needs_key" | "voted" | "already" | "invalid_sig" | "error">("idle");
+  const [voteStatus, setVoteStatus] = useState<"idle" | "needs_key" | "voted" | "already" | "already_corrected" | "invalid_sig" | "error">("idle");
   const [selectedVote, setSelectedVote] = useState<string | null>(null);
   const [voteLoading, setVoteLoading] = useState(false);
   const [voteError, setVoteError] = useState<string | null>(null);
@@ -86,42 +87,36 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
   }, [billId]);
 
   async function handleVoteClick(choice: string) {
-    const keypair = loadKeypair();
-    const nullifier = loadNullifier();
-
-    // Path A: Local Ed25519 keys exist → sign and submit directly
-    if (keypair && nullifier) {
-      setVoteLoading(true);
-      setVoteError(null);
-      setSelectedVote(choice);
-      try {
-        const signatureHex = signVote(keypair.privateKeyHex, {
-          bill_id: billId,
-          vote: choice,
-          nullifier_hash: nullifier,
-        });
-        const res = await fetch(`${API_URL}/api/v1/vote`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            nullifier_hash: nullifier,
-            bill_id: billId,
-            vote: choice,
-            signature_hex: signatureHex,
-          }),
-        });
+    // EVA-003: WebCrypto (non-extractable) signer, legacy plaintext only if not migrated
+    setVoteLoading(true);
+    setVoteError(null);
+    setSelectedVote(choice);
+    try {
+      const submitted = await withSigner(async (signer) => {
+        if (!signer?.nullifier) return null;
+        return submitSignedVote(billId, choice, { ...signer, nullifier: signer.nullifier });
+      });
+      if (submitted) {
+        const { response: res, isCorrection } = submitted;
         if (res.ok) {
           setVoteStatus("voted");
           try { const r = await ekklesia.getResults(billId); setResults(r.data); } catch {}
+        } else if (res.status === 409 && isCorrection) {
+          const e = await res.json().catch(() => ({}));
+          if (typeof e.detail === "string" && e.detail.startsWith("Η διόρθωση έχει ήδη χρησιμοποιηθεί")) {
+            setVoteStatus("already_corrected");
+          } else { setVoteError(e.detail || `Error ${res.status}`); setVoteStatus("error"); }
         } else if (res.status === 409) { setVoteStatus("already"); }
         else if (res.status === 401) { setVoteStatus("invalid_sig"); }
         else { const e = await res.json().catch(() => ({})); setVoteError(e.detail || `Error ${res.status}`); setVoteStatus("error"); }
-      } catch (err) {
-        setVoteError(err instanceof Error ? err.message : "Network error");
-        setVoteStatus("error");
-      } finally { setVoteLoading(false); }
+        return;
+      }
+    } catch (err) {
+      setVoteError(err instanceof RequestTimeoutError ? requestTimeoutMessage(locale === "el")
+        : err instanceof Error ? err.message : "Network error");
+      setVoteStatus("error");
       return;
-    }
+    } finally { setVoteLoading(false); }
 
     // Path B: QR session authenticated → vote via session proxy
     if (qrSessionId) {
@@ -380,12 +375,12 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
                 <button
                   key={opt.value}
                   onClick={() => handleVoteClick(opt.value)}
-                  disabled={voteLoading || voteStatus === "voted"}
+                  disabled={voteLoading || voteStatus === "voted" || voteStatus === "already_corrected"}
                   className={`py-4 px-4 rounded-xl font-semibold border-2 transition-all ${opt.color} ${
                     selectedVote === opt.value
                       ? "ring-2 ring-blue-600 scale-105"
                       : "opacity-90"
-                  } ${(voteLoading || voteStatus === "voted") ? "opacity-50 cursor-not-allowed" : ""}`}
+                  } ${(voteLoading || voteStatus === "voted" || voteStatus === "already_corrected") ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   {voteLoading && selectedVote === opt.value
                     ? (locale === "el" ? "Υπογραφή..." : "Signing...")
@@ -429,8 +424,16 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
             {voteStatus === "already" && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-yellow-800 text-sm">
                 {locale === "el"
-                  ? "Έχετε ήδη ψηφίσει για αυτό το νομοσχέδιο."
-                  : "You have already voted on this bill."}
+                  ? "Έχετε ήδη ψηφίσει για αυτό το νομοσχέδιο. Μπορείτε να αλλάξετε την ψήφο σας μία φορά μέσω της εφαρμογής στο 24ωρο παράθυρο διόρθωσης."
+                  : "You have already voted on this bill. You can change your vote once in the app during the 24-hour correction window."}
+              </div>
+            )}
+
+            {voteStatus === "already_corrected" && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-yellow-800 text-sm">
+                {locale === "el"
+                  ? "Η διόρθωση έχει ήδη χρησιμοποιηθεί. Επιτρέπεται μόνο μία διόρθωση ανά ψηφοφορία."
+                  : "You have already corrected this vote. Only one correction is allowed per vote."}
               </div>
             )}
 
@@ -610,7 +613,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
         )}
 
         {/* ── FULL RESULT REPORT ── */}
-        {results && results.total_votes > 0 && (
+        {results && !results.results_hidden && (results.total_votes === null || results.total_votes > 0) && (
           <BillResultReport
             billId={billId}
             titleEl={bill?.title_el || ""}
@@ -621,7 +624,8 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
             yesPct={results.yes_percent}
             noPct={results.no_percent}
             abstainPct={results.abstain_percent}
-            unknownCount={results.unknown_count || 0}
+            unknownCount={results.unknown_count === undefined ? 0 : results.unknown_count}
+            suppressionK={results.suppression_k}
             unknownPct={results.unknown_percent}
             divergence={results.divergence}
             representativity={(results as unknown as Record<string, unknown>).representativity as never ?? null}

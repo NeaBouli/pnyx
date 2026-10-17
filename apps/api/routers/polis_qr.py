@@ -16,13 +16,15 @@ import os
 import secrets
 import logging
 from typing import Literal, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import redis.asyncio as aioredis
 
 from database import get_db
+from ip_utils import hashed_rate_subject, redis_fixed_window_limit
+from rate_limit import limiter
 from services.bill_visibility import is_public_bill
 from services.vote_scope import ScopeAction, ensure_bill_scope_allowed
 from models import (
@@ -130,9 +132,11 @@ async def _mark_session_used(redis_client, session_key: str) -> None:
 
 
 @router.get("/qr-session")
+@limiter.limit("10/minute")
 async def create_qr_session(
     purpose: Literal["ticket", "vote", "consensus", "forum_login"] = Query("ticket"),
     bill_id: Optional[str] = Query(None),
+    request: Request = None,
 ):
     """Generate a new QR login session with challenge.
 
@@ -175,13 +179,21 @@ async def create_qr_session(
 
 
 @router.get("/qr-session/{session_id}")
-async def poll_qr_session(session_id: str):
+@limiter.shared_limit("600/minute", scope="polis_qr:poll_qr_session")
+async def poll_qr_session(session_id: str, request: Request = None):
     """Poll QR session status. Returns pending/authenticated/expired/used."""
     r = await _redis()
     data = await r.hgetall(f"polis_qr:{session_id}")
 
     if not data:
         return {"status": "expired", "session_id": session_id}
+
+    # Only server-issued, still-existing sessions may create a session bucket.
+    # 24 polls/min at the clients' 2500-ms interval fits with initial/retry room.
+    # The outer IP ceiling bounds lookups even when arbitrary IDs are rotated.
+    if limiter.enabled:
+        subject = hashed_rate_subject(session_id, "polis-qr-poll")
+        await redis_fixed_window_limit(r, f"ratelimit:polis-qr-poll:{subject}", 30, 60)
 
     status = data.get("status", "pending")
     result = {
@@ -208,7 +220,8 @@ class QRAuthRequest(BaseModel):
 
 
 @router.post("/qr-auth")
-async def authenticate_qr(req: QRAuthRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("10/minute")
+async def authenticate_qr(req: QRAuthRequest, db: AsyncSession = Depends(get_db), request: Request = None):
     """App submits signed challenge to authenticate browser session."""
     r = await _redis()
     data = await r.hgetall(f"polis_qr:{req.session_id}")
@@ -285,7 +298,8 @@ class QRVoteRequest(BaseModel):
 
 
 @router.post("/qr-vote")
-async def qr_web_vote(req: QRVoteRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("20/minute")
+async def qr_web_vote(req: QRVoteRequest, db: AsyncSession = Depends(get_db), request: Request = None):
     """Browser submits vote via an authenticated QR session.
 
     The session must have purpose=vote, status=authenticated, and matching bill_id.
@@ -322,20 +336,38 @@ async def qr_web_vote(req: QRVoteRequest, db: AsyncSession = Depends(get_db)):
     identity = id_result.scalar_one_or_none()
     if not identity:
         raise HTTPException(403, "Identity not found or revoked")
+    # EVA-001 PR2: a session authenticated with a key that has since been
+    # rotated away must not act for the identity.
+    if identity.public_key_hex != data.get("public_key_hex", ""):
+        raise HTTPException(403, "Session key is no longer current — scan QR again")
 
-    # Check bill is votable
-    bill_result = await db.execute(
-        select(ParliamentBill).where(ParliamentBill.id == req.bill_id)
-    )
+    # Check bill is votable. With the ZK tier guard on, lock the bill row like
+    # POST /vote and ZK opt-in do, and hold it through commit: a concurrent
+    # opt-in cannot slip between the tier-lock check and this vote (EVA-006).
+    from routers.voting import zk_tier1_guard_enabled
+    bill_query = select(ParliamentBill).where(ParliamentBill.id == req.bill_id)
+    if zk_tier1_guard_enabled():
+        bill_query = bill_query.with_for_update()
+    bill_result = await db.execute(bill_query)
     bill = bill_result.scalar_one_or_none()
     if not bill or not is_public_bill(bill):
         raise HTTPException(404, f"Bill {req.bill_id} not found")
 
-    votable = [BillStatus.ACTIVE, BillStatus.WINDOW_24H, BillStatus.OPEN_END]
+    votable = [BillStatus.ACTIVE, BillStatus.WINDOW_24H]
     if bill.status not in votable:
-        raise HTTPException(400, f"Voting closed. Status: {bill.status.value}")
+        raise HTTPException(400, f"Η ψηφοφορία έχει κλείσει ή δεν έχει ανοίξει ακόμα. Κατάσταση: {bill.status.value}.")
 
     ensure_bill_scope_allowed(identity, bill)
+
+    # EVA-006/NEA-249: the QR path must honour the same ZK cross-tier lock as
+    # POST /vote, otherwise a ZK opt-in voter could also vote here (Tier 1).
+    from routers.voting import raise_if_zk_tier1_locked
+    await raise_if_zk_tier1_locked(
+        db,
+        bill_id=req.bill_id,
+        bill_source=getattr(bill, "source", None),
+        nullifier_hash=nullifier_hash,
+    )
 
     vote_choice = VoteChoice(req.vote)
 
@@ -345,22 +377,26 @@ async def qr_web_vote(req: QRVoteRequest, db: AsyncSession = Depends(get_db)):
         select(CitizenVote).where(
             CitizenVote.nullifier_hash == nullifier_hash,
             CitizenVote.bill_id == req.bill_id,
-        )
+        ).with_for_update()
     )
     existing_vote = existing.scalar_one_or_none()
 
     if existing_vote and bill.status == BillStatus.ACTIVE:
         raise HTTPException(409, "Already voted. Correction available during 24h window.")
+    if existing_vote and existing_vote.vote != vote_choice:
+        raise HTTPException(
+            409,
+            "Η ψήφος έχει ήδη καταχωρηθεί. Για μία μόνο αλλαγή στο 24ωρο παράθυρο, "
+            "χρησιμοποιήστε τη λειτουργία διόρθωσης στην εφαρμογή. Η διόρθωση μέσω QR δεν υποστηρίζεται.",
+        )
 
     session_key = f"polis_qr:{req.session_id}"
     await _claim_authenticated_session(r, session_key)
     try:
         if existing_vote:
-            from datetime import datetime, timezone
-            existing_vote.vote = vote_choice
-            existing_vote.signature_hex = f"qr-session:{req.session_id[:16]}"
-            existing_vote.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
-            msg = "Vote corrected via QR session."
+            # Identical WINDOW_24H retry: consume this authenticated session,
+            # but leave every vote field (including correction metadata) intact.
+            msg = "Η ψήφος έχει ήδη καταχωρηθεί επιτυχώς."
         else:
             new_vote = CitizenVote(
                 nullifier_hash=nullifier_hash,
@@ -370,7 +406,7 @@ async def qr_web_vote(req: QRVoteRequest, db: AsyncSession = Depends(get_db)):
             )
             db.add(new_vote)
             msg = "Vote submitted via QR session."
-        await db.commit()
+            await db.commit()
     except IntegrityError:
         await db.rollback()
         await _restore_authenticated_session(r, session_key)
@@ -382,8 +418,8 @@ async def qr_web_vote(req: QRVoteRequest, db: AsyncSession = Depends(get_db)):
 
     await _mark_session_used(r, session_key)
 
-    logger.info("QR web vote: bill=%s vote=%s nullifier=%s...",
-                req.bill_id, req.vote, nullifier_hash[:8])
+    # EVA-006: never log the choice next to an identity reference.
+    logger.info("QR web vote accepted: bill=%s", req.bill_id)
 
     return {"success": True, "message": msg, "bill_id": req.bill_id, "vote": req.vote}
 
@@ -395,7 +431,8 @@ class QRConsensusRequest(BaseModel):
 
 
 @router.post("/qr-consensus")
-async def qr_web_consensus(req: QRConsensusRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("20/minute")
+async def qr_web_consensus(req: QRConsensusRequest, db: AsyncSession = Depends(get_db), request: Request = None):
     """Browser submits consensus via an authenticated QR session.
 
     Same pattern as qr-vote: session IS the proof of identity.
@@ -433,6 +470,9 @@ async def qr_web_consensus(req: QRConsensusRequest, db: AsyncSession = Depends(g
     identity = id_result.scalar_one_or_none()
     if not identity:
         raise HTTPException(403, "Η ταυτότητα δεν βρέθηκε ή έχει ανακληθεί")
+    # EVA-001 PR2: the session key must still be the identity's current key.
+    if identity.public_key_hex != data.get("public_key_hex", ""):
+        raise HTTPException(403, "Το κλειδί της συνεδρίας δεν είναι πλέον ενεργό — σαρώστε ξανά τον κωδικό QR")
 
     # Check bill is OPEN_END
     bill = (await db.execute(
@@ -479,8 +519,7 @@ async def qr_web_consensus(req: QRConsensusRequest, db: AsyncSession = Depends(g
 
     await _mark_session_used(r, session_key)
 
-    logger.info("QR consensus: bill=%s score=%d nullifier=%s...",
-                req.bill_id, req.score, nullifier_hash[:8])
+    logger.info("QR consensus accepted: bill=%s", req.bill_id)
 
     return {
         "success": True,

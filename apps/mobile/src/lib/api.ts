@@ -427,17 +427,17 @@ export interface BillResults {
   forum_topic_id?: number | null;
   forum_topic_url?: string | null;
   diavgeia_ada?: string | null;
-  total_votes: number;
-  tier1_vote_count?: number;
-  zk_vote_count?: number;
-  yes_count: number;
-  no_count: number;
-  abstain_count: number;
-  unknown_count: number;
-  yes_percent: number;
-  no_percent: number;
-  abstain_percent: number;
-  unknown_percent: number;
+  total_votes: number | null;
+  tier1_vote_count?: number | null;
+  zk_vote_count?: number | null;
+  yes_count: number | null;
+  no_count: number | null;
+  abstain_count: number | null;
+  unknown_count: number | null;
+  yes_percent: number | null;
+  no_percent: number | null;
+  abstain_percent: number | null;
+  unknown_percent: number | null;
   divergence: {
     score: number;
     label_el: string;
@@ -448,6 +448,8 @@ export interface BillResults {
   results_hidden?: boolean;
   parliament_vote_date?: string | null;
   disclaimer_el: string;
+  suppressed?: boolean;
+  suppression_k?: number;
 }
 
 export async function fetchResults(billId: string): Promise<BillResults> {

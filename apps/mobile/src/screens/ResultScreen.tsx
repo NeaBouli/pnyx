@@ -19,17 +19,18 @@ import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
 import { fetchResults, type BillResults } from "../lib/api";
 import { colors } from "../theme";
+import { publicVoteCount, publicVoteShare } from "../lib/results-display";
 
 type Props = StackScreenProps<RootStackParams, "Result">;
 
-function Bar({ label, count, percent, color }: { label: string; count: number; percent: number; color: string }) {
+function Bar({ label, count, percent, color }: { label: string; count: number | null; percent: number | null; color: string }) {
   return (
     <View style={styles.barRow}>
       <Text style={styles.barLabel}>{label}</Text>
       <View style={styles.barTrack}>
-        <View style={[styles.barFill, { width: `${percent}%`, backgroundColor: color }]} />
+        <View style={[styles.barFill, { width: `${percent ?? 0}%`, backgroundColor: color }]} />
       </View>
-      <Text style={styles.barValue}>{count} ({percent}%)</Text>
+      <Text style={styles.barValue}>{publicVoteShare(count, percent)}</Text>
     </View>
   );
 }
@@ -199,14 +200,17 @@ export default function ResultScreen({ route }: Props) {
       ) : (
         <>
           <Text style={styles.totalVotes}>
-            Σύνολο ψήφων: {data.total_votes}
+            Σύνολο ψήφων: {publicVoteCount(data.total_votes, data.suppression_k)}
           </Text>
 
+          {data.yes_count === null && <Text style={styles.totalVotes}>
+            Σε τουλάχιστον μία επιλογή: λιγότερες από {data.suppression_k ?? 10} ψήφοι. Η ανάλυση δεν δημοσιεύεται.
+          </Text>}
           <View style={styles.barsContainer}>
             <Bar label="ΝΑΙ" count={data.yes_count} percent={data.yes_percent} color="#2e7d32" />
             <Bar label="ΟΧΙ" count={data.no_count} percent={data.no_percent} color="#c62828" />
             <Bar label="ΑΠΟΧΗ" count={data.abstain_count} percent={data.abstain_percent} color="#f57f17" />
-            {data.unknown_count > 0 && (
+            {(data.unknown_count === null || data.unknown_count > 0) && (
               <Bar label="ΑΓΝΩΣΤΟ" count={data.unknown_count} percent={data.unknown_percent} color="#7c3aed" />
             )}
           </View>

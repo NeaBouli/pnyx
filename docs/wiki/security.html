@@ -275,11 +275,11 @@
     <table>
       <tr><th>#</th><th data-el="Έλεγχος" data-en="Check">Έλεγχος</th><th data-el="Σφάλμα" data-en="Error">Σφάλμα</th></tr>
       <tr><td>1</td><td>Nullifier ACTIVE?</td><td>403 Forbidden</td></tr>
-      <tr><td>2</td><td data-el="Bill votable?" data-en="Bill votable?">Bill votable? (ACTIVE/WINDOW_24H/OPEN_END)</td><td>400 Bad Request</td></tr>
+      <tr><td>2</td><td data-el="Bill votable? (ACTIVE/WINDOW_24H)" data-en="Bill votable? (ACTIVE/WINDOW_24H)">Bill votable? (ACTIVE/WINDOW_24H)</td><td>400 Bad Request</td></tr>
       <tr><td>3</td><td>VoteChoice valid? (YES/NO/ABSTAIN)</td><td>400 Bad Request</td></tr>
       <tr><td>4</td><td>Ed25519 Signature valid?</td><td>401 Unauthorized</td></tr>
       <tr><td>5</td><td>UNIQUE(nullifier_hash, bill_id)</td><td>409 Conflict</td></tr>
-      <tr><td>6</td><td data-el="Αλλαγή μόνο WINDOW_24H + OPEN_END" data-en="Change only in WINDOW_24H + OPEN_END">Αλλαγή μόνο WINDOW_24H + OPEN_END</td><td>409 if ACTIVE</td></tr>
+      <tr><td>6</td><td data-el="Αλλαγή μόνο WINDOW_24H" data-en="Change only in WINDOW_24H">Αλλαγή μόνο WINDOW_24H</td><td>409 if ACTIVE</td></tr>
     </table>
   </div>
 
@@ -366,20 +366,20 @@
         <td><span class="badge badge-yellow" data-el="Περιορισμένα" data-en="Limited">Περιορισμένα</span></td>
         <td><span class="badge badge-yellow" data-el="Περιορισμένα" data-en="Limited">Περιορισμένα</span></td>
         <td><span class="badge badge-green" data-el="Όχι" data-en="No">Όχι</span></td>
-        <td data-el="Rate limiting / ασφάλεια, όχι σύνδεση με ψήφο ή ταυτότητα" data-en="Rate limiting / security, not linked to vote or identity">Rate limiting / ασφάλεια, όχι σύνδεση με ψήφο ή ταυτότητα</td>
+        <td data-el="Η IP δεν αποθηκεύεται μαζί με την ψήφο. Οι μετρητές ορίων αιτημάτων χρησιμοποιούν ημερήσια HMAC αναγνωριστικά IP και λήγουν. Τα access logs μπορεί να περιέχουν την IP και εναλλάσσονται βάσει μεγέθους, χωρίς σταθερό όριο χρόνου διατήρησης." data-en="The IP is not stored with the vote. Rate-limit counters use daily HMAC IP identifiers and expire. Access logs may contain the IP and are rotated by size, without a fixed retention period.">Η IP δεν αποθηκεύεται μαζί με την ψήφο. Οι μετρητές ορίων αιτημάτων χρησιμοποιούν ημερήσια HMAC αναγνωριστικά IP και λήγουν. Τα access logs μπορεί να περιέχουν την IP και εναλλάσσονται βάσει μεγέθους, χωρίς σταθερό όριο χρόνου διατήρησης.</td>
       </tr>
       <tr>
         <td>pnyx.ekklesia.gr (Forum)</td>
-        <td><span class="badge badge-yellow" data-el="Ανωνυμοποιημένη" data-en="Anonymized">Ανωνυμοποιημένη</span></td>
+        <td><span class="badge badge-yellow" data-el="Περιορισμένα" data-en="Limited">Περιορισμένα</span></td>
         <td><span class="badge badge-yellow" data-el="Ναι" data-en="Yes">Ναι</span></td>
         <td><span class="badge badge-yellow" data-el="Session" data-en="Session">Session</span></td>
-        <td data-el="IP ανωνυμοποιημένη (τελ. οκτέτο = 0)" data-en="IP anonymized (last octet = 0)">IP ανωνυμοποιημένη (τελ. οκτέτο = 0)</td>
+        <td data-el="Η IP μπορεί να υποβάλλεται σε επεξεργασία για λειτουργία και ασφάλεια" data-en="IP may be processed for operation and security">Η IP μπορεί να υποβάλλεται σε επεξεργασία για λειτουργία και ασφάλεια</td>
       </tr>
     </table>
   </div>
   <div class="info-box fade-in">
-    <p data-el="Η πλατφόρμα δεν χρησιμοποιεί cookies, tracking, analytics ή διαφημίσεις. Το forum (Discourse) χρησιμοποιεί μόνο session cookies για τη σύνδεση. Οι IP διευθύνσεις ανωνυμοποιούνται αυτόματα — το τελευταίο οκτέτο αντικαθίσταται με 0 (π.χ. 192.168.1.42 → 192.168.1.0). Κανένα σύστημα δεν αποθηκεύει πλήρεις IP διευθύνσεις επισκεπτών." data-en="The platform does not use cookies, tracking, analytics, or advertising. The forum (Discourse) uses only session cookies for login. IP addresses are automatically anonymized — the last octet is replaced with 0 (e.g. 192.168.1.42 → 192.168.1.0). No system stores complete visitor IP addresses.">
-      Η πλατφόρμα δεν χρησιμοποιεί cookies, tracking, analytics ή διαφημίσεις. Το forum (Discourse) χρησιμοποιεί μόνο session cookies. Οι IP διευθύνσεις ανωνυμοποιούνται αυτόματα — τελευταίο οκτέτο = 0 (π.χ. 192.168.1.42 → 192.168.1.0). Κανένα σύστημα δεν αποθηκεύει πλήρεις IP διευθύνσεις.
+    <p data-el="Η πλατφόρμα δεν χρησιμοποιεί cookies, tracking, analytics ή διαφημίσεις. Το forum (Discourse) χρησιμοποιεί session cookies για τη σύνδεση. Η IP δεν αποθηκεύεται μαζί με την ψήφο. Οι μετρητές ορίων αιτημάτων χρησιμοποιούν ημερήσια HMAC αναγνωριστικά IP και λήγουν. Τα access logs μπορεί να περιέχουν την IP και εναλλάσσονται βάσει μεγέθους, χωρίς σταθερό όριο χρόνου διατήρησης." data-en="The platform does not use cookies, tracking, analytics, or advertising. The forum (Discourse) uses session cookies for login. The IP is not stored with the vote. Rate-limit counters use daily HMAC IP identifiers and expire. Access logs may contain the IP and are rotated by size, without a fixed retention period.">
+      Η πλατφόρμα δεν χρησιμοποιεί cookies, tracking, analytics ή διαφημίσεις. Το forum (Discourse) χρησιμοποιεί session cookies για τη σύνδεση. Η IP δεν αποθηκεύεται μαζί με την ψήφο. Οι μετρητές ορίων αιτημάτων χρησιμοποιούν ημερήσια HMAC αναγνωριστικά IP και λήγουν. Τα access logs μπορεί να περιέχουν την IP και εναλλάσσονται βάσει μεγέθους, χωρίς σταθερό όριο χρόνου διατήρησης.
     </p>
   </div>
 

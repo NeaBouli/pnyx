@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { voteRelevance } from "@/lib/api";
-import { loadNullifier, loadKeypair, signPayload } from "@/lib/crypto";
+import { withSigner } from "@/lib/keystore";
+import { RequestTimeoutError, requestTimeoutMessage } from "@/lib/request-deadline";
 
 interface Props {
   billId: string;
@@ -20,25 +21,30 @@ export default function RelevanceButtons({
   const [score, setScore] = useState(initialScore);
   const [voted, setVoted] = useState<1 | -1 | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleVote(signal: 1 | -1) {
     if (voted !== null || loading) return;
 
-    const nullifier = loadNullifier();
-    const keypair = loadKeypair();
-    if (!nullifier || !keypair) return;
-
-    // Sign: "relevance:{bill_id}:{signal}:{nullifier_hash}"
-    const payload = `relevance:${billId}:${signal}:${nullifier}`;
-    const sig = signPayload(keypair.privateKeyHex, payload);
-
     setLoading(true);
+    setError(null);
     try {
-      await voteRelevance(billId, signal, nullifier, sig);
+      const submitted = await withSigner(async (signer) => {
+        if (!signer?.nullifier) return false;
+        const nullifier = signer.nullifier;
+        const sig = await signer.sign(`relevance:${billId}:${signal}:${nullifier}`);
+        await voteRelevance(billId, signal, nullifier, sig);
+        return true;
+      });
+      if (!submitted) return;
       setScore((s) => s + signal);
       setVoted(signal);
-    } catch {
-      setVoted(signal); // already voted
+    } catch (err) {
+      if (err instanceof RequestTimeoutError || (err instanceof Error && "code" in err && err.code === "ECONNABORTED")) {
+        setError(requestTimeoutMessage(locale === "el"));
+      } else {
+        setVoted(signal); // already voted
+      }
     } finally {
       setLoading(false);
     }
@@ -90,6 +96,7 @@ export default function RelevanceButtons({
           {locale === "el" ? "✓" : "✓"}
         </span>
       )}
+      {error && <span role="alert" className="text-xs text-red-600">{error}</span>}
     </div>
   );
 }

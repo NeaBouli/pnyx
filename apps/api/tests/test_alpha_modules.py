@@ -3,6 +3,8 @@ Tests für alle Alpha-Module (MOD-06, 07, 09, 11, 12, 14, 15)
 Kein DB nötig — testet Route-Existenz, Validierung, Auth-Schutz.
 """
 import pytest
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
 from httpx import AsyncClient, ASGITransport
 from main import app
 from routers import govgr
@@ -164,6 +166,22 @@ async def test_govgr_info():
 
 # ── MOD-11 Public API ─────────────────────────────────────────────────────────
 
+@pytest.fixture
+def public_key_redis(monkeypatch):
+    records = {}
+
+    async def hset(name, key, value):
+        records[name, key] = value
+        return 1
+
+    async def hget(name, key):
+        return records.get((name, key))
+
+    redis = SimpleNamespace(hset=AsyncMock(side_effect=hset), hget=AsyncMock(side_effect=hget))
+    monkeypatch.setattr("routers.public_api.get_redis", AsyncMock(return_value=redis))
+    return redis
+
+
 @pytest.mark.asyncio
 async def test_public_info():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
@@ -181,12 +199,16 @@ async def test_public_key_generate(monkeypatch):
         return 1
 
     monkeypatch.setattr("routers.public_api.redis_fixed_window_limit", allow_key_generation)
+    # This route-existence test must not write to a real Redis service.
+    redis = SimpleNamespace(hset=AsyncMock())
+    monkeypatch.setattr("routers.public_api.get_redis", AsyncMock(return_value=redis))
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         r = await c.post("/api/v1/public/keys/generate?label=test")
     assert r.status_code == 200
     data = r.json()
     assert data["api_key"].startswith("ek_")
     assert len(data["api_key"]) > 20
+    redis.hset.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -198,14 +220,14 @@ async def test_public_key_status_no_key():
 
 
 @pytest.mark.asyncio
-async def test_public_key_status_invalid():
+async def test_public_key_status_invalid(public_key_redis):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         r = await c.get("/api/v1/public/keys/status", headers={"X-API-Key": "ek_invalid"})
     assert r.status_code == 401
 
 
 @pytest.mark.asyncio
-async def test_public_key_roundtrip(monkeypatch):
+async def test_public_key_roundtrip(monkeypatch, public_key_redis):
     async def allow_key_generation(*_args, **_kwargs):
         return 1
 

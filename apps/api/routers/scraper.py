@@ -25,12 +25,13 @@ import httpx
 import urllib.parse
 from bs4 import BeautifulSoup
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import datetime
 
 from database import get_db
+from rate_limit import limiter
 from models import ParliamentBill, BillStatus
 from dependencies import verify_admin_key
 from services.ollama_service import (
@@ -742,7 +743,8 @@ async def scraper_jobs():
 
 
 @router.get("/status")
-async def scraper_status():
+@limiter.limit("30/minute")
+async def scraper_status(request: Request = None):
     """Status aller KI-Provider."""
     ollama_ok = await ollama_available()
 
@@ -757,7 +759,8 @@ async def scraper_status():
 
 
 @router.get("/test")
-async def test_scraper():
+@limiter.limit("30/minute")
+async def test_scraper(request: Request = None):
     """Testet Scraper + KI Provider ohne DB."""
     bills = await scrape_parliament_bills(limit=3)
     ollama_ok = await ollama_available()
@@ -772,14 +775,16 @@ async def test_scraper():
 
 
 @router.get("/parliament/latest")
-async def get_latest_from_parliament(limit: int = Query(10, le=20)):
+@limiter.limit("30/minute")
+async def get_latest_from_parliament(limit: int = Query(10, le=20), request: Request = None):
     """Scraped aktuelle Gesetzentwürfe von hellenicparliament.gr."""
     bills = await scrape_parliament_bills(limit=limit)
     return {"source": "hellenicparliament.gr", "count": len(bills), "bills": bills}
 
 
 @router.get("/parliament/freshness")
-async def get_parliament_freshness_probe(limit: int = Query(20, le=20)):
+@limiter.limit("30/minute")
+async def get_parliament_freshness_probe(limit: int = Query(20, le=20), request: Request = None):
     """Strict Parliament source probe for monitor freshness checks."""
     probe_errors: list[str] = []
     bills = await scrape_parliament_bills(limit=limit, require_dates=True, probe_errors=probe_errors)

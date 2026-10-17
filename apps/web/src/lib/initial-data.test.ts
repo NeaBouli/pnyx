@@ -70,6 +70,12 @@ describe("server initial data", () => {
     await expect(getInitialResults()).resolves.toBeNull();
   });
 
+  it("accepts suppressed null totals without treating them as malformed data", async () => {
+    const suppressed = { ...result, citizen_total: null, suppressed: true, suppression_k: 10 };
+    fetchMock.mockResolvedValue(json({ count: 1, data: [suppressed] }));
+    await expect(getInitialResults()).resolves.toEqual([suppressed]);
+  });
+
   it("keeps an empty results export", async () => {
     fetchMock.mockResolvedValue(json({ count: 0, data: [] }));
     await expect(getInitialResults()).resolves.toEqual([]);

@@ -4,6 +4,9 @@
  * Copyright (c) 2026 V-Labs Development — MIT License
  */
 import axios from "axios";
+import { buildVoteMessage } from "./crypto";
+import type { WebSigner } from "./keystore";
+import { withRequestDeadline } from "./request-deadline";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.ekklesia.gr";
 
@@ -12,6 +15,65 @@ export const api = axios.create({
   timeout: 10000,
   headers: { "Content-Type": "application/json" },
 });
+
+/** Read signed server state so a retry never consumes the one correction. */
+export async function submitSignedVote(
+  billId: string,
+  choice: string,
+  signer: WebSigner & { nullifier: string },
+): Promise<{ response: Response; isCorrection: boolean }> {
+  return withRequestDeadline(async (signal) => {
+    const timestampMs = Date.now();
+    const statusSignature = await signer.sign(
+      `vote-status-read:v1:${JSON.stringify([billId, signer.nullifier, timestampMs])}`,
+    );
+    signal.throwIfAborted();
+    const statusResponse = await fetch(`${API_URL}/api/v1/vote/${encodeURIComponent(billId)}/status`, {
+      method: "POST",
+      cache: "no-store",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nullifier_hash: signer.nullifier,
+        timestamp_ms: timestampMs,
+        signature_hex: statusSignature,
+      }),
+      signal,
+    });
+    if (!statusResponse.ok) {
+      await statusResponse.clone().text();
+      return { response: statusResponse, isCorrection: false };
+    }
+    const voteStatus: { status: string; has_voted: boolean; vote: string | null } = await statusResponse.json();
+    signal.throwIfAborted();
+    const vote = choice.toUpperCase();
+    const isCorrection = voteStatus.status === "WINDOW_24H"
+      && voteStatus.has_voted && voteStatus.vote !== vote;
+    // /correct verifies the same canonical bill:VOTE:nullifier payload as POST.
+    const signatureHex = await signer.sign(buildVoteMessage({
+      bill_id: billId, vote, nullifier_hash: signer.nullifier,
+    }));
+    signal.throwIfAborted();
+    const response = await fetch(
+      isCorrection
+        ? `${API_URL}/api/v1/vote/${encodeURIComponent(billId)}/correct`
+        : `${API_URL}/api/v1/vote`,
+      {
+        method: isCorrection ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nullifier_hash: signer.nullifier,
+          bill_id: billId,
+          vote,
+          signature_hex: signatureHex,
+        }),
+        signal,
+      },
+    );
+    // Buffer under the deadline; the caller can still read the original body.
+    await response.clone().text();
+    return { response, isCorrection };
+  });
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -86,19 +148,22 @@ export interface BillResults {
   bill_id: string;
   title_el: string;
   status: string;
-  total_votes: number;
-  tier1_vote_count?: number;
-  zk_vote_count?: number;
-  yes_count: number;
-  no_count: number;
-  abstain_count: number;
-  unknown_count?: number;
-  yes_percent: number;
-  no_percent: number;
-  abstain_percent: number;
-  unknown_percent?: number;
+  total_votes: number | null;
+  tier1_vote_count?: number | null;
+  zk_vote_count?: number | null;
+  yes_count: number | null;
+  no_count: number | null;
+  abstain_count: number | null;
+  unknown_count?: number | null;
+  yes_percent: number | null;
+  no_percent: number | null;
+  abstain_percent: number | null;
+  unknown_percent?: number | null;
   divergence: DivergenceResult | null;
   disclaimer_el: string;
+  results_hidden?: boolean;
+  suppressed?: boolean;
+  suppression_k?: number;
 }
 
 export interface PublishedResult {
@@ -108,15 +173,17 @@ export interface PublishedResult {
   status: string;
   parliament_vote_date: string;
   parliament_result: string;
-  citizen_yes: number;
-  citizen_no: number;
-  citizen_abstain: number;
-  citizen_unknown: number;
-  citizen_total: number;
-  yes_pct: number;
-  no_pct: number;
-  abstain_pct: number;
-  divergence_score: number | "";
+  citizen_yes: number | null;
+  citizen_no: number | null;
+  citizen_abstain: number | null;
+  citizen_unknown: number | null;
+  citizen_total: number | null;
+  yes_pct: number | null;
+  no_pct: number | null;
+  abstain_pct: number | null;
+  divergence_score: number | "" | null;
+  suppressed?: boolean;
+  suppression_k?: number;
 }
 
 export interface PublishedResultsResponse {
@@ -286,12 +353,14 @@ export async function voteRelevance(
   nullifierHash: string,
   signatureHex: string,
 ): Promise<{ success: boolean; message: string }> {
-  const res = await api.post(`/api/v1/vote/${billId}/relevance`, {
-    signal,
-    nullifier_hash: nullifierHash,
-    signature_hex: signatureHex,
+  return withRequestDeadline(async (requestSignal) => {
+    const res = await api.post(`/api/v1/vote/${billId}/relevance`, {
+      signal,
+      nullifier_hash: nullifierHash,
+      signature_hex: signatureHex,
+    }, { signal: requestSignal });
+    return res.data;
   });
-  return res.data;
 }
 export type BillStatusFilter =
   | "ANNOUNCED"

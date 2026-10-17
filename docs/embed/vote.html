@@ -121,7 +121,7 @@ async function castVote(choice){
 function showVoteDone(choice){
   var labels={YES:el?'ΝΑΙ':'YES',NO:el?'ΟΧΙ':'NO',ABSTAIN:el?'ΑΠΟΧΗ':'ABSTAIN'};
   var icons={YES:'👍',NO:'👎',ABSTAIN:'⏸️'};
-  document.getElementById('vote-area').innerHTML='<div class="vote-done"><div class="icon">'+icons[choice]+'</div><div class="msg">'+(el?'Ψήφος: ':'Vote: ')+labels[choice]+'</div><div style="font-size:12px;color:#64748b;margin-top:6px">'+(el?'Η ψήφος σας καταγράφηκε ανώνυμα.':'Your vote was recorded anonymously.')+'</div></div>';
+  document.getElementById('vote-area').innerHTML='<div class="vote-done"><div class="icon">'+icons[choice]+'</div><div class="msg">'+(el?'Ψήφος: ':'Vote: ')+labels[choice]+'</div><div style="font-size:12px;color:#64748b;margin-top:6px">'+(el?'Ψήφος καταγράφηκε (χωρίς όνομα)':'Vote recorded (no name)')+'</div></div>';
   // Refresh results
   loadResults();
 }
@@ -144,27 +144,30 @@ async function loadResults(){
     var vr=await fetch(API+'/api/v1/vote/'+encodeURIComponent(billId)+'/results').then(function(x){return x.json()}).catch(function(){return{}});
     var resultsEl=document.getElementById('results-area');
     if(resultsEl&&vr){
-      var yes=vr.yes||0,no=vr.no||0,abstain=vr.abstain||0,total=yes+no+abstain;
-      var yesPct=total?Math.round(yes/total*100):0;
-      var noPct=total?Math.round(no/total*100):0;
+      var yes=vr.yes_count,no=vr.no_count,abstain=vr.abstain_count,total=vr.total_votes;
+  var hasShares=yes!=null&&no!=null&&abstain!=null&&total!=null;
+      var yesPct=hasShares ? vr.yes_percent : null;
+      var noPct=hasShares ? vr.no_percent : null;
       var h='';
-      if(total>0){
+      if(hasShares&&total>0){
         h+='<div class="bar-wrap"><div class="bar-yes" style="width:'+Math.max(yesPct,5)+'%">'+yesPct+'%</div><div class="bar-no" style="width:'+Math.max(noPct,5)+'%">'+noPct+'%</div></div>';
         h+='<div class="stats">'+total+' '+(el?'ψήφοι':'votes')+'</div>';
       }
+      if(!hasShares)h='<div class="stats">—</div><div class="stats">'+(total==null?'—':total)+' '+(el?'ψήφοι':'votes')+'</div>';
       resultsEl.innerHTML=h;
     }
   }catch(e){}
 }
 
 function render(b,vr){
-  var yes=vr.yes||0,no=vr.no||0,abstain=vr.abstain||0,total=yes+no+abstain;
-  var yesPct=total?Math.round(yes/total*100):0;
-  var noPct=total?Math.round(no/total*100):0;
+  var yes=vr.yes_count,no=vr.no_count,abstain=vr.abstain_count,total=vr.total_votes;
+  var hasShares=yes!=null&&no!=null&&abstain!=null&&total!=null;
+  var yesPct=hasShares ? vr.yes_percent : null;
+  var noPct=hasShares ? vr.no_percent : null;
   var st=b.status||'ANNOUNCED';
   var sc={'ACTIVE':'status-active','ANNOUNCED':'status-announced','PARLIAMENT_VOTED':'status-voted','OPEN_END':'status-open','WINDOW_24H':'status-active'};
   var sl={'ACTIVE':el?'Ανοιχτή':'Active','ANNOUNCED':el?'Ανακοινώθηκε':'Announced','PARLIAMENT_VOTED':el?'Ψηφίστηκε':'Voted','OPEN_END':el?'Αρχείο':'Archive','WINDOW_24H':el?'24ω':'24h'};
-  var votable=st==='ACTIVE'||st==='WINDOW_24H'||st==='OPEN_END';
+  var votable=st==='ACTIVE'||st==='WINDOW_24H';
   var h='<span class="status '+(sc[st]||'status-announced')+'">'+(sl[st]||st)+'</span>';
   h+='<div class="title">'+(b.title_el||b.title_en||billId)+'</div>';
   if(b.pill_el)h+='<div class="pill">'+b.pill_el+'</div>';
@@ -181,9 +184,11 @@ function render(b,vr){
   }
 
   h+='<div id="results-area">';
-  if(total>0){
+  if(hasShares&&total>0){
     h+='<div class="bar-wrap"><div class="bar-yes" style="width:'+Math.max(yesPct,5)+'%">'+yesPct+'%</div><div class="bar-no" style="width:'+Math.max(noPct,5)+'%">'+noPct+'%</div></div>';
     h+='<div class="stats">'+total+' '+(el?'ψήφοι':'votes')+'</div>';
+  }else if(!hasShares){
+    h+='<div class="stats">—</div><div class="stats">'+(total==null?"—":total)+' '+(el?'ψήφοι':'votes')+'</div>';
   }else{
     h+='<div class="stats">'+(el?'Δεν υπάρχουν ψήφοι ακόμα':'No votes yet')+'</div>';
   }

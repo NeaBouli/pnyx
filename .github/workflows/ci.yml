@@ -13,36 +13,82 @@ permissions:
 jobs:
   test-api:
     name: Python API Tests
-    # GitHub-hosted only: needs the redis service container (no Docker for pnyx on the fallback host).
+    # GitHub-hosted only: starts Redis/PostgreSQL containers (no Docker for pnyx on the fallback host).
     runs-on: ubuntu-latest
     timeout-minutes: 30
-
-    services:
-      redis:
-        # Docker Official Image, Redis 8.10.2-alpine; digest matches Docker Hub.
-        image: public.ecr.aws/docker/library/redis@sha256:3811787313eba226a2ef38658c6ccb91cd5e110edc89c37767de373120a0e5a0
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
 
+      # Redis 8.10.2-alpine (Docker Official Image), digest-pinned. Started as a
+      # step instead of a service container so the pull can fall back across
+      # registries: ECR Public hit its anonymous data limit on shared runner
+      # IPs, and mirror.gcr.io is an evictable cache. The digest pin makes every
+      # source byte-identical.
+      - name: Start redis (digest-pinned, registry fallback)
+        run: |
+          set -euo pipefail
+          DIGEST="sha256:3811787313eba226a2ef38658c6ccb91cd5e110edc89c37767de373120a0e5a0"
+          IMG=""
+          for ref in mirror.gcr.io/library/redis public.ecr.aws/docker/library/redis docker.io/library/redis; do
+            for attempt in 1 2; do
+              if docker pull -q "$ref@$DIGEST"; then IMG="$ref@$DIGEST"; break 2; fi
+              sleep 5
+            done
+          done
+          test -n "$IMG" || { echo "redis image unavailable from all registries"; exit 1; }
+          docker run -d --name redis -p 6379:6379 "$IMG"
+          for i in $(seq 1 30); do
+            if docker exec redis redis-cli ping | grep -q PONG; then exit 0; fi
+            sleep 1
+          done
+          echo "redis did not become healthy"; exit 1
+
+      # PostgreSQL 15.18-alpine (Docker Official Image), with the same digest-pinned
+      # registry fallback and retries as Redis above.
+      - name: Start PostgreSQL (digest-pinned, registry fallback)
+        run: |
+          set -euo pipefail
+          DIGEST="sha256:df7bca0066e6f60cc3dd32faa70caddec20e2c22b58932f79498e5704b23854a"
+          IMG=""
+          for ref in mirror.gcr.io/library/postgres public.ecr.aws/docker/library/postgres docker.io/library/postgres; do
+            for attempt in 1 2; do
+              if docker pull -q "$ref@$DIGEST"; then IMG="$ref@$DIGEST"; break 2; fi
+              sleep 5
+            done
+          done
+          test -n "$IMG" || { echo "postgres image unavailable from all registries"; exit 1; }
+          POSTGRES_PASSWORD="$(openssl rand -hex 24)"
+          echo "::add-mask::$POSTGRES_PASSWORD"
+          export POSTGRES_PASSWORD
+          docker run -d --name postgres -p 127.0.0.1:5432:5432 \
+            -e POSTGRES_USER=test -e POSTGRES_PASSWORD -e POSTGRES_DB=pnyx_test_ci "$IMG"
+          for i in $(seq 1 30); do
+            if docker exec postgres pg_isready -h 127.0.0.1 -U test -d pnyx_test_ci; then
+              echo "PNYX_TEST_POSTGRES_URL=postgresql+asyncpg://test:$POSTGRES_PASSWORD@127.0.0.1:5432/pnyx_test_ci" >> "$GITHUB_ENV"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "postgres did not become healthy"; exit 1
+
       - name: Set up Python 3.12
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.12"
 
-      - name: Install system dependencies (for PyNaCl)
+      - name: Install system dependencies (for PyNaCl; age for the backup test)
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq gcc libsodium-dev
+          sudo apt-get install -y -qq gcc libsodium-dev age
+
+      # ADR-007 S3: off-site backups are age-encrypted before upload (fails if age is missing).
+      - name: Backup encryption test
+        env:
+          BACKUP_TEST_REQUIRE_AGE: "1"
+        run: python -m unittest scripts/tests/test_backup_encryption.py -v
 
       - name: Install Python dependencies
         working-directory: apps/api
@@ -58,7 +104,12 @@ jobs:
           REDIS_URL: redis://localhost:6379
           ENVIRONMENT: development
         run: |
-          python -m pytest tests/ -v --tb=short
+          set -euo pipefail
+          python -m pytest tests/ -v --tb=short -rs | tee "$RUNNER_TEMP/api-tests.log"
+          if grep -E '^SKIPPED .*(_pg\.py|test_knowledge_base_sync\.py|PNYX_TEST_POSTGRES_URL)' "$RUNNER_TEMP/api-tests.log"; then
+            echo "::error::Real PostgreSQL tests must run without skips"
+            exit 1
+          fi
 
   test-crypto:
     name: Crypto Package Tests

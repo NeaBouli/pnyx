@@ -122,19 +122,20 @@ ALLOWED_R5_INLINE_SCRIPTS = {
     },
     1: {
         "index": 1,
+        # T-9128: nullable CPLM hides dot/arrow and clears stale bilingual labels.
         # T-9039: owner-confirmed CPLM quadrant language follows currentLang
         # and the existing data-el/data-en toggle, including delayed responses.
-        "sha256": "6fe520730691e4008650826b6b0b9211d77dddf848548cd0535c523bc8188016",
-        "bytes": 2394,
+        "sha256": "3b3cc40c0cad6c65fabb6d655dbb3ec1199d8478c39b7eff4d4a1a5913484b4e",
+        "bytes": 2903,
     },
     3: {
         "index": 3,
-        # T-9106 (EVA-001/002/006/015, Gio approved "correct now"): the legal
-        # modal's privacy text only. Votes are pseudonymous, age/gender are not
-        # stored, and the GDPR line no longer
-        # claims "no personal data on server". No behavior change.
-        "sha256": "7ab5831a0c2160dc634020f38663598e33eac9972553440ea9e295a99e173651",
-        "bytes": 3539,
+        # T-9106 / T-9132 review: legal-modal copy describes pseudonymous
+        # storage, expiring IP counters versus size-rotated logs, ordinary
+        # Arweave aggregates versus paused ZK, and key replacement with the
+        # nullifier retained. No behavior change.
+        "sha256": "d5dc177aa0f9ca9460ba46af7048c880db44ca97d75f9d28e2c57789caf8fc01",
+        "bytes": 4216,
     },
     4: {
         "index": 4,
@@ -148,8 +149,9 @@ ALLOWED_R5_INLINE_SCRIPTS = {
         # T-394 (EKA-14): ticket login/avatar rendered via DOM properties with
         # an https GitHub-avatar allowlist instead of innerHTML concatenation.
         # #356: six-phase cycle status labels and live result bars.
-        "sha256": "0af548dfe1002913413ca85b22dc4bc8c3ac9652dc8f4534d02bc454f060da1a",
-        "bytes": 20761,
+        # T-9128: nullable latest-result/ticker counts, shares and participation.
+        "sha256": "f0758af21846772ff7a7512a8f70c115aa862b92b90d187ffa2cb901dc36d353",
+        "bytes": 21493,
     },
     6: {
         "index": 6,
@@ -208,6 +210,9 @@ ALLOWED_T9106_CLAIMS_BILINGUAL_REMOVALS = Counter({
     ("Πλήρης Ανωνυμία", "Full Anonymity"): 2,
 })
 ALLOWED_T9106_CLAIMS_BILINGUAL_REMOVALS.update({
+    # T-9132 review: signatures do not conceal vote choices from the server.
+    ("Κάθε ψήφος υπογράφεται ψηφιακά. Ο server δεν γνωρίζει τι ψηφίσατε.",
+     "Every vote is digitally signed. The server never knows what you voted."),
     ("Πλήρης συμμόρφωση", "Fully compliant"),
     ("Ed25519 κλειδί μόνο στη συσκευή σας.", "Ed25519 key only on your device."),
     ("Ed25519 κρυπτογραφία. Κανένα προσωπικό δεδομένο στον server.",

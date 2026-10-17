@@ -7,12 +7,13 @@ Auth: Ed25519 Signatur (identisch mit Voting-Pattern).
 import logging
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Response
+from fastapi import APIRouter, Depends, Header, HTTPException, Response, Request
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from rate_limit import limiter
 from ip_utils import log_reference
 from keypair import verify_signature
 from models import EvaluationQuestion, PoliticianEvaluation, IdentityRecord, KeyStatus
@@ -166,12 +167,14 @@ async def list_politicians(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/my-evaluations/bulk")
+@limiter.limit("10/minute")
 async def get_my_evaluations_bulk(
     nullifier_hash: str,
     response: Response,
     db: AsyncSession = Depends(get_db),
     timestamp_ms: ReadTimestamp = None,
     signature_hex: ReadSignature = None,
+    request: Request = None,
 ) -> list[dict[str, object]]:
     """Bulk: which politicians has this citizen evaluated? Returns ada_numbers + latest updated_at."""
     integrity = await _authorize_evaluation_read(
@@ -211,6 +214,7 @@ async def get_questions(
 
 
 @router.get("/{ada_number}/my-evaluation")
+@limiter.shared_limit("10/minute", scope="evaluation:get_my_evaluation")
 async def get_my_evaluation(
     ada_number: str,
     nullifier_hash: str,
@@ -218,6 +222,7 @@ async def get_my_evaluation(
     db: AsyncSession = Depends(get_db),
     timestamp_ms: ReadTimestamp = None,
     signature_hex: ReadSignature = None,
+    request: Request = None,
 ) -> list[dict[str, object]]:
     """Citizen reads their own scores; signed reads are required after migration."""
     integrity = await _authorize_evaluation_read(
@@ -239,10 +244,12 @@ async def get_my_evaluation(
 
 
 @router.post("/{ada_number}/evaluate")
+@limiter.shared_limit("20/minute", scope="evaluation:evaluate_politician")
 async def evaluate_politician(
     ada_number: str,
     req: EvaluateRequest,
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Citizen evaluates a politician. Auth: Ed25519 signature."""
     # 1. Politician must have evaluation enabled

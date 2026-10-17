@@ -58,10 +58,15 @@ class _FakeRepresentativeDB:
         self.params_by_sql.append((sql, params or {}))
         if "FROM rep_invitations" in sql:
             return _FakeResult(self.invite_row)
+        if "UPDATE rep_invitations" in sql and "RETURNING" in sql:
+            return _FakeResult((self.invite_row or (1,))[0:1])
         return _FakeResult()
 
     async def commit(self):
         self.committed = True
+
+    async def rollback(self):
+        pass
 
     @property
     def representative_token_params(self):

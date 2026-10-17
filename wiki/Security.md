@@ -48,8 +48,10 @@ Bill votable?              → 400 Bad Request
 VoteChoice valid?          → 400 Bad Request
 Ed25519 Signature valid?   → 401 Unauthorized
 UNIQUE(nullifier, bill_id) → 409 Conflict (double vote)
-Vote change only in        → WINDOW_24H + OPEN_END
+Vote change only in        → WINDOW_24H
 ```
+
+OPEN_END = archived, results remain visible, voting is closed.
 
 ## Απειλές & Αντίμετρα / Attack Vectors & Countermeasures
 

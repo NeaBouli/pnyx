@@ -1,0 +1,5 @@
+Clearer "without a name" wording for voting and evaluations.
+Safer handling of account keys.
+Background key renewal is prepared and remains off until enabled by the server.
+One vote correction during the 24-hour window, with clearer messages.
+Voting closes at the official end.

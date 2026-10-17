@@ -451,3 +451,23 @@ test('index.html CPLM: unknown quadrant keeps text fallback across language chan
   assert.deepEqual(quadrant.htmlWrites, []);
 });
 import './redesign/t356_comparison.check.mjs';
+
+test('index.html CPLM: suppression clears stale labels and hides the marker, then recovers', async () => {
+  const { ctx, document, intervals, respond } = loadCplmLanguage();
+  await respond();
+  intervals[0]();
+  await respond({ x: null, y: null, quadrant: null, total_voters: null, trend: null, suppressed: true });
+  for (const id of ['cplmX', 'cplmY', 'cplmVoters', 'cplmQuadrant']) {
+    assert.equal(document.getElementById(id).textContent, '—');
+  }
+  assert.equal(document.getElementById('cplmDot').visibility, 'hidden');
+  assert.equal(document.getElementById('cplmArrow').opacity, '0');
+  ctx.toggleLang();
+  assert.equal(document.getElementById('cplmQuadrant').textContent, '—');
+  intervals[0]();
+  await respond({ ...CPLM_LIVE, trend: null });
+  assert.equal(document.getElementById('cplmDot').visibility, 'visible');
+  assert.equal(document.getElementById('cplmX').textContent, '2.50');
+  assert.equal(document.getElementById('cplmQuadrant').textContent, 'Lib. Right');
+  assert.equal(document.getElementById('cplmArrow').opacity, '0');
+});

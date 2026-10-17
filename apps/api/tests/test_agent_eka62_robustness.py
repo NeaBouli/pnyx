@@ -89,6 +89,7 @@ BILL = SimpleNamespace(
 
 def _patch_models(monkeypatch: pytest.MonkeyPatch, answer: str) -> dict:
     """Run the real answer_citizen_question with a fake Ollama generator."""
+    monkeypatch.setenv("AGENT_MODE", "hybrid")
     seen: dict = {}
 
     async def available() -> bool:

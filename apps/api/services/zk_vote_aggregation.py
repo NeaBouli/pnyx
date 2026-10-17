@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import CitizenVote, ParliamentBill, VoteChoice, ZkVoteReceipt
 from services.bill_visibility import public_bill_filter, results_visible_filter
 from services.zk_tier_lock import VoteScopeType, canonical_vote_scope_id
+from services.small_cell import small_cell_k, publishable_set
 
 
 @dataclass(frozen=True)
@@ -21,6 +22,16 @@ class VoteTotals:
     unknown: int
     tier1_total: int
     zk_total: int
+    sources: tuple[tuple[int, ...], ...] | None = None
+
+    @property
+    def publishable(self) -> bool:
+        sources = self.sources
+        if sources is None:
+            # Legacy callers with mixed totals have no choice-level
+            # source evidence. Fail closed while the flag is enabled.
+            sources = ((0,),) if self.tier1_total and self.zk_total else ()
+        return bool(publishable_set({0: ((self.yes, self.no, self.abstain, self.unknown), sources)}))
 
     @property
     def total(self) -> int:
@@ -71,6 +82,8 @@ async def aggregate_bill_vote_totals(
         unknown=tier_counts[VoteChoice.UNKNOWN] + zk_counts[VoteChoice.UNKNOWN],
         tier1_total=sum(tier_counts.values()),
         zk_total=sum(zk_counts.values()),
+        sources=tuple(tuple(counts[c] for c in VoteChoice)
+                      for counts in (tier_counts, zk_counts) if sum(counts.values())),
     )
 
 
@@ -78,12 +91,17 @@ async def count_public_votes(
     db: AsyncSession,
     *,
     since: datetime | None = None,
-) -> int:
+) -> int | None:
     """Count public Tier-1 and ZK votes with identical bill visibility rules.
 
     Votes of a running vote with hidden results are not counted, so global turnout counters
     cannot reveal its progress (T-599).
     """
+    threshold = small_cell_k()
+    if threshold:
+        from services.public_result_windows import load_public_vote_days, public_window_count
+        return public_window_count(await load_public_vote_days(db), since=since)
+
     tier1_query = (
         select(func.count(CitizenVote.id))
         .join(ParliamentBill, CitizenVote.bill_id == ParliamentBill.id)
@@ -125,8 +143,23 @@ async def _count_tier1_votes(db: AsyncSession, bill_id: str) -> dict[VoteChoice,
     return counts
 
 
+async def zk_scope_publishable(db: AsyncSession, scope: str) -> bool:
+    if not small_cell_k():
+        return True
+    kind, scope_id = scope.split(":", 1)
+    if kind == "bill":
+        return (await aggregate_bill_vote_totals(db, scope_id, include_zk=True)).publishable
+    # Safe canary scopes have no ordinary bill source.
+    counts = await _count_zk_scope_votes(db, scope)
+    return bool(publishable_set({scope: (tuple(counts.values()), ())}))
+
+
 async def _count_zk_votes(db: AsyncSession, bill_id: str) -> dict[VoteChoice, int]:
     scope = canonical_vote_scope_id(VoteScopeType.BILL, bill_id)
+    return await _count_zk_scope_votes(db, scope)
+
+
+async def _count_zk_scope_votes(db: AsyncSession, scope: str) -> dict[VoteChoice, int]:
     result = await db.execute(
         select(ZkVoteReceipt.vote_commitment, func.count(ZkVoteReceipt.id))
         .where(

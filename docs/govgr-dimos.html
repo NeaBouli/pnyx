@@ -251,8 +251,8 @@
   </div>
 
   <div class="info-box fade-in">
-    <p data-el="Ο στόχος του Alpha είναι ισχυρότερη δέσμευση μίας φυσικής ταυτότητας σε ένα ανώνυμο credential, όχι διαφορετική στάθμιση ψήφου. Το έγγραφο και τα προσωπικά στοιχεία δεν πρέπει να διατηρούνται μετά την επαλήθευση." data-en="The Alpha goal is stronger binding of one physical identity to one anonymous credential, not different vote weighting. The document and personal data must not be retained after verification.">
-      Ο στόχος του Alpha είναι ισχυρότερη δέσμευση μίας φυσικής ταυτότητας σε ένα ανώνυμο credential, όχι διαφορετική στάθμιση ψήφου. Το έγγραφο και τα προσωπικά στοιχεία δεν πρέπει να διατηρούνται μετά την επαλήθευση.
+    <p data-el="Ο στόχος του Alpha είναι ισχυρότερη δέσμευση μίας φυσικής ταυτότητας σε ένα ψευδώνυμο credential, όχι διαφορετική στάθμιση ψήφου. Το έγγραφο και τα προσωπικά στοιχεία δεν πρέπει να διατηρούνται μετά την επαλήθευση." data-en="The Alpha goal is stronger binding of one physical identity to one pseudonymous credential, not different vote weighting. The document and personal data must not be retained after verification.">
+      Ο στόχος του Alpha είναι ισχυρότερη δέσμευση μίας φυσικής ταυτότητας σε ένα ψευδώνυμο credential, όχι διαφορετική στάθμιση ψήφου. Το έγγραφο και τα προσωπικά στοιχεία δεν πρέπει να διατηρούνται μετά την επαλήθευση.
     </p>
   </div>
 
@@ -312,7 +312,7 @@
     <div class="fnode fnode-b" data-el="Επίσημη μέθοδος εγκρίνεται" data-en="Official method approved">Επίσημη μέθοδος εγκρίνεται</div><div class="farr">→</div>
     <div class="fnode" data-el="Challenge μιας χρήσης" data-en="One-time challenge">Challenge μιας χρήσης</div><div class="farr">→</div>
     <div class="fnode fnode-b" data-el="OAuth ή νέο QR/eSeal" data-en="OAuth or fresh QR/eSeal">OAuth ή νέο QR/eSeal</div><div class="farr">→</div>
-    <div class="fnode fnode-g" data-el="Ανώνυμο credential — ίδιο βάρος ψήφου" data-en="Anonymous credential — equal vote weight">Ανώνυμο credential — ίδιο βάρος ψήφου</div>
+    <div class="fnode fnode-g" data-el="Ψευδώνυμο credential — ίδιο βάρος ψήφου" data-en="Pseudonymous credential — equal vote weight">Ψευδώνυμο credential — ίδιο βάρος ψήφου</div>
   </div>
 
   <ul class="fade-in">
@@ -481,8 +481,8 @@
 
     <div style="background:white;border:2px solid #e2e8f0;border-radius:var(--radius);padding:1.25rem;text-align:center">
       <div style="font-size:1.5rem;margin-bottom:0.4rem">🚫</div>
-      <h4 style="font-weight:800;font-size:0.85rem;margin-bottom:0.3rem" data-el="Χωρίς αποθήκευση IP" data-en="No IP storage">Χωρίς αποθήκευση IP</h4>
-      <p style="font-size:0.75rem;color:var(--gray-500);line-height:1.6" data-el="Δεν αποθηκεύονται πλήρεις IP διευθύνσεις. Ανωνυμοποίηση τελευταίου οκτετίου σε όλα τα logs." data-en="No full IP addresses stored. Last octet anonymized in all logs.">Δεν αποθηκεύονται πλήρεις IP. Ανωνυμοποίηση τελευταίου οκτετίου.</p>
+      <h4 style="font-weight:800;font-size:0.85rem;margin-bottom:0.3rem" data-el="Η IP χωριστά από την ψήφο" data-en="IP separate from the vote">Η IP χωριστά από την ψήφο</h4>
+      <p style="font-size:0.75rem;color:var(--gray-500);line-height:1.6" data-el="Η IP δεν αποθηκεύεται μαζί με την ψήφο. Οι μετρητές ορίων αιτημάτων χρησιμοποιούν ημερήσια HMAC αναγνωριστικά IP και λήγουν. Τα access logs μπορεί να περιέχουν την IP και εναλλάσσονται βάσει μεγέθους, χωρίς σταθερό όριο χρόνου διατήρησης." data-en="The IP is not stored with the vote. Rate-limit counters use daily HMAC IP identifiers and expire. Access logs may contain the IP and are rotated by size, without a fixed retention period.">Η IP δεν αποθηκεύεται μαζί με την ψήφο. Οι μετρητές ορίων αιτημάτων χρησιμοποιούν ημερήσια HMAC αναγνωριστικά IP και λήγουν. Τα access logs μπορεί να περιέχουν την IP και εναλλάσσονται βάσει μεγέθους, χωρίς σταθερό όριο χρόνου διατήρησης.</p>
     </div>
 
     <div style="background:white;border:2px solid #e2e8f0;border-radius:var(--radius);padding:1.25rem;text-align:center">
@@ -715,7 +715,7 @@
 
       <!-- Green confirmation box -->
       <rect x="150" y="130" width="400" height="36" rx="8" fill="#f0fdf4" stroke="#22c55e" stroke-width="1.5"/>
-      <text x="350" y="153" text-anchor="middle" fill="#166534" font-size="11" font-weight="bold" data-el="✓ Το ekklesia.gr δεν γνωρίζει ΠΟΙΟΣ ψήφισε — μόνο ΤΙ ψηφίστηκε" data-en="✓ ekklesia.gr doesn't know WHO voted — only WHAT was voted">✓ Το ekklesia.gr δεν γνωρίζει ΠΟΙΟΣ ψήφισε — μόνο ΤΙ ψηφίστηκε</text>
+      <text x="350" y="153" text-anchor="middle" fill="#166534" font-size="11" font-weight="bold" data-el="✓ Ψήφοι με ψευδώνυμο κωδικό — δημόσια μόνο σύνολα" data-en="✓ Votes use a pseudonymous code — only totals are public">✓ Ψήφοι με ψευδώνυμο κωδικό — δημόσια μόνο σύνολα</text>
     </svg>
   </div>
 

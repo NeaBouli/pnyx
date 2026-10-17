@@ -116,6 +116,8 @@ async def _run_agent_fallback(
     ollama_answer: str,
     claude_answer: str | None,
 ) -> dict:
+    monkeypatch.setenv("AGENT_MODE", "hybrid")
+
     async def build_context(
         question: str, lang: str, db: object,
     ) -> tuple[str, list, bool, list]:

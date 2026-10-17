@@ -28,11 +28,16 @@ class _Session:
         self.rows = list(rows)
         self.committed = False
 
-    async def execute(self, _statement, _params=None):
+    async def execute(self, statement, _params=None):
+        if "UPDATE rep_invitations" in str(statement) and "RETURNING" in str(statement):
+            return _Row((1,))
         return _Row(self.rows.pop(0) if self.rows else None)
 
     async def commit(self):
         self.committed = True
+
+    async def rollback(self):
+        pass
 
 
 def test_log_reference_is_stable_short_and_namespaced() -> None:
@@ -49,8 +54,9 @@ async def test_create_invite_logs_reference_not_code(monkeypatch, caplog) -> Non
     monkeypatch.setattr(representative, "_generate_invite_code", lambda: INVITE)
     caplog.set_level(logging.INFO, logger=representative.logger.name)
 
+    from fastapi import Response
     result = await representative.create_invite(
-        InviteRequest(role="Δήμαρχος", region="Αττικής"), _auth=True, db=_Session(),
+        InviteRequest(role="Δήμαρχος", region="Αττικής"), response=Response(), _auth=True, db=_Session(),
     )
 
     assert result["invite_code"] == INVITE

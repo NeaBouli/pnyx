@@ -5,7 +5,8 @@
  * This module mirrors packages/crypto/keypair.py (Python/PyNaCl)
  * but runs entirely in the browser.
  *
- * Storage: localStorage for Beta. Later: iOS Keychain / Android Keystore via Expo.
+ * Legacy storage helpers support keystore migration/fallback. Application
+ * signing and verification hints use lib/keystore (including WebCrypto keys).
  */
 
 import { ed25519 } from "@noble/curves/ed25519.js";
@@ -109,8 +110,7 @@ export function verifyVote(
   }
 }
 
-// ─── Secure Storage (Beta: localStorage) ─────────────────────────────────────
-// TODO: Replace with expo-secure-store (iOS Keychain / Android Keystore) in mobile app.
+// ─── Legacy Storage (accessed through lib/keystore) ──────────────────────────
 
 const STORAGE_KEY_PRIVATE = "ekklesia_private_key";
 const STORAGE_KEY_PUBLIC = "ekklesia_public_key";
@@ -151,8 +151,4 @@ export function clearKeypair(): void {
   localStorage.removeItem(STORAGE_KEY_PRIVATE);
   localStorage.removeItem(STORAGE_KEY_PUBLIC);
   localStorage.removeItem(STORAGE_KEY_NULLIFIER);
-}
-
-export function isVerified(): boolean {
-  return !!loadKeypair() && !!loadNullifier();
 }

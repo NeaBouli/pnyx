@@ -19,6 +19,8 @@ from models import BillStatus, ParliamentBill, ZkMerkleRoot, ZkVoteReceipt
 from services.bill_visibility import is_public_bill, results_hidden, results_visible_filter
 from services.zk_arweave_payload import build_zk_vote_arweave_record
 from services.zk_group_registry import validate_vote_scope_id
+from services.small_cell import small_cell_k
+from services.zk_vote_aggregation import zk_scope_publishable
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +95,9 @@ async def publish_pending_zk_receipts_for_scope(
             raise ZkArweavePublicationError(403, "ZK Arweave scope is not allowed")
 
     await ensure_public_parliament_scope(db, scope)
+    k = small_cell_k()
+    if k and not await zk_scope_publishable(db, scope):
+        raise ZkArweavePublicationError(409, "ZK scope publication withheld below the public results threshold")
     scope_type, scope_id = scope.split(":", 1)
     if scope_type != "bill":
         raise ZkArweavePublicationError(400, "ZK Arweave publication currently supports bill scopes only")

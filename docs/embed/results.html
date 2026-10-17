@@ -56,19 +56,22 @@ async function load(){
 }
 
 function render(b,vr){
-  var yes=vr.yes||0,no=vr.no||0,abstain=vr.abstain||0,total=yes+no+abstain;
-  var yesPct=total?Math.round(yes/total*100):0;
-  var noPct=total?Math.round(no/total*100):0;
-  var absPct=total?Math.round(abstain/total*100):0;
+  var yes=vr.yes_count,no=vr.no_count,abstain=vr.abstain_count,total=vr.total_votes;
+  var hasShares=yes!=null&&no!=null&&abstain!=null&&total!=null;
+  var yesPct=hasShares ? vr.yes_percent : null;
+  var noPct=hasShares ? vr.no_percent : null;
+  var absPct=hasShares ? vr.abstain_percent : null;
 
   var h='<div class="title">'+(b.title_el||b.title_en||billId)+'</div>';
 
   // Vote bars
+  if(hasShares){
   h+='<div class="row"><div class="label" style="color:#22c55e">'+(el?'ΝΑΙ':'YES')+'</div><div class="bar-bg"><div class="bar bar-yes" style="width:'+Math.max(yesPct,2)+'%">'+yes+'</div></div><div class="pct" style="color:#22c55e">'+yesPct+'%</div></div>';
   h+='<div class="row"><div class="label" style="color:#ef4444">'+(el?'ΟΧΙ':'NO')+'</div><div class="bar-bg"><div class="bar bar-no" style="width:'+Math.max(noPct,2)+'%">'+no+'</div></div><div class="pct" style="color:#ef4444">'+noPct+'%</div></div>';
   if(abstain>0)h+='<div class="row"><div class="label" style="color:#94a3b8">'+(el?'ΑΠΟΧΗ':'ABS')+'</div><div class="bar-bg"><div class="bar bar-abs" style="width:'+Math.max(absPct,2)+'%">'+abstain+'</div></div><div class="pct" style="color:#94a3b8">'+absPct+'%</div></div>';
 
-  h+='<div class="total">'+total+' '+(el?'ψήφοι πολιτών':'citizen votes')+'</div>';
+  }else{h+='<div class="total">—</div>';}
+  h+='<div class="total">'+(total==null?"—":total)+' '+(el?'ψήφοι πολιτών':'citizen votes')+'</div>';
 
   // Parliament result
   var pv=b.party_votes_parliament;
@@ -80,7 +83,7 @@ function render(b,vr){
     h+='<div class="parl"><div class="parl-title">'+(el?'Αποτέλεσμα Βουλής':'Parliament Result')+'</div><div class="parl-result" style="color:'+parlColor+'">'+parlResult+' ('+parlYes+'/'+parlNo+')</div></div>';
 
     // Divergence
-    if(total>0){
+    if(hasShares&&total>0){
       var citizenYesPct=yesPct;
       var parlYesPct=Math.round(parlYes/(parlYes+parlNo)*100);
       var divergence=Math.abs(citizenYesPct-parlYesPct);

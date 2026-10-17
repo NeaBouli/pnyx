@@ -15,7 +15,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Header, Query, Request, Response, status
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_serializer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import and_, or_, select, func, union, update, text
 from sqlalchemy.exc import IntegrityError
@@ -47,6 +47,7 @@ from services.zk_tier_lock import (
     tier1_vote_blocked_by_zk_lock,
 )
 from services.zk_vote_aggregation import aggregate_bill_vote_totals
+from services.small_cell import suppress_public_cells, small_cell_k
 from services.vote_scope import ScopeAction, ensure_bill_scope_allowed
 
 import sys, os
@@ -314,27 +315,52 @@ class BillResults(BaseModel):
     parliament_url:   str | None = None
     official_source_url: str | None = None
     diavgeia_ada:     str | None = None
-    total_votes:      int
-    tier1_vote_count: int = 0
-    zk_vote_count:    int = 0
-    yes_count:        int
-    no_count:         int
-    abstain_count:    int
-    unknown_count:    int
-    yes_percent:      float
-    no_percent:       float
-    abstain_percent:  float
-    unknown_percent:  float
+    total_votes:      int | None
+    tier1_vote_count: int | None = 0
+    zk_vote_count:    int | None = 0
+    yes_count:        int | None
+    no_count:         int | None
+    abstain_count:    int | None
+    unknown_count:    int | None
+    yes_percent:      float | None
+    no_percent:       float | None
+    abstain_percent:  float | None
+    unknown_percent:  float | None
+    suppressed:       bool = False
+    suppression_k:    int = 0
     divergence:       DivergenceResult | None
     representativity: dict | None = None
     results_hidden:   bool = False
     parliament_vote_date: str | None = None
     disclaimer_el:    str
 
+    @model_serializer(mode="wrap")
+    def serialize_public_results(self, handler):
+        data = handler(self)
+        if not small_cell_k():
+            data.pop("suppressed", None)
+            data.pop("suppression_k", None)
+        return data
+
 class RelevanceRequest(BaseModel):
     nullifier_hash: str
     signal:         int  = Field(..., description="+1 wichtig / -1 unwichtig")
     signature_hex:  str  = Field(..., description="Ed25519 Signatur: relevance:{bill_id}:{signal}:{nullifier_hash}")
+
+
+def publish_bill_results(result: BillResults, *, publishable: bool | None = None) -> BillResults:
+    published = suppress_public_cells(
+        result.model_dump(),
+        choices=("yes_count", "no_count", "abstain_count", "unknown_count"),
+        total="total_votes",
+        percentages=("yes_percent", "no_percent", "abstain_percent", "unknown_percent"),
+        partitions=("tier1_vote_count", "zk_vote_count"),
+        derived=("divergence",),
+        public_source_total=result.zk_vote_count or 0, publishable=publishable,
+    )
+    if published["total_votes"] is None:
+        published["representativity"] = None
+    return BillResults(**published)
 
 
 # ─── Divergence Score ─────────────────────────────────────────────────────────
@@ -428,6 +454,22 @@ def _tier1_request_fields(req: "VoteRequest | CorrectionRequest") -> tuple[str |
 
 def _tier1_requested(req: "VoteRequest | CorrectionRequest") -> bool:
     return any(field is not None for field in _tier1_request_fields(req))
+
+
+def tier1_metadata_accepted() -> bool:
+    """ADR-006 D6: Tier-1 metadata proves no link to an enrolled root or
+    commitment, so it is ignored (not validated, not stored) unless explicitly
+    re-enabled. The mandatory identity signature still authorises the vote."""
+    return os.getenv("TIER1_METADATA_ACCEPTED", "false").strip().lower() == "true"
+
+
+def _tier1_effective(req: "VoteRequest | CorrectionRequest") -> bool:
+    if not _tier1_requested(req):
+        return False
+    if not tier1_metadata_accepted():
+        logger.info("Tier-1 metadata ignored (ADR-006 D6)")
+        return False
+    return True
 
 
 async def _tier1_vote_nullifier_used(
@@ -528,6 +570,17 @@ def _ensure_same_tier(existing: CitizenVote, tier1: Tier1Fields | None) -> None:
     A Tier-1 change needs a freshly signed payload for the new choice; replaying
     the stored (or an older) payload is refused.
     """
+    if not tier1_metadata_accepted():
+        # ADR-006 D6: Tier-1 metadata proves nothing, so a change converts a
+        # stored Tier-1 row into an ordinary signed vote (the mandatory identity
+        # signature has authorised it) instead of locking it forever.
+        if existing.vote_nullifier is not None:
+            logger.info("Tier-1 row converted to Tier-0 on change (ADR-006 D6)")
+            existing.pk_eph = None
+            existing.vote_nullifier = None
+            existing.linkage_tag = None
+            existing.timestamp_ms = None
+        return
     existing_is_tier1 = existing.vote_nullifier is not None
     if existing_is_tier1 != (tier1 is not None):
         logger.warning("Vote change rejected: TIER_MISMATCH")
@@ -618,13 +671,13 @@ async def submit_vote(
 
     Sicherheitskette:
     1. Nullifier muss ACTIVE sein
-    2. Bill muss in ACTIVE, WINDOW_24H oder OPEN_END sein
+    2. Bill muss in ACTIVE oder WINDOW_24H sein
     3. Ed25519 Signatur muss gültig sein
     4. UNIQUE(nullifier_hash, bill_id) verhindert Doppelstimme auf DB-Ebene
 
     Stimmänderung:
     - ACTIVE: keine Änderung (Stimme gesperrt)
-    - WINDOW_24H + OPEN_END: Änderung erlaubt
+    - WINDOW_24H: identische Wiederholung ohne Änderung; Korrektur nur über /correct
     """
     # HTTP requests receive an injected Request; the default preserves existing
     # direct unit calls with the limiter disabled. Shared HMAC-IP buckets allow
@@ -652,12 +705,12 @@ async def submit_vote(
     if not bill or not is_public_bill(bill):
         raise HTTPException(status_code=404, detail=f"Το νομοσχέδιο {req.bill_id} δεν βρέθηκε.")
 
-    votable_states = [BillStatus.ACTIVE, BillStatus.WINDOW_24H, BillStatus.OPEN_END]
+    votable_states = [BillStatus.ACTIVE, BillStatus.WINDOW_24H]
     if bill.status not in votable_states:
         raise HTTPException(
             status_code=400,
-            detail=f"Η ψηφοφορία δεν είναι δυνατή. Κατάσταση: {bill.status.value}. "
-                   f"Επιτρέπεται: ACTIVE, WINDOW_24H, OPEN_END."
+            detail=f"Η ψηφοφορία έχει κλείσει ή δεν έχει ανοίξει ακόμα. Κατάσταση: {bill.status.value}. "
+                   f"Επιτρέπεται: ACTIVE, WINDOW_24H."
         )
 
     # 2b. Geographic authorization uses the same fail-closed policy in every path.
@@ -691,7 +744,7 @@ async def submit_vote(
     # The identity signature above stays mandatory; Tier-1 adds a second, ephemeral
     # signature so pk_eph/vote_nullifier/linkage_tag are never stored unauthenticated.
     tier1: Tier1Fields | None = None
-    if _tier1_requested(req):
+    if _tier1_effective(req):
         tier1 = await _enforce_tier1_vote(db, req, bill_id=req.bill_id, vote_choice=vote_choice)
 
     # 5. Bestehende Stimme prüfen (Stimmänderung) — Zeile gegen parallele Änderung sperren
@@ -704,21 +757,22 @@ async def submit_vote(
     existing_vote = existing_result.scalar_one_or_none()
 
     if existing_vote:
-        # Stimmänderung nur in WINDOW_24H und OPEN_END erlaubt
         if bill.status == BillStatus.ACTIVE:
             raise HTTPException(
                 status_code=409,
                 detail="Η ψήφος έχει ήδη καταχωρηθεί. Αλλαγή μόνο στο 24ωρο παράθυρο."
             )
-        _ensure_same_tier(existing_vote, tier1)
-        existing_vote.vote = vote_choice
-        existing_vote.signature_hex = req.signature_hex
-        _apply_tier1_fields(existing_vote, tier1)
-        existing_vote.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
-        await _commit_vote_write(db)
+        if existing_vote.vote != vote_choice:
+            raise HTTPException(
+                status_code=409,
+                detail="Η ψήφος έχει ήδη καταχωρηθεί. Χρησιμοποιήστε τη λειτουργία διόρθωσης "
+                       "για μία μόνο αλλαγή στο 24ωρο παράθυρο.",
+            )
+        # A retry must not consume a correction or rewrite signatures, timestamps
+        # or Tier-1 metadata. All identity/crypto/ZK guards above still apply.
         return VoteResponse(
             success=True,
-            message="Η ψήφος άλλαξε επιτυχώς.",
+            message="Η ψήφος έχει ήδη καταχωρηθεί επιτυχώς.",
             bill_id=req.bill_id,
             vote=vote_choice.value
         )
@@ -792,11 +846,13 @@ async def _load_vote_status(
 
 
 @router.get("/{bill_id}/status", response_model=VoteStatusResponse)
+@limiter.shared_limit("10/minute", scope="voting:get_vote_status")
 async def get_vote_status(
     bill_id: str,
     response: Response,
     nullifier_hash: str = Query(..., min_length=64, max_length=64),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Legacy transition path; signed clients use POST /{bill_id}/status."""
     if vote_status_require_signed():
@@ -813,11 +869,14 @@ async def get_vote_status(
 
 
 @router.post("/{bill_id}/status", response_model=VoteStatusResponse)
+# Every signed vote/correction preflights here; allow the voting IP budget.
+@limiter.shared_limit("120/minute", scope="voting:post_vote_status")
 async def post_vote_status(
     bill_id: str,
     req: VoteStatusReadRequest,
     response: Response,
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Signed personal vote-status read; same response shape as the legacy GET."""
     if not citizen_action_timestamp_is_fresh(req.timestamp_ms):
@@ -867,7 +926,8 @@ class CorrectionRequest(BaseModel):
 
 
 @router.put("/{bill_id}/correct")
-async def correct_vote(bill_id: str, req: CorrectionRequest, db: AsyncSession = Depends(get_db)):
+@limiter.shared_limit("20/minute", scope="voting:correct_vote")
+async def correct_vote(bill_id: str, req: CorrectionRequest, db: AsyncSession = Depends(get_db), request: Request = None):
     """
     Einmalige Stimmkorrektur — nur in WINDOW_24H erlaubt.
     - Bill muss Status WINDOW_24H haben
@@ -941,9 +1001,18 @@ async def correct_vote(bill_id: str, req: CorrectionRequest, db: AsyncSession = 
         nullifier_hash=req.nullifier_hash,
     )
 
+    # Replaying the original signature must not spend the one-time correction
+    # or alter any metadata, including legacy Tier-1 fields.
+    if existing.vote == new_choice:
+        raise HTTPException(
+            409,
+            "Η επιλογή είναι ίδια με την καταχωρημένη ψήφο. Η ψήφος δεν άλλαξε "
+            "και η εφάπαξ διόρθωση παραμένει διαθέσιμη.",
+        )
+
     # 6b. Tier-1: the stored tier is kept; a Tier-1 vote needs a fresh signed payload.
     tier1: Tier1Fields | None = None
-    if _tier1_requested(req):
+    if _tier1_effective(req):
         tier1 = await _enforce_tier1_vote(db, req, bill_id=bill_id, vote_choice=new_choice)
     _ensure_same_tier(existing, tier1)
 
@@ -993,13 +1062,17 @@ async def get_latest_result(db: AsyncSession = Depends(get_db)):
             .exists()
         ),
     )
+    allowed_filter = True
+    if small_cell_k():
+        from services.public_result_windows import load_publishable_bill_ids
+        allowed_filter = ParliamentBill.id.in_(await load_publishable_bill_ids(db))
     result = await db.execute(
         select(ParliamentBill)
         .join(candidate_bill_ids, candidate_bill_ids.c.bill_id == ParliamentBill.id)
         .where(ParliamentBill.status.in_([
             BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END, BillStatus.ACTIVE,
         ]))
-        .where(public_bill_filter())
+        .where(public_bill_filter(), allowed_filter)
         .where(results_visible_filter())
         .where(or_(tier1_vote_exists, parliament_zk_vote_exists))
         .order_by(desc(ParliamentBill.created_at))
@@ -1018,7 +1091,7 @@ async def get_latest_result(db: AsyncSession = Depends(get_db)):
     if total < 1:
         return {"bill_id": None, "total_votes": 0}
 
-    return {
+    published = suppress_public_cells({
         "bill_id": bill.id,
         "title_el": bill.title_el,
         "title_en": bill.title_en,
@@ -1028,18 +1101,31 @@ async def get_latest_result(db: AsyncSession = Depends(get_db)):
         "no_pct": round(totals.no / total * 100),
         "abstain_pct": round(totals.abstain / total * 100),
         "unknown_pct": round(totals.unknown / total * 100),
-    }
+        "yes": totals.yes, "no": totals.no,
+        "abstain": totals.abstain, "unknown": totals.unknown,
+    }, choices=("yes", "no", "abstain", "unknown"), total="total_votes",
+        percentages=("yes_pct", "no_pct", "abstain_pct", "unknown_pct"),
+        publishable=totals.publishable)
+    for key in ("yes", "no", "abstain", "unknown"):
+        published.pop(key)
+    return published
 
 
 @router.get("/results/in-progress")
 async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
     """Landing page ticker data. Aggregated counts only; no nullifiers or vote rows."""
-    threshold = votes_in_progress_threshold()
+    threshold = max(votes_in_progress_threshold(), small_cell_k())
     visibility_sql, visibility_params = public_bill_raw_sql(
         "b",
         param_prefix="in_progress_sensitive",
     )
-    result = await db.execute(text(f"""
+    allowed = None
+    if small_cell_k():
+        from services.public_result_windows import load_publishable_bill_ids
+        allowed = await load_publishable_bill_ids(db)
+        visibility_sql += " AND b.id IN :publishable_ids"
+        visibility_params["publishable_ids"] = list(allowed)
+    query = text(f"""
         SELECT
             b.id,
             b.title_el,
@@ -1047,6 +1133,7 @@ async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
             b.status::text AS status,
             b.governance_level::text AS governance_level,
             (COALESCE(tier.total_votes, 0) + COALESCE(zk.total_votes, 0))::int AS total_votes,
+            COALESCE(zk.total_votes, 0)::int AS zk_total,
             (COALESCE(tier.yes_count, 0) + COALESCE(zk.yes_count, 0))::int AS yes_count,
             (COALESCE(tier.no_count, 0) + COALESCE(zk.no_count, 0))::int AS no_count,
             (COALESCE(tier.abstain_count, 0) + COALESCE(zk.abstain_count, 0))::int AS abstain_count,
@@ -1085,15 +1172,21 @@ async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
           AND (COALESCE(tier.total_votes, 0) + COALESCE(zk.total_votes, 0)) >= :threshold
         ORDER BY (COALESCE(tier.total_votes, 0) + COALESCE(zk.total_votes, 0)) DESC, b.created_at DESC
         LIMIT 6
-    """), {"threshold": threshold, **visibility_params})
+    """)
+    if allowed is not None:
+        from sqlalchemy import bindparam
+        query = query.bindparams(bindparam("publishable_ids", expanding=True))
+    result = await db.execute(query, {"threshold": threshold, **visibility_params})
     bills = []
     for row in result.mappings():
+        if allowed is not None and row["id"] not in allowed:
+            continue
         total = row["total_votes"] or 0
         yes = row["yes_count"] or 0
         no = row["no_count"] or 0
         abstain = row["abstain_count"] or 0
         unknown = row["unknown_count"] or 0
-        bills.append({
+        published = suppress_public_cells({
             "bill_id": row["id"],
             "title_el": row["title_el"],
             "title_en": row["title_en"],
@@ -1104,7 +1197,13 @@ async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
             "no_pct": vote_percent(no, total),
             "abstain_pct": vote_percent(abstain, total),
             "unknown_pct": vote_percent(unknown, total),
-        })
+            "yes": yes, "no": no, "abstain": abstain, "unknown": unknown,
+        }, choices=("yes", "no", "abstain", "unknown"), total="total_votes",
+            percentages=("yes_pct", "no_pct", "abstain_pct", "unknown_pct"),
+            publishable=True if allowed is not None else None)
+        for key in ("yes", "no", "abstain", "unknown"):
+            published.pop(key)
+        bills.append(published)
     return {
         "threshold": threshold,
         "count": len(bills),
@@ -1131,7 +1230,7 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
     # Visibility check (shared with every public results surface)
     if results_hidden(bill):
         vote_date = bill.parliament_vote_date.strftime("%d/%m/%Y") if bill.parliament_vote_date else None
-        return BillResults(
+        return publish_bill_results(BillResults(
             bill_id=bill_id, title_el=bill.title_el, status=bill.status.value,
             source=bill.source or "PARLIAMENT",
             pill_el=bill.pill_el,
@@ -1150,7 +1249,7 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
             results_hidden=True,
             parliament_vote_date=vote_date,
             disclaimer_el="Τα αποτελέσματα θα είναι ορατά μετά τη λήξη της ψηφοφορίας.",
-        )
+        ))
 
     totals = await aggregate_bill_vote_totals(
         db,
@@ -1174,7 +1273,7 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
     )
 
     vote_date = bill.parliament_vote_date.strftime("%d/%m/%Y") if bill.parliament_vote_date else None
-    return BillResults(
+    result = BillResults(
         bill_id=bill_id,
         title_el=bill.title_el,
         status=bill.status.value,
@@ -1203,13 +1302,16 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
         parliament_vote_date=vote_date,
         disclaimer_el="Η ψηφοφορία αυτή δεν είναι νομικά δεσμευτική και εκφράζει μόνο τη γνώμη των εγγεγραμμένων χρηστών της πλατφόρμας.",
     )
+    return publish_bill_results(result, publishable=totals.publishable)
 
 
 @router.post("/{bill_id}/relevance")
+@limiter.shared_limit("30/minute", scope="voting:vote_relevance")
 async def vote_relevance(
     bill_id: str,
     req: RelevanceRequest,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """MOD-14: Up/Down Relevanz-Signal. Getrennt von inhaltlicher Stimme."""
     if req.signal not in [1, -1]:
@@ -1269,7 +1371,8 @@ async def vote_relevance(
 # ─── VoteReceipt (ADR-008 stub) ─────────────────────────────────────────────
 
 @router.get("/{bill_id}/receipt")
-async def get_vote_receipt_deprecated(bill_id: str):
+@limiter.shared_limit("10/minute", scope="voting:get_vote_receipt_deprecated")
+async def get_vote_receipt_deprecated(bill_id: str, request: Request = None):
     """DEPRECATED: Use POST /{bill_id}/receipt with signed body."""
     raise HTTPException(status_code=410, detail="Endpoint deprecated. Use POST with signature_hex.")
 
@@ -1280,10 +1383,12 @@ class ReceiptRequest(BaseModel):
 
 
 @router.post("/{bill_id}/receipt")
+@limiter.shared_limit("10/minute", scope="voting:post_vote_receipt")
 async def post_vote_receipt(
     bill_id: str,
     req: ReceiptRequest,
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """ADR-008: VoteReceipt — requires Ed25519 signature proof."""
     identity = (await db.execute(
@@ -1336,10 +1441,12 @@ class ConsensusRequest(BaseModel):
 
 
 @router.post("/{bill_id}/consensus")
+@limiter.shared_limit("20/minute", scope="voting:submit_consensus")
 async def submit_consensus(
     bill_id: str,
     req: ConsensusRequest,
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Post-vote consensus score for OPEN_END bills. Scale: -5 (full resistance) to +5 (full consensus)."""
     from sqlalchemy import text
@@ -1409,7 +1516,8 @@ async def submit_consensus(
 
 
 @router.get("/compass/personal")
-async def get_personal_compass_deprecated():
+@limiter.limit("10/minute")
+async def get_personal_compass_deprecated(request: Request = None):
     """DEPRECATED: Use POST /compass/personal with signed body."""
     raise HTTPException(status_code=410, detail="Endpoint deprecated. Use POST with signature_hex.")
 
@@ -1420,9 +1528,11 @@ class CompassRequest(BaseModel):
 
 
 @router.post("/compass/personal")
+@limiter.limit("10/minute")
 async def post_personal_compass(
     req: CompassRequest,
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Personal compass position — requires Ed25519 signature proof."""
     from sqlalchemy import text
