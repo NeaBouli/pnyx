@@ -1,7 +1,7 @@
 """Targeted real-SQL checks without an async driver or any network access.
 
 Set PNYX_TEST_POSTGRES_SOCKET and PGDATABASE=pnyx_test_* for a disposable
-socket-only cluster, with psql >= 15 on PATH. No cluster roles may preexist.
+socket-only cluster, with psql >= 15 on PATH. Each case resets its own roles.
 """
 import importlib.util
 import json
@@ -61,8 +61,8 @@ class DatabaseRoleSQLTest(unittest.TestCase):
         self.assertTrue(Path(self.env["PGHOST"]).is_absolute())
         self.assertTrue(self.env.get("PGDATABASE", "").startswith("pnyx_test_"))
         self.admin = PsqlOperations(self.env)
-        self.assertEqual(self.admin.execute("SELECT rolname FROM pg_roles WHERE rolname LIKE 'ekklesia_%'").all(), [])
         self.addCleanup(self.cleanup_database)
+        self.cleanup_database()
         self.admin.execute("""
             DROP SCHEMA public CASCADE; CREATE SCHEMA public;
             CREATE TABLE parliament_bills (
@@ -103,6 +103,57 @@ class DatabaseRoleSQLTest(unittest.TestCase):
         self.revision.op = self.as_role("migrator")
         with patch.dict(os.environ, PUBLIC_RESULTS_MIN_COUNT=str(k)):
             self.revision.upgrade()
+
+    def test_legacy_upgrade_and_downgrade_without_roles(self):
+        self.revision.op = self.admin
+        self.revision.upgrade()
+        self.assertEqual(self.admin.execute("SELECT count(*) FROM public.monitor_bill_health").scalar(), "1")
+        self.assertFalse(self.admin.execute("SELECT to_regprocedure('public.monitor_zk_pending_aggregate()') IS NOT NULL").scalar())
+        self.revision.downgrade()
+        self.revision.downgrade()
+        self.assertEqual(self.admin.execute("SELECT viewname FROM pg_views WHERE schemaname='public' AND viewname LIKE 'monitor_%'").all(), [])
+
+    def test_bootstrap_reconciles_restored_function_owners(self):
+        self.bootstrap()
+        self.upgrade(10)
+        owner = self.admin.dialect.identifier_preparer.quote(self.env["PGUSER"])
+        for view in self.revision.VIEWS:
+            self.admin.execute(f"ALTER FUNCTION public.{view}_aggregate() OWNER TO {owner}; GRANT EXECUTE ON FUNCTION public.{view}_aggregate() TO PUBLIC")
+        # Ownership reconciliation must not touch overloads or other functions.
+        self.admin.execute("CREATE FUNCTION public.monitor_zk_health_aggregate(integer) RETURNS integer LANGUAGE sql AS 'SELECT $1'; CREATE FUNCTION public.unrelated() RETURNS integer LANGUAGE sql AS 'SELECT 1'")
+        self.bootstrap()
+        self.upgrade(10)
+        self.upgrade(10)
+        for view in self.revision.VIEWS:
+            self.assertEqual(self.admin.execute(f"SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid='public.{view}_aggregate()'::regprocedure").scalar(), "ekklesia_monitor_owner")
+            self.as_role("monitor").execute(f"SELECT * FROM public.{view}")
+        for function in ("public.monitor_zk_health_aggregate(integer)", "public.unrelated()"):
+            self.assertEqual(self.admin.execute(f"SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid='{function}'::regprocedure").scalar(), self.env["PGUSER"])
+        # A restored function can still have its login owner while the
+        # dedicated role exists. Downgrade must use the actual function owner.
+        for view in self.revision.VIEWS:
+            self.admin.execute(f"ALTER FUNCTION public.{view}_aggregate() OWNER TO {owner}")
+        self.revision.op = self.admin
+        self.revision.downgrade()
+
+    def test_missing_owner_keeps_fallback_views_and_functions_private(self):
+        self.bootstrap()
+        self.upgrade(10)
+        owner = self.admin.dialect.identifier_preparer.quote(self.env["PGUSER"])
+        for view in self.revision.VIEWS:
+            self.admin.execute(f"ALTER FUNCTION public.{view}_aggregate() OWNER TO {owner}; GRANT EXECUTE ON FUNCTION public.{view}_aggregate() TO PUBLIC")
+        self.admin.execute("DROP OWNED BY ekklesia_monitor_owner; DROP ROLE ekklesia_monitor_owner")
+        self.revision.op = self.admin
+        self.revision.upgrade()
+        self.assertEqual(self.admin.execute("SELECT count(*) FROM public.monitor_bill_health").scalar(), "1")
+        for role in ("monitor", "dashboard"):
+            for view in self.revision.VIEWS:
+                for query in (f"SELECT * FROM public.{view}", f"EXPLAIN (ANALYZE) SELECT * FROM public.{view}",
+                              f"SELECT * FROM public.{view}_aggregate()"):
+                    with self.subTest(role=role, query=query), self.assertRaises(subprocess.CalledProcessError):
+                        self.as_role(role).execute(query)
+        self.revision.downgrade()
+        self.revision.downgrade()
 
     def test_global_defaults_for_legacy_and_migrator_are_removed(self):
         self.admin.execute("ALTER DEFAULT PRIVILEGES GRANT ALL ON TABLES TO PUBLIC; ALTER DEFAULT PRIVILEGES GRANT ALL ON SEQUENCES TO PUBLIC")

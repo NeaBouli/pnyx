@@ -2,7 +2,8 @@
 
 PNYX_TEST_POSTGRES_URL must be a superuser connection to an isolated local
 pnyx_test_* database in a DISPOSABLE CLUSTER: this test creates cluster roles.
-psql >= 15 must be on PATH. Never point this suite at a shared cluster.
+psql >= 15 must be on PATH. Tests reset their roles before and after each case;
+other tests in the same job may use this cluster sequentially.
 The historical schema chain has drift, so use the current ORM schema and stamp
 its predecessor, matching the existing *_pg.py migration test pattern.
 """
@@ -68,29 +69,32 @@ def bootstrap(url, passwords):
 async def db():
     url = disposable_postgres_url()
     engine = create_async_engine(url, poolclass=NullPool)
-    async with engine.begin() as conn:
-        existing = await conn.exec_driver_sql("SELECT rolname FROM pg_roles WHERE rolname LIKE 'ekklesia_%'")
-        assert not existing.all(), "Use a disposable cluster without existing ekklesia_* roles"
-        await conn.exec_driver_sql("DROP SCHEMA public CASCADE")
-        await conn.exec_driver_sql("CREATE SCHEMA public")
-        await conn.run_sync(Base.metadata.create_all)
-        for table in EXTRA_PRIVATE:
-            await conn.exec_driver_sql(f"CREATE TABLE IF NOT EXISTS public.{table} (id serial PRIMARY KEY, private_value text)")
-        await conn.exec_driver_sql("CREATE TABLE public.db_roles_fixture (id serial PRIMARY KEY, private_value text)")
-    cli(url, "stamp", PREVIOUS)
-    passwords = {role: secrets.token_urlsafe(24) + "'\\$@:" for role in ROLES}
-    try:
-        yield url, engine, passwords
-    finally:
+
+    async def reset():
         async with engine.begin() as conn:
             await conn.exec_driver_sql("DROP SCHEMA public CASCADE")
             await conn.exec_driver_sql("CREATE SCHEMA public")
             for role in (*ROLES, "monitor_owner"):
-                exists = await conn.exec_driver_sql(f"SELECT FROM pg_roles WHERE rolname = 'ekklesia_{role}'")
-                if exists.all():
+                exists = await conn.exec_driver_sql(f"SELECT EXISTS(SELECT FROM pg_roles WHERE rolname = 'ekklesia_{role}')")
+                if exists.scalar_one():
                     await conn.exec_driver_sql(f"DROP OWNED BY ekklesia_{role}")
                     await conn.exec_driver_sql(f"DROP ROLE ekklesia_{role}")
-        await engine.dispose()
+
+    try:
+        await reset()
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+            for table in EXTRA_PRIVATE:
+                await conn.exec_driver_sql(f"CREATE TABLE IF NOT EXISTS public.{table} (id serial PRIMARY KEY, private_value text)")
+            await conn.exec_driver_sql("CREATE TABLE public.db_roles_fixture (id serial PRIMARY KEY, private_value text)")
+        cli(url, "stamp", PREVIOUS)
+        passwords = {role: secrets.token_urlsafe(24) + "'\\$@:" for role in ROLES}
+        yield url, engine, passwords
+    finally:
+        try:
+            await reset()
+        finally:
+            await engine.dispose()
 
 
 @contextmanager
@@ -101,11 +105,11 @@ def migration_module():
     yield module
 
 
-async def reapply(engine):
+async def reapply(engine, action="upgrade"):
     async with engine.begin() as conn:
         def run(sync_conn):
             with migration_module() as revision, Operations.context(MigrationContext.configure(sync_conn)):
-                revision.upgrade()
+                getattr(revision, action)()
         await conn.run_sync(run)
 
 
@@ -113,11 +117,16 @@ async def connect(url):
     return await asyncpg.connect(make_url(url).set(drivername="postgresql").render_as_string(hide_password=False))
 
 
-async def test_bootstrap_required_then_migrator_up_down(db):
+async def test_legacy_without_roles_then_bootstrap_and_migrator_up_down(db):
     url, engine, passwords = db
-    # Functions must never fall back to a login/superuser as their owner.
-    with pytest.raises(RuntimeError, match="Missing non-login aggregate owner"):
-        await reapply(engine)
+    cli(url, "upgrade", TARGET)
+    await reapply(engine)
+    async with engine.connect() as conn:
+        assert (await conn.exec_driver_sql("SELECT count(*) FROM public.monitor_bill_health")).scalar_one() == 1
+        assert (await conn.exec_driver_sql("SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname LIKE 'monitor_%_aggregate'")).scalar_one() == 0
+    cli(url, "downgrade", PREVIOUS)
+    # Also supports a downgrade with views/functions already absent.
+    await reapply(engine, "downgrade")
     bootstrap(url, passwords)
     cli(url, "upgrade", TARGET)
     await reapply(engine)
@@ -135,10 +144,43 @@ async def test_bootstrap_required_then_migrator_up_down(db):
         await reapply(migrator_engine)
         cli(url, "downgrade", PREVIOUS, migrator_url=migrator)
         async with engine.connect() as conn:
-            assert not (await conn.exec_driver_sql("SELECT FROM pg_views WHERE schemaname='public' AND viewname LIKE 'monitor_%'")).all()
+            assert not (await conn.exec_driver_sql("SELECT 1 FROM pg_views WHERE schemaname='public' AND viewname LIKE 'monitor_%'")).all()
         cli(url, "upgrade", TARGET, migrator_url=migrator)
     finally:
         await migrator_engine.dispose()
+
+
+async def test_fallback_without_owner_keeps_monitor_and_dashboard_private(db):
+    url, engine, passwords = db
+    bootstrap(url, passwords)
+    cli(url, "upgrade", TARGET, migrator_url=url_for(url, "migrator", passwords["migrator"]))
+    async with engine.begin() as conn:
+        # Model restored functions owned by the restoring login, with the
+        # owner role missing and the default PUBLIC EXECUTE ACL restored.
+        owner = conn.dialect.identifier_preparer.quote(make_url(url).username)
+        with migration_module() as revision:
+            for view in revision.VIEWS:
+                await conn.exec_driver_sql(f"ALTER FUNCTION public.{view}_aggregate() OWNER TO {owner}")
+                await conn.exec_driver_sql(f"GRANT EXECUTE ON FUNCTION public.{view}_aggregate() TO PUBLIC")
+        await conn.exec_driver_sql("DROP OWNED BY ekklesia_monitor_owner")
+        await conn.exec_driver_sql("DROP ROLE ekklesia_monitor_owner")
+    await reapply(engine)
+    async with engine.connect() as conn:
+        assert (await conn.exec_driver_sql("SELECT count(*) FROM public.monitor_bill_health")).scalar_one() == 1
+    for role in ("monitor", "dashboard"):
+        reader = await connect(url_for(url, role, passwords[role]))
+        try:
+            with migration_module() as revision:
+                for view in revision.VIEWS:
+                    for query in (f"SELECT * FROM public.{view}",
+                                  f"EXPLAIN (ANALYZE) SELECT * FROM public.{view}",
+                                  f"SELECT * FROM public.{view}_aggregate()"):
+                        with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                            await reader.fetch(query)
+        finally:
+            await reader.close()
+    # No owner role, but restored functions still need to be dropped.
+    cli(url, "downgrade", PREVIOUS)
 
 
 async def test_permissions_defaults_and_dump_restore(db, tmp_path):
@@ -227,8 +269,35 @@ async def test_permissions_defaults_and_dump_restore(db, tmp_path):
         try:
             assert await restored.fetchval("SELECT version_num FROM public.alembic_version") == TARGET
             assert await restored.fetchval("SELECT COUNT(*) FROM public.monitor_bill_health") == 1
+            with migration_module() as revision:
+                for view in revision.VIEWS:
+                    assert await restored.fetchval("SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=$1::regprocedure",
+                                                   f"public.{view}_aggregate()") == parsed.username
         finally:
             await restored.close()
+        restored_url = make_url(url).set(database="pnyx_test_t9142_restore").render_as_string(hide_password=False)
+        bootstrap(restored_url, passwords)
+        restored_engine = create_async_engine(url_for(restored_url, "migrator", passwords["migrator"]), poolclass=NullPool)
+        try:
+            await reapply(restored_engine)
+            await reapply(restored_engine)
+            reader = await connect(url_for(restored_url, "monitor", passwords["monitor"]))
+            try:
+                with migration_module() as revision:
+                    for view in revision.VIEWS:
+                        assert await reader.fetchval("SELECT pg_get_userbyid(proowner) FROM pg_proc WHERE oid=$1::regprocedure",
+                                                     f"public.{view}_aggregate()") == "ekklesia_monitor_owner"
+                        plan = json.loads(await reader.fetchval(
+                            f"EXPLAIN (ANALYZE, FORMAT JSON) SELECT * FROM public.{view}"))[0]["Plan"]
+                        nodes = [plan]
+                        for node in nodes:
+                            nodes.extend(node.get("Plans", []))
+                        assert any(node["Node Type"] == "Function Scan" for node in nodes)
+                        assert all("Relation Name" not in node for node in nodes)
+            finally:
+                await reader.close()
+        finally:
+            await restored_engine.dispose()
     finally:
         async with engine.connect() as conn:
             autocommit = await conn.execution_options(isolation_level="AUTOCOMMIT")

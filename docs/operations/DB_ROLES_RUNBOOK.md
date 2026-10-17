@@ -124,6 +124,36 @@ and representative read checks against the restored instance, and record the
 restore result before proceeding. Encrypt/remove the temporary plaintext dump
 under the existing retention policy. Do not put dumps or passwords in git.
 
+`--no-owner --no-acl` makes the restoring login own all restored functions,
+including the six `SECURITY DEFINER` aggregates, and restores the default
+PUBLIC EXECUTE permission. Keep the restored instance isolated while repairing
+ownership and grants. Before testing service logins there:
+
+1. Set `PGDATABASE=pnyx_test_roles_restore` and the isolated instance's bootstrap
+   superuser connection variables. Supply the five role secrets from step 2,
+   then run `scripts/ops/db-roles.sh`. Bootstrap transfers application relations
+   to migrator and exactly the six zero-argument aggregate functions to the
+   NOLOGIN `ekklesia_monitor_owner`; unrelated functions and overloads retain
+   their owners.
+2. Configure the restored database's migrator URL and the same
+   `PUBLIC_RESULTS_MIN_COUNT` as its API. If its revision is `y803a2b3c4d5`,
+   upgrade normally. If it is already `z901a2b3c4d5` or later, run the
+   transactional reconciliation in step 3: `alembic upgrade head` alone does
+   not rerun an applied revision. Reconciliation replaces the functions as
+   their NOLOGIN owner and restores the restricted function/view ACLs.
+3. Verify all six function owners with the query below, then repeat the
+   permission and EXPLAIN probes in step 5 using the restored service logins.
+
+```sql
+SELECT p.oid::regprocedure, pg_get_userbyid(p.proowner) AS owner
+ FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+ WHERE n.nspname='public' AND p.pronargs=0 AND p.proname IN
+ ('monitor_bill_health_aggregate', 'monitor_lifecycle_stuck_aggregate',
+  'monitor_lifecycle_fast_forward_aggregate', 'monitor_forum_missing_aggregate',
+  'monitor_zk_pending_aggregate', 'monitor_zk_health_aggregate');
+-- Six rows, all owned by ekklesia_monitor_owner.
+```
+
 Preflight on the target with the old superuser (stop if the assumptions differ):
 
 ```sql
@@ -240,11 +270,17 @@ The one-shot service runs `alembic upgrade head`. Alembic selects
 `MIGRATOR_DATABASE_URL or DATABASE_URL`, independently of `API_DATABASE_URL`.
 Use this service for **all future migrations**, never `exec api alembic`.
 The long-lived API has `MIGRATOR_DATABASE_URL` and `POSTGRES_PASSWORD` cleared.
-Bootstrap is required before applying/reconciling this revision, including on
-legacy single-login deployments: migration fails if the dedicated non-login
-owner is absent or has unsafe role attributes. No additional secret is needed.
-Existing installations must rerun the updated bootstrap to provision the owner,
-then reconcile this revision before switching service credentials.
+Bootstrap is required before switching to the limited monitor login. Without
+the dedicated owner, upgrade/reconciliation keeps private fallback views for
+the legacy `DATABASE_URL` login and skips definer setup. Monitor/dashboard get
+no view or function grants in that mode, including on restored functions, so
+limited logins cannot inspect raw counts via EXPLAIN. Keep
+`MONITOR_DATABASE_URL` empty; dashboard retains its existing HTTP-only access.
+An existing owner with unsafe attributes still makes migration fail.
+No additional secret is needed. Existing installations must rerun the updated
+bootstrap to provision the owner and repair restored function ownership, then
+reconcile this revision before switching service credentials. Downgrade also
+works when the roles, owner, functions or views are absent.
 
 If `z901a2b3c4d5` was already applied with the legacy URL **before** the ops step,
 reconcile grants before switching any service (all services still use the old

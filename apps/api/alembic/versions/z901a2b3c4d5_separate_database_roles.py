@@ -1,8 +1,8 @@
 """ADR-007 S4: aggregate monitor views and conditional least-privilege grants.
 
 Roles and secrets belong to scripts/ops/db-roles.sql, never to Alembic.
-Re-running upgrade() reconciles grants after an ops bootstrap. Bootstrap must
-provision the non-login aggregate owner before applying this revision.
+Re-running upgrade() reconciles grants after an ops bootstrap. Without the
+non-login aggregate owner, views remain private to the legacy access path.
 """
 from alembic import op
 import sqlalchemy as sa
@@ -13,8 +13,9 @@ down_revision = "y803a2b3c4d5"
 branch_labels = None
 depends_on = None
 
-# Queries run only inside non-inlined SECURITY DEFINER functions. A view's
-# security_barrier alone still exposes pre-suppression rows through EXPLAIN.
+# Limited readers use non-inlined SECURITY DEFINER functions. A view's
+# security_barrier alone still exposes pre-suppression rows through EXPLAIN,
+# so fallback views must never be granted to monitor/dashboard.
 VIEWS = {
     "monitor_bill_health": """
         SELECT MAX(created_at) AS latest_created_at,
@@ -162,9 +163,8 @@ def _exists(role: str) -> bool:
 
 
 def upgrade() -> None:
-    if not _exists(AGGREGATE_OWNER):
-        raise RuntimeError("Missing non-login aggregate owner; run scripts/ops/db-roles.sh as bootstrap superuser first")
-    if op.get_bind().execute(sa.text("""
+    has_owner = _exists(AGGREGATE_OWNER)
+    if has_owner and op.get_bind().execute(sa.text("""
         SELECT r.rolcanlogin OR r.rolsuper OR r.rolcreatedb OR r.rolcreaterole OR r.rolreplication OR r.rolbypassrls
                OR EXISTS (SELECT FROM pg_auth_members m JOIN pg_roles member ON member.oid = m.member
                           WHERE m.member = r.oid OR (m.roleid = r.oid AND member.rolname <> 'ekklesia_migrator'))
@@ -175,13 +175,27 @@ def upgrade() -> None:
     # be able to weaken it via SET, a connection option or its own environment.
     threshold = str(small_cell_k())
     # CREATE is needed only while installing functions as their dedicated owner.
-    op.execute(f"GRANT USAGE, CREATE ON SCHEMA public TO {AGGREGATE_OWNER}")
+    if has_owner:
+        op.execute(f"GRANT USAGE, CREATE ON SCHEMA public TO {AGGREGATE_OWNER}")
     for name, query in VIEWS.items():
         query = query.replace("__SUPPRESSION_K__", threshold)
         # Infer the deployed column types, preserving typmods when replacing
-        # existing views. This raw definition is never committed: Alembic runs
-        # the entire reconciliation in one PostgreSQL transaction.
+        # existing views. With an owner, this raw definition is replaced in
+        # the same transaction; without one it remains private to legacy use.
         op.execute(f"CREATE OR REPLACE VIEW public.{name} WITH (security_barrier = true) AS {query}")
+        if not has_owner:
+            # Preserve legacy monitoring via DATABASE_URL, without exposing
+            # source plans to limited roles. Restores with --no-acl also give
+            # PUBLIC function EXECUTE: close that path even without an owner.
+            function = f"public.{name}_aggregate()"
+            if op.get_bind().execute(sa.text(
+                "SELECT to_regprocedure(:function) IS NOT NULL"
+            ), {"function": function}).scalar():
+                op.execute(f"REVOKE ALL ON FUNCTION {function} FROM PUBLIC")
+                for role in RUNTIME_ROLES:
+                    if _exists(role):
+                        op.execute(f"REVOKE ALL ON FUNCTION {function} FROM {role}")
+            continue
         columns = op.get_bind().execute(sa.text("""
             SELECT attname, format_type(atttypid, atttypmod)
             FROM pg_attribute WHERE attrelid = CAST(:view AS regclass)
@@ -212,11 +226,12 @@ def upgrade() -> None:
                 EXECUTE format('SET LOCAL ROLE %I', installer);
             END $install$""")
         op.execute(f"CREATE OR REPLACE VIEW public.{name} WITH (security_barrier = true) AS SELECT {projection} FROM {function} r")
-    op.execute(f"REVOKE CREATE ON SCHEMA public FROM {AGGREGATE_OWNER}")
-    op.execute(f"REVOKE ALL ON ALL TABLES IN SCHEMA public FROM {AGGREGATE_OWNER}")
-    op.execute(f"REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM {AGGREGATE_OWNER}")
-    for table in AGGREGATE_SOURCES:
-        op.execute(f"GRANT SELECT ON public.{table} TO {AGGREGATE_OWNER}")
+    if has_owner:
+        op.execute(f"REVOKE CREATE ON SCHEMA public FROM {AGGREGATE_OWNER}")
+        op.execute(f"REVOKE ALL ON ALL TABLES IN SCHEMA public FROM {AGGREGATE_OWNER}")
+        op.execute(f"REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM {AGGREGATE_OWNER}")
+        for table in AGGREGATE_SOURCES:
+            op.execute(f"GRANT SELECT ON public.{table} TO {AGGREGATE_OWNER}")
 
     # PG14's public schema allows CREATE by default.
     op.execute("REVOKE CREATE ON SCHEMA public FROM PUBLIC")
@@ -288,7 +303,7 @@ def upgrade() -> None:
             LOOP EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.%I TO ekklesia_api', t.tablename); END LOOP;
         END $$""")
         op.execute("GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ekklesia_api")
-    if _exists("ekklesia_monitor"):
+    if has_owner and _exists("ekklesia_monitor"):
         for name in VIEWS:
             op.execute(f"GRANT SELECT ON public.{name} TO ekklesia_monitor")
     # Dashboard uses HTTP only (src/lib/api.ts and api/proxy); no views/grants.
@@ -303,7 +318,11 @@ def downgrade() -> None:
     for name in reversed(VIEWS):
         op.execute(f"DROP VIEW IF EXISTS public.{name}")
         op.execute(f"""DO $drop$ DECLARE installer name := current_user; BEGIN
-            SET LOCAL ROLE {AGGREGATE_OWNER};
+            IF EXISTS (SELECT FROM pg_proc p JOIN pg_roles r ON r.oid = p.proowner
+                       WHERE p.oid = to_regprocedure('public.{name}_aggregate()')
+                         AND r.rolname = '{AGGREGATE_OWNER}') THEN
+                SET LOCAL ROLE {AGGREGATE_OWNER};
+            END IF;
             DROP FUNCTION IF EXISTS public.{name}_aggregate();
             EXECUTE format('SET LOCAL ROLE %I', installer);
         END $drop$""")

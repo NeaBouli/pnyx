@@ -110,5 +110,18 @@ BEGIN
     LOOP
         EXECUTE format('ALTER %s public.%I OWNER TO ekklesia_migrator', obj.kind, obj.typname);
     END LOOP;
+    -- pg_restore --no-owner --no-acl leaves these owned by the restoring
+    -- login. Transfer only the six zero-argument aggregate functions so the
+    -- NOINHERIT migrator can replace them after SET ROLE monitor_owner.
+    FOR obj IN
+        SELECT p.proname FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+        WHERE n.nspname = 'public' AND p.prokind = 'f' AND p.pronargs = 0
+          AND p.proname IN ('monitor_bill_health_aggregate', 'monitor_lifecycle_stuck_aggregate',
+              'monitor_lifecycle_fast_forward_aggregate', 'monitor_forum_missing_aggregate',
+              'monitor_zk_pending_aggregate', 'monitor_zk_health_aggregate')
+          AND NOT EXISTS (SELECT FROM pg_depend d WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
+    LOOP
+        EXECUTE format('ALTER FUNCTION public.%I() OWNER TO ekklesia_monitor_owner', obj.proname);
+    END LOOP;
 END $$;
 COMMIT;
