@@ -9,6 +9,8 @@ from urllib.parse import urlsplit
 
 import httpx
 
+MAX_RETRY_AFTER = 15 * 60
+
 
 class HostCooldown(Exception):
     """The host must be deferred to a later run. Contains no request data."""
@@ -57,11 +59,17 @@ class HostRateLimiter:
                 delay = float(raw)
             except (TypeError, ValueError):
                 try:
-                    delay = parsedate_to_datetime(raw).timestamp() - time.time()
-                except (TypeError, ValueError, OverflowError):
+                    date = parsedate_to_datetime(raw)
+                    if date.tzinfo is None:
+                        return
+                    delay = date.timestamp() - time.time()
+                    # Far-future dates usually indicate a bad upstream clock.
+                    if delay > MAX_RETRY_AFTER:
+                        return
+                except (TypeError, ValueError, OverflowError, OSError):
                     return
             if math.isfinite(delay) and delay > 0:
-                state.next_request = max(state.next_request, now + delay)
+                state.next_request = max(state.next_request, now + min(delay, MAX_RETRY_AFTER))
 
 
 host_limiter = HostRateLimiter()
@@ -85,9 +93,15 @@ logging.getLogger("httpx").addFilter(_ScraperRequestLogFilter())
 async def pace_request(request: httpx.Request) -> None:
     # A source cooldown also applies when a caller tries Jina for that source.
     url = str(request.url)
-    if url.startswith("https://r.jina.ai/"):
-        host_limiter.check(url[len("https://r.jina.ai/"):])
+    source = request.extensions.get("scraper_source_url", url)
+    if source.startswith("https://r.jina.ai/"):
+        source = source[len("https://r.jina.ai/"):]
+    request.extensions["scraper_source_url"] = source
+    host_limiter.check(source)
     await host_limiter.acquire(url)
+    # A concurrent response may have forbidden the source while we queued.
+    host_limiter.check(source)
+    host_limiter.check(url)
 
 
 async def record_response(response: httpx.Response) -> None:

@@ -7,6 +7,7 @@ Rate limit: 5s between requests (self-imposed politeness).
 import asyncio
 import logging
 import time
+from asyncio import timeout as attempt_timeout
 from datetime import datetime
 from typing import AsyncIterator
 
@@ -69,6 +70,7 @@ class DiavgeiaClient:
     """Async HTTP client for Diavgeia OpenData API. Rate-limited, no auth."""
 
     def __init__(self, base_url: str = BASE_URL, timeout: float = DEFAULT_TIMEOUT) -> None:
+        self._attempt_timeout = timeout
         self._client = httpx.AsyncClient(
             base_url=base_url,
             timeout=timeout,
@@ -92,7 +94,8 @@ class DiavgeiaClient:
         for attempt in range(MAX_RETRIES):
             start = time.monotonic()
             try:
-                resp = await self._client.request(method, path, **kwargs)
+                async with attempt_timeout(self._attempt_timeout):
+                    resp = await self._client.request(method, path, **kwargs)
                 elapsed_ms = (time.monotonic() - start) * 1000
                 logger.info("Diavgeia response status=%d elapsed_ms=%.0f", resp.status_code, elapsed_ms)
 
@@ -110,7 +113,7 @@ class DiavgeiaClient:
                 resp.raise_for_status()
                 return resp
 
-            except httpx.TimeoutException as e:
+            except (httpx.TimeoutException, TimeoutError) as e:
                 delay = RETRY_BASE_DELAY * (2 ** attempt)
                 logger.warning("Diavgeia timeout attempt=%d/%d", attempt + 1, MAX_RETRIES)
                 last_exc = e

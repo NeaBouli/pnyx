@@ -6,6 +6,7 @@ import asyncio
 import logging
 import os
 import re
+from asyncio import timeout as attempt_timeout, timeout_at
 from urllib.parse import urlsplit
 
 import httpx
@@ -109,6 +110,7 @@ OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
 MIN_TEXT_LENGTH = 200
 MAX_TEXT_LENGTH = 8000
+MAX_DOCUMENT_BYTES = 1024 * 1024
 MAX_RETRIES = 2
 TIMEOUT = 30
 
@@ -119,10 +121,11 @@ async def _channel_jina_markdown(url: str) -> str:
     """Jina Reader — returns Markdown, we extract content lines."""
     for attempt in range(MAX_RETRIES):
         try:
-            async with httpx.AsyncClient(timeout=TIMEOUT, event_hooks=SCRAPER_HTTP_HOOKS) as client:
+            async with attempt_timeout(TIMEOUT), httpx.AsyncClient(timeout=TIMEOUT, event_hooks=SCRAPER_HTTP_HOOKS) as client:
                 resp = await client.get(
                     f"{JINA_URL}{url}",
                     headers={"Accept": "text/plain", "User-Agent": USER_AGENT},
+                    extensions={"scraper_source_url": url},
                 )
                 if resp.status_code != 200:
                     logger.warning("[CH1] Jina MD attempt %d: HTTP %d", attempt + 1, resp.status_code)
@@ -171,13 +174,14 @@ async def _channel_jina_html(url: str) -> str:
     """Jina Reader with X-Return-Format: html, then regex extraction."""
     for attempt in range(MAX_RETRIES):
         try:
-            async with httpx.AsyncClient(timeout=TIMEOUT, event_hooks=SCRAPER_HTTP_HOOKS) as client:
+            async with attempt_timeout(TIMEOUT), httpx.AsyncClient(timeout=TIMEOUT, event_hooks=SCRAPER_HTTP_HOOKS) as client:
                 resp = await client.get(
                     f"{JINA_URL}{url}",
                     headers={
                         "X-Return-Format": "html",
                         "User-Agent": USER_AGENT,
                     },
+                    extensions={"scraper_source_url": url},
                 )
                 if resp.status_code != 200:
                     logger.warning("[CH2] Jina HTML attempt %d: HTTP %d", attempt + 1, resp.status_code)
@@ -231,10 +235,11 @@ async def _channel_ollama_extract(url: str) -> str:
     # First get raw HTML via Jina
     raw_html = ""
     try:
-        async with httpx.AsyncClient(timeout=TIMEOUT, event_hooks=SCRAPER_HTTP_HOOKS) as client:
+        async with attempt_timeout(TIMEOUT), httpx.AsyncClient(timeout=TIMEOUT, event_hooks=SCRAPER_HTTP_HOOKS) as client:
             resp = await client.get(
                 f"{JINA_URL}{url}",
                 headers={"X-Return-Format": "html", "User-Agent": USER_AGENT},
+                extensions={"scraper_source_url": url},
             )
             if resp.status_code == 200:
                 raw_html = resp.text
@@ -246,8 +251,8 @@ async def _channel_ollama_extract(url: str) -> str:
     if not raw_html or len(raw_html) < 500:
         # Try direct fetch as last resort
         try:
-            async with httpx.AsyncClient(timeout=TIMEOUT, follow_redirects=True, event_hooks=SCRAPER_HTTP_HOOKS) as client:
-                resp = await client.get(url, headers={"User-Agent": USER_AGENT})
+            async with attempt_timeout(TIMEOUT), httpx.AsyncClient(timeout=TIMEOUT, follow_redirects=True, event_hooks=SCRAPER_HTTP_HOOKS) as client:
+                resp = await client.get(url, headers={"User-Agent": USER_AGENT}, extensions={"scraper_source_url": url})
                 if resp.status_code == 200:
                     raw_html = resp.text
         except HostCooldown:
@@ -276,9 +281,10 @@ async def _channel_ollama_extract(url: str) -> str:
 
     for attempt in range(MAX_RETRIES):
         try:
-            async with httpx.AsyncClient(timeout=90, event_hooks=SCRAPER_HTTP_HOOKS) as client:
+            async with attempt_timeout(90), httpx.AsyncClient(timeout=90, event_hooks=SCRAPER_HTTP_HOOKS) as client:
                 resp = await client.post(
                     f"{OLLAMA_URL}/api/generate",
+                    extensions={"scraper_source_url": url},
                     json={
                         "model": OLLAMA_MODEL,
                         "prompt": prompt,
@@ -312,32 +318,34 @@ async def _channel_playwright(url: str) -> str:
 
     for attempt in range(MAX_RETRIES):
         try:
-            async with async_playwright() as p:
+            async with attempt_timeout(TIMEOUT) as deadline, async_playwright() as p:
                 host_limiter.check(url)
                 browser = await p.chromium.launch(headless=True)
-                page = await browser.new_page(user_agent=USER_AGENT, service_workers="block")
 
                 async def paced_route(route):
                     try:
                         # Send browser traffic through HTTPX too: Playwright's
                         # routing alone does not intercept every redirect hop.
-                        response = await browser_http.request(
-                            route.request.method, route.request.url,
-                            headers=await route.request.all_headers(),
-                            content=route.request.post_data_buffer,
-                        )
-                    except (HostCooldown, httpx.RequestError):
+                        # Route callbacks can run in separate asyncio tasks.
+                        async with timeout_at(deadline.when()):
+                            response = await browser_http.request(
+                                route.request.method, route.request.url,
+                                headers=await route.request.all_headers(),
+                                content=route.request.post_data_buffer,
+                                extensions={"scraper_source_url": url},
+                            )
+                            headers = {
+                                key: value for key, value in response.headers.items()
+                                if key not in ("content-encoding", "content-length", "transfer-encoding")
+                            }
+                            await route.fulfill(status=response.status_code, headers=headers, body=response.content)
+                    except (HostCooldown, httpx.RequestError, TimeoutError):
                         await route.abort()
-                    else:
-                        headers = {
-                            key: value for key, value in response.headers.items()
-                            if key not in ("content-encoding", "content-length", "transfer-encoding")
-                        }
-                        await route.fulfill(status=response.status_code, headers=headers, body=response.content)
 
-                # Browser redirects and subresources also need host pacing.
-                await page.route("**/*", paced_route)
                 try:
+                    page = await browser.new_page(user_agent=USER_AGENT, service_workers="block")
+                    # Browser redirects and subresources also need host pacing.
+                    await page.route("**/*", paced_route)
                     async with httpx.AsyncClient(
                         timeout=TIMEOUT, follow_redirects=True, event_hooks=SCRAPER_HTTP_HOOKS,
                     ) as browser_http:
@@ -347,7 +355,10 @@ async def _channel_playwright(url: str) -> str:
                             return ""
                         content = await page.inner_text("body")
                 finally:
-                    await browser.close()
+                    # Cleanup shares the attempt's remaining budget, including
+                    # when cancellation arrives during page operations.
+                    async with timeout_at(deadline.when()):
+                        await browser.close()
 
                 if content and len(content.strip()) >= MIN_TEXT_LENGTH:
                     # Clean up navigation noise
@@ -369,13 +380,13 @@ async def _channel_playwright(url: str) -> str:
 # ─── Orchestrator ────────────────────────────────────────────────────────────
 
 async def _fetch_diavgeia_document(url: str) -> tuple[str, str]:
-    """Use documentUrl directly; skip PDFs without downloading their body."""
+    """Stream documentUrl directly; reject PDFs and oversized documents early."""
     for attempt in range(MAX_RETRIES):
         try:
-            async with httpx.AsyncClient(
+            async with attempt_timeout(TIMEOUT), httpx.AsyncClient(
                 timeout=TIMEOUT, follow_redirects=True, event_hooks=SCRAPER_HTTP_HOOKS,
             ) as client:
-                async with client.stream("GET", url, headers={"User-Agent": USER_AGENT}) as resp:
+                async with client.stream("GET", url, headers={"User-Agent": USER_AGENT}, extensions={"scraper_source_url": url}) as resp:
                     if resp.status_code == 403:
                         return "", "skipped"
                     if resp.status_code == 200:
@@ -387,19 +398,27 @@ async def _fetch_diavgeia_document(url: str) -> tuple[str, str]:
                         if content_type not in ("text/html", "application/xhtml+xml", "text/plain"):
                             logger.info("[DIAVGEIA-TEXT] Unsupported content type; source link retained")
                             return "", "skipped"
-                        await resp.aread()
-                        if resp.content.startswith(b"%PDF-"):
-                            logger.info("[DIAVGEIA-TEXT] PDF signature detected; source link retained")
-                            return "", "skipped"
+                        body = bytearray()
+                        async for chunk in resp.aiter_bytes():
+                            # Do not buffer beyond the signature before checking it,
+                            # even when it is split across transport chunks.
+                            if len(body) < 5 and (body + chunk[:5])[:5] == b"%PDF-":
+                                logger.info("[DIAVGEIA-TEXT] PDF signature detected; source link retained")
+                                return "", "skipped"
+                            if len(body) + len(chunk) > MAX_DOCUMENT_BYTES:
+                                logger.info("[DIAVGEIA-TEXT] Document size limit exceeded; source link retained")
+                                return "", "skipped"
+                            body.extend(chunk)
+                        text = body.decode(resp.encoding or "utf-8", errors="replace")
                         if content_type == "text/plain":
-                            return resp.text.strip()[:MAX_TEXT_LENGTH], "fetched"
-                        return _extract_text_from_html(resp.text)[:MAX_TEXT_LENGTH], "fetched"
+                            return text.strip()[:MAX_TEXT_LENGTH], "fetched"
+                        return _extract_text_from_html(text)[:MAX_TEXT_LENGTH], "fetched"
                     logger.warning("[DIAVGEIA-TEXT] status=%d attempt=%d", resp.status_code, attempt + 1)
                     if resp.status_code != 429 and resp.status_code < 500:
                         return "", "failed"
         except HostCooldown:
             raise
-        except httpx.RequestError as exc:
+        except (httpx.RequestError, TimeoutError) as exc:
             logger.warning("[DIAVGEIA-TEXT] request error=%s", type(exc).__name__)
         if attempt < MAX_RETRIES - 1:
             await asyncio.sleep(3)

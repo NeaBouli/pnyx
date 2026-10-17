@@ -2,6 +2,7 @@
 Tests for Diavgeia API Client — uses respx to mock all HTTP calls.
 NEVER hits live Diavgeia API.
 """
+import asyncio
 import json
 import os
 
@@ -234,3 +235,51 @@ async def test_logs_omit_request_data_and_timestamps(scraper_clock, caplog):
     assert secret not in caplog.text
     assert "https://" not in caplog.text
     assert "response status=200" in caplog.text
+
+
+@respx.mock
+async def test_overall_attempt_deadline_includes_queue_and_retries(scraper_clock, monkeypatch, offline_http_client):
+    from services import diavgeia_client
+
+    attempts = []
+
+    async def queued(url):
+        attempts.append(url)
+        await asyncio.Event().wait()
+
+    monkeypatch.setattr(scraper_clock.limiter, "acquire", queued)
+    async with DiavgeiaClient(timeout=0.03) as client:
+        async with asyncio.timeout(5):
+            with pytest.raises(TimeoutError):
+                await client.list_organizations()
+    assert len(attempts) == diavgeia_client.MAX_RETRIES
+    assert len(respx.calls) == 0
+
+
+@respx.mock
+async def test_overall_attempt_deadline_bounds_trickling_json(monkeypatch, offline_http_client):
+    from services import diavgeia_client
+
+    monkeypatch.setattr(diavgeia_client, "MAX_RETRIES", 1)
+    consumed = []
+    closed = []
+
+    class SlowBody(httpx.AsyncByteStream):
+        async def __aiter__(self):
+            yield b'{"organizations": ['
+            for _ in range(100):
+                await asyncio.sleep(0.01)
+                consumed.append(True)
+                yield b" "
+            yield b"]}"
+
+        async def aclose(self):
+            closed.append(True)
+
+    respx.get(f"{BASE_URL}/organizations.json").mock(return_value=httpx.Response(200, stream=SlowBody()))
+    async with DiavgeiaClient(timeout=0.06) as client:
+        async with asyncio.timeout(5):
+            with pytest.raises(TimeoutError):
+                await client.list_organizations()
+    assert 0 < len(consumed) < 100
+    assert closed == [True]

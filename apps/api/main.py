@@ -941,7 +941,7 @@ async def scheduled_completeness_check():
                 _is_bad_parliament_text,
                 _is_parliament_document_block_only,
                 _merge_text_with_existing_document_block,
-                fetch_bill_text,
+                _fetch_bill_text_result,
             )
 
             text_candidate_statuses = [
@@ -989,8 +989,10 @@ async def scheduled_completeness_check():
                     and (bill.summary_long_el is None or _is_parliament_document_block_only(bill.summary_long_el))
                 ):
                     try:
-                        text = await fetch_bill_text(bill.id, bill.parliament_url)
-                        if text and not _is_bad_parliament_text(text):
+                        text, outcome = await _fetch_bill_text_result(bill.id, bill.parliament_url, source=bill.source)
+                        if outcome == "skipped":
+                            counts["skipped"] += 1
+                        elif outcome == "fetched" and text and not _is_bad_parliament_text(text):
                             bill.summary_long_el = _merge_text_with_existing_document_block(
                                 text[:10000],
                                 bill.summary_long_el,

@@ -8,6 +8,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
+import respx
 from sqlalchemy.dialects import sqlite
 
 from models import ParliamentBill
@@ -64,12 +65,12 @@ async def test_completeness_and_party_vote_checks_only_include_parliament(monkey
     other = bill("other-private-id", "COMMUNITY", status)
     announced = bill("announced-private-id", "PARLIAMENT", "ANNOUNCED")
     job, db = load_job(monkeypatch, [parliament, diavgeia, other, announced])
-    fetch = AsyncMock(return_value="Κείμενο απόφασης με επαρκές ουσιαστικό περιεχόμενο. " * 12)
-    monkeypatch.setattr(parliament_fetcher, "fetch_bill_text", fetch)
+    fetch = AsyncMock(return_value=("Κείμενο απόφασης με επαρκές ουσιαστικό περιεχόμενο. " * 12, "fetched"))
+    monkeypatch.setattr(parliament_fetcher, "_fetch_bill_text_result", fetch)
 
     await job()
 
-    fetch.assert_awaited_once_with(parliament.id, parliament.parliament_url)
+    fetch.assert_awaited_once_with(parliament.id, parliament.parliament_url, source="PARLIAMENT")
     assert parliament.summary_long_el is not None
     assert diavgeia.summary_long_el is None and other.summary_long_el is None
     assert announced.summary_long_el is None
@@ -84,7 +85,7 @@ async def test_diavgeia_only_run_is_empty_and_logs_zero_counts(monkeypatch, capl
     caplog.set_level(logging.INFO)
     job, db = load_job(monkeypatch, [bill("private-id", "DIAVGEIA")])
     fetch = AsyncMock()
-    monkeypatch.setattr(parliament_fetcher, "fetch_bill_text", fetch)
+    monkeypatch.setattr(parliament_fetcher, "_fetch_bill_text_result", fetch)
     await job()
     fetch.assert_not_awaited()
     db.commit.assert_not_awaited()
@@ -96,7 +97,7 @@ async def test_diavgeia_only_run_is_empty_and_logs_zero_counts(monkeypatch, capl
 async def test_empty_or_rejected_text_is_degraded(monkeypatch, caplog, text):
     caplog.set_level(logging.INFO)
     job, _ = load_job(monkeypatch, [bill("private-id", "PARLIAMENT")])
-    monkeypatch.setattr(parliament_fetcher, "fetch_bill_text", AsyncMock(return_value=text))
+    monkeypatch.setattr(parliament_fetcher, "_fetch_bill_text_result", AsyncMock(return_value=(text, "fetched")))
     await job()
     scraper_state.record_success.assert_awaited_once_with(
         "completeness_check", outcome="degraded", reason="scrape_errors", count=1,
@@ -107,7 +108,39 @@ async def test_empty_or_rejected_text_is_degraded(monkeypatch, caplog, text):
 async def test_completeness_exception_logs_only_error_type(monkeypatch, caplog):
     caplog.set_level(logging.INFO)
     job, _ = load_job(monkeypatch, [bill("private-id", "PARLIAMENT")])
-    monkeypatch.setattr(parliament_fetcher, "fetch_bill_text", AsyncMock(side_effect=RuntimeError("private-person https://private-url/?secret=value")))
+    monkeypatch.setattr(parliament_fetcher, "_fetch_bill_text_result", AsyncMock(side_effect=RuntimeError("private-person https://private-url/?secret=value")))
     await job()
     assert "fetched=0 skipped=0 failed=1" in caplog.text
     assert "private-" not in caplog.text and "secret=value" not in caplog.text
+
+
+@pytest.mark.parametrize("outcome", ["skipped", "failed"])
+async def test_completeness_preserves_fetch_outcome(monkeypatch, caplog, outcome):
+    caplog.set_level(logging.INFO)
+    candidate = bill("private-id", "PARLIAMENT")
+    job, db = load_job(monkeypatch, [candidate])
+    monkeypatch.setattr(parliament_fetcher, "_fetch_bill_text_result", AsyncMock(return_value=("", outcome)))
+    await job()
+    assert candidate.summary_long_el is None
+    db.commit.assert_awaited_once()
+    skipped = outcome == "skipped"
+    assert f"fetched=0 skipped={int(skipped)} failed={int(not skipped)}" in caplog.text
+    scraper_state.record_success.assert_awaited_once_with(
+        "completeness_check", outcome="clean" if skipped else "degraded",
+        reason="none" if skipped else "scrape_errors", count=0 if skipped else 1,
+    )
+
+
+@respx.mock
+async def test_completeness_cooldown_is_skipped_without_degrading(monkeypatch, caplog, scraper_clock):
+    caplog.set_level(logging.INFO)
+    candidate = bill("private-id", "PARLIAMENT")
+    job, _ = load_job(monkeypatch, [candidate])
+    scraper_clock.limiter.observe(candidate.parliament_url, 403, {})
+    await job()
+    assert candidate.summary_long_el is None
+    assert "[COMPLETENESS] fetched=0 skipped=1 failed=0" in caplog.text
+    scraper_state.record_success.assert_awaited_once_with(
+        "completeness_check", outcome="clean", reason="none", count=0,
+    )
+    assert len(respx.calls) == 0

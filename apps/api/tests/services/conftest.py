@@ -1,12 +1,21 @@
 """Offline scraper clock: exercise real pacing without waiting or making requests."""
 import asyncio
 import sys
+from functools import partial
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+
+@pytest.fixture
+def offline_http_client(monkeypatch):
+    """Keep OS certificate/proxy setup out of the short deadline tests."""
+    import httpx
+
+    monkeypatch.setattr(httpx, "AsyncClient", partial(httpx.AsyncClient, verify=False, trust_env=False))
 
 
 @pytest.fixture

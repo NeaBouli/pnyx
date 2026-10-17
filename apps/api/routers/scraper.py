@@ -23,6 +23,7 @@ import hmac
 import logging
 import httpx
 import urllib.parse
+from asyncio import timeout as attempt_timeout
 from bs4 import BeautifulSoup
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -68,7 +69,7 @@ async def fetch_with_fallback(url: str) -> Optional[str]:
     }
 
     try:
-        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True, event_hooks=SCRAPER_HTTP_HOOKS) as client:
+        async with attempt_timeout(15.0), httpx.AsyncClient(timeout=15.0, follow_redirects=True, event_hooks=SCRAPER_HTTP_HOOKS) as client:
             r = await client.get(url, headers=headers)
             if r.status_code == 200 and len(r.text) > 500:
                 logger.info("[MOD-10] Direct fetch succeeded")
@@ -77,7 +78,7 @@ async def fetch_with_fallback(url: str) -> Optional[str]:
         logger.warning("[MOD-10] Direct fetch error=%s", type(e).__name__)
 
     try:
-        async with httpx.AsyncClient(timeout=20.0, event_hooks=SCRAPER_HTTP_HOOKS) as client:
+        async with attempt_timeout(20.0), httpx.AsyncClient(timeout=20.0, event_hooks=SCRAPER_HTTP_HOOKS) as client:
             r = await client.get(f"https://r.jina.ai/{url}", headers={"Accept": "text/plain", "User-Agent": SCRAPE_USER_AGENT})
             if r.status_code == 200 and len(r.text) > 200:
                 logger.info("[MOD-10] Jina fetch succeeded")
@@ -396,7 +397,7 @@ def _looks_like_access_denied_body(text: str) -> bool:
 async def _fetch_jina_markdown(url: str, probe_errors: list[str] | None = None) -> Optional[str]:
     """Fetch a URL via Jina Reader and return Markdown content."""
     try:
-        async with httpx.AsyncClient(timeout=25.0, event_hooks=SCRAPER_HTTP_HOOKS) as client:
+        async with attempt_timeout(25.0), httpx.AsyncClient(timeout=25.0, event_hooks=SCRAPER_HTTP_HOOKS) as client:
             r = await client.get(f"https://r.jina.ai/{url}", headers={"Accept": "text/plain", "User-Agent": SCRAPE_USER_AGENT})
             if r.status_code == 401:
                 _record_probe_error(probe_errors, "jina_http_401")
@@ -613,11 +614,12 @@ async def _scrape_parliament_bills(
                 if request_count > 0:
                     await asyncio.sleep(SCRAPE_DELAY_SECONDS)
                 request_count += 1
-                r = await client.get(
-                    PARLIAMENT_API, params={"q": "laws", "cat": cat},
-                    headers={"User-Agent": SCRAPE_USER_AGENT,
-                             "Accept": "application/json", "Accept-Language": "el-GR,el;q=0.9"},
-                )
+                async with attempt_timeout(15.0):
+                    r = await client.get(
+                        PARLIAMENT_API, params={"q": "laws", "cat": cat},
+                        headers={"User-Agent": SCRAPE_USER_AGENT,
+                                 "Accept": "application/json", "Accept-Language": "el-GR,el;q=0.9"},
+                    )
                 if r.status_code == 403:
                     _record_probe_error(probe_errors, "api_http_403")
                     logger.warning("[SCRAPER] Parliament returned 403; host cooldown started")
@@ -718,7 +720,7 @@ async def _scrape_parliament_bills(
     if not bills:
         fallback_used = "direct_html"
         try:
-            async with httpx.AsyncClient(timeout=15.0, event_hooks=SCRAPER_HTTP_HOOKS) as client:
+            async with attempt_timeout(15.0), httpx.AsyncClient(timeout=15.0, event_hooks=SCRAPER_HTTP_HOOKS) as client:
                 r = await client.get(
                     f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Psifisthenta-Nomoschedia",
                     headers={"User-Agent": SCRAPE_USER_AGENT, "Accept-Language": "el-GR,el;q=0.9"},
