@@ -84,7 +84,8 @@ def test_zk_canary_health_alerts_on_old_pending_receipts(monkeypatch):
     assert ">24h" in alerts[0].message
     pending_statement, params = conn.cursor_obj.statements[0]
     assert "ANY" in pending_statement
-    assert "root.group_size >= %s" in pending_statement
+    assert "group_size >= %s" in pending_statement
+    assert "public.monitor_zk_pending" in pending_statement
     assert params == (24, 5, ["bill:GR-0490a766"], False)
 
 
@@ -99,7 +100,7 @@ def test_zk_canary_health_skips_pending_receipts_when_publication_is_gated_off(m
 
     assert alerts == []
     assert len(conn.cursor_obj.statements) == 1
-    assert "zk_merkle_roots" in conn.cursor_obj.statements[0][0]
+    assert "public.monitor_zk_health" in conn.cursor_obj.statements[0][0]
 
 
 def test_zk_canary_health_alerts_when_publication_enabled_without_allowlist(monkeypatch):
@@ -127,7 +128,7 @@ def test_zk_canary_health_allows_parliament_auto_mode_without_allowlist(monkeypa
 
     assert alerts == []
     pending_statement, params = conn.cursor_obj.statements[0]
-    assert "b.source = 'PARLIAMENT'" in pending_statement
+    assert "parliament_eligible" in pending_statement
     assert params == (24, 5, [], True)
 
 

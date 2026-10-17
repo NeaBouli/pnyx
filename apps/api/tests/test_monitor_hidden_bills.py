@@ -1,6 +1,8 @@
 import os
 import sys
 import types
+from pathlib import Path
+import runpy
 from datetime import datetime, timedelta
 
 import pytest
@@ -11,6 +13,8 @@ sys.modules.setdefault("redis", types.SimpleNamespace(from_url=lambda *args, **k
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "monitor"))
 
 import monitor  # noqa: E402
+
+VIEWS = runpy.run_path(str(Path(__file__).resolve().parents[1] / "alembic/versions/z901a2b3c4d5_separate_database_roles.py"))["VIEWS"]
 
 
 class FakeCursor:
@@ -52,6 +56,8 @@ def test_forum_missing_query_selects_only_public_actionable_bills():
     assert alerts == []
     sql = cursor.statements[0]
     assert "category = 'public_actionable'" in sql
+    assert "public.monitor_forum_missing" in sql
+    sql = VIEWS["monitor_forum_missing"]
     assert "THEN 'technical_test'" in sql
     assert "THEN 'operator_hidden'" in sql
     assert "THEN 'sensitive_diavgeia'" in sql
@@ -67,6 +73,8 @@ def test_forum_completeness_catalogs_non_public_rows_without_alerting():
 
     assert alerts == []
     sql = cursor.statements[0]
+    assert "public.monitor_forum_missing" in sql
+    sql = VIEWS["monitor_forum_missing"]
     assert "GROUP BY category" in sql
     assert "forum_topic_id IS NULL" in sql
 
@@ -128,6 +136,8 @@ def test_forum_completeness_gives_diavgeia_backlog_longer_grace():
     monitor.check_forum_completeness(FakeConn(cursor))
 
     sql = cursor.statements[0]
+    assert "public.monitor_forum_missing" in sql
+    sql = VIEWS["monitor_forum_missing"]
     assert "COALESCE(source, 'PARLIAMENT') = 'PARLIAMENT'" in sql
     assert "INTERVAL '1 hour'" in sql
     assert "COALESCE(source, 'PARLIAMENT') != 'PARLIAMENT'" in sql
@@ -140,9 +150,10 @@ def test_lifecycle_stuck_query_gives_recent_scraper_updates_short_grace():
 
     assert alerts == []
     sql = cursor.statements[0]
-    assert "parliament_vote_date < %s" in sql
-    assert "COALESCE(updated_at, TIMESTAMP '1970-01-01') < %s" in sql
-    assert len(cursor.params[0]) == 2
+    assert "public.monitor_lifecycle_stuck" in sql
+    sql = VIEWS["monitor_lifecycle_stuck"]
+    assert "parliament_vote_date < NOW() - INTERVAL '1 day'" in sql
+    assert "COALESCE(updated_at, TIMESTAMP '1970-01-01') < NOW() - INTERVAL '30 minutes'" in sql
 
 
 def test_lifecycle_fast_forward_alerts_on_skipped_public_window():
@@ -158,6 +169,8 @@ def test_lifecycle_fast_forward_alerts_on_skipped_public_window():
     assert alerts[0].recovery_allowed is False
     assert "GR-09e240aa" in alerts[0].message
     sql = cursor.statements[0]
+    assert "public.monitor_lifecycle_fast_forward" in sql
+    sql = VIEWS["monitor_lifecycle_fast_forward"]
     assert "bill_status_logs" in sql
     assert "l.changed_at > NOW() - INTERVAL '24 hours'" in sql
     assert "voted_at - window_at < INTERVAL '24 hours'" in sql
