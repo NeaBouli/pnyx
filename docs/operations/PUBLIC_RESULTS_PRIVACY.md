@@ -5,7 +5,10 @@ ADR-007 S2 / EVA-006 / T-9128. Owner decision: Gio, 16 October 2026.
 Set `PUBLIC_RESULTS_MIN_COUNT=10` in the **API process environment** to enable
 this policy. Unset or `0` keeps legacy numeric values. A negative or malformed
 integer disables it with a warning that never contains the supplied value.
-The setting is read at response/publication time; no migration is required.
+The API reads the setting at response/publication time; no API migration is required.
+The database monitor views embed their release threshold when reconciled:
+before enabling/raising the API setting, update those views with the same k
+using [DB_ROLES_RUNBOOK.md](DB_ROLES_RUNBOOK.md). Readers cannot override that database threshold.
 The templates default to `0`; this change does not activate production.
 
 ## Response contract

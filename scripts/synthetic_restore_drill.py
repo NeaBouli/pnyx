@@ -251,7 +251,7 @@ def _drill_body(run: Runner, run_env: Callable, receipt: dict, work: Path, heads
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__)
+    ap = argparse.ArgumentParser(prog=Path(__file__).name, description=__doc__)
     ap.add_argument("--run", action="store_true", help="execute synthetic local drill")
     args = ap.parse_args(argv)
     if not args.run:

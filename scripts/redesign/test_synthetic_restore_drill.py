@@ -23,8 +23,11 @@ class DrillTests(unittest.TestCase):
 
     def test_rejects_dsn_and_dump_args(self):
         for arg in (["--dsn", "x"], ["--dump", "x"], ["--source", "x"]):
-            with self.assertRaises(SystemExit):
+            stderr = io.StringIO()
+            with self.subTest(arg=arg), contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit) as error:
                 d.main(arg)
+            self.assertEqual(error.exception.code, 2)
+            self.assertIn("unrecognized arguments: " + " ".join(arg), stderr.getvalue())
 
     def test_remote_docker_refused(self):
         with self.assertRaises(d.DrillError):

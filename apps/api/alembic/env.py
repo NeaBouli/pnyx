@@ -24,7 +24,8 @@ def do_run_migrations(connection: Connection) -> None:
 async def run_async_migrations() -> None:
     from config import settings
     configuration = config.get_section(config.config_ini_section, {})
-    configuration["sqlalchemy.url"] = settings.database_url
+    # Never fall back to the restricted API URL for DDL.
+    configuration["sqlalchemy.url"] = settings.migrator_database_url or settings.database_url
     connectable = async_engine_from_config(
         configuration, prefix="sqlalchemy.", poolclass=pool.NullPool,
     )

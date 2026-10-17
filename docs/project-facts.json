@@ -6,7 +6,7 @@
     "modules_inactive": 2,
     "modules_listed": 23,
     "modules_spec": 25,
-    "prod_containers": 8
+    "prod_containers": 9
   },
   "definitions": {
     "api_endpoints": "FastAPI route decorators (@router/@app .get/.post/.put/.patch/.delete) in apps/api/main.py and apps/api/routers/*.py.",
@@ -26,6 +26,7 @@
       "db",
       "redis",
       "api",
+      "migrator",
       "web",
       "ollama",
       "dashboard",
