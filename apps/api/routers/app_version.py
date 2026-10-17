@@ -10,17 +10,17 @@ from routers.identity import identity_key_check_enabled, identity_rotate_enabled
 router = APIRouter(prefix="/api/v1/app", tags=["App Version"])
 
 # Hardcoded — bei neuem Release hier anpassen
-LATEST_VERSION = "1.0.35"
-LATEST_VERSION_CODE = 64
+LATEST_VERSION = "1.0.36"
+LATEST_VERSION_CODE = 65
 MIN_REQUIRED_VERSION_CODE = 1
 FORCE_UPDATE = False
 
-RELEASE_NOTES_EL = "v1.0.35 — Κλείσιμο μετά την ψηφοφορία, ένδειξη ψήφου στις κάρτες, διόρθωση μόνο αν έχετε ψηφίσει, ασφαλέστερη εισαγωγή λογαριασμού."
-RELEASE_NOTES_EN = "v1.0.35 — Close after voting, vote indicator on tiles, correction only if you voted, safer account import."
+RELEASE_NOTES_EL = "v1.0.36 — Σαφέστερη διατύπωση «χωρίς όνομα», ασφαλέστερος χειρισμός κλειδιών, μία διόρθωση ψήφου στο 24ωρο."
+RELEASE_NOTES_EN = "v1.0.36 — Clearer no-name wording, safer key handling, one vote correction in the 24-hour window."
 
 FDROID_URL = "https://f-droid.org/packages/ekklesia.gr/"
 PLAYSTORE_URL = "https://play.google.com/apps/testing/ekklesia.gr"
-DIRECT_APK_URL = "https://github.com/NeaBouli/pnyx/releases/download/v1.0.35/ekklesia-v1.0.35-vC64-DIRECT.apk"
+DIRECT_APK_URL = "https://github.com/NeaBouli/pnyx/releases/download/v1.0.36/ekklesia-v1.0.36-vC65-DIRECT.apk"
 
 
 @router.get("/version")
