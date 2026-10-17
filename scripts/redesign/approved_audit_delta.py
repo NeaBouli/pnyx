@@ -68,8 +68,12 @@ import r0_inventory
 # T-9132 review: IP counters expire; access logs rotate by size with no fixed
 # retention period. FAQ default Greek matches EL/JSON-LD, votes are pseudonymous,
 # and FAQ/roadmap ZK status follows the security-review pause since 2026-10-03.
+# T-9140 (owner-requested): community.html links to the existing sandbox mirror
+# README instead of the obsolete setup page (mirror-setup.sh is absent). EL/EN
+# mirror copy follows the current read-only sandbox boundary, without promising
+# a one-command installer, five-minute cache sync or unsupported minimum specs.
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/community.html": "070111774fa4640a4bde4857a2aca7bbf73f0a06db73e748e73c5e045422084f",  # T-9048: scoped contrast, heading semantics and document-language toggle; T-9106: legal-modal claims text
+    "docs/community.html": "aaed5bed78905149e75a31e74f930363fb7da6709de39c783b8e342a8d5cd6a4",  # T-9140: current sandbox mirror documentation and EL/EN boundary
     "docs/wiki/api.html": "96fc5780f70af8945a5f3c7bded3e3a9bb206e806babebd83fb1e95adf807ecf",  # T-9136: signed preflight 120/IP; QR 30/session + 600/IP (EL/EN).
     "docs/wiki/architecture.html": "1af2aa9c102d66887e52627c277ebfea03935a2ff3b772235cf07ed3d4313f0b",
     "docs/wiki/broadcasting.html": "eb345ed4551a94220e47aeb4b40c7c745bf6dfeaa5f330eac6f629a09d31f716",
