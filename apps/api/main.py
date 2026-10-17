@@ -17,6 +17,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from rate_limit import limiter
 from security_startup import validate_identity_kdf_config, validate_server_salt_config
+from services.scheduler_state import add_persisted_interval_job
 
 logger = logging.getLogger(__name__)
 local_error_logger = logging.getLogger("ekklesia.errors")
@@ -1061,33 +1062,31 @@ async def lifespan(app):
     validate_server_salt_config()
     validate_identity_kdf_config()
     sso.validate_forum_sso_config()
-    scheduler.add_job(scheduled_completeness_check, IntervalTrigger(hours=6), id="completeness_check", replace_existing=True)
-    scheduler.add_job(scheduled_scrape, IntervalTrigger(hours=12), id="parliament_scrape", replace_existing=True)
+    await add_persisted_interval_job(scheduler, scheduled_completeness_check, hours=6, name="completeness_check")
+    await add_persisted_interval_job(scheduler, scheduled_scrape, hours=12, name="parliament", job_id="parliament_scrape")
     scheduler.add_job(scheduled_notify_new_bills, IntervalTrigger(minutes=30), id="notify_new_bills", replace_existing=True)
     scheduler.add_job(scheduled_notify_results, IntervalTrigger(hours=1), id="notify_results", replace_existing=True)
     scheduler.add_job(scheduled_push_categories, IntervalTrigger(minutes=30), id="push_categories", replace_existing=True)
     scheduler.add_job(scheduled_weekly_digest, CronTrigger(day_of_week="mon", hour=7, minute=0), id="weekly_digest", replace_existing=True)
-    scheduler.add_job(scheduled_diavgeia_scrape, IntervalTrigger(hours=48), id="diavgeia_municipal", replace_existing=True)
+    await add_persisted_interval_job(scheduler, scheduled_diavgeia_scrape, hours=48, name="diavgeia_municipal")
     scheduler.add_job(scheduled_forum_sync, IntervalTrigger(minutes=10), id="forum_sync", replace_existing=True)
     scheduler.add_job(scheduled_bill_lifecycle, IntervalTrigger(hours=1), id="bill_lifecycle", replace_existing=True)
     scheduler.add_job(scheduled_zk_arweave_publication, IntervalTrigger(minutes=30), id="zk_arweave_publication", replace_existing=True)
     scheduler.add_job(scheduled_finance_export, IntervalTrigger(minutes=5), id="finance_export", replace_existing=True)
-    scheduler.add_job(scheduled_cplm_refresh, IntervalTrigger(hours=6), id="cplm_refresh", replace_existing=True)
-    scheduler.add_job(scheduled_greek_topics, IntervalTrigger(hours=6), id="greek_topics", replace_existing=True)
+    await add_persisted_interval_job(scheduler, scheduled_cplm_refresh, hours=6, name="cplm_refresh")
+    await add_persisted_interval_job(scheduler, scheduled_greek_topics, hours=6, name="greek_topics")
     scheduler.add_job(scheduled_monthly_newsletter, CronTrigger(day=1, hour=9, minute=0), id="monthly_newsletter", replace_existing=True)
     scheduler.start()
     logger.info("[Scheduler] Started — completeness 6h, lifecycle 1h, ZK-Arweave 30m, parliament 12h, diavgeia 48h, notify-bills 30m, notify-results 1h, forum-sync 10m, greek-topics 6h, newsletter 1st/month")
 
-    # Catch-up: trigger overdue jobs immediately after restart
+    # Short-interval catch-up only. Long intervals already have their first run
+    # restored above; a separate immediate job would bypass the startup delay.
     try:
         import redis.asyncio as aioredis
         r = aioredis.Redis(host=os.getenv("REDIS_HOST", "redis"), port=6379, db=0, decode_responses=True)
         catchup_jobs = {
-            "parliament": (scheduled_scrape, 12 * 3600),
-            "diavgeia_municipal": (scheduled_diavgeia_scrape, 48 * 3600),
             "bill_lifecycle": (scheduled_bill_lifecycle, 3600),
             "forum_sync": (scheduled_forum_sync, 600),
-            "cplm_refresh": (scheduled_cplm_refresh, 6 * 3600),
         }
         for name, (func, interval_sec) in catchup_jobs.items():
             last_run = await r.get(f"scraper:{name}:last_run")
