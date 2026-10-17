@@ -6,6 +6,7 @@ required for the initial deployment with the legacy DATABASE_URL.
 """
 from alembic import op
 import sqlalchemy as sa
+from services.small_cell import small_cell_k
 
 revision = "z901a2b3c4d5"
 down_revision = "y803a2b3c4d5"
@@ -81,18 +82,68 @@ VIEWS = {
         FROM classified GROUP BY category
     """,
     "monitor_zk_pending": """
-        SELECT r.vote_scope_id, root.group_size,
-               FLOOR(EXTRACT(EPOCH FROM (NOW() - r.created_at)) / 3600) AS pending_hours,
-               COALESCE(b.source = 'PARLIAMENT'
-                   AND b.status::text IN ('ACTIVE', 'WINDOW_24H', 'OPEN_END')
-                   AND b.id NOT LIKE 'DEMO-%', FALSE) AS parliament_eligible,
-               COUNT(*) AS receipt_count
-        FROM public.zk_vote_receipts r
-        LEFT JOIN public.parliament_bills b ON r.vote_scope_id = ('bill:' || b.id)
-        JOIN public.zk_merkle_roots root ON root.vote_scope_id = r.vote_scope_id AND root.merkle_root = r.merkle_root
-        WHERE r.arweave_pending = TRUE
-          AND COALESCE(b.admin_hidden, FALSE) IS NOT TRUE AND COALESCE(b.source, '') <> 'ZK_CANARY'
-        GROUP BY r.vote_scope_id, root.group_size, pending_hours, parliament_eligible
+        WITH visible_bills AS (
+            SELECT id, status FROM public.parliament_bills
+            WHERE COALESCE(admin_hidden, FALSE) = FALSE
+              AND COALESCE(source, 'PARLIAMENT') = 'PARLIAMENT'
+              AND id NOT LIKE 'DEMO-%' AND id NOT LIKE 'ZK-CANARY-%'
+              AND NOT (status::text = 'ACTIVE' AND COALESCE(results_visibility, 'HIDDEN') = 'HIDDEN')
+        ), events AS (
+            SELECT 'bill:' || v.bill_id AS vote_scope_id, v.vote::text AS choice,
+                   'tier1' AS source, v.created_at AT TIME ZONE 'UTC' AS created_at,
+                   NULL::integer AS group_size, NULL::boolean AS arweave_pending
+            FROM public.citizen_votes v JOIN visible_bills b ON b.id = v.bill_id
+            UNION ALL
+            SELECT r.vote_scope_id, r.vote_commitment, 'zk', r.created_at,
+                   root.group_size, r.arweave_pending
+            FROM public.zk_vote_receipts r
+            JOIN visible_bills b ON r.vote_scope_id = ('bill:' || b.id)
+            LEFT JOIN public.zk_merkle_roots root
+              ON root.vote_scope_id = r.vote_scope_id AND root.merkle_root = r.merkle_root
+        ), source_cells AS (
+            -- publishable_set: all four choices, including zero, in every
+            -- present source. Safe sources also imply safe combined cells.
+            SELECT vote_scope_id, source,
+                   COUNT(*) FILTER (WHERE choice = 'YES') AS yes_count,
+                   COUNT(*) FILTER (WHERE choice = 'NO') AS no_count,
+                   COUNT(*) FILTER (WHERE choice = 'ABSTAIN') AS abstain_count,
+                   COUNT(*) FILTER (WHERE choice = 'UNKNOWN') AS unknown_count
+            FROM events GROUP BY vote_scope_id, source
+        ), partitions AS (
+            -- Use fixed UTC hours, never rolling receipt-age boundaries.
+            -- Include published receipts: a small nonpending complement must
+            -- not be recoverable from public source totals minus pending.
+            SELECT vote_scope_id, source, group_size, arweave_pending,
+                   DATE_TRUNC('hour', created_at AT TIME ZONE 'UTC') AS receipt_hour,
+                   COUNT(*) AS receipt_count,
+                   BOOL_AND(choice IN ('YES', 'NO', 'ABSTAIN', 'UNKNOWN')) AS valid_choices,
+                   COUNT(*) FILTER (WHERE choice = 'YES') AS yes_count,
+                   COUNT(*) FILTER (WHERE choice = 'NO') AS no_count,
+                   COUNT(*) FILTER (WHERE choice = 'ABSTAIN') AS abstain_count,
+                   COUNT(*) FILTER (WHERE choice = 'UNKNOWN') AS unknown_count
+            FROM events
+            GROUP BY vote_scope_id, source, group_size, arweave_pending, receipt_hour
+        ), safe_scopes AS (
+            SELECT vote_scope_id FROM source_cells GROUP BY vote_scope_id
+            HAVING BOOL_AND(LEAST(yes_count, no_count, abstain_count, unknown_count) >= __SUPPRESSION_K__)
+        ), safe_partitions AS (
+            -- Withhold the whole scope if any partition is small; filtering
+            -- individual buckets alone would allow complementary subtraction.
+            SELECT vote_scope_id FROM partitions GROUP BY vote_scope_id
+            HAVING BOOL_AND(LEAST(yes_count, no_count, abstain_count, unknown_count) >= __SUPPRESSION_K__
+                AND valid_choices AND receipt_hour IS NOT NULL
+                AND (source <> 'zk' OR (group_size IS NOT NULL AND group_size >= __SUPPRESSION_K__)))
+        )
+        -- Preserve the existing view's varchar(128) output for reconciliation.
+        SELECT p.vote_scope_id::varchar(128) AS vote_scope_id, p.group_size,
+               FLOOR(EXTRACT(EPOCH FROM (NOW() - ((p.receipt_hour + INTERVAL '1 hour') AT TIME ZONE 'UTC'))) / 3600) AS pending_hours,
+               b.status::text IN ('ACTIVE', 'WINDOW_24H', 'OPEN_END') AS parliament_eligible,
+               p.receipt_count
+        FROM partitions p JOIN visible_bills b ON p.vote_scope_id = ('bill:' || b.id)
+        WHERE p.source = 'zk' AND p.arweave_pending = TRUE AND p.group_size IS NOT NULL
+          AND (__SUPPRESSION_K__ = 0 OR (
+              p.vote_scope_id IN (SELECT vote_scope_id FROM safe_scopes)
+              AND p.vote_scope_id IN (SELECT vote_scope_id FROM safe_partitions)))
     """,
     "monitor_zk_health": """
         SELECT COUNT(*) AS invalid_roots FROM public.zk_merkle_roots
@@ -109,7 +160,11 @@ def _exists(role: str) -> bool:
 
 
 def upgrade() -> None:
+    # Freeze the release threshold in owner-controlled SQL. A reader must not
+    # be able to weaken it via SET, a connection option or its own environment.
+    threshold = str(small_cell_k())
     for name, query in VIEWS.items():
+        query = query.replace("__SUPPRESSION_K__", threshold)
         op.execute(f"CREATE OR REPLACE VIEW public.{name} WITH (security_barrier = true) AS {query}")
 
     # PG14's public schema allows CREATE by default.
@@ -141,16 +196,33 @@ def upgrade() -> None:
     owners = [op.get_bind().execute(sa.text("SELECT current_user")).scalar_one()]
     if _exists("ekklesia_migrator") and "ekklesia_migrator" not in owners:
         owners.append("ekklesia_migrator")
+    # A migrator cannot repair another creator's defaults. Bootstrap must
+    # reconcile these as superuser before handing ownership to the migrator.
+    unsafe_owners = op.get_bind().execute(sa.text("""
+        SELECT DISTINCT owner.rolname FROM pg_default_acl d
+        JOIN pg_roles owner ON owner.oid = d.defaclrole
+        CROSS JOIN LATERAL aclexplode(d.defaclacl) acl
+        LEFT JOIN pg_roles grantee ON grantee.oid = acl.grantee
+        WHERE d.defaclnamespace = 0 AND d.defaclobjtype IN ('r', 'S')
+          AND owner.rolname <> ALL(:owners)
+          AND (acl.grantee = 0 OR grantee.rolname IN
+              ('ekklesia_api', 'ekklesia_monitor', 'ekklesia_dashboard', 'ekklesia_backup'))
+    """), {"owners": owners}).all()
+    if unsafe_owners:
+        raise RuntimeError("Unsafe global default privileges remain for other creators; rerun scripts/ops/db-roles.sh as bootstrap superuser")
     # Apply to both legacy and migrator creators during the transition.
     for owner in owners:
         quoted_owner = op.get_bind().dialect.identifier_preparer.quote(owner)
-        prefix = f"ALTER DEFAULT PRIVILEGES FOR ROLE {quoted_owner} IN SCHEMA public"
-        op.execute(f"{prefix} REVOKE ALL ON TABLES FROM PUBLIC")
-        op.execute(f"{prefix} REVOKE ALL ON SEQUENCES FROM PUBLIC")
-        for role in RUNTIME_ROLES:
-            if _exists(role):
+        for scope in ("", " IN SCHEMA public"):
+            prefix = f"ALTER DEFAULT PRIVILEGES FOR ROLE {quoted_owner}{scope}"
+            op.execute(f"{prefix} REVOKE ALL ON TABLES FROM PUBLIC")
+            op.execute(f"{prefix} REVOKE ALL ON SEQUENCES FROM PUBLIC")
+            for role in RUNTIME_ROLES:
+                if not _exists(role):
+                    continue
                 op.execute(f"{prefix} REVOKE ALL ON TABLES FROM {role}")
                 op.execute(f"{prefix} REVOKE ALL ON SEQUENCES FROM {role}")
+        prefix = f"ALTER DEFAULT PRIVILEGES FOR ROLE {quoted_owner} IN SCHEMA public"
         if _exists("ekklesia_api"):
             op.execute(f"{prefix} GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ekklesia_api")
             op.execute(f"{prefix} GRANT USAGE, SELECT ON SEQUENCES TO ekklesia_api")

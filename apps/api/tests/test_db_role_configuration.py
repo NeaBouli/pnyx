@@ -23,7 +23,7 @@ def test_api_url_falls_back_without_changing_migration_source(api_url):
 
 def test_compose_role_url_defaults_and_migrator_is_one_shot():
     services = yaml.safe_load((ROOT / "infra/docker/docker-compose.prod.yml").read_text())["services"]
-    for name in ("api", "monitor", "dashboard", "migrator"):
+    for name in ("api", "monitor", "migrator"):
         env = services[name]["environment"]
         expected = f"{name.upper()}_DATABASE_URL"
         assert env["DATABASE_URL"].startswith("${" + expected + ":-postgresql")
@@ -32,6 +32,10 @@ def test_compose_role_url_defaults_and_migrator_is_one_shot():
     assert services["migrator"]["command"] == ["alembic", "upgrade", "head"]
     assert services["api"]["environment"]["MIGRATOR_DATABASE_URL"] == ""
     assert services["api"]["environment"]["POSTGRES_PASSWORD"] == ""
+    # Pre-PR dashboard configuration has no DB connection at all, including
+    # when the reserved DASHBOARD_DATABASE_URL is unset during rollback.
+    assert "DATABASE_URL" not in services["dashboard"]["environment"]
+    assert "env_file" not in services["dashboard"]
 
 
 @pytest.mark.parametrize("monitor_url", ["", "postgresql://ekklesia_monitor:test@localhost/pnyx_test_config"])

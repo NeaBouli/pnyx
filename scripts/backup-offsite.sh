@@ -19,6 +19,8 @@
 
 set +x
 set -euo pipefail
+# Keep the optional secret URI out of every child process environment.
+export -n BACKUP_DATABASE_URL
 # shellcheck source=scripts/lib/backup-encrypt.sh
 source "$(dirname "$0")/lib/backup-encrypt.sh"
 
@@ -34,15 +36,16 @@ LOCAL_BACKUP_DIR="/opt/backups/ekklesia"
 DB_NAME="${POSTGRES_DB:-ekklesia_prod}"
 DB_USER="${POSTGRES_USER:-ekklesia}"
 DB_CONTAINER="ekklesia-db"
-# Dedicated libpq URL; empty/unset retains the existing local-socket user.
-DB_CONNECTION=()
-if [[ -n "${BACKUP_DATABASE_URL:-}" ]]; then
-  DB_CONNECTION=(--env PGDATABASE --env PGPASSWORD=)
-  export PGDATABASE="${BACKUP_DATABASE_URL}"
-else
-  DB_CONNECTION=(--env PGUSER --env PGDATABASE)
-  export PGUSER="${DB_USER}" PGDATABASE="${DB_NAME}"
-fi
+# Empty/unset retains the existing local-socket user. The optional URI goes
+# only to the parser's stdin; Docker/libpq receive separate PG* components.
+export PGUSER="${DB_USER}" PGDATABASE="${DB_NAME}"
+db_exec() {
+  if [[ -n "${BACKUP_DATABASE_URL:-}" ]]; then
+    printf '%s' "${BACKUP_DATABASE_URL}" | python3 "$(dirname "$0")/lib/backup-db.py" "${DB_CONTAINER}" "$@"
+  else
+    docker exec --env PGUSER --env PGDATABASE "${DB_CONTAINER}" "$@"
+  fi
+}
 REDIS_CONTAINER="ekklesia-redis"
 
 DATE=$(date +%Y-%m-%d)
@@ -71,7 +74,7 @@ fi
 # ─── 1. PostgreSQL Dump ──────────────────────────────────────────────────────
 echo "${LOG_PREFIX} Dumping PostgreSQL..."
 mkdir -p "${LOCAL_BACKUP_DIR}/daily"
-docker exec "${DB_CONNECTION[@]}" "${DB_CONTAINER}" pg_dump --no-password -Fc \
+db_exec pg_dump --no-password -Fc \
   > "${LOCAL_BACKUP_DIR}/daily/db-${TIMESTAMP}.dump"
 
 # ─── 2. Redis Snapshot ───────────────────────────────────────────────────────
@@ -85,7 +88,7 @@ fi
 
 # ─── 3. Alembic State ────────────────────────────────────────────────────────
 echo "${LOG_PREFIX} Capturing migration state..."
-docker exec "${DB_CONNECTION[@]}" "${DB_CONTAINER}" psql --no-psqlrc --no-password \
+db_exec psql --no-psqlrc --no-password \
   -c "SELECT version_num FROM alembic_version;" \
   > "${LOCAL_BACKUP_DIR}/daily/alembic-${TIMESTAMP}.txt" 2>/dev/null || \
   echo "alembic_version unavailable" > "${LOCAL_BACKUP_DIR}/daily/alembic-${TIMESTAMP}.txt"

@@ -12,7 +12,7 @@ remain the bootstrap credentials for the existing volume, not the API login.
 | `ekklesia_api` | SELECT/INSERT/UPDATE/DELETE on application base tables, sequence USAGE/SELECT; no ownership, schema CREATE, TEMP, TRUNCATE or Alembic writes | `API_DATABASE_URL` |
 | `ekklesia_migrator` | Owns application schema, tables, sequences, enum/domain types and reporting views; DDL | `MIGRATOR_DATABASE_URL`, one-shot Alembic service only |
 | `ekklesia_monitor` | SELECT on the six aggregate views below; no base tables or sequences | `MONITOR_DATABASE_URL` |
-| `ekklesia_dashboard` | CONNECT/USAGE only; no data grants | `DASHBOARD_DATABASE_URL` (reserved) |
+| `ekklesia_dashboard` | CONNECT/USAGE only; no data grants | Reserved login; no credential delivered to dashboard |
 | `ekklesia_backup` | SELECT on all application tables/views and sequences, including private data and `alembic_version`; no writes | `BACKUP_DATABASE_URL` (backup cron) |
 
 All logins are NOSUPERUSER, NOCREATEDB, NOCREATEROLE, NOREPLICATION,
@@ -21,6 +21,12 @@ migrator-created tables/sequences maintain API DML and backup reads. New views
 are never automatically granted to monitor/dashboard. PUBLIC loses application
 table/sequence/column grants, schema CREATE and database TEMP; the old bootstrap
 superuser still works. The migrator owns application objects, not the database.
+Bootstrap explicitly revokes both global and `public` schema defaults for
+PUBLIC and all runtime roles, for every existing table/sequence creator plus
+the legacy and migrator creators. The migration repeats both revokes for its
+creators, then adds API/backup grants only within `public`. It fails explicitly
+if another creator still has unsafe global defaults; rerun bootstrap as the
+superuser before retrying. A schema-scoped revoke cannot cancel a global grant.
 Use a bootstrap **superuser** for the ops script; it changes database ACLs,
 ownership and logging settings. Application objects are expected in `public`.
 
@@ -33,17 +39,41 @@ The source audit was `rg -n 'execute|SELECT|FROM' apps/monitor/monitor.py` and
 | `monitor_lifecycle_stuck` | `check_lifecycle_stuck`: aggregate JSON list of overdue bill IDs, status and vote date, with the existing 30 minute update grace |
 | `monitor_lifecycle_fast_forward` | `check_lifecycle_fast_forward`: MIN lifecycle timestamps per bill; caller keeps newest ten anomalies |
 | `monitor_forum_missing` | `check_forum_missing`, `get_forum_missing_catalog` / `check_forum_completeness`: category counts; aggregate ID/title list only for public actionable bills; sensitive/hidden/demo/test categories expose counts only |
-| `monitor_zk_pending` | `check_zk_canary_health`: counts grouped by scope, group size, completed age hours and Parliament eligibility; no receipts, nullifiers, commitments or proofs |
+| `monitor_zk_pending` | `check_zk_canary_health`: release-guarded counts grouped by public Parliament scope, root size and fixed UTC receipt hour; no receipts, nullifiers, commitments or proofs |
 | `monitor_zk_health` | `check_zk_canary_health`: count of invalid root statuses |
 
-The ZK hour bucket uses `pending_hours >= configured_hours`, preserving the
-integer-hour threshold. Owner-rights, security-barrier views intentionally allow
+The ZK view enforces the `services.small_cell.publishable_set` choice/source
+rule inside PostgreSQL, including zero choices in each present Tier-1/ZK
+source. With suppression enabled, every observed UTC-hour/source/root-size/
+pending-state partition must also have all four choices at or above k. Any
+unsafe partition withholds the entire scope, including otherwise safe buckets;
+published/nonpending complements cannot be recovered by subtraction. Hidden,
+demo, canary, non-Parliament and unknown scopes are withheld. Invalid choices,
+missing roots/timestamps and root sizes below k also withhold a scope.
+
+The threshold is embedded in owner-controlled view SQL from the migrator's
+`PUBLIC_RESULTS_MIN_COUNT` at upgrade/reconciliation; readers cannot weaken it
+with `SET` or a connection option. Keep the API and migrator setting identical.
+Before **raising/enabling** the API threshold, reconcile this revision's
+`upgrade()` with the new setting in an Alembic transaction (use the reapply
+procedure below); a restart alone does not update the database rule. Lower the
+API threshold before lowering the database threshold. Unset/0 disables the
+small-cell checks, as in the API. This is suppression, not a privacy budget
+against observations as votes arrive.
+
+`pending_hours >= configured_hours` counts completed hours since the end of
+the fixed receipt hour. Alerts can be delayed by up to one additional hour,
+avoiding moving time boundaries that split an unchanged bucket. Owner-rights,
+security-barrier views intentionally allow
 aggregate reads without source-table grants. The monitor's API/Redis checks,
 recovery actions and Telegram delivery still use their existing credentials.
 The dashboard has **no PostgreSQL driver or SQL**: `src/lib/api.ts`,
 `src/lib/overview.ts` and `src/app/api/proxy/[...path]/route.ts` use HTTP. There
 are exactly zero dashboard views; its existing HTTP/admin authorization is
 independent of the reserved database login.
+The pre-PR Compose dashboard had no `DATABASE_URL` or database env file; that
+exact credential-free configuration is retained. `DASHBOARD_DATABASE_URL` is
+reserved and is not passed to the container, even when populated.
 
 ## 1. Backup, restore check and preflight
 
@@ -97,6 +127,11 @@ SELECT p.oid::regprocedure FROM pg_proc p JOIN pg_namespace n ON n.oid=p.proname
 SELECT r.rolname, parent.rolname AS member_of FROM pg_auth_members m
  JOIN pg_roles r ON r.oid=m.member JOIN pg_roles parent ON parent.oid=m.roleid
  WHERE r.rolname LIKE 'ekklesia_%'; -- new logins must have no memberships
+SELECT owner.rolname AS creator, d.defaclnamespace::regnamespace AS schema,
+       d.defaclobjtype, d.defaclacl
+ FROM pg_default_acl d JOIN pg_roles owner ON owner.oid=d.defaclrole
+ WHERE d.defaclobjtype IN ('r','S');
+-- Bootstrap removes PUBLIC/runtime global grants, including reused creator roles.
 ```
 
 Check the existing app schema against the ORM as usual: older migration history
@@ -147,15 +182,27 @@ Prepare percent-encoded URLs in the protected environment/secret manager:
 API_DATABASE_URL=postgresql+asyncpg://ekklesia_api:<encoded-password>@db:5432/<database>
 MIGRATOR_DATABASE_URL=postgresql+asyncpg://ekklesia_migrator:<encoded-password>@db:5432/<database>
 MONITOR_DATABASE_URL=postgresql://ekklesia_monitor:<encoded-password>@db:5432/<database>
-DASHBOARD_DATABASE_URL=postgresql://ekklesia_dashboard:<encoded-password>@db:5432/<database>
+# Dashboard uses HTTP only; leave its reserved URL empty (Compose does not pass it).
+DASHBOARD_DATABASE_URL=
 BACKUP_DATABASE_URL=postgresql://ekklesia_backup:<encoded-password>@127.0.0.1:5432/<database>
 ```
 
 Encode with `urllib.parse.quote(password, safe='')` inside secret provisioning;
 never paste passwords into command arguments or git. `db` is Compose DNS;
 `127.0.0.1` in the backup URL is inside `ekklesia-db`, where the script invokes
-pg_dump. The backup script forwards its URL as the `PGDATABASE` environment,
-not in the Docker or pg_dump command arguments, and uses TCP password auth.
+pg_dump. The optional URL path requires Python 3.9+ on the backup host (stdlib
+only). The script unexports the URL immediately and sends it only through the
+parser's stdin. The parser percent-decodes separate `PGHOST`, `PGPORT`, `PGUSER`,
+`PGPASSWORD` and `PGDATABASE` values; Docker receives environment **names**,
+with no URL or password in argv/logs. `PGDATABASE` is always a literal database
+name: libpq does not interpret a URI supplied through that environment variable.
+Absent/empty URLs keep the original `POSTGRES_USER`/`POSTGRES_DB` socket path.
+The optional URI accepts `postgresql://` or `postgres://`, IPv6 and common
+libpq TLS options (`sslmode`, `sslcert`, `sslkey`, `sslrootcert`, `sslcrl`,
+`sslcrldir`, `ssl_min_protocol_version`, `ssl_max_protocol_version`), plus
+`connect_timeout`, `application_name`, `target_session_attrs`, `channel_binding`
+and `gssencmode`. Duplicate/unknown options, credential/host overrides,
+fragments and malformed URLs fail with a generic error that omits the input.
 
 Persist the URLs in `/opt/ekklesia/.env.production` with operator-only access,
 but do not recreate long-lived services until the migration has succeeded.
@@ -193,7 +240,40 @@ Do not downgrade an installation containing later revisions just to reconcile
 ACLs; have its operator run this revision's idempotent `upgrade()` in an Alembic
 transaction instead. The migration creates no roles or passwords and is safe
 when roles are absent, so deployment may precede bootstrap. It must run before
-the new monitor code; unset/empty role URLs retain the existing single user.
+the new monitor code; unset/empty API, migrator, monitor and backup URLs retain
+their existing single-user paths. Dashboard always keeps its HTTP-only setup.
+
+For a threshold change or an already-applied revision, reconcile without
+changing the Alembic version (after updating the protected environment):
+
+```bash
+dc --profile ops run --rm -T migrator python - <<'PY'
+import asyncio
+import importlib.util
+from alembic.migration import MigrationContext
+from alembic.operations import Operations
+from sqlalchemy.ext.asyncio import create_async_engine
+from config import settings
+
+def reconcile(connection):
+    spec = importlib.util.spec_from_file_location(
+        'db_roles', 'alembic/versions/z901a2b3c4d5_separate_database_roles.py')
+    revision = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(revision)
+    with Operations.context(MigrationContext.configure(connection)):
+        revision.upgrade()
+
+async def main():
+    engine = create_async_engine(settings.migrator_database_url or settings.database_url)
+    try:
+        async with engine.begin() as connection:
+            await connection.run_sync(reconcile)
+    finally:
+        await engine.dispose()
+
+asyncio.run(main())
+PY
+```
 
 ## 4. Switch and verify services one at a time
 
@@ -207,7 +287,8 @@ Do not run a bulk `compose up`. Verify the preceding stage before each switch.
    disable external delivery/recovery. Do not run ad-hoc full cycles as a SQL probe.
 2. **Dashboard:** `dc up -d --no-deps --build dashboard`. Check authenticated
    overview, bills, statistics, monitor and proxy routes. Its HTTP behavior is
-   unchanged; its reserved DB login must fail every base-table/view probe.
+   unchanged and its container receives no database credential. Probe the
+   reserved DB login separately; it must fail every base-table/view probe.
 3. **API:** `dc stop api`, then `dc up -d --no-deps --build api` (existing deploy
    guard). Check `/health`, `/api/v1/health/modules`, bill listing and admin
    stats. Complete a synthetic identity/vote/correction flow in staging to
@@ -280,12 +361,17 @@ python -m pytest -q tests/test_db_roles_pg.py tests/test_db_role_configuration.p
   tests/test_monitor_hidden_bills.py tests/test_monitor_zk_canary_health.py
 # Repository root: stdlib wrapper/backup credential tests (no network).
 python3 -m unittest discover -s scripts/tests -p test_db_roles.py
+# Optional socket-only disposable cluster: real SQL/view/backup regression tests.
+# Set PGHOST/PGPORT/PGUSER/PGDATABASE and use psql >=15 on PATH.
+PNYX_TEST_POSTGRES_SOCKET="$PGHOST" python3 -m unittest discover -s scripts/tests -p test_db_roles_sql.py
 ```
 
 ## Rollback
 
-Restore each affected role URL to its saved old URL, or unset/empty the five
-new URL variables; keep the original POSTGRES bootstrap values. Recreate API,
+Restore each affected API/migrator/monitor/backup URL to its saved old URL, or
+unset/empty those four new variables; keep the original POSTGRES bootstrap
+values. The dashboard receives no database credential in either direction;
+leave its reserved URL empty. Recreate API,
 monitor and dashboard individually with the same commands and reload the backup
 cron environment. For direct Python/Alembic processes, also restore `DATABASE_URL`
 to the saved legacy value. Verify health and a backup restore again.

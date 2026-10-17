@@ -161,7 +161,6 @@ services:
     restart: unless-stopped
     logging: *default-logging
     environment:
-      DATABASE_URL: ${DASHBOARD_DATABASE_URL:-postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}}
       NEXTAUTH_URL: https://dashboard.ekklesia.gr
       NEXTAUTH_SECRET: ${DASHBOARD_SECRET}
       AUTH_GITHUB_ID: ${DASHBOARD_GITHUB_ID}

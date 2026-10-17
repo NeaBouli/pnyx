@@ -38,6 +38,29 @@ ALTER ROLE ekklesia_monitor PASSWORD :'monitor_password';
 ALTER ROLE ekklesia_dashboard PASSWORD :'dashboard_password';
 ALTER ROLE ekklesia_backup PASSWORD :'backup_password';
 
+-- Schema-level revokes cannot cancel global defaults. Reconcile every existing
+-- creator with table/sequence defaults, plus both transition creators, while
+-- still connected as the bootstrap superuser. Migration adds public-only grants.
+DO $$
+DECLARE creator text; scope text; grantee text; object_kind text;
+BEGIN
+    FOR creator IN
+        SELECT current_user::text UNION SELECT 'ekklesia_migrator'
+        UNION SELECT r.rolname::text FROM pg_default_acl d
+              JOIN pg_roles r ON r.oid = d.defaclrole WHERE d.defaclobjtype IN ('r', 'S')
+    LOOP
+        FOREACH scope IN ARRAY ARRAY['', ' IN SCHEMA public'] LOOP
+            FOREACH grantee IN ARRAY ARRAY['PUBLIC', 'ekklesia_api', 'ekklesia_monitor', 'ekklesia_dashboard', 'ekklesia_backup'] LOOP
+                FOREACH object_kind IN ARRAY ARRAY['TABLES', 'SEQUENCES'] LOOP
+                    EXECUTE format('ALTER DEFAULT PRIVILEGES FOR ROLE %I%s REVOKE ALL ON %s FROM %s',
+                        creator, scope, object_kind,
+                        CASE WHEN grantee = 'PUBLIC' THEN 'PUBLIC' ELSE quote_ident(grantee) END);
+                END LOOP;
+            END LOOP;
+        END LOOP;
+    END LOOP;
+END $$;
+
 -- Scope ownership transfer to application objects, never REASSIGN OWNED (which
 -- could transfer bootstrap-owned extension/system objects or other databases).
 ALTER SCHEMA public OWNER TO ekklesia_migrator;

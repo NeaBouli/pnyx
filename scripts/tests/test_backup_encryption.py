@@ -55,6 +55,7 @@ class BackupEncryptionTest(unittest.TestCase):
         self.script.write_text(SCRIPT.read_text().replace('LOCAL_BACKUP_DIR="/opt/backups/ekklesia"', f'LOCAL_BACKUP_DIR="{self.backups}"'))
         (self.tmp / "lib").mkdir()
         shutil.copy(REPO / "scripts" / "lib" / "backup-encrypt.sh", self.tmp / "lib" / "backup-encrypt.sh")
+        shutil.copy(REPO / "scripts" / "lib" / "backup-db.py", self.tmp / "lib" / "backup-db.py")
 
     def tearDown(self) -> None:
         shutil.rmtree(self.tmp, ignore_errors=True)
