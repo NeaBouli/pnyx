@@ -1,7 +1,19 @@
 # Web identity key loss and recovery
 
-T-9139 · 2026-10-17 · Proposal after #599/#614; owner decisions pending.
+T-9139 · 2026-10-17 · Design after #599/#614.
+Status: Accepted in part — holder proof and legacy takeover-risk policy,
+support for users without the app, multi-device authority/revocation and
+privacy/retention remain open.
 Evidence is local; browser policy links were not fetched (offline task).
+
+## Decision record 2026-10-17
+
+Owner: gio-1c (technical), under Gio standing yes.
+
+Accepted: the mobile app provides primary key custody; web uses QR login, shows
+a clear “Key not found on this browser” notice after confirmed key absence,
+and offers no key export. The remaining recovery decisions stay open as listed
+below.
 
 ## What can fail, and how realistic is it?
 
@@ -125,17 +137,16 @@ implementation references with the originals before approving a recovery design.
   `docs/operations/PUBLIC_RESULTS_PRIVACY.md:3`, `scripts/lib/backup-encrypt.sh:2`).
   Recovery metadata and any hosted encrypted payload need retention/privacy review.
 
-Recommend mobile custody plus QR, clear browser-loss detection and honest
-Compass loss disclosure first. Keep export/PRF and multi-device as separate
-designs. The FAQ's automatic passkey-sync promise needs correction in a later
+Use mobile custody plus QR login on web, clear browser-loss detection and honest
+Compass loss disclosure first; no key export. Keep multi-device as a separate
+design. The FAQ's automatic passkey-sync promise needs correction in a later
 task (`docs/wiki/faq.html:334`).
 
-Gio/product and security owners must decide: (1) acceptable holder proof and
-legacy takeover-risk policy before offering replacement; (2) whether encrypted
-backup justifies an exception to non-extractability, and whether it includes
-Compass; (3) mobile-first positioning and support for users without the app;
-(4) single-key versus multiple-device authority, revocation and privacy/retention.
-No production flags or recovery guarantees follow from this proposal.
+Gio/product and security owners still must decide: (1) acceptable holder proof and
+legacy takeover-risk policy before offering replacement; (2) support for users
+without the app; (3) single-key versus multiple-device authority, revocation and
+privacy/retention.
+No production flags or recovery guarantees follow from this decision record.
 
 ## Proposed UX copy (EL / EN)
 
