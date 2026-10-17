@@ -5,6 +5,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env")
 
     database_url: str = "postgresql+asyncpg://ekklesia:devpassword@localhost/ekklesia"
+    api_database_url: str = ""
+    migrator_database_url: str = ""
     redis_url: str = "redis://localhost:6379"
     server_salt: str = "dev-salt-change-in-production"
     anthropic_api_key: str = ""

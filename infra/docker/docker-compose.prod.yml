@@ -49,7 +49,9 @@ services:
     env_file:
       - /opt/ekklesia/.env.production
     environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      DATABASE_URL: ${API_DATABASE_URL:-postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}}
+      MIGRATOR_DATABASE_URL: ""
+      POSTGRES_PASSWORD: ""
       REDIS_URL: redis://redis:6379
       OLLAMA_URL: http://ollama:11434
       ENVIRONMENT: production
@@ -78,6 +80,22 @@ services:
       - traefik.http.middlewares.api-headers.headers.stsPreload=true
       - traefik.http.middlewares.api-headers.headers.customResponseHeaders.X-Robots-Tag=noindex
       - traefik.http.routers.ekklesia-api.middlewares=api-headers
+
+  migrator:
+    profiles: ["ops"]
+    build:
+      context: ../../
+      dockerfile: apps/api/Dockerfile.prod
+    env_file:
+      - /opt/ekklesia/.env.production
+    environment:
+      DATABASE_URL: ${MIGRATOR_DATABASE_URL:-postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}}
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - ekklesia
 
   web:
     build:
@@ -143,6 +161,7 @@ services:
     restart: unless-stopped
     logging: *default-logging
     environment:
+      DATABASE_URL: ${DASHBOARD_DATABASE_URL:-postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}}
       NEXTAUTH_URL: https://dashboard.ekklesia.gr
       NEXTAUTH_SECRET: ${DASHBOARD_SECRET}
       AUTH_GITHUB_ID: ${DASHBOARD_GITHUB_ID}
@@ -186,7 +205,7 @@ services:
     restart: unless-stopped
     logging: *default-logging
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      DATABASE_URL: ${MONITOR_DATABASE_URL:-postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}}
       REDIS_URL: redis://redis:6379
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       TELEGRAM_ADMIN_CHAT_ID: ${TELEGRAM_ADMIN_CHAT_ID}

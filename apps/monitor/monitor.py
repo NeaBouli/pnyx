@@ -63,7 +63,7 @@ _install_secret_redaction_filter()
 
 # ─── Config ──────────────────────────────────────────────────────────────────
 
-DB_URL = os.getenv("DATABASE_URL", "postgresql://ekklesia:devpassword@db:5432/ekklesia_prod")
+DB_URL = os.getenv("MONITOR_DATABASE_URL") or os.getenv("DATABASE_URL", "postgresql://ekklesia:devpassword@db:5432/ekklesia_prod")
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
 TG_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TG_CHAT = os.getenv("TELEGRAM_ADMIN_CHAT_ID", "")
@@ -111,43 +111,6 @@ FORUM_MISSING_CATEGORIES = (
     "sync_grace",
     "lifecycle_not_eligible",
 )
-
-# Every row without a topic receives exactly one category. The CASE order is
-# intentional: technical/demo identity is more specific than visibility flags.
-FORUM_MISSING_CLASSIFICATION_SQL = """
-    SELECT id, title_el,
-           CASE
-               WHEN COALESCE(source, '') = 'ZK_CANARY'
-                    OR id LIKE 'ZK-CANARY-%%'
-                   THEN 'technical_test'
-               WHEN id LIKE 'DEMO-%%'
-                   THEN 'demo_legacy'
-               WHEN COALESCE(admin_hidden, FALSE) = TRUE
-                   THEN 'operator_hidden'
-               WHEN source = 'DIAVGEIA'
-                    AND (
-                        LOWER(COALESCE(title_el, '')) LIKE ANY (ARRAY['%%αμκα%%', '%%α.μ.κ.α%%', '%%amka%%', '%%ασθεν%%', '%%εοπυυ%%', '%%eopyy%%'])
-                        OR LOWER(COALESCE(summary_short_el, '')) LIKE ANY (ARRAY['%%αμκα%%', '%%α.μ.κ.α%%', '%%amka%%', '%%ασθεν%%', '%%εοπυυ%%', '%%eopyy%%'])
-                        OR LOWER(COALESCE(summary_long_el, '')) LIKE ANY (ARRAY['%%αμκα%%', '%%α.μ.κ.α%%', '%%amka%%', '%%ασθεν%%', '%%εοπυυ%%', '%%eopyy%%'])
-                    )
-                   THEN 'sensitive_diavgeia'
-               WHEN status IN ('ACTIVE', 'WINDOW_24H', 'OPEN_END')
-                    AND (
-                        (COALESCE(source, 'PARLIAMENT') = 'PARLIAMENT'
-                         AND created_at < NOW() - INTERVAL '1 hour')
-                        OR
-                        (COALESCE(source, 'PARLIAMENT') != 'PARLIAMENT'
-                         AND created_at < NOW() - INTERVAL '6 hours')
-                    )
-                   THEN 'public_actionable'
-               WHEN status IN ('ACTIVE', 'WINDOW_24H', 'OPEN_END')
-                   THEN 'sync_grace'
-               ELSE 'lifecycle_not_eligible'
-           END AS category
-    FROM parliament_bills
-    WHERE forum_topic_id IS NULL
-"""
-
 
 # ─── Alert Dataclass ─────────────────────────────────────────────────────────
 
@@ -664,7 +627,7 @@ def check_scraper_stale(r) -> list[Alert]:
 def check_no_new_bills(conn) -> list[Alert]:
     alerts = []
     with conn.cursor() as cur:
-        cur.execute("SELECT MAX(created_at) FROM parliament_bills")
+        cur.execute("SELECT latest_created_at FROM public.monitor_bill_health")
         latest = cur.fetchone()[0]
         if latest:
             age = (datetime.now() - latest).days
@@ -709,13 +672,7 @@ def _latest_source_activity(bills: list[dict]) -> datetime | None:
 def _db_latest_parliament_activity(conn) -> datetime | None:
     with conn.cursor() as cur:
         cur.execute("""
-            SELECT MAX(GREATEST(
-                COALESCE(parliament_vote_date, TIMESTAMP '1970-01-01'),
-                COALESCE(submitted_date, TIMESTAMP '1970-01-01')
-            ))
-            FROM parliament_bills
-            WHERE source = 'PARLIAMENT'
-              AND id NOT LIKE 'DEMO-%%'
+            SELECT latest_parliament_activity FROM public.monitor_bill_health
         """)
         return _as_utc_datetime(cur.fetchone()[0])
 
@@ -809,15 +766,12 @@ def check_parliament_source_freshness(conn) -> list[Alert]:
 
 def check_lifecycle_stuck(conn, r=None) -> list[Alert]:
     alerts = []
-    now = datetime.now()
     with conn.cursor() as cur:
         cur.execute("""
-            SELECT id, status, parliament_vote_date FROM parliament_bills
-            WHERE parliament_vote_date IS NOT NULL
-              AND parliament_vote_date < %s
-              AND COALESCE(updated_at, TIMESTAMP '1970-01-01') < %s
-              AND status IN ('ANNOUNCED', 'ACTIVE', 'WINDOW_24H')
-        """, (now - timedelta(days=1), now - timedelta(minutes=30)))
+            SELECT bill.id, bill.status, bill.parliament_vote_date
+            FROM public.monitor_lifecycle_stuck,
+                 jsonb_to_recordset(bills) AS bill(id text, status text, parliament_vote_date timestamp)
+        """)
         for bill_id, status, vote_date in cur.fetchall():
             # Cooldown: suppress same bill alert for 1h
             if r:
@@ -839,35 +793,8 @@ def check_lifecycle_fast_forward(conn) -> list[Alert]:
     alerts = []
     with conn.cursor() as cur:
         cur.execute("""
-            WITH lifecycle AS (
-                SELECT
-                    l.bill_id,
-                    MIN(l.changed_at) FILTER (
-                        WHERE l.from_status = 'ANNOUNCED'
-                          AND l.to_status = 'ACTIVE'
-                    ) AS active_at,
-                    MIN(l.changed_at) FILTER (
-                        WHERE l.from_status = 'ACTIVE'
-                          AND l.to_status = 'WINDOW_24H'
-                    ) AS window_at,
-                    MIN(l.changed_at) FILTER (
-                        WHERE l.from_status = 'WINDOW_24H'
-                          AND l.to_status = 'PARLIAMENT_VOTED'
-                    ) AS voted_at
-                FROM bill_status_logs l
-                JOIN parliament_bills b ON b.id = l.bill_id
-                WHERE l.changed_at > NOW() - INTERVAL '24 hours'
-                  AND b.id NOT LIKE 'DEMO-%%'
-                  AND COALESCE(b.admin_hidden, FALSE) = FALSE
-                  AND COALESCE(b.source, 'PARLIAMENT') = 'PARLIAMENT'
-                GROUP BY l.bill_id
-            )
             SELECT bill_id, active_at, window_at, voted_at
-            FROM lifecycle
-            WHERE active_at IS NOT NULL
-              AND window_at IS NOT NULL
-              AND voted_at IS NOT NULL
-              AND voted_at - window_at < INTERVAL '24 hours'
+            FROM public.monitor_lifecycle_fast_forward
             ORDER BY voted_at DESC
             LIMIT 10
         """)
@@ -889,9 +816,10 @@ def check_lifecycle_fast_forward(conn) -> list[Alert]:
 def check_forum_missing(conn) -> list[Alert]:
     alerts = []
     with conn.cursor() as cur:
-        cur.execute(f"""
-            SELECT id, title_el
-            FROM ({FORUM_MISSING_CLASSIFICATION_SQL}) AS forum_missing
+        cur.execute("""
+            SELECT bill.id, bill.title_el
+            FROM public.monitor_forum_missing,
+                 jsonb_to_recordset(actionable_bills) AS bill(id text, title_el text)
             WHERE category = 'public_actionable'
         """)
         for bill_id, title in cur.fetchall():
@@ -904,10 +832,8 @@ def get_forum_missing_catalog(conn) -> dict[str, int]:
     """Return aggregate counts for every bill without a forum topic."""
     catalog = {category: 0 for category in FORUM_MISSING_CATEGORIES}
     with conn.cursor() as cur:
-        cur.execute(f"""
-            SELECT category, COUNT(*)
-            FROM ({FORUM_MISSING_CLASSIFICATION_SQL}) AS forum_missing
-            GROUP BY category
+        cur.execute("""
+            SELECT category, bill_count FROM public.monitor_forum_missing
         """)
         for category, count in cur.fetchall():
             if category not in catalog:
@@ -920,13 +846,7 @@ def check_arweave_pending(conn) -> list[Alert]:
     alerts = []
     with conn.cursor() as cur:
         cur.execute("""
-            SELECT COUNT(*) FROM parliament_bills
-            WHERE status IN ('PARLIAMENT_VOTED', 'OPEN_END')
-              AND arweave_tx_id IS NULL
-              AND party_votes_parliament IS NOT NULL
-              AND id NOT LIKE 'DEMO-%%'
-              AND source = 'PARLIAMENT'
-              AND (status_changed_at IS NULL OR status_changed_at < NOW() - INTERVAL '24 hours')
+            SELECT arweave_pending FROM public.monitor_bill_health
         """)
         count = cur.fetchone()[0]
         if count > 0:
@@ -1037,12 +957,12 @@ def check_disk_usage() -> list[Alert]:
 def check_db_consistency(conn) -> list[Alert]:
     alerts = []
     with conn.cursor() as cur:
-        cur.execute("SELECT COUNT(*) FROM parliament_bills WHERE source IS NULL AND id NOT LIKE 'DEMO-%%'")
+        cur.execute("SELECT null_source FROM public.monitor_bill_health")
         null_source = cur.fetchone()[0]
         if null_source > 0:
             alerts.append(Alert("db_inconsistent", "", "warning",
                                 f"DB: {null_source} Bills ohne source", False))
-        cur.execute("SELECT COUNT(*) FROM parliament_bills WHERE governance_level IS NULL AND id NOT LIKE 'DEMO-%%'")
+        cur.execute("SELECT null_governance FROM public.monitor_bill_health")
         null_gov = cur.fetchone()[0]
         if null_gov > 0:
             alerts.append(Alert("db_inconsistent", "", "warning",
@@ -1191,28 +1111,10 @@ def check_zk_canary_health(conn) -> list[Alert]:
             elif ZK_ARWEAVE_PUBLICATION_ENABLED:
                 cur.execute(
                     """
-                    SELECT COUNT(*)
-                    FROM zk_vote_receipts r
-                    LEFT JOIN parliament_bills b
-                      ON r.vote_scope_id = ('bill:' || b.id)
-                    LEFT JOIN zk_merkle_roots root
-                      ON root.vote_scope_id = r.vote_scope_id
-                     AND root.merkle_root = r.merkle_root
-                    WHERE r.arweave_pending = TRUE
-                      AND r.created_at < NOW() - (%s * INTERVAL '1 hour')
-                      AND root.group_size >= %s
-                      AND (
-                        r.vote_scope_id = ANY(%s)
-                        OR (
-                          %s = TRUE
-                          AND b.source = 'PARLIAMENT'
-                          AND COALESCE(b.admin_hidden, FALSE) IS NOT TRUE
-                          AND b.status::text IN ('ACTIVE', 'WINDOW_24H', 'OPEN_END')
-                          AND b.id NOT LIKE 'DEMO-%%'
-                        )
-                      )
-                      AND COALESCE(b.admin_hidden, FALSE) IS NOT TRUE
-                      AND COALESCE(b.source, '') <> 'ZK_CANARY'
+                    SELECT COALESCE(SUM(receipt_count), 0)
+                    FROM public.monitor_zk_pending
+                    WHERE pending_hours >= %s AND group_size >= %s
+                      AND (vote_scope_id = ANY(%s) OR (%s = TRUE AND parliament_eligible))
                     """,
                     (
                         ZK_PENDING_MAX_HOURS,
@@ -1236,9 +1138,7 @@ def check_zk_canary_health(conn) -> list[Alert]:
 
             cur.execute(
                 """
-                SELECT COUNT(*)
-                FROM zk_merkle_roots
-                WHERE status NOT IN ('OPEN', 'CLOSED', 'ARCHIVED')
+                SELECT invalid_roots FROM public.monitor_zk_health
                 """
             )
             invalid_roots = cur.fetchone()[0]

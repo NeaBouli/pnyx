@@ -5,7 +5,7 @@ from config import settings
 # hide_parameters: DBAPI errors must not carry bound values (nullifiers,
 # public keys) into logs or Sentry exception text (EVA-036 review T-9101).
 engine = create_async_engine(
-    settings.database_url,
+    settings.api_database_url or settings.database_url,
     echo=settings.env == "development",
     hide_parameters=True,
 )
