@@ -3,7 +3,7 @@ import gzip
 import logging
 import sys
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import httpx
 import pytest
@@ -109,8 +109,34 @@ async def test_document_body_limit_stops_stream_and_closes(monkeypatch, compress
     assert closed == [True] and route.call_count == 1
 
 
+@pytest.mark.parametrize("encoding", ["gzip", "deflate", "br", "gzip, br", "unknown"])
 @respx.mock
-async def test_document_at_body_limit_preserves_split_utf8(monkeypatch):
+async def test_encoded_document_is_skipped_before_reading_or_decoding(monkeypatch, encoding):
+    closed = []
+
+    class EncodedBody(httpx.AsyncByteStream):
+        async def __aiter__(self):
+            raise AssertionError("An encoded body must never be read")
+            yield b""
+
+        async def aclose(self):
+            closed.append(True)
+
+    def decoded_body(*args, **kwargs):
+        raise AssertionError("Document downloads must not use HTTPX decompression")
+
+    monkeypatch.setattr(httpx.Response, "aiter_bytes", decoded_body)
+    route = respx.get(DOCUMENT).mock(return_value=httpx.Response(
+        200, headers={"content-type": "text/plain", "content-encoding": encoding}, stream=EncodedBody(),
+    ))
+    assert await fetcher._fetch_bill_text_result("id", DOCUMENT) == ("", "skipped")
+    assert route.call_count == 1 and closed == [True]
+    assert route.calls[0].request.headers["accept-encoding"] == "identity"
+
+
+@pytest.mark.parametrize("encoding", [None, "identity", " Identity "])
+@respx.mock
+async def test_document_at_body_limit_preserves_split_utf8(monkeypatch, encoding):
     body = TEXT.encode()
     monkeypatch.setattr(fetcher, "MAX_DOCUMENT_BYTES", len(body))
 
@@ -120,9 +146,10 @@ async def test_document_at_body_limit_preserves_split_utf8(monkeypatch):
             yield body[1:3]
             yield body[3:]
 
-    respx.get(DOCUMENT).mock(return_value=httpx.Response(
-        200, headers={"content-type": "text/plain; charset=utf-8"}, stream=TextBody(),
-    ))
+    headers = {"content-type": "text/plain; charset=utf-8"}
+    if encoding is not None:
+        headers["content-encoding"] = encoding
+    respx.get(DOCUMENT).mock(return_value=httpx.Response(200, headers=headers, stream=TextBody()))
     assert await fetcher._fetch_bill_text_result("id", DOCUMENT) == (TEXT.strip(), "fetched")
 
 
@@ -174,6 +201,7 @@ async def test_attempt_deadline_bounds_trickling_body_and_retries(monkeypatch, s
 @pytest.mark.parametrize("blocked_stage", ["launch", "new_page", "goto", "inner_text", "close", "goto_and_close"])
 async def test_browser_attempt_has_overall_deadline(monkeypatch, offline_http_client, blocked_stage):
     monkeypatch.setattr(fetcher, "TIMEOUT", 0.03)
+    monkeypatch.setattr(fetcher, "PLAYWRIGHT_TEARDOWN_TIMEOUT", 0.02)
     monkeypatch.setattr(fetcher, "MAX_RETRIES", 1)
     reached = []
 
@@ -206,6 +234,70 @@ async def test_browser_attempt_has_overall_deadline(monkeypatch, offline_http_cl
     assert await asyncio.wait_for(fetcher._channel_playwright(LAW), timeout=5) == ""
     assert reached
     if blocked_stage != "launch":
+        browser.close.assert_awaited_once()
+
+
+@pytest.mark.parametrize("blocked_stage", [None, "enter", "launch", "goto", "close", "goto_and_close"])
+@pytest.mark.parametrize("slow_cancellation", [False, True])
+async def test_browser_context_teardown_is_bounded_and_kills_driver(
+    monkeypatch, offline_http_client, blocked_stage, slow_cancellation,
+):
+    monkeypatch.setattr(fetcher, "TIMEOUT", 0.05)
+    monkeypatch.setattr(fetcher, "PLAYWRIGHT_TEARDOWN_TIMEOUT", 0.02)
+    monkeypatch.setattr(fetcher, "MAX_RETRIES", 1)
+    killed = asyncio.Event()
+    exited = asyncio.Event()
+    stopped = asyncio.Event()
+
+    async def block(*args, **kwargs):
+        await asyncio.Event().wait()
+
+    page = SimpleNamespace(
+        route=AsyncMock(), goto=AsyncMock(return_value=SimpleNamespace(status=200)),
+        inner_text=AsyncMock(return_value=TEXT),
+    )
+    browser = SimpleNamespace(new_page=AsyncMock(return_value=page), close=AsyncMock())
+    chromium = SimpleNamespace(launch=AsyncMock(return_value=browser))
+    if blocked_stage == "launch":
+        chromium.launch.side_effect = block
+    if blocked_stage in ("goto", "goto_and_close"):
+        page.goto.side_effect = block
+    if blocked_stage in ("close", "goto_and_close"):
+        browser.close.side_effect = block
+
+    def kill():
+        process.returncode = -9
+        killed.set()
+
+    process = SimpleNamespace(returncode=None, kill=Mock(side_effect=kill))
+
+    class Playwright:
+        _connection = SimpleNamespace(_transport=SimpleNamespace(_proc=process))
+
+        async def __aenter__(self):
+            if blocked_stage == "enter":
+                await block()
+            return SimpleNamespace(chromium=chromium)
+
+        async def __aexit__(self, *args):
+            exited.set()
+            try:
+                await block()
+            except asyncio.CancelledError:
+                if slow_cancellation:
+                    await killed.wait()
+                else:
+                    raise
+            finally:
+                stopped.set()
+
+    monkeypatch.setitem(sys.modules, "playwright", SimpleNamespace())
+    monkeypatch.setitem(sys.modules, "playwright.async_api", SimpleNamespace(async_playwright=Playwright))
+    assert await asyncio.wait_for(fetcher._channel_playwright(LAW), timeout=4 * fetcher.TIMEOUT) == ""
+    assert exited.is_set()
+    process.kill.assert_called_once_with()
+    await asyncio.wait_for(stopped.wait(), timeout=0.1)
+    if blocked_stage not in ("enter", "launch"):
         browser.close.assert_awaited_once()
 
 

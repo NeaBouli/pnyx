@@ -6,7 +6,7 @@ import asyncio
 import logging
 import os
 import re
-from asyncio import timeout as attempt_timeout, timeout_at
+from asyncio import CancelledError, create_task, timeout as attempt_timeout, timeout_at, wait
 from urllib.parse import urlsplit
 
 import httpx
@@ -113,6 +113,7 @@ MAX_TEXT_LENGTH = 8000
 MAX_DOCUMENT_BYTES = 1024 * 1024
 MAX_RETRIES = 2
 TIMEOUT = 30
+PLAYWRIGHT_TEARDOWN_TIMEOUT = 2
 
 
 # ─── Kanal 1: Jina Markdown ─────────────────────────────────────────────────
@@ -308,6 +309,44 @@ async def _channel_ollama_extract(url: str) -> str:
 
 # ─── Kanal 4: Playwright Headless Chromium (Not-Instanz) ─────────────────────
 
+async def _teardown_playwright(manager, browser) -> None:
+    """Bound both cleanup steps, including after launch or navigation times out."""
+    def consume_result(task):
+        if not task.cancelled():
+            task.exception()
+
+    error = None
+    steps = ([browser.close] if browser is not None else []) + [
+        lambda: manager.__aexit__(None, None, None),
+    ]
+    for close in steps:
+        task = create_task(close())
+        try:
+            # wait_for can itself hang while waiting for cancellation to finish.
+            done, _ = await wait({task}, timeout=PLAYWRIGHT_TEARDOWN_TIMEOUT)
+            if not done:
+                raise TimeoutError("Playwright teardown deadline exceeded")
+            task.result()
+        except (Exception, CancelledError) as exc:
+            task.cancel()
+            task.add_done_callback(consume_result)
+            # Playwright has no public force-stop API. Kill only this manager's
+            # driver, including when launch never returned a browser handle.
+            connection = getattr(manager, "_connection", None)
+            transport = getattr(connection, "_transport", None)
+            process = getattr(transport, "_proc", None)
+            if process is not None and process.returncode is None:
+                try:
+                    process.kill()
+                except ProcessLookupError:
+                    pass
+            if isinstance(exc, CancelledError):
+                raise
+            error = error or exc
+    if error is not None:
+        raise error
+
+
 async def _channel_playwright(url: str) -> str:
     """Playwright headless Chromium — renders JS fully. Optional, skipped if not installed."""
     try:
@@ -318,31 +357,34 @@ async def _channel_playwright(url: str) -> str:
 
     for attempt in range(MAX_RETRIES):
         try:
-            async with attempt_timeout(TIMEOUT) as deadline, async_playwright() as p:
-                host_limiter.check(url)
-                browser = await p.chromium.launch(headless=True)
+            manager = async_playwright()
+            browser = None
+            try:
+                async with attempt_timeout(TIMEOUT) as deadline:
+                    p = await manager.__aenter__()
+                    host_limiter.check(url)
+                    browser = await p.chromium.launch(headless=True)
 
-                async def paced_route(route):
-                    try:
-                        # Send browser traffic through HTTPX too: Playwright's
-                        # routing alone does not intercept every redirect hop.
-                        # Route callbacks can run in separate asyncio tasks.
-                        async with timeout_at(deadline.when()):
-                            response = await browser_http.request(
-                                route.request.method, route.request.url,
-                                headers=await route.request.all_headers(),
-                                content=route.request.post_data_buffer,
-                                extensions={"scraper_source_url": url},
-                            )
-                            headers = {
-                                key: value for key, value in response.headers.items()
-                                if key not in ("content-encoding", "content-length", "transfer-encoding")
-                            }
-                            await route.fulfill(status=response.status_code, headers=headers, body=response.content)
-                    except (HostCooldown, httpx.RequestError, TimeoutError):
-                        await route.abort()
+                    async def paced_route(route):
+                        try:
+                            # Send browser traffic through HTTPX too: Playwright's
+                            # routing alone does not intercept every redirect hop.
+                            # Route callbacks can run in separate asyncio tasks.
+                            async with timeout_at(deadline.when()):
+                                response = await browser_http.request(
+                                    route.request.method, route.request.url,
+                                    headers=await route.request.all_headers(),
+                                    content=route.request.post_data_buffer,
+                                    extensions={"scraper_source_url": url},
+                                )
+                                headers = {
+                                    key: value for key, value in response.headers.items()
+                                    if key not in ("content-encoding", "content-length", "transfer-encoding")
+                                }
+                                await route.fulfill(status=response.status_code, headers=headers, body=response.content)
+                        except (HostCooldown, httpx.RequestError, TimeoutError):
+                            await route.abort()
 
-                try:
                     page = await browser.new_page(user_agent=USER_AGENT, service_workers="block")
                     # Browser redirects and subresources also need host pacing.
                     await page.route("**/*", paced_route)
@@ -354,20 +396,17 @@ async def _channel_playwright(url: str) -> str:
                             host_limiter.check(url)
                             return ""
                         content = await page.inner_text("body")
-                finally:
-                    # Cleanup shares the attempt's remaining budget, including
-                    # when cancellation arrives during page operations.
-                    async with timeout_at(deadline.when()):
-                        await browser.close()
+            finally:
+                await _teardown_playwright(manager, browser)
 
-                if content and len(content.strip()) >= MIN_TEXT_LENGTH:
-                    # Clean up navigation noise
-                    lines = [l.strip() for l in content.split("\n") if len(l.strip()) > 40]
-                    text = "\n".join(lines)
-                    if len(text) >= MIN_TEXT_LENGTH:
-                        return text[:MAX_TEXT_LENGTH]
+            if content and len(content.strip()) >= MIN_TEXT_LENGTH:
+                # Clean up navigation noise
+                lines = [l.strip() for l in content.split("\n") if len(l.strip()) > 40]
+                text = "\n".join(lines)
+                if len(text) >= MIN_TEXT_LENGTH:
+                    return text[:MAX_TEXT_LENGTH]
 
-                logger.info("[CH4] Playwright: too short (%d chars)", len(content.strip()) if content else 0)
+            logger.info("[CH4] Playwright: too short (%d chars)", len(content.strip()) if content else 0)
         except HostCooldown:
             raise
         except Exception as e:
@@ -386,7 +425,10 @@ async def _fetch_diavgeia_document(url: str) -> tuple[str, str]:
             async with attempt_timeout(TIMEOUT), httpx.AsyncClient(
                 timeout=TIMEOUT, follow_redirects=True, event_hooks=SCRAPER_HTTP_HOOKS,
             ) as client:
-                async with client.stream("GET", url, headers={"User-Agent": USER_AGENT}, extensions={"scraper_source_url": url}) as resp:
+                async with client.stream(
+                    "GET", url, headers={"User-Agent": USER_AGENT, "Accept-Encoding": "identity"},
+                    extensions={"scraper_source_url": url},
+                ) as resp:
                     if resp.status_code == 403:
                         return "", "skipped"
                     if resp.status_code == 200:
@@ -398,8 +440,14 @@ async def _fetch_diavgeia_document(url: str) -> tuple[str, str]:
                         if content_type not in ("text/html", "application/xhtml+xml", "text/plain"):
                             logger.info("[DIAVGEIA-TEXT] Unsupported content type; source link retained")
                             return "", "skipped"
+                        # Some servers ignore Accept-Encoding. Skip their encoded
+                        # bodies before HTTPX can expand even one transport chunk.
+                        if resp.headers.get("content-encoding", "identity").strip().lower() != "identity":
+                            logger.info("[DIAVGEIA-TEXT] Encoded document skipped; source link retained")
+                            return "", "skipped"
                         body = bytearray()
-                        async for chunk in resp.aiter_bytes():
+                        # Identity makes the raw and decoded byte limits identical.
+                        async for chunk in resp.aiter_raw():
                             # Do not buffer beyond the signature before checking it,
                             # even when it is split across transport chunks.
                             if len(body) < 5 and (body + chunk[:5])[:5] == b"%PDF-":
