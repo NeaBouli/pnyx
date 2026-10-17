@@ -41,6 +41,7 @@ from services.ollama_service import (
     ollama_json_generate,
 )
 from services.content_provenance import apply_generated_content, record_generated_content
+from services.scraper_http import HostCooldown, SCRAPER_HTTP_HOOKS
 from services.parliament_fetcher import (
     _is_bad_parliament_text,
     _is_parliament_document_block_only,
@@ -67,22 +68,22 @@ async def fetch_with_fallback(url: str) -> Optional[str]:
     }
 
     try:
-        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True, event_hooks=SCRAPER_HTTP_HOOKS) as client:
             r = await client.get(url, headers=headers)
             if r.status_code == 200 and len(r.text) > 500:
-                logger.info(f"[MOD-10] Direkt OK: {url[:60]}")
+                logger.info("[MOD-10] Direct fetch succeeded")
                 return r.text
     except Exception as e:
-        logger.warning(f"[MOD-10] Direkt fehlgeschlagen: {e}")
+        logger.warning("[MOD-10] Direct fetch error=%s", type(e).__name__)
 
     try:
-        async with httpx.AsyncClient(timeout=20.0) as client:
-            r = await client.get(f"https://r.jina.ai/{url}", headers={"Accept": "text/plain"})
+        async with httpx.AsyncClient(timeout=20.0, event_hooks=SCRAPER_HTTP_HOOKS) as client:
+            r = await client.get(f"https://r.jina.ai/{url}", headers={"Accept": "text/plain", "User-Agent": SCRAPE_USER_AGENT})
             if r.status_code == 200 and len(r.text) > 200:
-                logger.info(f"[MOD-10] Jina OK: {url[:60]}")
+                logger.info("[MOD-10] Jina fetch succeeded")
                 return r.text
     except Exception as e:
-        logger.warning(f"[MOD-10] Jina fehlgeschlagen: {e}")
+        logger.warning("[MOD-10] Jina fetch error=%s", type(e).__name__)
 
     return None
 
@@ -395,8 +396,8 @@ def _looks_like_access_denied_body(text: str) -> bool:
 async def _fetch_jina_markdown(url: str, probe_errors: list[str] | None = None) -> Optional[str]:
     """Fetch a URL via Jina Reader and return Markdown content."""
     try:
-        async with httpx.AsyncClient(timeout=25.0) as client:
-            r = await client.get(f"https://r.jina.ai/{url}", headers={"Accept": "text/plain"})
+        async with httpx.AsyncClient(timeout=25.0, event_hooks=SCRAPER_HTTP_HOOKS) as client:
+            r = await client.get(f"https://r.jina.ai/{url}", headers={"Accept": "text/plain", "User-Agent": SCRAPE_USER_AGENT})
             if r.status_code == 401:
                 _record_probe_error(probe_errors, "jina_http_401")
                 return None
@@ -407,9 +408,11 @@ async def _fetch_jina_markdown(url: str, probe_errors: list[str] | None = None) 
                 return r.text
             if r.status_code != 200:
                 _record_probe_error(probe_errors, f"jina_http_{r.status_code}")
+    except HostCooldown:
+        _record_probe_error(probe_errors, "jina_http_403_cooldown")
     except Exception as e:
         _record_probe_error(probe_errors, "jina_error")
-        logger.warning("[SCRAPER] Jina fetch failed for %s: %s", url[:60], e)
+        logger.warning("[SCRAPER] Jina fetch error=%s", type(e).__name__)
     return None
 
 
@@ -564,11 +567,30 @@ async def scrape_parliament_bills(
     require_dates: bool = False,
     probe_errors: list[str] | None = None,
 ) -> list[dict]:
+    """Discover bills and emit privacy-safe totals for each run."""
+    errors = probe_errors if probe_errors is not None else []
+    counts = {"fetched": 0, "skipped": 0, "failed": 1}
+    try:
+        bills = await _scrape_parliament_bills(limit, require_dates, errors)
+        counts["fetched"] = len(bills)
+        counts["skipped"] = int(not bills and any(code.endswith("_cooldown") for code in errors))
+        counts["failed"] = int(not bills and not counts["skipped"])
+        return bills
+    finally:
+        logger.info("[PARLIAMENT-DISCOVERY] fetched=%d skipped=%d failed=%d",
+                    counts["fetched"], counts["skipped"], counts["failed"])
+
+
+async def _scrape_parliament_bills(
+    limit: int,
+    require_dates: bool,
+    probe_errors: list[str],
+) -> list[dict]:
     """Fetches latest bills from hellenicparliament.gr.
 
     3-stage fallback chain:
       1. REST API (api.ashx?q=laws) — fastest, structured JSON
-      2. Jina HTML scrape — if API returns 403 or fails
+      2. Jina HTML scrape — if API fails and the source is not cooling down
       3. Direct HTML parse — if Jina also fails
     Each fallback is logged. Total failure = empty list + log warning.
     Set require_dates=True for scheduled/monitor paths so title-only fallback
@@ -584,7 +606,7 @@ async def scrape_parliament_bills(
     api_blocked = False
     try:
         request_count = 0
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=15.0, event_hooks=SCRAPER_HTTP_HOOKS) as client:
             for cat in ["%CE%BD", "%CE%BD%CE%BF"]:
                 if request_count >= SCRAPE_MAX_REQUESTS:
                     break
@@ -598,7 +620,7 @@ async def scrape_parliament_bills(
                 )
                 if r.status_code == 403:
                     _record_probe_error(probe_errors, "api_http_403")
-                    logger.warning("[SCRAPER] Stage 1 blocked (403) — falling back to Jina")
+                    logger.warning("[SCRAPER] Parliament returned 403; host cooldown started")
                     api_blocked = True
                     break
                 if r.status_code != 200:
@@ -622,9 +644,12 @@ async def scrape_parliament_bills(
                     })
                 if len(bills) >= limit:
                     break
+    except HostCooldown:
+        _record_probe_error(probe_errors, "api_http_403_cooldown")
+        api_blocked = True
     except Exception as e:
         _record_probe_error(probe_errors, "api_error")
-        logger.warning("[SCRAPER] Stage 1 error: %s — falling back to Jina", e)
+        logger.warning("[SCRAPER] Stage 1 error: %s — falling back to Jina", type(e).__name__)
         api_blocked = True
 
     if bills:
@@ -687,13 +712,13 @@ async def scrape_parliament_bills(
                 bills = []
         except Exception as e:
             _record_probe_error(probe_errors, "jina_stage_error")
-            logger.warning("[SCRAPER] Stage 2 (Jina) error: %s — falling back to direct HTML", e)
+            logger.warning("[SCRAPER] Stage 2 (Jina) error: %s — falling back to direct HTML", type(e).__name__)
 
     # ── Stage 3: Direct HTML parse (no proxy) ────────────────────────
     if not bills:
         fallback_used = "direct_html"
         try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(timeout=15.0, event_hooks=SCRAPER_HTTP_HOOKS) as client:
                 r = await client.get(
                     f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Psifisthenta-Nomoschedia",
                     headers={"User-Agent": SCRAPE_USER_AGENT, "Accept-Language": "el-GR,el;q=0.9"},
@@ -715,12 +740,17 @@ async def scrape_parliament_bills(
                         logger.info("[SCRAPER] Fallback 2→3: Direct HTML returned %d bills", len(bills))
                 else:
                     _record_probe_error(probe_errors, f"direct_html_http_{r.status_code}")
+        except HostCooldown:
+            _record_probe_error(probe_errors, "direct_html_http_403_cooldown")
         except Exception as e:
             _record_probe_error(probe_errors, "direct_html_error")
-            logger.warning("[SCRAPER] Stage 3 (direct HTML) error: %s", e)
+            logger.warning("[SCRAPER] Stage 3 (direct HTML) error: %s", type(e).__name__)
 
     if not bills:
-        logger.warning("[SCRAPER] ALL 3 STAGES FAILED — 0 bills. Next run in 6-12h.")
+        if any(code.endswith("_cooldown") for code in probe_errors):
+            logger.info("[SCRAPER] Discovery deferred during host cooldown")
+        else:
+            logger.warning("[SCRAPER] ALL 3 STAGES FAILED — 0 bills. Next run in 6-12h.")
 
     return _finalize_scraped_bills(bills, limit=limit, require_dates=require_dates)
 

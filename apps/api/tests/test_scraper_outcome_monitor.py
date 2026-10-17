@@ -419,7 +419,7 @@ def test_completeness_multiple_failures_counted_then_clean_clears(monkeypatch):
     assert _cc_alerts(store) == []
 
 
-def test_completeness_empty_none_rejected_text_stay_clean(monkeypatch):
+def test_completeness_empty_none_rejected_text_is_degraded(monkeypatch):
     store = {}
     _patch(monkeypatch, store)
     texts = {"B-1": None, "B-2": "", "B-3": "BAD"}
@@ -432,8 +432,9 @@ def test_completeness_empty_none_rejected_text_stay_clean(monkeypatch):
     asyncio.run(fn())
     assert calls.count("commit") == 1
     assert all(b.summary_long_el is None and b.party_votes_parliament is None for b in bills)
-    assert store["scraper:completeness_check:last_outcome"] == "clean"
-    assert _cc_alerts(store) == []
+    assert store["scraper:completeness_check:last_outcome"] == "degraded"
+    assert store["scraper:completeness_check:last_outcome_count"] == "3"
+    assert len(_cc_alerts(store)) == 1
     # no candidates at all -> clean
     store.clear()
     fn, _ = _load_completeness(monkeypatch, [], fetch)
