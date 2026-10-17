@@ -1,10 +1,18 @@
 # ADR-007a: Keyed ballot store protocol and migration contract
 
 Date: 2026-10-16
-Status: Proposed; design only. S5, S7 and ADR-006 D4/D5 still require owner decisions.
+Status: Accepted in part (decisions 2026-10-17): S5 + S7 (protected CPLM batch) accepted as the next big project after EVA-001; ADR-006 D4/D5 and implementation details remain open for decision together with S5.
 Parent: [ADR-007 stage 2](ADR-007-ballot-secrecy.md#stage-2-keyed-vote-store-against-db-leaks-s5).
 
 This contract targets a DB/backup leak **without `K_ballot`**. The API operator can still join identities to opinions. It does not repair earlier disclosures or immutable publications, or remove inference from geography, participation patterns and timing. “Must” below is an implementation acceptance condition, not a claim about deployed behavior.
+
+## Decision record 2026-10-17
+
+Technical owner decisions recorded by gio-1c under Gio's standing yes; this record supersedes earlier proposal wording for the decisions below:
+
+- **S5 (keyed vote store) + S7 (protected CPLM batch)** are the next big project after EVA-001; the protected batch is the selected CPLM direction.
+- **ADR-006 D4/D5 are to be decided together with S5**; cutoff, historical-anchor migration and detailed implementation acceptance remain open for that project.
+- ADR-007 **S1–S3 are done; S4 is accepted now with backup and rollback**. This record changes no deployed behavior.
 
 ## Pseudonym and scope bytes
 

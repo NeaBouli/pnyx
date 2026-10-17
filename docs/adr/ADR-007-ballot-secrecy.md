@@ -1,7 +1,7 @@
 # ADR-007: Ballot secrecy (EVA-006)
 
 Date: 2026-10-16
-Status: Proposed. S1 (claims), S2 (k=10, flag-guarded) and S3 (backup encryption, inactive until key) decided by Gio 16.10.2026; S4–S7 open.
+Status: Accepted in part (decisions 2026-10-17): S1–S3 done; S4 accepted now with backup/rollback; S5 + S7 (protected CPLM batch) next after EVA-001. S6 and D4/D5 details remain open; D4/D5 are decided together with S5.
 Tracking: EVA-006 (P1, audit 2026-10-11); related: ADR-004, ADR-006, NEA-249 (Semaphore), EVA-008/015
 
 ## Context
@@ -87,6 +87,15 @@ Semaphore/ZK for all opinion types with a real anonymity-set policy (no public d
 ## Relation to ADR-006
 - **D5 (rewriting historical anchors)** must be ordered with stage 2. Set the final identity anchor before deriving `P`. Remove raw anchors from every opinion store and auxiliary history, including `cplm_history`, `bill_flags`, legacy surveys and the POLIS bridge. D5 still covers identity-table oracles, retained signatures, phone-derived POLIS roots and old backups. Its scope narrows only after evidence shows each dependent store was migrated or retired.
 - **D4 (cutoff)** stays as described in ADR-006; stage 2 needs it so old identities can't vote twice.
+
+## Decision record 2026-10-17
+
+Technical owner decisions recorded by gio-1c under Gio's standing yes; this record supersedes earlier proposal wording for the decisions below:
+
+- **S1–S3 done.**
+- **S4 accepted now:** separate DB roles, with backup and rollback for the change.
+- **S5 + S7 accepted as the next big project after EVA-001:** keyed vote store plus protected CPLM batch (aggregate output).
+- **D4/D5 are to be decided together with S5**; cutoff and historical-anchor migration details remain open for that project. **S6 remains open.**
 
 ## Owner decisions
 - **S1 decided (Gio, 16.10.2026):** correct the claims now (app/docs); EL/EN wording to Gio.

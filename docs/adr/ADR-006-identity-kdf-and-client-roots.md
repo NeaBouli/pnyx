@@ -1,7 +1,7 @@
 # ADR-006: Identity KDFs, client roots and versioned vote envelopes (EVA-007)
 
 Date: 2026-10-16
-Status: Partly decided (2026-10-16, coordinator gio-1c, Gio informed): D1, D6 accepted; D2 direction accepted; D3 scheduled; D4/D5 open (together with EVA-006).
+Status: Accepted in part (decisions 2026-10-17): D1/D6 accepted, D2 direction accepted, D3 scheduled; D4/D5 remain open for decision together with S5.
 Tracking: EVA-007 (P1, audit 2026-10-11); related: ADR-004, EVA-001/003/006/008/010/037,
 `docs/security/VOTE_STATUS_READ_MIGRATION.md`
 
@@ -87,6 +87,14 @@ The API also accepts optional **Tier-1 metadata** (vote nullifier, linkage tag, 
 - **D2 direction accepted:** random anchors + v3 with `K_dedupe`; implementation after the EVA-001 series. The new secret `K_dedupe` goes through Gio's secret gate when it is due.
 - **D3 scheduled:** together with the device-key app release (store gate).
 - **D4/D5 open:** to be decided together with the EVA-006 ADR (ballot secrecy).
+
+## Decision record 2026-10-17
+
+Technical owner decisions recorded by gio-1c under Gio's standing yes; this record supersedes earlier proposal wording for the decisions below:
+
+- ADR-007 S1–S3 are done; **S4 accepted now**, with backup and rollback.
+- **S5 (keyed vote store) + S7 (protected CPLM batch)** are the next big project after EVA-001.
+- **D4/D5 are to be decided together with S5**; the cutoff and historical-anchor migration details remain open for that project. Earlier D1/D2/D3/D6 decisions stand.
 
 ## Owner decisions (options)
 - **D1:** Phone-derived client roots forbidden now (guard test), removal later. *Recommendation: yes.*
