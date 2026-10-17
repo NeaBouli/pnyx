@@ -26,13 +26,13 @@ def test_mobile_build_metadata_is_consistent() -> None:
 
 
 def test_api_announces_only_the_published_release() -> None:
-    assert app_version.LATEST_VERSION == "1.0.33"
-    assert app_version.LATEST_VERSION_CODE == 62
+    assert app_version.LATEST_VERSION == "1.0.36"
+    assert app_version.LATEST_VERSION_CODE == 65
     assert app_version.RELEASE_NOTES_EL == (
-        "v1.0.33 — Βελτιώσεις ασφάλειας και συμβατότητα με νεότερες συσκευές Android."
+        "v1.0.36 — Σαφέστερη διατύπωση «χωρίς όνομα», ασφαλέστερος χειρισμός κλειδιών, μία διόρθωση ψήφου στο 24ωρο."
     )
     assert app_version.RELEASE_NOTES_EN == (
-        "v1.0.33 — Security improvements and compatibility with newer Android devices."
+        "v1.0.36 — Clearer no-name wording, safer key handling, one vote correction in the 24-hour window."
     )
 
 
@@ -44,8 +44,8 @@ async def test_app_version_direct_apk_url_points_to_file() -> None:
     assert response.status_code == 200
     data = response.json()
     assert data["direct_apk_url"] == (
-        "https://github.com/NeaBouli/pnyx/releases/download/v1.0.33/"
-        "ekklesia-v1.0.33-vC62-DIRECT.apk"
+        "https://github.com/NeaBouli/pnyx/releases/download/v1.0.36/"
+        "ekklesia-v1.0.36-vC65-DIRECT.apk"
     )
     assert not data["direct_apk_url"].endswith("/download/")
     assert data["playstore_url"] == "https://play.google.com/apps/testing/ekklesia.gr"
@@ -60,8 +60,8 @@ async def test_legacy_version_download_url_matches_direct_apk_file() -> None:
     assert response.status_code == 200
     data = response.json()
     assert data["downloadUrl"] == (
-        "https://github.com/NeaBouli/pnyx/releases/download/v1.0.33/"
-        "ekklesia-v1.0.33-vC62-DIRECT.apk"
+        "https://github.com/NeaBouli/pnyx/releases/download/v1.0.36/"
+        "ekklesia-v1.0.36-vC65-DIRECT.apk"
     )
     assert not data["downloadUrl"].endswith("/download/")
     assert data["playStoreUrl"] == "https://play.google.com/apps/testing/ekklesia.gr"
