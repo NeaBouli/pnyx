@@ -88,6 +88,10 @@ async def run_interval_job(
     started = False
     clock_started = time.monotonic()
     context = obs.attempt.set({"name": name, "outcome": "success"})
+    # A standby's local retry date is not the shared job's next execution.
+    standby = getattr(scheduler, "_observability_standby", set())
+    scheduler._observability_standby = standby
+    standby.add(job_id)
     logger.info("event=start job=%s outcome=running duration_s=0 next_run=%s", name,
                 _log_time(_job_next_run(scheduler, job_id)))
     try:
@@ -105,6 +109,7 @@ async def run_interval_job(
             else:
                 last_run = await client.get(f"scraper:{name}:last_run")
                 await obs.recover_interrupted(client, name, token=token)
+                standby.discard(job_id)
         except Exception:
             # The body never started. Retry coordination without changing the
             # interval trigger or allowing an unguarded provider call.
@@ -124,7 +129,7 @@ async def run_interval_job(
                     async with asyncio.timeout(max(0, timeout_s - (time.monotonic() - clock_started))):
                         started = True
                         await obs.record_started(client, name, datetime.now(timezone.utc))
-                        await obs.persist_next_run(client, name, _job_next_run(scheduler, job_id))
+                        await obs.persist_next_run(client, name, _job_next_run(scheduler, job_id), token=token)
                         await func()
                     outcome = obs.attempt.get()["outcome"]
                 except asyncio.CancelledError:
@@ -142,15 +147,15 @@ async def run_interval_job(
         duration = max(0, time.monotonic() - clock_started)
         effective_next = next_run or _job_next_run(scheduler, job_id)
         try:
+            if client is None and outcome == "failed":
+                # Client creation can fail transiently while Redis is writable
+                # again by the time the attempt ends.
+                client = await scraper_state._redis()
             if client is not None:
                 if started:
                     await obs.record_finished(client, name, outcome, duration, effective_next)
                 else:
-                    # Coordination never started a body. Preserve any active
-                    # worker's start/finish timestamps and failure streak.
-                    if outcome == "lock_busy":
-                        await client.set(f"scheduler:{name}:last_outcome", outcome)
-                    await obs.persist_next_run(client, name, effective_next)
+                    await obs.record_not_started(client, name, outcome, duration, effective_next, token=token)
         except Exception:
             logger.warning("Could not persist %s scheduler state", name)
         finally:
@@ -215,7 +220,7 @@ def install_schedule_listener(scheduler: BaseScheduler) -> None:
             client = await scraper_state._redis()
             jobs = [scheduler.get_job(job_id)] if job_id else scheduler.get_jobs()
             for job in jobs:
-                if job and job.kwargs.get("name"):
+                if job and job.kwargs.get("name") and job.id not in getattr(scheduler, "_observability_standby", set()):
                     await obs.persist_next_run(client, job.kwargs["name"], _job_next_run(scheduler, job.id))
         except Exception:
             logger.warning("Could not publish scheduler dates")

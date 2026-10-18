@@ -10,12 +10,15 @@ outcomes from the existing `scraper:<job>:last_outcome` scrape-quality metadata
 
 | Field | Meaning |
 | --- | --- |
-| `last_started` | UTC attempt start, also written atomically to `scraper:<job>:last_run` |
-| `last_finished` | UTC completion, including failure, skip, or cancellation |
-| `last_outcome` | `success`, `failed`, `skipped`, `interrupted`, or `lock_busy` |
+| `last_started` | UTC body start, also written atomically to `scraper:<job>:last_run`; unchanged for coordination failures or cadence skips |
+| `last_finished` | UTC completion, including coordination failure, cadence skip, or cancellation; contention preserves it |
+| `last_outcome` | `success`, `failed`, `skipped`, or `interrupted` (legacy `lock_busy` values remain readable) |
 | `last_duration_s` | Elapsed seconds, measured with a monotonic clock for live runs |
-| `next_run` | APScheduler's next run, including coordination retries |
+| `next_run` | APScheduler's next run, including coordination failure retries; standby contention retries stay local |
 | `consecutive_failures` | Incremented on failure/interruption, reset on success, preserved on skip/contention |
+| `last_lock_busy_at` | UTC timestamp of the most recent standby contention; leaves shared run state unchanged |
+| `last_coordination_failure_at` | UTC timestamp of the most recent coordination failure, including failures beside an active worker |
+| `consecutive_coordination_failures` | Incremented on coordination failure; reset after successful coordination starts a body or records a cadence skip |
 
 Lifecycle fields do not expire. Startup marks an unfinished attempt interrupted
 when no active worker owns its lease. Recovery uses an atomic comparison so a
@@ -30,8 +33,14 @@ independent of the scheduling interval. Shorter timeouts are 510 seconds for
 forum sync, 240 for finance export, and 1,200 for notification/category pushes
 and ZK publication. The wrapper releases only its own token on exit, including
 cancellation. Contention and coordination errors retry in 300–600 seconds.
-Contention never replaces an active worker's start/finish timestamps or failure
-streak; it updates the coordination outcome and next run. Direct forum calls
+Contention records only `last_lock_busy_at`, preserving the shared outcome,
+timestamps, next run, and failure streak even if the active worker finishes
+before the contention write arrives. Schedule event publication skips standby
+retries and checks the lease atomically before writing a date. Coordination
+failures increment both failure counters and record a failure timestamp; an
+atomic lease check protects a peer's outcome, completion, and next run. When
+Redis is entirely unavailable, persistence is best effort and standby schedule
+events do not advance the last known shared date. Direct forum calls
 retain their existing lease; scheduled calls reuse the wrapper's lease.
 
 The existing read-only `GET /api/v1/scraper/jobs` response contains all jobs and
@@ -51,8 +60,10 @@ event=end job=parliament outcome=success duration_s=12.340 next_run=2026-10-18T2
 The root logger's configuration is preserved. `httpx`, `httpcore`, and
 `apscheduler` stay at WARNING.
 
-The monitor alerts only when `now > next_run + grace` or
-`consecutive_failures >= 3`. Grace defaults to 900 seconds and is configurable
+The monitor alerts only when `now > next_run + grace`,
+`consecutive_failures >= 3`, or `consecutive_coordination_failures >= 3`.
+Coordination alerts use the same per-job incident and cooldown as body failures
+and misses, even when a retry is still in the future. Grace defaults to 900 seconds and is configurable
 with `SCHEDULER_MISS_GRACE_SECONDS`. Missing/malformed timestamps are unknown;
 a single failed/degraded outcome or old `last_success` alone no longer alerts.
 Source freshness checks remain separate. Alerts reuse `scraper_job_errors`, the

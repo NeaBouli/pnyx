@@ -154,6 +154,9 @@ async def test_scheduler_lifecycle_is_exposed_read_only_for_all_registered_jobs(
         "scheduler:parliament:last_duration_s": "60.5",
         "scheduler:parliament:consecutive_failures": "3",
         "scheduler:parliament:next_run": "2026-10-18T21:00:00+00:00",
+        "scheduler:parliament:last_lock_busy_at": stamp,
+        "scheduler:parliament:last_coordination_failure_at": stamp,
+        "scheduler:parliament:consecutive_coordination_failures": "3",
         "scraper:parliament:last_run": "old legacy history",
     })
     snapshot = dict(store)
@@ -164,6 +167,8 @@ async def test_scheduler_lifecycle_is_exposed_read_only_for_all_registered_jobs(
     assert job["last_finished"] == "2026-10-18T09:01:00+00:00"
     assert job["last_outcome"] == "interrupted" and job["last_duration_s"] == 60.5
     assert job["consecutive_failures"] == 3 and job["next_run"] == "2026-10-18T21:00:00+00:00"
+    assert job["last_lock_busy_at"] == job["last_coordination_failure_at"] == stamp
+    assert job["consecutive_coordination_failures"] == 3
     assert store == snapshot
 
 

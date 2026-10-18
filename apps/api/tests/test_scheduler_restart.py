@@ -80,9 +80,33 @@ class FakeRedis:
         return Pipe()
 
     async def eval(self, script, num_keys, *args):
+        if self.state["down"]:
+            raise ConnectionError("Redis unavailable")
+        store = self.state["store"]
+        if num_keys == 2:
+            assert script == obs._NEXT_RUN_SCRIPT
+            lock, next_run, token, stamp = args
+            if store.get(lock) and store[lock] != token:
+                return 0
+            store[next_run] = stamp
+            return 1
+        if num_keys == 8:
+            assert script == obs._NOT_STARTED_SCRIPT
+            lock, finish, outcome, duration, next_run, failures, coordination, failed_at, token, result, stamp, seconds, due = args
+            if result == "failed":
+                store[failures] = str(int(store.get(failures, 0)) + 1)
+                store[coordination] = str(int(store.get(coordination, 0)) + 1)
+                store[failed_at] = stamp
+            if (store.get(lock) and store[lock] != token) or (result == "skipped" and store.get(lock) != token):
+                return 0
+            store.update({finish: stamp, outcome: result, duration: str(seconds)})
+            if due:
+                store[next_run] = due
+            if result == "skipped":
+                store[coordination] = "0"
+            return 1
         if num_keys == 6:
             lock, start, finish, outcome, duration, failures, token, expected_start, expected_finish, now, seconds = args
-            store = self.state["store"]
             if (store.get(lock) and store[lock] != token) or store.get(start) != expected_start or store.get(finish, "") != expected_finish:
                 return 0
             store.update({finish: now, outcome: "interrupted", duration: str(seconds), failures: str(int(store.get(failures, 0)) + 1)})
@@ -90,8 +114,6 @@ class FakeRedis:
         key, token = args
         assert num_keys == 1
         assert "redis.call('get', KEYS[1]) == ARGV[1]" in script
-        if self.state["down"]:
-            raise ConnectionError("Redis unavailable")
         if self.state["store"].get(key) == token:
             del self.state["store"][key]
             return 1
@@ -287,7 +309,9 @@ async def test_existing_worker_lock_excludes_execution_and_preserves_history(sta
 
     func.assert_not_awaited()
     assert all(state["store"][key] == value for key, value in snapshot.items())
-    assert state["store"][f"scheduler:{NAME}:last_outcome"] == "lock_busy"
+    assert state["store"][f"scheduler:{NAME}:last_lock_busy_at"] == NOW.isoformat()
+    assert f"scheduler:{NAME}:last_outcome" not in state["store"]
+    assert f"scheduler:{NAME}:next_run" not in state["store"]
     assert NOW + timedelta(minutes=5) <= scheduler.get_job(NAME).next_run_time <= NOW + timedelta(minutes=10)
     key, _, nx, expiry = next(item for item in state["sets"] if item[0] == LOCK_KEY)
     assert (key, nx, expiry) == (LOCK_KEY, True, scheduler_state.JOB_TIMEOUT_SECONDS + scheduler_state.LEASE_MARGIN_SECONDS)
@@ -325,6 +349,81 @@ async def test_concurrent_and_staggered_workers_run_once(state):
     assert LOCK_KEY not in state["store"]
 
 
+async def test_delayed_standby_contention_preserves_completed_run_and_shared_schedule(state, monkeypatch):
+    prefix = f"scheduler:{NAME}:"
+    entered, finish, busy = asyncio.Event(), asyncio.Event(), asyncio.Event()
+    completed = asyncio.Event()
+    original_set = FakeRedis.set
+
+    async def body():
+        entered.set()
+        await finish.wait()
+
+    async def delayed_contention(client, key, value, **kwargs):
+        if key == prefix + "last_lock_busy_at":
+            busy.set()
+            await completed.wait()
+        return await original_set(client, key, value, **kwargs)
+
+    active_scheduler, active, _ = await register(func=body)
+    shared_next = NOW + INTERVAL
+    active_scheduler.modify_job(NAME, next_run_time=shared_next)
+    standby_scheduler, standby, func = await register()
+    scheduler_state.install_schedule_listener(standby_scheduler)
+    monkeypatch.setattr(FakeRedis, "set", delayed_contention)
+    active_task = asyncio.create_task(active.func(**active.kwargs))
+    standby_task = None
+    try:
+        await asyncio.wait_for(entered.wait(), timeout=1)
+        # Also exercise a standby schedule event while the active lease exists.
+        standby_scheduler.modify_job(NAME, next_run_time=NOW + timedelta(minutes=1))
+        await asyncio.sleep(0)
+        assert state["store"][prefix + "next_run"] == shared_next.isoformat()
+        standby_task = asyncio.create_task(standby.func(**standby.kwargs))
+        await asyncio.wait_for(busy.wait(), timeout=1)
+        finish.set()
+        await active_task
+        snapshot = dict(state["store"])
+        completed.set()
+        await standby_task
+        # Drain the retry modification and its asynchronous schedule listener.
+        await asyncio.sleep(0)
+        await asyncio.sleep(0)
+        assert all(state["store"][key] == value for key, value in snapshot.items())
+        assert state["store"][prefix + "last_outcome"] == "success"
+        assert state["store"][prefix + "next_run"] == shared_next.isoformat()
+        assert state["store"][prefix + "last_lock_busy_at"] == NOW.isoformat()
+        assert standby_scheduler.get_job(NAME).next_run_time < shared_next
+        func.assert_not_awaited()
+    finally:
+        finish.set()
+        completed.set()
+        await active_task
+        if standby_task is not None:
+            await standby_task
+
+
+async def test_not_due_skip_preserves_body_history_and_failures_without_false_interruption(state):
+    prefix = f"scheduler:{NAME}:"
+    previous = (NOW - timedelta(hours=1)).isoformat()
+    state["store"].update({RUN_KEY: previous, prefix + "last_started": previous,
+                           prefix + "last_finished": previous, prefix + "last_outcome": "failed",
+                           prefix + "consecutive_failures": "2", prefix + "consecutive_coordination_failures": "3"})
+    scheduler, job, func = await register()
+    await job.func(**job.kwargs)
+    await asyncio.sleep(0)
+
+    func.assert_not_awaited()
+    assert state["store"][RUN_KEY] == state["store"][prefix + "last_started"] == previous
+    assert state["store"][prefix + "last_finished"] == NOW.isoformat()
+    assert state["store"][prefix + "last_outcome"] == "skipped"
+    assert state["store"][prefix + "consecutive_failures"] == "2"
+    assert state["store"][prefix + "consecutive_coordination_failures"] == "0"
+    await scheduler_state.initialize_job_states(scheduler)
+    assert state["store"][prefix + "last_outcome"] == "skipped"
+    assert state["store"][prefix + "consecutive_failures"] == "2"
+
+
 async def test_execution_delay_reschedules_instead_of_skipping_a_full_interval(state):
     state["store"][RUN_KEY] = (NOW - INTERVAL + timedelta(seconds=1)).isoformat()
 
@@ -337,6 +436,12 @@ async def test_execution_delay_reschedules_instead_of_skipping_a_full_interval(s
     await asyncio.sleep(0)
     func.assert_not_awaited()
     assert scheduler.get_job(NAME).next_run_time == NOW + timedelta(seconds=1)
+    prefix = f"scheduler:{NAME}:"
+    assert state["store"][prefix + "last_outcome"] == "skipped"
+    assert state["store"][prefix + "last_finished"] == NOW.isoformat()
+    assert float(state["store"][prefix + "last_duration_s"]) >= 0
+    assert prefix + "last_started" not in state["store"]
+    assert state["store"][prefix + "next_run"] == (NOW + timedelta(seconds=1)).isoformat()
 
     state["now"] += timedelta(seconds=1)
     await job.func(**job.kwargs)
@@ -498,6 +603,102 @@ async def test_redis_outage_retries_until_recovery_without_unguarded_execution(s
     assert all(client.closed for client in state["clients"])
 
 
+@pytest.mark.parametrize("failure_at", ["client", "lease", "lease_response", "history", "recovery", "pending_release"])
+async def test_coordination_failures_record_timestamps_and_streak_then_reset_after_recovery(state, monkeypatch, failure_at):
+    prefix = f"scheduler:{NAME}:"
+    scheduler, job, func = await register()
+    original_redis, original_set = scraper_state._redis, FakeRedis.set
+    original_get, original_eval = FakeRedis.get, FakeRedis.eval
+    calls = 0
+
+    async def failing_client():
+        nonlocal calls
+        calls += 1
+        if calls % 2:
+            raise ConnectionError("Client creation failed")
+        return await original_redis()
+
+    async def failing_set(client, key, *args, **kwargs):
+        if key == LOCK_KEY:
+            if failure_at == "lease_response":
+                await original_set(client, key, *args, **kwargs)
+            raise ConnectionError("Lease failed")
+        return await original_set(client, key, *args, **kwargs)
+
+    async def failing_get(client, key):
+        if key == (RUN_KEY if failure_at == "history" else prefix + "last_started"):
+            raise ConnectionError("History unavailable")
+        return await original_get(client, key)
+
+    async def failing_eval(client, script, num_keys, *args):
+        if script == scheduler_state._RELEASE_LOCK_SCRIPT and args[-1] == "pending":
+            raise ConnectionError("Coordination script failed")
+        return await original_eval(client, script, num_keys, *args)
+
+    if failure_at == "recovery":
+        previous = (NOW - timedelta(hours=50)).isoformat()
+        state["store"].update({RUN_KEY: previous, prefix + "last_started": previous})
+    if failure_at == "pending_release":
+        job.kwargs["pending_release"] = "pending"
+    with monkeypatch.context() as faults:
+        if failure_at == "client":
+            faults.setattr(scraper_state, "_redis", failing_client)
+        elif failure_at in {"lease", "lease_response"}:
+            faults.setattr(FakeRedis, "set", failing_set)
+        elif failure_at in {"history", "recovery"}:
+            faults.setattr(FakeRedis, "get", failing_get)
+        else:
+            faults.setattr(FakeRedis, "eval", failing_eval)
+        for failures in range(1, 4):
+            await job.func(**job.kwargs)
+            await asyncio.sleep(0)
+            job = scheduler.get_job(NAME)
+            func.assert_not_awaited()
+            assert state["store"][prefix + "last_outcome"] == "failed"
+            assert state["store"][prefix + "last_finished"] == state["now"].isoformat()
+            assert state["store"][prefix + "last_coordination_failure_at"] == state["now"].isoformat()
+            assert state["store"][prefix + "consecutive_failures"] == str(failures)
+            assert state["store"][prefix + "consecutive_coordination_failures"] == str(failures)
+            assert state["store"][prefix + "next_run"] == job.next_run_time.isoformat()
+            assert float(state["store"][prefix + "last_duration_s"]) >= 0
+            state["now"] = job.next_run_time
+
+    await scheduler_state.initialize_job_states(scheduler)
+    assert state["store"][prefix + "last_outcome"] == "failed"
+    assert state["store"][prefix + "consecutive_failures"] == "3"
+    await job.func(**job.kwargs)
+    func.assert_awaited_once()
+    assert state["store"][prefix + "last_outcome"] == "success"
+    assert state["store"][prefix + "consecutive_failures"] == "0"
+    assert state["store"][prefix + "consecutive_coordination_failures"] == "0"
+    assert all(client.closed for client in state["clients"])
+
+
+async def test_coordination_failure_preserves_live_workers_completion_and_next_run(state, monkeypatch):
+    prefix = f"scheduler:{NAME}:"
+    active_state = {LOCK_KEY: "active-worker", prefix + "last_started": NOW.isoformat(),
+                    prefix + "last_finished": (NOW - INTERVAL).isoformat(), prefix + "last_outcome": "success",
+                    prefix + "next_run": (NOW + INTERVAL).isoformat()}
+    state["store"].update(active_state)
+    scheduler, job, func = await register()
+    job.kwargs["pending_release"] = "pending"
+    original_eval = FakeRedis.eval
+
+    async def unavailable_cleanup(client, script, num_keys, *args):
+        if script == scheduler_state._RELEASE_LOCK_SCRIPT and args[-1] == "pending":
+            raise ConnectionError("Cleanup unavailable")
+        return await original_eval(client, script, num_keys, *args)
+
+    monkeypatch.setattr(FakeRedis, "eval", unavailable_cleanup)
+    await job.func(**job.kwargs)
+    await asyncio.sleep(0)
+    func.assert_not_awaited()
+    assert all(state["store"][key] == value for key, value in active_state.items())
+    assert state["store"][prefix + "consecutive_failures"] == "1"
+    assert state["store"][prefix + "consecutive_coordination_failures"] == "1"
+    assert state["store"][prefix + "last_coordination_failure_at"] == NOW.isoformat()
+
+
 async def test_retry_cleanup_preserves_another_workers_lease(state):
     state["down"] = True
     scheduler, job, func = await register()
@@ -620,7 +821,7 @@ async def test_expired_dead_lease_is_recovered_before_cadence_recheck(state):
     await job.func(**job.kwargs)
     await asyncio.sleep(0)
     func.assert_not_awaited()
-    assert state["store"][prefix + "last_outcome"] == "interrupted"
+    assert state["store"][prefix + "last_outcome"] == "skipped"
     assert state["store"][prefix + "last_finished"] == NOW.isoformat()
     assert state["store"][prefix + "consecutive_failures"] == "1"
     assert scheduler.get_job(NAME).next_run_time == NOW + timedelta(hours=46)

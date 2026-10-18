@@ -38,6 +38,37 @@ def test_failure_streak_threshold(state, failures, alert):
     assert bool(monitor.check_scraper_jobs(state)) is alert
 
 
+@pytest.mark.parametrize("failures, alert", [(0, False), (1, False), (2, False), (3, True), (4, True)])
+def test_coordination_failure_threshold_with_future_retry_and_deduplication(state, failures, alert):
+    state.values.update({
+        "scheduler:parliament:consecutive_coordination_failures": str(failures),
+        "scheduler:parliament:consecutive_failures": "0",
+        "scheduler:parliament:last_outcome": "success",
+        "scheduler:parliament:next_run": (NOW + timedelta(minutes=10)).isoformat(),
+    })
+    found = monitor.check_scraper_jobs(state)
+    assert bool(found) is alert
+    if found:
+        assert len(found) == 1
+        assert "coordination failures" in found[0].message
+        identity = monitor.alert_identity(found[0])
+        assert monitor.prepare_alert_notifications(found, state)[identity] is True
+        monitor.commit_alert_cooldown(found[0], state)
+        monitor.record_active_alerts(found, state)
+        state.values["scheduler:parliament:consecutive_failures"] = "3"
+        state.values["scheduler:parliament:next_run"] = (NOW - timedelta(hours=1)).isoformat()
+        again = monitor.check_scraper_jobs(state)
+        assert len(again) == 1
+        assert monitor.prepare_alert_notifications(again, state)[identity] is False
+
+
+@pytest.mark.parametrize("invalid", [None, "NaN", "9" * 400, b"\xff"])
+def test_invalid_coordination_count_does_not_hide_missed_schedule(state, invalid):
+    state.values["scheduler:parliament:consecutive_coordination_failures"] = invalid
+    state.values["scheduler:parliament:next_run"] = (NOW - timedelta(hours=1)).isoformat()
+    assert len(monitor.check_scraper_jobs(state)) == 1
+
+
 @pytest.mark.parametrize("outcome", ["success", "skipped", "interrupted", "lock_busy", "failed", "degraded"])
 def test_single_outcome_and_old_success_age_never_alert(state, outcome):
     state.values.update({

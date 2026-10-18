@@ -1045,7 +1045,7 @@ def check_forum_completeness(conn) -> list[Alert]:
 
 
 def check_scraper_jobs(r) -> list[Alert]:
-    """Alert only on a missed schedule or three consecutive failed attempts.
+    """Alert on a missed schedule or three body/coordination failures.
 
     Stable type + Job name reuses the existing Telegram cooldown/resolution
     path. Missing/legacy telemetry is unknown, never proof of a missed run.
@@ -1055,6 +1055,7 @@ def check_scraper_jobs(r) -> list[Alert]:
     for name in SCHEDULER_JOBS:
         try:
             raw_count = r.get(f"scheduler:{name}:consecutive_failures")
+            raw_coordination = r.get(f"scheduler:{name}:consecutive_coordination_failures")
             raw_next = r.get(f"scheduler:{name}:next_run")
         except Exception:
             continue
@@ -1062,6 +1063,10 @@ def check_scraper_jobs(r) -> list[Alert]:
             count = int(raw_count) if isinstance(raw_count, (str, bytes)) and len(raw_count) <= 12 else 0
         except (ValueError, TypeError):
             count = 0
+        try:
+            coordination = int(raw_coordination) if isinstance(raw_coordination, (str, bytes)) and len(raw_coordination) <= 12 else 0
+        except (ValueError, TypeError):
+            coordination = 0
         try:
             if isinstance(raw_next, bytes):
                 raw_next = raw_next.decode("utf-8")
@@ -1072,8 +1077,9 @@ def check_scraper_jobs(r) -> list[Alert]:
             # A bad timestamp must not hide a valid failure streak.
             due = None
         missed = due is not None and (now - due).total_seconds() > SCHEDULER_MISS_GRACE_SECONDS
-        if count >= 3 or missed:
-            reason = f"{count} consecutive failures" if count >= 3 else "missed next_run + grace"
+        if count >= 3 or coordination >= 3 or missed:
+            reason = (f"{coordination} consecutive coordination failures" if coordination >= 3 else
+                      f"{count} consecutive failures" if count >= 3 else "missed next_run + grace")
             alerts.append(Alert("scraper_job_errors", "ekklesia-api", "warning",
                                 f"Job {name}: {reason}", False))
     return alerts

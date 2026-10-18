@@ -19,7 +19,8 @@ JOB_NAMES = (
     "zk_arweave_publication", "finance_export", "monthly_newsletter",
 )
 OUTCOMES = {"success", "failed", "skipped", "interrupted", "lock_busy"}
-FIELDS = ("last_started", "last_finished", "last_outcome", "last_duration_s", "next_run", "consecutive_failures")
+FIELDS = ("last_started", "last_finished", "last_outcome", "last_duration_s", "next_run", "consecutive_failures",
+          "last_lock_busy_at", "last_coordination_failure_at", "consecutive_coordination_failures")
 # A mutable value lets the existing job bodies report swallowed failures without
 # a second Redis read, and keeps simultaneous jobs isolated in their own task.
 attempt: ContextVar[dict | None] = ContextVar("scheduler_attempt", default=None)
@@ -32,6 +33,28 @@ redis.call('set', KEYS[3], ARGV[4])
 redis.call('set', KEYS[4], 'interrupted')
 redis.call('set', KEYS[5], ARGV[5])
 redis.call('incr', KEYS[6])
+return 1
+"""
+_NEXT_RUN_SCRIPT = """
+local lease = redis.call('get', KEYS[1])
+if lease and lease ~= ARGV[1] then return 0 end
+redis.call('set', KEYS[2], ARGV[2])
+return 1
+"""
+_NOT_STARTED_SCRIPT = """
+if ARGV[2] == 'failed' then
+  redis.call('incr', KEYS[6])
+  redis.call('incr', KEYS[7])
+  redis.call('set', KEYS[8], ARGV[3])
+end
+local lease = redis.call('get', KEYS[1])
+if lease and lease ~= ARGV[1] then return 0 end
+if ARGV[2] == 'skipped' and lease ~= ARGV[1] then return 0 end
+redis.call('set', KEYS[2], ARGV[3])
+redis.call('set', KEYS[3], ARGV[2])
+redis.call('set', KEYS[4], ARGV[4])
+if ARGV[5] ~= '' then redis.call('set', KEYS[5], ARGV[5]) end
+if ARGV[2] == 'skipped' then redis.call('set', KEYS[7], 0) end
 return 1
 """
 
@@ -55,9 +78,27 @@ def report_outcome(outcome: str) -> None:
         current["outcome"] = outcome
 
 
-async def persist_next_run(client, name: str, next_run: datetime | None) -> None:
+async def persist_next_run(client, name: str, next_run: datetime | None, *, token: str = "") -> None:
     if next_run is not None:
-        await client.set(f"scheduler:{name}:next_run", next_run.astimezone(timezone.utc).isoformat())
+        await client.eval(_NEXT_RUN_SCRIPT, 2, f"scheduler:{name}:lock", f"scheduler:{name}:next_run",
+                          token, next_run.astimezone(timezone.utc).isoformat())
+
+
+async def record_not_started(client, name: str, outcome: str, duration: float,
+                             next_run: datetime | None, *, token: str) -> None:
+    """Record coordination without inventing a body start or finishing a peer."""
+    prefix = f"scheduler:{name}:"
+    stamp = datetime.now(timezone.utc).isoformat()
+    if outcome == "lock_busy":
+        await client.set(prefix + "last_lock_busy_at", stamp)
+        return
+    await client.eval(
+        _NOT_STARTED_SCRIPT, 8, prefix + "lock", prefix + "last_finished", prefix + "last_outcome",
+        prefix + "last_duration_s", prefix + "next_run", prefix + "consecutive_failures",
+        prefix + "consecutive_coordination_failures",
+        prefix + "last_coordination_failure_at", token, outcome, stamp, round(duration, 3),
+        next_run.astimezone(timezone.utc).isoformat() if next_run else "",
+    )
 
 
 async def recover_interrupted(client, name: str, *, token: str = "") -> bool:
@@ -89,6 +130,7 @@ async def record_started(client, name: str, started: datetime) -> None:
     pipe = client.pipeline()
     pipe.set(f"scheduler:{name}:last_started", stamp)
     pipe.set(f"scraper:{name}:last_run", stamp)
+    pipe.set(f"scheduler:{name}:consecutive_coordination_failures", 0)
     await pipe.execute()
 
 
@@ -122,4 +164,7 @@ def safe_state(values: list) -> dict:
         "last_duration_s": duration,
         "next_run": scraper_state._safe_time(data.get("next_run")),
         "consecutive_failures": scraper_state.parse_error_count(data.get("consecutive_failures")),
+        "last_lock_busy_at": scraper_state._safe_time(data.get("last_lock_busy_at")),
+        "last_coordination_failure_at": scraper_state._safe_time(data.get("last_coordination_failure_at")),
+        "consecutive_coordination_failures": scraper_state.parse_error_count(data.get("consecutive_coordination_failures")),
     }
