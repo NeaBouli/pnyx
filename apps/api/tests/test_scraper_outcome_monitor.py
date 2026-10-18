@@ -1,4 +1,4 @@
-"""T-9069: latest scraper outcome visible in Redis job state and monitor."""
+"""Scrape quality stays visible; T-9146 alerts require a scheduler miss or failure streak."""
 import ast
 import asyncio
 import logging
@@ -82,7 +82,7 @@ def _patch(monkeypatch, store):
 
 def _outcome_alerts(store):
     return [a for a in monitor.check_scraper_jobs(SyncView(store))
-            if a.type == "scraper_job_errors" and "last run" in a.message]
+            if a.type == "scraper_job_errors"]
 
 
 def test_degraded_check_violation_visible_then_clean_clears(monkeypatch):
@@ -93,16 +93,15 @@ def test_degraded_check_violation_visible_then_clean_clears(monkeypatch):
     assert store["scraper:diavgeia_municipal:last_outcome"] == "degraded"
     assert store["scraper:diavgeia_municipal:error_count"] == "0"
     alerts = _outcome_alerts(store)
-    assert len(alerts) == 1 and alerts[0].severity == "warning" and alerts[0].recovery_allowed is False
-    assert "scrape_errors" in alerts[0].message
-    for v in list(store.values()) + [alerts[0].message]:
+    assert alerts == []  # Degraded quality alone is not a scheduler miss.
+    for v in list(store.values()) + [alert.message for alert in alerts]:
         assert "ADA-XYZ" not in v and "CheckViolation" not in v and raw not in v
     asyncio.run(scraper_state.record_success("diavgeia_municipal"))
     assert _outcome_alerts(store) == []
     assert "scraper:diavgeia_municipal:last_nonclean_time" in store
 
 
-def test_first_full_failure_warns_without_leaking(monkeypatch):
+def test_first_full_failure_is_visible_without_alerting(monkeypatch):
     store = {}
     _patch(monkeypatch, store)
     n = asyncio.run(scraper_state.record_failure("parliament", "boom postgres://u:p@h/db"))
@@ -110,7 +109,7 @@ def test_first_full_failure_warns_without_leaking(monkeypatch):
     assert store["scraper:parliament:last_outcome"] == "failed"
     assert store["scraper:parliament:last_outcome_reason"] == "exception"
     alerts = _outcome_alerts(store)
-    assert len(alerts) == 1 and "postgres" not in alerts[0].message
+    assert alerts == []  # One failed attempt is below the alert threshold.
     asyncio.run(scraper_state.record_success("parliament"))
     assert _outcome_alerts(store) == []
 
@@ -130,14 +129,14 @@ def test_legacy_missing_or_malformed_state_no_alert():
     assert monitor.check_scraper_jobs(SyncView(bad)) == []
     store = {"scraper:parliament:last_outcome": "failed", "scraper:parliament:last_outcome_reason": "<raw>"}
     alerts = _outcome_alerts(store)
-    assert len(alerts) == 1 and "<raw>" not in alerts[0].message and "unknown" in alerts[0].message
+    assert alerts == []
 
 
 def test_no_duplicate_with_legacy_threshold():
     store = {"scraper:parliament:error_count": "21", "scraper:parliament:last_outcome": "failed",
              "scraper:parliament:last_outcome_reason": "exception"}
     alerts = monitor.check_scraper_jobs(SyncView(store))
-    assert [a.type for a in alerts] == ["scraper_job_errors"]
+    assert alerts == []  # Legacy circuit counts do not prove consecutive scheduler failures.
 
 
 def test_circuit_semantics_unchanged(monkeypatch):
@@ -154,6 +153,8 @@ def test_two_jobs_have_distinct_dedupe_identity():
     store = {"scraper:parliament:last_outcome": "failed", "scraper:parliament:last_outcome_reason": "exception",
              "scraper:diavgeia_municipal:last_outcome": "degraded",
              "scraper:diavgeia_municipal:last_outcome_reason": "scrape_errors"}
+    store.update({"scheduler:parliament:consecutive_failures": "3",
+                  "scheduler:diavgeia_municipal:consecutive_failures": "3"})
     ids = {monitor.alert_identity(a) for a in _outcome_alerts(store)}
     assert len(ids) == 2
 
@@ -162,7 +163,7 @@ def test_malformed_bytes_safe():
     store = {"scraper:parliament:last_outcome": b"fail\xffed", "scraper:x:last_outcome": b"\xff"}
     assert _outcome_alerts(store) == []
     store = {"scraper:parliament:last_outcome": b"failed", "scraper:parliament:last_outcome_reason": b"\xfe"}
-    assert "unknown" in _outcome_alerts(store)[0].message
+    assert _outcome_alerts(store) == []
 
 
 # --- Real scheduled_diavgeia_scrape body (loaded from main.py AST, not copied) ---
@@ -219,8 +220,8 @@ def test_scheduler_check_violation_degraded_then_clean(monkeypatch):
     assert store["scraper:diavgeia_municipal:last_outcome_reason"] == "scrape_errors"
     assert store["scraper:diavgeia_municipal:error_count"] == "0"
     alerts = _outcome_alerts(store)
-    assert len(alerts) == 1 and alerts[0].recovery_allowed is False
-    for v in list(store.values()) + [alerts[0].message]:
+    assert alerts == []
+    for v in list(store.values()) + [alert.message for alert in alerts]:
         assert "ADA-T1" not in v and "CheckViolation" not in v
     asyncio.run(_load_scheduler(monkeypatch, _result([]))())
     assert store["scraper:diavgeia_municipal:last_outcome"] == "clean"
@@ -250,15 +251,12 @@ def _cc_alerts(store):
     return [a for a in monitor.check_scraper_jobs(SyncView(store)) if "completeness_check" in a.message]
 
 
-def test_completeness_first_failure_warns_then_clean_clears(monkeypatch):
+def test_completeness_first_failure_does_not_alert(monkeypatch):
     store = {}
     _patch(monkeypatch, store)
     asyncio.run(scraper_state.record_failure("completeness_check", "boom dsn=pw"))
     alerts = _cc_alerts(store)
-    assert len(alerts) == 1
-    a = alerts[0]
-    assert a.type == "scraper_job_errors" and a.severity == "warning" and a.recovery_allowed is False
-    assert "failed (exception)" in a.message and "pw" not in a.message
+    assert alerts == []
     asyncio.run(scraper_state.record_success("completeness_check"))
     assert _cc_alerts(store) == []
 
@@ -276,7 +274,7 @@ def test_completeness_legacy_threshold_not_duplicated():
              "scraper:completeness_check:last_outcome": "failed",
              "scraper:completeness_check:last_outcome_reason": "exception"}
     alerts = _cc_alerts(store)
-    assert len(alerts) == 1 and alerts[0].recovery_allowed is False
+    assert alerts == []
 
 
 def test_completeness_distinct_identity_from_parliament(monkeypatch):
@@ -284,6 +282,8 @@ def test_completeness_distinct_identity_from_parliament(monkeypatch):
     _patch(monkeypatch, store)
     asyncio.run(scraper_state.record_failure("parliament", "e"))
     asyncio.run(scraper_state.record_failure("completeness_check", "e"))
+    store.update({"scheduler:parliament:consecutive_failures": "3",
+                  "scheduler:completeness_check:consecutive_failures": "3"})
     ids = {monitor.alert_identity(a) for a in _outcome_alerts(store)}
     assert len(ids) == 2
 
@@ -395,7 +395,7 @@ def test_completeness_one_text_failure_degraded_other_merged(monkeypatch):
     assert store["scraper:completeness_check:last_outcome_count"] == "1"
     assert store["scraper:completeness_check:error_count"] == "0"
     alerts = _cc_alerts(store)
-    assert len(alerts) == 1 and alerts[0].severity == "warning" and alerts[0].recovery_allowed is False
+    assert alerts == []
     _no_leak(store, alerts)
 
 
@@ -417,7 +417,7 @@ def test_completeness_multiple_failures_counted_then_clean_clears(monkeypatch, c
     assert store["scraper:completeness_check:last_outcome_reason"] == "scrape_errors"
     assert store["scraper:completeness_check:last_outcome_count"] == "3"
     assert store["scraper:completeness_check:error_count"] == "0"
-    assert len(_cc_alerts(store)) == 1
+    assert _cc_alerts(store) == []
     _no_leak(store, _cc_alerts(store))
 
     text = "fine" if clean_outcome == "fetched" else ""
@@ -455,7 +455,7 @@ def test_completeness_empty_none_rejected_text_is_degraded(monkeypatch):
     assert all(b.summary_long_el is None and b.party_votes_parliament is None for b in bills)
     assert store["scraper:completeness_check:last_outcome"] == "degraded"
     assert store["scraper:completeness_check:last_outcome_count"] == "3"
-    assert len(_cc_alerts(store)) == 1
+    assert _cc_alerts(store) == []
     # no candidates at all -> clean
     store.clear()
     fn, calls = _load_completeness(monkeypatch, [], fetch)
@@ -482,4 +482,4 @@ def test_completeness_commit_failure_stays_failed(monkeypatch):
     assert store["scraper:completeness_check:last_outcome_reason"] == "exception"
     assert store["scraper:completeness_check:error_count"] == "1"
     alerts = _cc_alerts(store)
-    assert len(alerts) == 1 and "pw" not in alerts[0].message
+    assert alerts == []

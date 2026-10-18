@@ -23,6 +23,10 @@ async def _redis() -> aioredis.Redis:
 
 
 async def record_run(name: str) -> None:
+    from services.scheduler_observability import attempt
+    current = attempt.get()
+    if current is not None and current["name"] == name:
+        return  # The scheduler already recorded this attempt's start atomically.
     r = await _redis()
     try:
         await r.set(f"scraper:{name}:last_run", datetime.now(timezone.utc).isoformat())
@@ -32,6 +36,8 @@ async def record_run(name: str) -> None:
 
 async def record_success(name: str, outcome: str = "clean", reason: str = "none", count: int = 0) -> None:
     """Record success; latest outcome (clean|degraded) is queued in the same pipeline."""
+    from services.scheduler_observability import report_outcome
+    report_outcome("success")
     r = await _redis()
     try:
         pipe = r.pipeline()
@@ -47,6 +53,8 @@ async def record_success(name: str, outcome: str = "clean", reason: str = "none"
 
 async def record_failure(name: str, error: str) -> int:
     """Record failure, return new error count."""
+    from services.scheduler_observability import report_outcome
+    report_outcome("failed")
     r = await _redis()
     try:
         pipe = r.pipeline()
@@ -158,6 +166,7 @@ def classify(error_count: int | None, last_outcome: str) -> str:
 
 async def get_all_states(names: list[str]) -> list[dict]:
     """Get state for all named scrapers (read-only)."""
+    from services.scheduler_observability import FIELDS, safe_state
     r = await _redis()
     try:
         states = []
@@ -173,18 +182,31 @@ async def get_all_states(names: list[str]) -> list[dict]:
             pipe.get(f"scraper:{name}:last_outcome_count")
             pipe.get(f"scraper:{name}:last_outcome_time")
             pipe.get(f"scraper:{name}:last_nonclean_time")
+            for field in FIELDS:
+                pipe.get(f"scheduler:{name}:{field}")
             vals = await pipe.execute()
             # Absent key = 0 (producer default); malformed = None (no evidence).
             error_count = parse_error_count(vals[3])
             outcome = safe_outcome(*vals[5:10])
+            lifecycle = safe_state(vals[10:])
+            quality = outcome["last_outcome"]
+            if lifecycle["last_outcome"] == "unknown":
+                lifecycle["last_outcome"] = {"clean": "success", "degraded": "success", "failed": "failed"}.get(quality, "unknown")
+            status = classify(error_count, quality)
+            if status == "unknown" and error_count == 0 and lifecycle["last_outcome"] == "success":
+                status = "ok"
+            if lifecycle["last_outcome"] in {"failed", "interrupted"} and status != "circuit_open":
+                status = "warning"
             states.append({
                 "name": name,
-                "last_run": vals[0],
+                "last_run": lifecycle["last_started"] or vals[0],
                 "last_success": vals[1],
                 "last_error": vals[2],
                 "error_count": error_count or 0,
-                "status": classify(error_count, outcome["last_outcome"]),
+                "status": status,
                 **outcome,
+                "last_scrape_outcome": quality,
+                **lifecycle,
             })
         return states
     finally:

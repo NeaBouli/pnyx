@@ -157,6 +157,7 @@ export default function MonitorPage() {
                     <th className="text-left px-4 py-3 font-medium text-gray-600">Job</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-600">Last Run</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-600">Last completed</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-600">Next run</th>
                     <th className="text-right px-4 py-3 font-medium text-gray-600">Errors</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
                   </tr>
@@ -169,8 +170,9 @@ export default function MonitorPage() {
                       <tr key={j.name} className="hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-3 font-medium text-gray-900">{j.name}</td>
                         <td className="px-4 py-3 text-gray-500">{formatAge(j.last_run)}</td>
-                        <td className="px-4 py-3 text-gray-500">{formatAge(j.last_success)}</td>
-                        <td className="px-4 py-3 text-right">{errCount > 0 ? <span className="text-red-600 font-bold">{errCount}</span> : <span className="text-gray-400">0</span>}</td>
+                        <td className="px-4 py-3 text-gray-500">{formatAge(j.last_finished ?? j.last_success)}<div className="text-xs">{j.last_duration_s ?? '—'}s</div></td>
+                        <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{j.next_run ? new Date(j.next_run).toLocaleString('el-GR') : '—'}</td>
+                        <td className="px-4 py-3 text-right">{errCount > 0 ? <span className="text-red-600 font-bold">{errCount}</span> : <span className="text-gray-400">0</span>}<div className="text-xs text-gray-500">{j.consecutive_failures ?? '—'} consecutive</div></td>
                         <td className="px-4 py-3">
                           {statusBadge(status)}
                           <div className="mt-1 text-xs text-gray-500 whitespace-nowrap">{jobOutcomeLabel(j)} · {j.last_outcome_time ? formatAge(j.last_outcome_time) : '—'}</div>
