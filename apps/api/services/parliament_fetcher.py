@@ -111,6 +111,9 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
 MIN_TEXT_LENGTH = 200
 MAX_TEXT_LENGTH = 8000
 MAX_DOCUMENT_BYTES = 1024 * 1024
+MAX_DOCUMENT_REDIRECTS = 3
+# The client, scraper links and documentUrl fixtures use this document origin.
+DIAVGEIA_DOCUMENT_HOSTS = frozenset({"diavgeia.gov.gr"})
 MAX_RETRIES = 2
 TIMEOUT = 30
 PLAYWRIGHT_TEARDOWN_TIMEOUT = 2
@@ -419,51 +422,69 @@ async def _channel_playwright(url: str) -> str:
 # ─── Orchestrator ────────────────────────────────────────────────────────────
 
 async def _fetch_diavgeia_document(url: str) -> tuple[str, str]:
-    """Stream documentUrl directly; reject PDFs and oversized documents early."""
+    """Stream trusted HTTPS documents; close redirect bodies without reading them."""
     for attempt in range(MAX_RETRIES):
         try:
+            current_url = httpx.URL(url)
             async with attempt_timeout(TIMEOUT), httpx.AsyncClient(
-                timeout=TIMEOUT, follow_redirects=True, event_hooks=SCRAPER_HTTP_HOOKS,
+                timeout=TIMEOUT, follow_redirects=False, event_hooks=SCRAPER_HTTP_HOOKS,
             ) as client:
-                async with client.stream(
-                    "GET", url, headers={"User-Agent": USER_AGENT, "Accept-Encoding": "identity"},
-                    extensions={"scraper_source_url": url},
-                ) as resp:
-                    if resp.status_code == 403:
+                for hop in range(MAX_DOCUMENT_REDIRECTS + 1):
+                    if current_url.scheme != "https" or current_url.host not in DIAVGEIA_DOCUMENT_HOSTS:
+                        logger.info("[DIAVGEIA-TEXT] Untrusted document URL skipped; source link retained")
                         return "", "skipped"
-                    if resp.status_code == 200:
-                        content_type = resp.headers.get("content-type", "").split(";")[0].strip().lower()
-                        # No PDF library is declared in apps/api/requirements*.txt.
-                        if content_type == "application/pdf":
-                            logger.info("[DIAVGEIA-TEXT] PDF skipped: no declared PDF parser; source link retained")
-                            return "", "skipped"
-                        if content_type not in ("text/html", "application/xhtml+xml", "text/plain"):
-                            logger.info("[DIAVGEIA-TEXT] Unsupported content type; source link retained")
-                            return "", "skipped"
-                        # Some servers ignore Accept-Encoding. Skip their encoded
-                        # bodies before HTTPX can expand even one transport chunk.
-                        if resp.headers.get("content-encoding", "identity").strip().lower() != "identity":
-                            logger.info("[DIAVGEIA-TEXT] Encoded document skipped; source link retained")
-                            return "", "skipped"
-                        body = bytearray()
-                        # Identity makes the raw and decoded byte limits identical.
-                        async for chunk in resp.aiter_raw():
-                            # Do not buffer beyond the signature before checking it,
-                            # even when it is split across transport chunks.
-                            if len(body) < 5 and (body + chunk[:5])[:5] == b"%PDF-":
-                                logger.info("[DIAVGEIA-TEXT] PDF signature detected; source link retained")
+                    async with client.stream(
+                        "GET", current_url, headers={"User-Agent": USER_AGENT, "Accept-Encoding": "identity"},
+                        extensions={"scraper_source_url": url},
+                    ) as resp:
+                        if resp.status_code in (301, 302, 303, 307, 308):
+                            location = resp.headers.get("location")
+                            if not location or hop == MAX_DOCUMENT_REDIRECTS:
+                                logger.info("[DIAVGEIA-TEXT] Redirect missing target or limit reached; source link retained")
                                 return "", "skipped"
-                            if len(body) + len(chunk) > MAX_DOCUMENT_BYTES:
-                                logger.info("[DIAVGEIA-TEXT] Document size limit exceeded; source link retained")
+                            current_url = resp.url.join(location)
+                            # Exiting the stream closes this body unread. HTTPX's
+                            # automatic redirects would read and decompress it.
+                            continue
+                        if resp.status_code == 403:
+                            return "", "skipped"
+                        if resp.status_code == 200:
+                            content_type = resp.headers.get("content-type", "").split(";")[0].strip().lower()
+                            # No PDF library is declared in apps/api/requirements*.txt.
+                            if content_type == "application/pdf":
+                                logger.info("[DIAVGEIA-TEXT] PDF skipped: no declared PDF parser; source link retained")
                                 return "", "skipped"
-                            body.extend(chunk)
-                        text = body.decode(resp.encoding or "utf-8", errors="replace")
-                        if content_type == "text/plain":
-                            return text.strip()[:MAX_TEXT_LENGTH], "fetched"
-                        return _extract_text_from_html(text)[:MAX_TEXT_LENGTH], "fetched"
-                    logger.warning("[DIAVGEIA-TEXT] status=%d attempt=%d", resp.status_code, attempt + 1)
-                    if resp.status_code != 429 and resp.status_code < 500:
-                        return "", "failed"
+                            if content_type not in ("text/html", "application/xhtml+xml", "text/plain"):
+                                logger.info("[DIAVGEIA-TEXT] Unsupported content type; source link retained")
+                                return "", "skipped"
+                            # Some servers ignore Accept-Encoding. Skip their encoded
+                            # bodies before HTTPX can expand even one transport chunk.
+                            if resp.headers.get("content-encoding", "identity").strip().lower() != "identity":
+                                logger.info("[DIAVGEIA-TEXT] Encoded document skipped; source link retained")
+                                return "", "skipped"
+                            body = bytearray()
+                            # Identity makes the raw and decoded byte limits identical.
+                            async for chunk in resp.aiter_raw():
+                                # Do not buffer beyond the signature before checking it,
+                                # even when it is split across transport chunks.
+                                if len(body) < 5 and (body + chunk[:5])[:5] == b"%PDF-":
+                                    logger.info("[DIAVGEIA-TEXT] PDF signature detected; source link retained")
+                                    return "", "skipped"
+                                if len(body) + len(chunk) > MAX_DOCUMENT_BYTES:
+                                    logger.info("[DIAVGEIA-TEXT] Document size limit exceeded; source link retained")
+                                    return "", "skipped"
+                                body.extend(chunk)
+                            text = body.decode(resp.encoding or "utf-8", errors="replace")
+                            if content_type == "text/plain":
+                                return text.strip()[:MAX_TEXT_LENGTH], "fetched"
+                            return _extract_text_from_html(text)[:MAX_TEXT_LENGTH], "fetched"
+                        logger.warning("[DIAVGEIA-TEXT] status=%d attempt=%d", resp.status_code, attempt + 1)
+                        if resp.status_code != 429 and resp.status_code < 500:
+                            return "", "failed"
+                        break
+        except httpx.InvalidURL:
+            logger.info("[DIAVGEIA-TEXT] Invalid document URL skipped; source link retained")
+            return "", "skipped"
         except HostCooldown:
             raise
         except (httpx.RequestError, TimeoutError) as exc:

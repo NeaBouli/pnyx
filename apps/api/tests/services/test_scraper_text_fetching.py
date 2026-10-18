@@ -153,6 +153,159 @@ async def test_document_at_body_limit_preserves_split_utf8(monkeypatch, encoding
     assert await fetcher._fetch_bill_text_result("id", DOCUMENT) == (TEXT.strip(), "fetched")
 
 
+@pytest.mark.parametrize("terminal_kind", ["text", "oversized", "encoded"])
+@respx.mock
+async def test_document_redirect_chain_preserves_body_caps(monkeypatch, scraper_clock, terminal_kind):
+    body = TEXT.encode()
+    monkeypatch.setattr(fetcher, "MAX_DOCUMENT_BYTES", len(body))
+    times = []
+    closed = []
+
+    class FinalBody(httpx.AsyncByteStream):
+        async def __aiter__(self):
+            assert terminal_kind != "encoded", "Encoded terminal body must remain unread"
+            yield body
+            if terminal_kind == "oversized":
+                yield b"x"
+                raise AssertionError("Must stop at the terminal body cap")
+
+        async def aclose(self):
+            closed.append(True)
+
+    def respond(request):
+        times.append(scraper_clock.now)
+        assert request.headers["accept-encoding"] == "identity"
+        assert request.extensions["scraper_source_url"] == DOCUMENT
+        if len(times) <= 3:
+            return httpx.Response(302, headers={"location": f"/doc/hop-{len(times)}"})
+        headers = {"content-type": "text/plain", "content-length": "1"}
+        if terminal_kind == "encoded":
+            headers["content-encoding"] = "gzip"
+        return httpx.Response(200, headers=headers, stream=FinalBody())
+
+    respx.route(method="GET", host="diavgeia.gov.gr").mock(side_effect=respond)
+    expected = (TEXT.strip(), "fetched") if terminal_kind == "text" else ("", "skipped")
+    assert await fetcher._fetch_bill_text_result("id", DOCUMENT) == expected
+    assert times == [1000, 1005, 1010, 1015]
+    assert closed == [True]
+
+
+@pytest.mark.parametrize("status", [301, 302, 303, 307, 308])
+@pytest.mark.parametrize("compressed", [False, True])
+@respx.mock
+async def test_oversized_redirect_body_is_closed_unread(monkeypatch, status, compressed):
+    body = b"x" * (2 * fetcher.MAX_DOCUMENT_BYTES)
+    if compressed:
+        body = gzip.compress(body)
+    read = []
+    closed = []
+
+    class RedirectBody(httpx.AsyncByteStream):
+        async def __aiter__(self):
+            read.append(True)
+            yield body
+
+        async def aclose(self):
+            closed.append(True)
+
+    class FinalBody(httpx.AsyncByteStream):
+        async def __aiter__(self):
+            yield TEXT.encode()
+
+    def decoded_body(*args, **kwargs):
+        raise AssertionError("Redirects must not invoke HTTPX decompression")
+
+    monkeypatch.setattr(httpx.Response, "aiter_bytes", decoded_body)
+    headers = {"location": "/doc/final", "content-type": "text/plain", "content-length": str(len(body))}
+    if compressed:
+        headers["content-encoding"] = "gzip"
+    respx.get(DOCUMENT).mock(return_value=httpx.Response(status, headers=headers, stream=RedirectBody()))
+    respx.get("https://diavgeia.gov.gr/doc/final").mock(return_value=httpx.Response(
+        200, headers={"content-type": "text/plain; charset=utf-8"}, stream=FinalBody(),
+    ))
+
+    assert await fetcher._fetch_bill_text_result("id", DOCUMENT) == (TEXT.strip(), "fetched")
+    assert read == [] and closed == [True]
+    assert len(respx.calls) == 2
+
+
+@pytest.mark.parametrize("target", [
+    "https://example.org/doc/private",
+    "//example.org/doc/private",
+    "https://diavgeia.gov.gr.example.org/doc/private",
+    "https://diavgeia.gov.gr@example.org/doc/private",
+    "https://unknown.diavgeia.gov.gr/doc/private",
+    "http://diavgeia.gov.gr/doc/private",
+])
+@respx.mock
+async def test_document_redirect_rejects_untrusted_target(target, caplog):
+    caplog.set_level(logging.INFO)
+    respx.get(DOCUMENT).respond(302, headers={"location": target})
+
+    assert await fetcher._fetch_bill_text_result("private-id", DOCUMENT) == ("", "skipped")
+    assert len(respx.calls) == 1
+    assert "https://" not in caplog.text and "private" not in caplog.text
+
+
+@pytest.mark.parametrize("url", ["http://diavgeia.gov.gr/doc/private", "https://example.org/doc/private"])
+@respx.mock
+async def test_document_rejects_untrusted_initial_url(url):
+    assert await fetcher._fetch_diavgeia_document(url) == ("", "skipped")
+    assert len(respx.calls) == 0
+
+
+@pytest.mark.parametrize("redirect_kind", ["chain", "self", "cycle"])
+@respx.mock
+async def test_document_redirect_limit_closes_last_body_without_retry(scraper_clock, redirect_kind):
+    times = []
+    closed = []
+
+    class RedirectBody(httpx.AsyncByteStream):
+        async def __aiter__(self):
+            raise AssertionError("Redirect bodies must remain unread even at the hop limit")
+            yield b""
+
+        async def aclose(self):
+            closed.append(True)
+
+    def respond(request):
+        times.append(scraper_clock.now)
+        if redirect_kind == "chain":
+            target = f"/doc/hop-{len(times)}"
+        elif redirect_kind == "self" or request.url.path == "/doc/loop":
+            target = DOCUMENT
+        else:
+            target = "/doc/loop"
+        return httpx.Response(302, headers={"location": target}, stream=RedirectBody())
+
+    respx.route(method="GET", host="diavgeia.gov.gr").mock(side_effect=respond)
+    assert await fetcher._fetch_bill_text_result("id", DOCUMENT) == ("", "skipped")
+    assert times == [1000, 1005, 1010, 1015]
+    assert closed == [True] * 4
+
+
+@pytest.mark.parametrize("status", [403, 429, 503])
+@respx.mock
+async def test_document_redirect_target_uses_cooldown_and_retry_after(scraper_clock, status):
+    times = []
+    respx.get(DOCUMENT).respond(302, headers={"location": "/doc/final"})
+
+    def respond(request):
+        times.append(scraper_clock.now)
+        if len(times) == 1:
+            return httpx.Response(status, headers={"retry-after": "30"})
+        return httpx.Response(200, text=TEXT)
+
+    respx.get("https://diavgeia.gov.gr/doc/final").mock(side_effect=respond)
+    expected = ("", "skipped") if status == 403 else (TEXT.strip(), "fetched")
+    assert await fetcher._fetch_bill_text_result("id", DOCUMENT) == expected
+    if status == 403:
+        assert await fetcher._fetch_bill_text_result("id", DOCUMENT) == expected
+        assert times == [1005] and len(respx.calls) == 2
+    else:
+        assert times == [1005, 1040] and len(respx.calls) == 4
+
+
 @pytest.mark.parametrize("channel", [
     fetcher._channel_jina_markdown, fetcher._channel_jina_html,
     fetcher._channel_ollama_extract, fetcher._fetch_diavgeia_document,
