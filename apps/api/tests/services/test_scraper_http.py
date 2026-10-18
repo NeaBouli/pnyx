@@ -107,7 +107,10 @@ async def test_source_cooldown_cannot_be_bypassed_via_jina(scraper_clock):
 ])
 @respx.mock
 async def test_source_cooldown_is_rechecked_after_queue(scraper_clock, monkeypatch, target):
-    from services import scraper_http
+    from services import scraper_http, parliament_access
+    from unittest.mock import AsyncMock
+    # This test isolates cooldown ordering; robots behavior has dedicated coverage.
+    monkeypatch.setattr(parliament_access, "check_robots", AsyncMock())
 
     source = "https://www.hellenicparliament.gr/law"
     limiter = scraper_clock.limiter

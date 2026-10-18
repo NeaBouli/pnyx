@@ -7,10 +7,7 @@ KI Fallback-Kette (kein Konto, kein API Key nötig):
   L2: Hugging Face Free Tier — fallback
   L3: Regel-basiertes Parsing — Notfall
 
-Scraping Fallback-Kette:
-  1. Direkt HTTP
-  2. Jina Reader
-  3. None
+Parliament content is fetched directly; blocks and robots exclusions stop access.
 
 @ai-anchor MOD10_SCRAPER
 @update-hint Ollama URL in .env: OLLAMA_URL=http://ollama:11434
@@ -43,6 +40,7 @@ from services.ollama_service import (
 )
 from services.content_provenance import apply_generated_content, record_generated_content
 from services.scraper_http import HostCooldown, SCRAPER_HTTP_HOOKS
+from services.parliament_access import USER_AGENT, RobotsDisallowed, is_parliament
 from services.parliament_fetcher import (
     _is_bad_parliament_text,
     _is_parliament_document_block_only,
@@ -62,20 +60,23 @@ HF_API_KEY   = os.getenv("HF_API_KEY", "")
 # ── Scraping Fallback-Kette ───────────────────────────────────────────────────
 
 async def fetch_with_fallback(url: str) -> Optional[str]:
-    """1. Direkt HTTP → 2. Jina Reader → 3. None"""
+    """Direct HTTP; Jina is available only for non-Parliament sources."""
     headers = {
         "User-Agent": SCRAPE_USER_AGENT,
         "Accept-Language": "el-GR,el;q=0.9,en;q=0.8",
     }
 
     try:
-        async with attempt_timeout(15.0), httpx.AsyncClient(timeout=15.0, follow_redirects=True, event_hooks=SCRAPER_HTTP_HOOKS) as client:
+        async with attempt_timeout(15.0), httpx.AsyncClient(timeout=15.0, trust_env=False, follow_redirects=True, event_hooks=SCRAPER_HTTP_HOOKS) as client:
             r = await client.get(url, headers=headers)
             if r.status_code == 200 and len(r.text) > 500:
                 logger.info("[MOD-10] Direct fetch succeeded")
                 return r.text
     except Exception as e:
         logger.warning("[MOD-10] Direct fetch error=%s", type(e).__name__)
+
+    if is_parliament(url):
+        return None
 
     try:
         async with attempt_timeout(20.0), httpx.AsyncClient(timeout=20.0, event_hooks=SCRAPER_HTTP_HOOKS) as client:
@@ -267,8 +268,8 @@ async def generate_summaries(bill_text: str, title_el: str) -> dict:
 PARLIAMENT_API = "https://www.hellenicparliament.gr/api.ashx"
 
 # Soft scraping config
-SCRAPE_USER_AGENT = "ekklesia.gr/1.0 (civic-tech; +https://ekklesia.gr/wiki/api.html)"
-SCRAPE_DELAY_SECONDS = 5
+SCRAPE_USER_AGENT = USER_AGENT
+SCRAPE_DELAY_SECONDS = 10
 SCRAPE_MAX_REQUESTS = 20
 
 
@@ -395,7 +396,9 @@ def _looks_like_access_denied_body(text: str) -> bool:
 
 
 async def _fetch_jina_markdown(url: str, probe_errors: list[str] | None = None) -> Optional[str]:
-    """Fetch a URL via Jina Reader and return Markdown content."""
+    """Fetch non-Parliament Markdown through Jina Reader."""
+    if is_parliament(url):
+        return None
     try:
         async with attempt_timeout(25.0), httpx.AsyncClient(timeout=25.0, event_hooks=SCRAPER_HTTP_HOOKS) as client:
             r = await client.get(f"https://r.jina.ai/{url}", headers={"Accept": "text/plain", "User-Agent": SCRAPE_USER_AGENT})
@@ -587,27 +590,16 @@ async def _scrape_parliament_bills(
     require_dates: bool,
     probe_errors: list[str],
 ) -> list[dict]:
-    """Fetches latest bills from hellenicparliament.gr.
-
-    3-stage fallback chain:
-      1. REST API (api.ashx?q=laws) — fastest, structured JSON
-      2. Jina HTML scrape — if API fails and the source is not cooling down
-      3. Direct HTML parse — if Jina also fails
-    Each fallback is logged. Total failure = empty list + log warning.
-    Set require_dates=True for scheduled/monitor paths so title-only fallback
-    rows cannot masquerade as a healthy source freshness check.
-    """
+    """Direct API, then direct HTML on non-block failures; never bypass a block."""
     import asyncio
     from datetime import timezone as _tz
 
     bills = []
-    fallback_used = None
 
     # ── Stage 1: REST API ────────────────────────────────────────────
-    api_blocked = False
     try:
         request_count = 0
-        async with httpx.AsyncClient(timeout=15.0, event_hooks=SCRAPER_HTTP_HOOKS) as client:
+        async with httpx.AsyncClient(timeout=15.0, trust_env=False, event_hooks=SCRAPER_HTTP_HOOKS) as client:
             for cat in ["%CE%BD", "%CE%BD%CE%BF"]:
                 if request_count >= SCRAPE_MAX_REQUESTS:
                     break
@@ -623,8 +615,8 @@ async def _scrape_parliament_bills(
                 if r.status_code == 403:
                     _record_probe_error(probe_errors, "api_http_403")
                     logger.warning("[SCRAPER] Parliament returned 403; host cooldown started")
-                    api_blocked = True
-                    break
+                    _record_probe_error(probe_errors, "source_blocked")
+                    return []
                 if r.status_code != 200:
                     _record_probe_error(probe_errors, f"api_http_{r.status_code}")
                     continue
@@ -647,80 +639,27 @@ async def _scrape_parliament_bills(
                 if len(bills) >= limit:
                     break
     except HostCooldown:
+        _record_probe_error(probe_errors, "source_blocked")
         _record_probe_error(probe_errors, "api_http_403_cooldown")
-        api_blocked = True
+        return []
+    except RobotsDisallowed:
+        _record_probe_error(probe_errors, "robots_disallowed")
+        return []
     except Exception as e:
         _record_probe_error(probe_errors, "api_error")
-        logger.warning("[SCRAPER] Stage 1 error: %s — falling back to Jina", type(e).__name__)
-        api_blocked = True
+        logger.warning("[SCRAPER] Stage 1 error: %s — falling back to direct HTML", type(e).__name__)
 
     if bills:
         finalized = _finalize_scraped_bills(bills, limit=limit, require_dates=require_dates)
         if finalized or not require_dates:
             return finalized
-        logger.warning("[SCRAPER] Stage 1 returned only undated rows — falling back to Jina")
+        logger.warning("[SCRAPER] Stage 1 returned only undated rows — falling back to direct HTML")
         bills = []
 
-    # ── Stage 2: Jina Markdown Scrape (current index + specific pages) ───────
-    if api_blocked or not bills:
-        fallback_used = "jina"
-        try:
-            jina_pages = [
-                f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/all-laws",                 # current index
-                f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Katatethenta-Nomosxedia",   # submitted
-                f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Psifisthenta-Nomoschedia",  # voted
-            ]
-            merged: dict[str, dict] = {}
-            for page_url in jina_pages:
-                md = await _fetch_jina_markdown(page_url, probe_errors=probe_errors)
-                if md:
-                    parsed = _parse_parliament_markdown(md, page_url)
-                    for item in parsed:
-                        key = item.get("law_id") or item.get("url") or item.get("title_el")
-                        if not key:
-                            continue
-                        if key not in merged:
-                            merged[key] = item
-                            continue
-                        existing = merged[key]
-                        preferred_title = prefer_scraped_title(
-                            existing.get("title_el"),
-                            item.get("title_el"),
-                        )
-                        if preferred_title != existing.get("title_el"):
-                            existing["title_el"] = preferred_title
-                        for field in (
-                            "summary_long_el",
-                            "submitted_date",
-                            "date",
-                            "ministry",
-                            "type",
-                            "phase",
-                            "law_num",
-                        ):
-                            if item.get(field) and not existing.get(field):
-                                existing[field] = item[field]
-            bills = sorted(
-                merged.values(),
-                key=lambda item: item.get("date") or item.get("submitted_date") or "",
-                reverse=True,
-            )
-            if bills:
-                logger.info("[SCRAPER] Fallback 1→2: Jina returned %d bills from %d pages", len(bills), len(jina_pages))
-                finalized = _finalize_scraped_bills(bills, limit=limit, require_dates=require_dates)
-                if finalized or not require_dates:
-                    return finalized
-                logger.warning("[SCRAPER] Stage 2 returned only undated rows — falling back to direct HTML")
-                bills = []
-        except Exception as e:
-            _record_probe_error(probe_errors, "jina_stage_error")
-            logger.warning("[SCRAPER] Stage 2 (Jina) error: %s — falling back to direct HTML", type(e).__name__)
-
-    # ── Stage 3: Direct HTML parse (no proxy) ────────────────────────
+    # ── Stage 2: Direct HTML for non-block failures ──────────────────
     if not bills:
-        fallback_used = "direct_html"
         try:
-            async with attempt_timeout(15.0), httpx.AsyncClient(timeout=15.0, event_hooks=SCRAPER_HTTP_HOOKS) as client:
+            async with attempt_timeout(15.0), httpx.AsyncClient(timeout=15.0, trust_env=False, event_hooks=SCRAPER_HTTP_HOOKS) as client:
                 r = await client.get(
                     f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Psifisthenta-Nomoschedia",
                     headers={"User-Agent": SCRAPE_USER_AGENT, "Accept-Language": "el-GR,el;q=0.9"},
@@ -743,7 +682,10 @@ async def _scrape_parliament_bills(
                 else:
                     _record_probe_error(probe_errors, f"direct_html_http_{r.status_code}")
         except HostCooldown:
+            _record_probe_error(probe_errors, "source_blocked")
             _record_probe_error(probe_errors, "direct_html_http_403_cooldown")
+        except RobotsDisallowed:
+            _record_probe_error(probe_errors, "robots_disallowed")
         except Exception as e:
             _record_probe_error(probe_errors, "direct_html_error")
             logger.warning("[SCRAPER] Stage 3 (direct HTML) error: %s", type(e).__name__)
@@ -752,7 +694,7 @@ async def _scrape_parliament_bills(
         if any(code.endswith("_cooldown") for code in probe_errors):
             logger.info("[SCRAPER] Discovery deferred during host cooldown")
         else:
-            logger.warning("[SCRAPER] ALL 3 STAGES FAILED — 0 bills. Next run in 6-12h.")
+            logger.warning("[SCRAPER] Direct discovery unavailable — 0 bills. Next scheduled run in 24h.")
 
     return _finalize_scraped_bills(bills, limit=limit, require_dates=require_dates)
 
@@ -825,7 +767,7 @@ async def get_parliament_freshness_probe(limit: int = Query(20, le=20), request:
         if bill.get("date") or bill.get("submitted_date")
     ]
     source_status = "ok" if dates else "empty"
-    if not dates and any("403" in error or "access_denied" in error or "401" in error for error in probe_errors):
+    if not dates and any("403" in error or "access_denied" in error or "401" in error or error in {"source_blocked", "robots_disallowed"} for error in probe_errors):
         source_status = "blocked"
     return {
         "source": "hellenicparliament.gr",
@@ -1057,7 +999,7 @@ async def import_parliament_bills(
 ):
     """Bulk import structured bill data.
     Called by GitHub Actions scraper workflow which fetches from
-    hellenicparliament.gr API (GitHub IPs are not blocked).
+    canonical server source, respecting Parliament access restrictions.
     Accepts pre-structured JSON, stores new bills, skips duplicates.
     """
 

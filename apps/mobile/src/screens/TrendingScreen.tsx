@@ -3,6 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator }
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { fetchTrending } from "../lib/api";
+import { parliamentFreshness } from "../lib/source-freshness";
 import type { RootStackParams } from "../navigation";
 import { colors } from "../theme";
 
@@ -40,6 +41,13 @@ export default function TrendingScreen() {
           <View style={s.rank}><Text style={s.rankText}>{index + 1}</Text></View>
           <View style={s.content}>
             <Text style={s.title} numberOfLines={2}>{item.title_el}</Text>
+            {(() => {
+              const freshness = parliamentFreshness(item);
+              return freshness && <View>
+                <Text style={s.pill}>{freshness.updated}</Text>
+                {freshness.notice && <Text style={s.pill}>{freshness.notice}</Text>}
+              </View>;
+            })()}
             {item.pill_el && <Text style={s.pill} numberOfLines={1}>{item.pill_el}</Text>}
             <View style={s.footer}>
               <Text style={s.status}>{item.status}</Text>

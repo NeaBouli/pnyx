@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="el" data-lang="el">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Το bot της ekklesia.gr | ekklesia.gr</title>
+  <meta name="description" content="Σκοπός, πρόσβαση σε δημόσια δεδομένα και επικοινωνία για το bot της ekklesia.gr."/>
+  <meta name="author" content="V-Labs IT Solutions &amp; Development"/>
+  <meta name="robots" content="index, follow"/>
+  <link rel="canonical" href="https://ekklesia.gr/bot.html"/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:url" content="https://ekklesia.gr/bot.html"/>
+  <meta property="og:title" content="Το bot της ekklesia.gr | ekklesia.gr"/>
+  <meta property="og:description" content="Σκοπός, πρόσβαση σε δημόσια δεδομένα και επικοινωνία για το bot της ekklesia.gr."/>
+  <meta property="og:image" content="https://ekklesia.gr/assets/og-image.png"/>
+  <meta property="og:image:width" content="1200"/>
+  <meta property="og:image:height" content="630"/>
+  <meta property="og:locale" content="el_GR"/>
+  <meta property="og:site_name" content="εκκλησία"/>
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="twitter:title" content="Το bot της ekklesia.gr | ekklesia.gr"/>
+  <meta name="twitter:description" content="Σκοπός, πρόσβαση σε δημόσια δεδομένα και επικοινωνία για το bot της ekklesia.gr."/>
+  <meta name="twitter:image" content="https://ekklesia.gr/assets/og-image.png"/>
+  <link rel="alternate" hreflang="el" href="https://ekklesia.gr/bot.html"/>
+  <link rel="alternate" hreflang="x-default" href="https://ekklesia.gr/bot.html"/>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Το bot της ekklesia.gr | ekklesia.gr",
+    "description": "Σκοπός, πρόσβαση σε δημόσια δεδομένα και επικοινωνία για το bot της ekklesia.gr.",
+    "url": "https://ekklesia.gr/bot.html",
+    "inLanguage": "el",
+    "isPartOf": {"@type": "WebSite", "name": "ekklesia.gr", "url": "https://ekklesia.gr"}
+  }
+  </script>
+  <link rel="icon" type="image/png" href="favicon.ico"/>
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-light: #eff6ff;
+      --ink: #0f172a;
+      --text: #334155;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --white: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--white);
+      color: var(--ink);
+      line-height: 1.65;
+    }
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.75rem 1.5rem;
+      background: rgba(255,255,255,0.97);
+      border-bottom: 1px solid var(--line);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      color: var(--blue);
+      font-size: 1.2rem;
+      font-weight: 900;
+      text-decoration: none;
+    }
+    .logo img { width: 40px; height: 40px; object-fit: contain; }
+    .nav-actions { display: flex; align-items: center; gap: 0.75rem; }
+    .nav-actions a { color: var(--text); text-decoration: none; font-size: 0.9rem; }
+    button {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--white);
+      color: var(--text);
+      padding: 0.4rem 0.65rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:hover, a:hover { color: var(--blue); }
+    header {
+      padding: 3.5rem 1.5rem 2.5rem;
+      background: var(--blue-light);
+      border-bottom: 1px solid #dbeafe;
+    }
+    header > div, main { max-width: 860px; margin: 0 auto; }
+    h1 { margin: 0 0 0.5rem; font-size: 2.2rem; line-height: 1.2; }
+    header p { margin: 0; color: var(--muted); }
+    main { padding: 2.5rem 1.5rem 3rem; }
+    h2 {
+      margin: 2.25rem 0 0.85rem;
+      padding-bottom: 0.45rem;
+      border-bottom: 2px solid var(--line);
+      font-size: 1.3rem;
+    }
+    h2:first-child { margin-top: 0; }
+    p { color: var(--text); }
+    dl { margin: 0; }
+    dt { margin-top: 0.85rem; color: var(--muted); font-size: 0.83rem; font-weight: 700; text-transform: uppercase; }
+    dd { margin: 0.15rem 0 0; color: var(--text); }
+    a { color: var(--blue); }
+    .notice {
+      margin: 1.5rem 0;
+      padding: 1rem 1.1rem;
+      border-left: 4px solid var(--blue);
+      background: var(--blue-light);
+      color: var(--text);
+    }
+    footer {
+      padding: 2rem 1.5rem;
+      background: var(--ink);
+      color: #94a3b8;
+      text-align: center;
+      font-size: 0.82rem;
+    }
+    footer a { color: #cbd5e1; text-decoration: none; margin: 0 0.5rem; }
+    code { overflow-wrap: anywhere; }
+    [hidden] { display: none !important; }
+    @media (max-width: 640px) {
+      nav { align-items: flex-start; padding: 0.75rem 1rem; }
+      .nav-actions { flex-wrap: wrap; justify-content: flex-end; }
+      h1 { font-size: 1.75rem; }
+    }
+  </style>
+</head>
+<body>
+<nav>
+  <a href="/" class="logo"><img src="pnx.png" alt=""/>εκκλησία</a>
+  <div class="nav-actions">
+    <a href="wiki/privacy.html" data-el="Ιδιωτικότητα" data-en="Privacy">Ιδιωτικότητα</a>
+    <a href="community.html">Community</a>
+    <button type="button" id="langBtn" aria-label="Change language">EN</button>
+  </div>
+</nav>
+
+<header>
+  <div>
+    <h1 data-el="Το bot της ekklesia.gr" data-en="The ekklesia.gr bot">Το bot της ekklesia.gr</h1>
+    <p data-el="Πώς συλλέγουμε δημόσια κοινοβουλευτικά δεδομένα" data-en="How we collect public parliamentary data">Πώς συλλέγουμε δημόσια κοινοβουλευτικά δεδομένα</p>
+  </div>
+</header>
+
+<main>
+  <section id="elContent" lang="el">
+    <h2>Σκοπός</h2>
+    <p>Η ekklesia.gr είναι μη εμπορικό έργο civic-tech στην Ελλάδα, με φορέα λειτουργίας τη Vendetta Labs. Βοηθά τους πολίτες να ενημερώνονται και να συμμετέχουν στον δημόσιο διάλογο. Είναι ανεξάρτητη από τη Βουλή των Ελλήνων.</p>
+    <h2>Δημόσια δεδομένα και συχνότητα</h2>
+    <p>Το bot αναζητά δημόσιους τίτλους νομοσχεδίων, ημερομηνίες, στάδια επεξεργασίας, συνδέσμους επίσημων εγγράφων και διαθέσιμα στοιχεία ψηφοφορίας. Η προγραμματισμένη αναζήτηση στη Βουλή γίνεται ανά 24 ώρες. Η συμπλήρωση κειμένων και οι χειροκίνητοι έλεγχοι ακολουθούν την ίδια πολιτική πρόσβασης, με τουλάχιστον 10 δευτερόλεπτα μεταξύ αιτημάτων προς τον ίδιο φορέα.</p>
+    <p>Χρησιμοποιούμε προσωρινή μνήμη και αιτήματα υπό όρους (ETag / If-Modified-Since), όταν η πηγή παρέχει τις αντίστοιχες κεφαλίδες. Ελέγχουμε και αποθηκεύουμε το robots.txt καθημερινά ανά διεργασία και παραλείπουμε απαγορευμένες διαδρομές. Αν ο έλεγχος δεν είναι διαθέσιμος, η λήψη περιεχομένου αναβάλλεται.</p>
+    <div class="notice">Σε απόκριση 403 ή αποκλεισμό σταματάμε και τηρούμε την περίοδο αναμονής του φορέα. Δεν χρησιμοποιούμε proxy, εναλλαγή IP, Jina ή τρίτους για παράκαμψη. Οι σελίδες νομοσχεδίων εμφανίζουν τον χρόνο τελευταίας επιτυχούς ενημέρωσης και ένδειξη όταν τα δεδομένα ενδέχεται να μην είναι ενημερωμένα.</div>
+    <h2>Αναγνωριστικό User-Agent</h2>
+    <p><code>ekklesia.gr-bot/1.0 (+https://ekklesia.gr/bot.html; contact: kaspartisan@proton.me)</code></p>
+    <h2>Επικοινωνία, αλλαγές και εξαίρεση</h2>
+    <p>Για αλλαγή συχνότητας, περιορισμό διαδρομών ή διακοπή συλλογής, επικοινωνήστε στο <a href="mailto:kaspartisan@proton.me">kaspartisan@proton.me</a>, αναφέροντας τις σχετικές διευθύνσεις και την επιθυμητή αλλαγή. Θα εξετάσουμε το αίτημα και θα προσαρμόσουμε την πρόσβαση σε συνεννόηση με τον φορέα.</p>
+    <p><a href="legal.html">Στοιχεία φορέα</a> · <a href="wiki/privacy.html">Ιδιωτικότητα</a></p>
+  </section>
+  <section id="enContent" lang="en" hidden>
+    <h2>Purpose</h2>
+    <p>ekklesia.gr is a non-commercial civic-tech project in Greece, operated by Vendetta Labs. It helps citizens follow public affairs and participate in public discussion. It is independent of the Hellenic Parliament.</p>
+    <h2>Public data and frequency</h2>
+    <p>The bot looks for public bill titles, dates, legislative stages, official document links and available voting information. Scheduled Parliament discovery runs every 24 hours. Text enrichment and manual checks follow the same access policy, with at least 10 seconds between requests to the host.</p>
+    <p>We cache responses and use conditional requests (ETag / If-Modified-Since) when the source supplies validators. We fetch and cache robots.txt daily per worker and skip disallowed paths. If robots cannot be checked, content retrieval is deferred.</p>
+    <div class="notice">A 403 or access block stops access and activates the host cooldown. We use no proxy, IP rotation, Jina or third-party bypass. Bill pages display the last successful update and a notice when data may be outdated.</div>
+    <h2>User-Agent</h2>
+    <p><code>ekklesia.gr-bot/1.0 (+https://ekklesia.gr/bot.html; contact: kaspartisan@proton.me)</code></p>
+    <h2>Contact, changes and opt-out</h2>
+    <p>To request a different frequency, path restrictions or an end to collection, email <a href="mailto:kaspartisan@proton.me">kaspartisan@proton.me</a> with the relevant URLs and requested change. We will review the request and coordinate access with the source operator.</p>
+    <p><a href="legal.html">Operator information</a> · <a href="wiki/privacy.html">Privacy</a></p>
+  </section>
+</main>
+
+<footer>
+  <a href="/" data-el="Αρχική" data-en="Home">Αρχική</a>
+  <a href="wiki/privacy.html" data-el="Ιδιωτικότητα" data-en="Privacy">Ιδιωτικότητα</a>
+  <a href="https://github.com/NeaBouli/pnyx">GitHub</a>
+  <p>ekklesia.gr &middot; &copy; 2026 V-Labs IT Solutions &amp; Development</p>
+</footer>
+
+<script src="assets/csp/bot.js"></script>
+</body>
+</html>

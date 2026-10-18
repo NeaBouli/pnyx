@@ -247,9 +247,10 @@ async def test_parliament_freshness_probe_requires_dated_scraper(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_strict_scrape_falls_back_when_stage_one_has_only_undated_rows(monkeypatch):
+async def test_strict_scrape_rejects_undated_rows_without_jina(monkeypatch):
     class FakeResponse:
         status_code = 200
+        text = "<html></html>"
 
         def json(self):
             return {
@@ -272,12 +273,8 @@ async def test_strict_scrape_falls_back_when_stage_one_has_only_undated_rows(mon
         async def get(self, *_args, **_kwargs):
             return FakeResponse()
 
-    async def fake_fetch_jina_markdown(url: str, probe_errors=None):
-        if "all-laws" not in url:
-            return ""
-        return """
-| [Dated fallback row](https://www.hellenicparliament.gr/Nomothetiko-Ergo/Anazitisi-Nomothetikou-Ergou?law_id=3aba3e72-d5b0-414b-8649-b45901603f92) | Σχέδιο νόμου | 23/06/2026 | Κατατεθέντα |
-"""
+    async def fake_fetch_jina_markdown(*args, **kwargs):
+        raise AssertionError("No Parliament requests through Jina")
 
     monkeypatch.setattr(scraper_router.httpx, "AsyncClient", lambda *args, **kwargs: FakeClient())
     monkeypatch.setattr(scraper_router, "_fetch_jina_markdown", fake_fetch_jina_markdown)
@@ -285,13 +282,11 @@ async def test_strict_scrape_falls_back_when_stage_one_has_only_undated_rows(mon
 
     bills = await scraper_router.scrape_parliament_bills(limit=10, require_dates=True)
 
-    assert len(bills) == 1
-    assert bills[0]["law_id"] == "3aba3e72-d5b0-414b-8649-b45901603f92"
-    assert bills[0]["submitted_date"] == "2026-06-23T00:00:00+00:00"
+    assert bills == []
 
 
 @pytest.mark.asyncio
-async def test_jina_access_denied_markdown_is_reported_as_blocked(monkeypatch):
+async def test_parliament_403_stops_all_fallbacks(monkeypatch):
     class ApiBlockedResponse:
         status_code = 403
 
@@ -333,8 +328,9 @@ async def test_jina_access_denied_markdown_is_reported_as_blocked(monkeypatch):
     assert payload["count"] == 0
     assert payload["dated_count"] == 0
     assert "api_http_403" in payload["probe_errors"]
-    assert "jina_target_access_denied" in payload["probe_errors"]
-    assert "direct_html_http_403" in payload["probe_errors"]
+    assert "source_blocked" in payload["probe_errors"]
+    assert "jina_target_access_denied" not in payload["probe_errors"]
+    assert "direct_html_http_403" not in payload["probe_errors"]
 
 
 class _FakeScalarResult:

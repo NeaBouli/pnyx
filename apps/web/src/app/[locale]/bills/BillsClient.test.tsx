@@ -85,6 +85,8 @@ describe("BillsClient first-page SSR seed", () => {
   it("puts seeded cards into the server HTML and hydrates without a mount fetch", async () => {
     const { html, errors } = await serverThenHydrate({ status: "", bills: [bill("A"), bill("B")] }, true);
     expect(html).toContain("Title A");
+    expect(html).toContain("Last updated:");
+    expect(html).toContain("Parliament data may be outdated");
     expect(html).not.toContain(SKELETON);
     expect(errors).toEqual([]);
     expect(titles()).toEqual(["Title A", "Title B"]);

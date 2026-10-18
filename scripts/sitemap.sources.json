@@ -41,8 +41,16 @@
       "source": "docs/legal.html",
       "changefreq": "yearly",
       "priority": "0.7",
-      "lastmod": "2026-09-27",
-      "sha256": "42edc8e9c7db5d3fa4bb141adc915d47acc232ff93d405a38871b83ee1b5b4b7"
+      "lastmod": "2026-10-18",
+      "sha256": "4c7983111e2119c10e894c9dc383008cece88451e836059154ea97fe78608adf"
+    },
+    {
+      "loc": "/bot.html",
+      "source": "docs/bot.html",
+      "changefreq": "yearly",
+      "priority": "0.5",
+      "lastmod": "2026-10-18",
+      "sha256": "c4fc5ce19e0c37ea9b93b15ec3167572fdbeb20e71f73ab9af065bd500359e17"
     },
     {
       "loc": "/govgr-dimos.html",

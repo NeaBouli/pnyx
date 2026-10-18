@@ -127,6 +127,9 @@ export interface Bill {
   parliament_url?: string | null;
   official_source_url?: string | null;
   source?: string | null;
+  source_last_success?: string | null;
+  source_blocked?: boolean;
+  source_stale?: boolean;
   diavgeia_ada?: string | null;
   governance_level?: string;
   periferia_id?: number | null;

@@ -1,4 +1,4 @@
-"""Bill text enrichment: direct Diavgeia documents and four Parliament fallbacks.
+"""Bill text enrichment: direct Parliament and Diavgeia access.
 
 HTTP attempts share host pacing, Retry-After delays and forbidden cooldowns.
 """
@@ -12,11 +12,11 @@ from urllib.parse import urlsplit
 import httpx
 
 from services.scraper_http import HostCooldown, SCRAPER_HTTP_HOOKS, host_limiter
+from services.parliament_access import USER_AGENT, RobotsDisallowed, is_parliament
 
 logger = logging.getLogger(__name__)
 
 JINA_URL = "https://r.jina.ai/"
-USER_AGENT = "ekklesia.gr/1.0 (civic-tech; +https://ekklesia.gr/wiki/api.html)"
 
 # Boilerplate patterns that indicate Parliament navigation/chrome, not bill text
 _BAD_TEXT_PATTERNS = [
@@ -122,7 +122,9 @@ PLAYWRIGHT_TEARDOWN_TIMEOUT = 2
 # ─── Kanal 1: Jina Markdown ─────────────────────────────────────────────────
 
 async def _channel_jina_markdown(url: str) -> str:
-    """Jina Reader — returns Markdown, we extract content lines."""
+    """Jina Reader for non-Parliament sources only."""
+    if is_parliament(url):
+        return ""
     for attempt in range(MAX_RETRIES):
         try:
             async with attempt_timeout(TIMEOUT), httpx.AsyncClient(timeout=TIMEOUT, event_hooks=SCRAPER_HTTP_HOOKS) as client:
@@ -175,7 +177,9 @@ def _extract_markdown_content(raw: str) -> str:
 # ─── Kanal 2: Jina Raw HTML → Regex ─────────────────────────────────────────
 
 async def _channel_jina_html(url: str) -> str:
-    """Jina Reader with X-Return-Format: html, then regex extraction."""
+    """Jina HTML extraction for non-Parliament sources only."""
+    if is_parliament(url):
+        return ""
     for attempt in range(MAX_RETRIES):
         try:
             async with attempt_timeout(TIMEOUT), httpx.AsyncClient(timeout=TIMEOUT, event_hooks=SCRAPER_HTTP_HOOKS) as client:
@@ -235,7 +239,9 @@ def _extract_text_from_html(html: str) -> str:
 # ─── Kanal 3: Ollama Text-Extraktion ────────────────────────────────────────
 
 async def _channel_ollama_extract(url: str) -> str:
-    """Fetch raw HTML, then use Ollama to extract bill text."""
+    """Fetch non-Parliament HTML, then extract its text with Ollama."""
+    if is_parliament(url):
+        return ""
     # First get raw HTML via Jina
     raw_html = ""
     try:
@@ -351,7 +357,9 @@ async def _teardown_playwright(manager, browser) -> None:
 
 
 async def _channel_playwright(url: str) -> str:
-    """Playwright headless Chromium — renders JS fully. Optional, skipped if not installed."""
+    """Optional browser extraction for non-Parliament sources only."""
+    if is_parliament(url):
+        return ""
     try:
         from playwright.async_api import async_playwright
     except ImportError:
@@ -494,6 +502,19 @@ async def _fetch_diavgeia_document(url: str) -> tuple[str, str]:
     return "", "failed"
 
 
+async def _channel_direct_parliament(url: str) -> str:
+    async with attempt_timeout(TIMEOUT), httpx.AsyncClient(timeout=TIMEOUT, trust_env=False, follow_redirects=True, event_hooks=SCRAPER_HTTP_HOOKS) as client:
+        response = await client.get(url, headers={"User-Agent": USER_AGENT})
+        if response.status_code == 403:
+            host_limiter.observe(url, 403, response.headers)
+            from services.source_freshness import record_source_blocked
+            await record_source_blocked()
+            raise HostCooldown("Parliament source_blocked")
+        if response.status_code == 200:
+            return _extract_text_from_html(response.text)[:MAX_TEXT_LENGTH]
+    return ""
+
+
 async def _fetch_bill_text_result(
     bill_id: str, parliament_url: str, *, source: str | None = None,
 ) -> tuple[str, str]:
@@ -512,6 +533,13 @@ async def _fetch_bill_text_result(
                 text = ""
             return text, outcome
 
+        if is_parliament(parliament_url):
+            text = await _channel_direct_parliament(parliament_url)
+            if text and not _is_bad_parliament_text(text):
+                outcome = "fetched"
+                return text, outcome
+            return "", outcome
+
         deferred = False
         for channel in (
             _channel_jina_markdown, _channel_jina_html,
@@ -522,14 +550,14 @@ async def _fetch_bill_text_result(
                 text = await channel(parliament_url)
             except HostCooldown:
                 deferred = True
-                continue
+                break
             if text and not _is_bad_parliament_text(text):
                 logger.info("[TEXT-FETCH] channel=%s chars=%d", channel.__name__, len(text))
                 outcome = "fetched"
                 return text, outcome
         outcome = "skipped" if deferred else "failed"
         return "", outcome
-    except HostCooldown:
+    except (HostCooldown, RobotsDisallowed):
         outcome = "skipped"
         return "", outcome
     except Exception as exc:

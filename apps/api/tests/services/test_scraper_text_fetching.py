@@ -14,7 +14,8 @@ from services import parliament_fetcher as fetcher
 pytestmark = pytest.mark.usefixtures("scraper_clock")
 
 DOCUMENT = "https://diavgeia.gov.gr/doc/private-ada?person=private-name"
-LAW = "https://www.hellenicparliament.gr/law?person=private-name"
+# Generic fallback channels remain available for non-Parliament sources (T-9147).
+LAW = "https://source.example.org/law?person=private-name"
 TEXT = "Οι αρμοδιότητες και οι προϋποθέσεις εφαρμογής της απόφασης περιγράφονται αναλυτικά. " * 10
 
 
@@ -611,15 +612,15 @@ async def test_browser_requests_and_redirects_use_shared_http_pacing(scraper_clo
         return httpx.Response(200, text=TEXT)
 
     respx.get(LAW).mock(side_effect=respond)
-    respx.get("https://www.hellenicparliament.gr/final").mock(side_effect=respond)
-    respx.get("https://www.hellenicparliament.gr/script.js").mock(side_effect=respond)
+    respx.get("https://source.example.org/final").mock(side_effect=respond)
+    respx.get("https://source.example.org/script.js").mock(side_effect=respond)
 
     class Page:
         async def route(self, pattern, callback):
             self.callback = callback
 
         async def goto(self, url, **kwargs):
-            for request_url in (url, "https://www.hellenicparliament.gr/script.js"):
+            for request_url in (url, "https://source.example.org/script.js"):
                 route = SimpleNamespace(
                     request=SimpleNamespace(
                         url=request_url, method="GET", post_data_buffer=None,

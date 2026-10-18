@@ -434,7 +434,7 @@ async def _release_forum_sync_lock(client: Any, token: str) -> None:
 
 
 async def scheduled_scrape():
-    """Scrape parliament bills every 12 hours (MOD-03 cron + MOD-10 scraper).
+    """Scrape parliament bills every 24 hours (MOD-03 cron + MOD-10 scraper).
     Fetches from hellenicparliament.gr API and upserts new bills into DB.
     """
     from routers.scraper import prefer_scraped_title, scrape_parliament_bills
@@ -1100,7 +1100,7 @@ async def lifespan(app):
     validate_identity_kdf_config()
     sso.validate_forum_sso_config()
     await add_persisted_interval_job(scheduler, scheduled_completeness_check, hours=6, name="completeness_check")
-    await add_persisted_interval_job(scheduler, scheduled_scrape, hours=12, name="parliament", job_id="parliament_scrape")
+    await add_persisted_interval_job(scheduler, scheduled_scrape, hours=24, name="parliament", job_id="parliament_scrape")
     add_observed_job(scheduler, scheduled_notify_new_bills, IntervalTrigger(minutes=30), name="notify_new_bills")
     add_observed_job(scheduler, scheduled_notify_results, IntervalTrigger(hours=1), name="notify_results")
     add_observed_job(scheduler, scheduled_push_categories, IntervalTrigger(minutes=30), name="push_categories")
@@ -1116,7 +1116,7 @@ async def lifespan(app):
     await initialize_job_states(scheduler)
     install_schedule_listener(scheduler)
     scheduler.start()
-    logger.info("[Scheduler] Started — completeness 6h, lifecycle 1h, ZK-Arweave 30m, parliament 12h, diavgeia 48h, notify-bills 30m, notify-results 1h, forum-sync 10m, greek-topics 6h, newsletter 1st/month")
+    logger.info("[Scheduler] Started — completeness 6h, lifecycle 1h, ZK-Arweave 30m, parliament 24h, diavgeia 48h, notify-bills 30m, notify-results 1h, forum-sync 10m, greek-topics 6h, newsletter 1st/month")
 
     # Short-interval catch-up only. Long intervals already have their first run
     # restored above; a separate immediate job would bypass the startup delay.

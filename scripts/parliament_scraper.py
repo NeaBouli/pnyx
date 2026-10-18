@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Fetch Greek Parliament bills for the GitHub Actions import job.
 
-The production server can be blocked by the Parliament WAF. This script is
-designed for GitHub Actions and keeps the output shape close to the API
-server's canonical scraper: stable IDs, dates, source URL, safe metadata
+Source access runs only on the canonical server, never from a runner IP.
+This script retains import normalization and offline parsers: stable IDs, dates, source URL, safe metadata
 summary, and official PDF document blocks when available.
 """
 
@@ -31,11 +30,8 @@ from typing import Any
 
 PARLIAMENT_BASE = "https://www.hellenicparliament.gr"
 PARLIAMENT_API = f"{PARLIAMENT_BASE}/api.ashx"
-USER_AGENT = "Mozilla/5.0 (compatible; Ekklesia/1.0; +https://ekklesia.gr)"
-JINA_BASE = "https://r.jina.ai/"
+USER_AGENT = "ekklesia.gr-bot/1.0 (+https://ekklesia.gr/bot.html; contact: kaspartisan@proton.me)"
 DETAIL_DIRECT_TIMEOUT_SECONDS = 15
-DETAIL_JINA_TIMEOUT_SECONDS = 20
-PDF_JINA_TIMEOUT_SECONDS = 25
 MAX_ENRICHED_BILLS = 5
 MAX_PDF_TEXT_CANDIDATES = 1
 ATTESTATION_ENV = "PARLIAMENT_IMPORT_ATTESTATION_KEY"
@@ -77,6 +73,9 @@ def _verified_ssl_context() -> ssl.SSLContext:
 
 
 def _http_get(url: str, *, accept: str = "*/*", timeout: int = 30) -> FetchResult:
+    host = (urllib.parse.urlsplit(url).hostname or "").lower()
+    if host == "hellenicparliament.gr" or host.endswith(".hellenicparliament.gr") or host == "r.jina.ai":
+        return FetchResult(url, None, "", "runner_source_access_disabled")
     req = urllib.request.Request(
         url,
         headers={
@@ -774,11 +773,6 @@ def _detail_markdown_for_bill(bill: dict[str, Any]) -> str | None:
         if detail_matches_bill(bill.get("title_el"), direct_detail.get("title_el")):
             return rendered
 
-    jina = _http_get(f"{JINA_BASE}{url}", accept="text/plain", timeout=DETAIL_JINA_TIMEOUT_SECONDS)
-    if jina.status == 200 and jina.text and not _access_blocked(jina.text):
-        jina_detail = parse_detail_markdown(jina.text)
-        if detail_matches_bill(bill.get("title_el"), jina_detail.get("title_el")):
-            return jina.text
     return None
 
 
@@ -802,59 +796,13 @@ def enrich_bill_from_official_sources(bill: dict[str, Any]) -> None:
     if not detail_markdown:
         return
 
-    links = enrich_bill_from_detail(bill, detail_markdown)
-    for link in _pdf_candidate_order(links)[:MAX_PDF_TEXT_CANDIDATES]:
-        time.sleep(0.5)
-        result = _http_get(
-            f"{JINA_BASE}{link['url']}",
-            accept="text/plain",
-            timeout=PDF_JINA_TIMEOUT_SECONDS,
-        )
-        if result.status == 200 and result.text and enrich_bill_from_pdf_text(
-            bill,
-            result.text,
-            link["url"],
-        ):
-            return
+    enrich_bill_from_detail(bill, detail_markdown)
 
 
 def scrape(limit: int) -> tuple[list[dict[str, Any]], list[str]]:
-    errors: list[str] = []
-    merged: dict[str, dict[str, Any]] = {}
-
-    for cat in ("%CE%BD", "%CE%BD%CE%BF"):
-        url = f"{PARLIAMENT_API}?q=laws&cat={cat}"
-        result = _http_get(url, accept="application/json")
-        if result.status == 200 and result.text and not _access_blocked(result.text):
-            try:
-                _merge_bills(merged, parse_api_payload(result.text))
-            except Exception as exc:
-                errors.append(f"api_parse_error:{cat}:{type(exc).__name__}")
-        else:
-            errors.append(f"api_blocked_or_unavailable:{cat}:{result.error or result.status}")
-
-    for page in PARLIAMENT_PAGES:
-        direct = _http_get(page, accept="text/html")
-        if direct.status == 200 and direct.text and not _access_blocked(direct.text):
-            _merge_bills(merged, parse_html_page(direct.text, page))
-        else:
-            errors.append(f"direct_blocked_or_unavailable:{page.rsplit('/', 1)[-1]}:{direct.error or direct.status}")
-
-        time.sleep(1)
-        jina = _http_get(f"{JINA_BASE}{page}", accept="text/plain")
-        if jina.status == 200 and jina.text and not _access_blocked(jina.text):
-            _merge_bills(merged, parse_markdown_table(jina.text, page))
-        else:
-            errors.append(f"jina_blocked_or_unavailable:{page.rsplit('/', 1)[-1]}:{jina.error or jina.status}")
-
-    bills = sorted(
-        merged.values(),
-        key=lambda bill: bill.get("vote_date") or bill.get("submitted_date") or "",
-        reverse=True,
-    )
-    for bill in bills[: min(limit, MAX_ENRICHED_BILLS)]:
-        enrich_bill_from_official_sources(bill)
-    return bills[:limit], errors
+    # Parliament blocks on the server must never cause requests from a runner IP.
+    # The CLI uses the canonical server endpoint, with its shared access policy.
+    return [], ["runner_source_access_disabled"]
 
 
 def normalize_server_fallback_payload(
@@ -916,7 +864,7 @@ def normalize_server_fallback_payload(
 
 
 def fetch_server_fallback(url: str, *, limit: int) -> list[dict[str, Any]]:
-    """Fetch the canonical server probe only after runner-side sources fail."""
+    """Fetch the canonical server probe; independent runner source access is disabled."""
     result = _http_get(url, accept="application/json", timeout=45)
     if result.status != 200 or not result.text or _access_blocked(result.text):
         raise ValueError(f"server fallback unavailable: {result.error or result.status}")

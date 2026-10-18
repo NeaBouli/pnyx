@@ -24,6 +24,7 @@ from services.citizen_action_integrity import (
     citizen_action_timestamp_is_fresh,
 )
 from services.source_links import official_source_url
+from services.source_freshness import get_source_freshness, bill_freshness
 from services.geographic_scope import validate_region_filter
 from models import (
     ParliamentBill, BillStatus, BillStatusLog, BillRelevanceVote,
@@ -61,6 +62,9 @@ class BillSummary(BaseModel):
     consensus_count:     int | None = 0
     results_visibility:  str | None = "HIDDEN"
     source:              str | None = "PARLIAMENT"
+    source_last_success: str | None = None
+    source_blocked:      bool = False
+    source_stale:        bool = True
     diavgeia_ada:        str | None = None
     flag_count:          int | None = 0
     periferia_id:        int | None = None
@@ -88,6 +92,9 @@ class BillDetail(BaseModel):
     forum_topic_url:        str | None = None
     ai_summary_reviewed:    bool
     source:                 str | None = "PARLIAMENT"
+    source_last_success:    str | None = None
+    source_blocked:         bool = False
+    source_stale:           bool = True
     diavgeia_ada:           str | None = None
     results_visibility:     str | None = "HIDDEN"
     consensus_score:        float | None = None
@@ -269,7 +276,9 @@ async def get_bills(
     result = await db.execute(query)
     bills = result.scalars().all()
 
+    freshness = await get_source_freshness()
     return [BillSummary(
+        **bill_freshness(freshness, b.source),
         id=b.id,
         title_el=b.title_el,
         title_en=b.title_en,
@@ -330,7 +339,10 @@ async def get_trending(
     result = await db.execute(query)
     rows = result.all()
 
+    freshness = await get_source_freshness()
     return [BillSummary(
+        **bill_freshness(freshness, row[0].source),
+        source=row[0].source or "PARLIAMENT",
         id=row[0].id,
         title_el=row[0].title_el,
         title_en=row[0].title_en,
@@ -349,6 +361,12 @@ async def get_trending(
     ) for row in rows]
 
 
+@router.get("/sources/freshness")
+async def sources_freshness():
+    """Successful ingestion times and neutral availability flags for public sources."""
+    return await get_source_freshness()
+
+
 @router.get("/{bill_id}", response_model=BillDetail)
 async def get_bill(bill_id: str, db: AsyncSession = Depends(get_db)):
     """Einzelner Gesetzentwurf mit vollständigen Details und KI-Zusammenfassungen."""
@@ -359,7 +377,9 @@ async def get_bill(bill_id: str, db: AsyncSession = Depends(get_db)):
     if not bill or not is_public_bill(bill):
         raise HTTPException(status_code=404, detail=f"Gesetz {bill_id} nicht gefunden.")
 
+    freshness = await get_source_freshness()
     return BillDetail(
+        **bill_freshness(freshness, bill.source),
         id=bill.id,
         title_el=bill.title_el,
         title_en=bill.title_en,
