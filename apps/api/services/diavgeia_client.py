@@ -7,16 +7,18 @@ Rate limit: 5s between requests (self-imposed politeness).
 import asyncio
 import logging
 import time
+from asyncio import timeout as attempt_timeout
 from datetime import datetime
 from typing import AsyncIterator
 
 import httpx
 
+from services.scraper_http import SCRAPER_HTTP_HOOKS
+
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://diavgeia.gov.gr/luminapi/opendata"
 USER_AGENT = "ekklesia.gr/1.0 (+https://ekklesia.gr)"
-REQUEST_DELAY_SECONDS = 5.0
 DEFAULT_TIMEOUT = 30.0
 MAX_RETRIES = 3
 RETRY_BASE_DELAY = 2.0
@@ -32,7 +34,7 @@ def parse_timestamp(raw: str | int | None) -> datetime | None:
         try:
             return datetime.utcfromtimestamp(raw / 1000.0)
         except (OSError, ValueError, OverflowError):
-            logger.warning("Unparseable Unix timestamp from Diavgeia: %s", raw)
+            logger.warning("Unparseable Unix timestamp from Diavgeia")
             return None
 
     raw = str(raw).strip()
@@ -60,7 +62,7 @@ def parse_timestamp(raw: str | int | None) -> datetime | None:
         except ValueError:
             continue
 
-    logger.warning("Unparseable timestamp from Diavgeia: %s", raw)
+    logger.warning("Unparseable timestamp from Diavgeia")
     return None
 
 
@@ -68,13 +70,14 @@ class DiavgeiaClient:
     """Async HTTP client for Diavgeia OpenData API. Rate-limited, no auth."""
 
     def __init__(self, base_url: str = BASE_URL, timeout: float = DEFAULT_TIMEOUT) -> None:
+        self._attempt_timeout = timeout
         self._client = httpx.AsyncClient(
             base_url=base_url,
             timeout=timeout,
             headers={"Accept": "application/json", "User-Agent": USER_AGENT},
             follow_redirects=True,
+            event_hooks=SCRAPER_HTTP_HOOKS,
         )
-        self._last_request_at: float | None = None
 
     async def __aenter__(self) -> "DiavgeiaClient":
         return self
@@ -85,31 +88,23 @@ class DiavgeiaClient:
     async def close(self) -> None:
         await self._client.aclose()
 
-    async def _throttle(self) -> None:
-        """Enforce minimum delay between requests."""
-        if self._last_request_at is not None:
-            elapsed = time.monotonic() - self._last_request_at
-            if elapsed < REQUEST_DELAY_SECONDS:
-                await asyncio.sleep(REQUEST_DELAY_SECONDS - elapsed)
-
     async def _request(self, method: str, path: str, **kwargs: object) -> httpx.Response:
         """Execute HTTP request with throttling and retry on 5xx/429."""
-        await self._throttle()
-
         last_exc: Exception | None = None
         for attempt in range(MAX_RETRIES):
             start = time.monotonic()
-            self._last_request_at = start
             try:
-                resp = await self._client.request(method, path, **kwargs)
+                async with attempt_timeout(self._attempt_timeout):
+                    resp = await self._client.request(method, path, **kwargs)
                 elapsed_ms = (time.monotonic() - start) * 1000
-                logger.info("Diavgeia %s %s -> %d (%.0fms)", method, path, resp.status_code, elapsed_ms)
+                logger.info("Diavgeia response status=%d elapsed_ms=%.0f", resp.status_code, elapsed_ms)
 
                 if resp.status_code == 429 or resp.status_code >= 500:
                     delay = RETRY_BASE_DELAY * (2 ** attempt)
-                    logger.warning("Diavgeia %d on %s, retry %d/%d in %.1fs",
-                                   resp.status_code, path, attempt + 1, MAX_RETRIES, delay)
-                    await asyncio.sleep(delay)
+                    logger.warning("Diavgeia status=%d attempt=%d/%d",
+                                   resp.status_code, attempt + 1, MAX_RETRIES)
+                    if attempt < MAX_RETRIES - 1:
+                        await asyncio.sleep(delay)
                     last_exc = httpx.HTTPStatusError(
                         f"{resp.status_code}", request=resp.request, response=resp
                     )
@@ -118,12 +113,12 @@ class DiavgeiaClient:
                 resp.raise_for_status()
                 return resp
 
-            except httpx.TimeoutException as e:
+            except (httpx.TimeoutException, TimeoutError) as e:
                 delay = RETRY_BASE_DELAY * (2 ** attempt)
-                logger.warning("Diavgeia timeout on %s, retry %d/%d in %.1fs",
-                               path, attempt + 1, MAX_RETRIES, delay)
+                logger.warning("Diavgeia timeout attempt=%d/%d", attempt + 1, MAX_RETRIES)
                 last_exc = e
-                await asyncio.sleep(delay)
+                if attempt < MAX_RETRIES - 1:
+                    await asyncio.sleep(delay)
 
         raise last_exc  # type: ignore[misc]
 

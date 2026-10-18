@@ -1,19 +1,17 @@
-"""
-Parliament Bill Text Fetcher — 3-Kanal Pipeline (NEA-199 Ultimativ)
+"""Bill text enrichment: direct Diavgeia documents and four Parliament fallbacks.
 
-Kanal 1: Jina.ai Markdown (primär, kostenlos)
-Kanal 2: Jina.ai Raw HTML → Regex-Extraktion
-Kanal 3: Ollama llama3.2:3b — extrahiert Text aus rohem HTML
-
-Jeder Kanal: 2 Retries, 30s Timeout.
-Logging: welcher Kanal erfolgreich war.
+HTTP attempts share host pacing, Retry-After delays and forbidden cooldowns.
 """
 import asyncio
 import logging
 import os
 import re
+from asyncio import CancelledError, create_task, timeout as attempt_timeout, timeout_at, wait
+from urllib.parse import urlsplit
 
 import httpx
+
+from services.scraper_http import HostCooldown, SCRAPER_HTTP_HOOKS, host_limiter
 
 logger = logging.getLogger(__name__)
 
@@ -112,8 +110,13 @@ OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
 MIN_TEXT_LENGTH = 200
 MAX_TEXT_LENGTH = 8000
+MAX_DOCUMENT_BYTES = 1024 * 1024
+MAX_DOCUMENT_REDIRECTS = 3
+# The client, scraper links and documentUrl fixtures use this document origin.
+DIAVGEIA_DOCUMENT_HOSTS = frozenset({"diavgeia.gov.gr"})
 MAX_RETRIES = 2
 TIMEOUT = 30
+PLAYWRIGHT_TEARDOWN_TIMEOUT = 2
 
 
 # ─── Kanal 1: Jina Markdown ─────────────────────────────────────────────────
@@ -122,22 +125,25 @@ async def _channel_jina_markdown(url: str) -> str:
     """Jina Reader — returns Markdown, we extract content lines."""
     for attempt in range(MAX_RETRIES):
         try:
-            async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+            async with attempt_timeout(TIMEOUT), httpx.AsyncClient(timeout=TIMEOUT, event_hooks=SCRAPER_HTTP_HOOKS) as client:
                 resp = await client.get(
                     f"{JINA_URL}{url}",
                     headers={"Accept": "text/plain", "User-Agent": USER_AGENT},
+                    extensions={"scraper_source_url": url},
                 )
                 if resp.status_code != 200:
                     logger.warning("[CH1] Jina MD attempt %d: HTTP %d", attempt + 1, resp.status_code)
-                    continue
-
-                text = _extract_markdown_content(resp.text)
-                if len(text) >= MIN_TEXT_LENGTH:
-                    return text[:MAX_TEXT_LENGTH]
-
-                logger.info("[CH1] Jina MD: too short (%d chars)", len(text))
+                    if resp.status_code == 403:
+                        host_limiter.check(str(resp.url))
+                else:
+                    text = _extract_markdown_content(resp.text)
+                    if len(text) >= MIN_TEXT_LENGTH:
+                        return text[:MAX_TEXT_LENGTH]
+                    logger.info("[CH1] Jina MD: too short (%d chars)", len(text))
+        except HostCooldown:
+            raise
         except Exception as e:
-            logger.warning("[CH1] Jina MD attempt %d error: %s", attempt + 1, e)
+            logger.warning("[CH1] Jina MD attempt %d error: %s", attempt + 1, type(e).__name__)
         if attempt < MAX_RETRIES - 1:
             await asyncio.sleep(3)
     return ""
@@ -172,25 +178,28 @@ async def _channel_jina_html(url: str) -> str:
     """Jina Reader with X-Return-Format: html, then regex extraction."""
     for attempt in range(MAX_RETRIES):
         try:
-            async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+            async with attempt_timeout(TIMEOUT), httpx.AsyncClient(timeout=TIMEOUT, event_hooks=SCRAPER_HTTP_HOOKS) as client:
                 resp = await client.get(
                     f"{JINA_URL}{url}",
                     headers={
                         "X-Return-Format": "html",
                         "User-Agent": USER_AGENT,
                     },
+                    extensions={"scraper_source_url": url},
                 )
                 if resp.status_code != 200:
                     logger.warning("[CH2] Jina HTML attempt %d: HTTP %d", attempt + 1, resp.status_code)
-                    continue
-
-                text = _extract_text_from_html(resp.text)
-                if len(text) >= MIN_TEXT_LENGTH:
-                    return text[:MAX_TEXT_LENGTH]
-
-                logger.info("[CH2] Jina HTML: too short (%d chars)", len(text))
+                    if resp.status_code == 403:
+                        host_limiter.check(str(resp.url))
+                else:
+                    text = _extract_text_from_html(resp.text)
+                    if len(text) >= MIN_TEXT_LENGTH:
+                        return text[:MAX_TEXT_LENGTH]
+                    logger.info("[CH2] Jina HTML: too short (%d chars)", len(text))
+        except HostCooldown:
+            raise
         except Exception as e:
-            logger.warning("[CH2] Jina HTML attempt %d error: %s", attempt + 1, e)
+            logger.warning("[CH2] Jina HTML attempt %d error: %s", attempt + 1, type(e).__name__)
         if attempt < MAX_RETRIES - 1:
             await asyncio.sleep(3)
     return ""
@@ -230,25 +239,30 @@ async def _channel_ollama_extract(url: str) -> str:
     # First get raw HTML via Jina
     raw_html = ""
     try:
-        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+        async with attempt_timeout(TIMEOUT), httpx.AsyncClient(timeout=TIMEOUT, event_hooks=SCRAPER_HTTP_HOOKS) as client:
             resp = await client.get(
                 f"{JINA_URL}{url}",
                 headers={"X-Return-Format": "html", "User-Agent": USER_AGENT},
+                extensions={"scraper_source_url": url},
             )
             if resp.status_code == 200:
                 raw_html = resp.text
+    except HostCooldown:
+        pass
     except Exception as e:
-        logger.warning("[CH3] HTML fetch for Ollama failed: %s", e)
+        logger.warning("[CH3] HTML fetch for Ollama failed: %s", type(e).__name__)
 
     if not raw_html or len(raw_html) < 500:
         # Try direct fetch as last resort
         try:
-            async with httpx.AsyncClient(timeout=TIMEOUT, follow_redirects=True) as client:
-                resp = await client.get(url, headers={"User-Agent": USER_AGENT})
+            async with attempt_timeout(TIMEOUT), httpx.AsyncClient(timeout=TIMEOUT, follow_redirects=True, event_hooks=SCRAPER_HTTP_HOOKS) as client:
+                resp = await client.get(url, headers={"User-Agent": USER_AGENT}, extensions={"scraper_source_url": url})
                 if resp.status_code == 200:
                     raw_html = resp.text
+        except HostCooldown:
+            raise
         except Exception as e:
-            logger.warning("[CH3] Direct fetch failed: %s", e)
+            logger.warning("[CH3] Direct fetch failed: %s", type(e).__name__)
             return ""
 
     if not raw_html or len(raw_html) < 500:
@@ -271,9 +285,10 @@ async def _channel_ollama_extract(url: str) -> str:
 
     for attempt in range(MAX_RETRIES):
         try:
-            async with httpx.AsyncClient(timeout=90) as client:
+            async with attempt_timeout(90), httpx.AsyncClient(timeout=90, event_hooks=SCRAPER_HTTP_HOOKS) as client:
                 resp = await client.post(
                     f"{OLLAMA_URL}/api/generate",
+                    extensions={"scraper_source_url": url},
                     json={
                         "model": OLLAMA_MODEL,
                         "prompt": prompt,
@@ -286,14 +301,54 @@ async def _channel_ollama_extract(url: str) -> str:
                 if len(result) >= MIN_TEXT_LENGTH:
                     return result[:MAX_TEXT_LENGTH]
                 logger.info("[CH3] Ollama: too short (%d chars)", len(result))
+        except HostCooldown:
+            raise
         except Exception as e:
-            logger.warning("[CH3] Ollama attempt %d error: %s", attempt + 1, e)
+            logger.warning("[CH3] Ollama attempt %d error: %s", attempt + 1, type(e).__name__)
         if attempt < MAX_RETRIES - 1:
             await asyncio.sleep(2)
     return ""
 
 
 # ─── Kanal 4: Playwright Headless Chromium (Not-Instanz) ─────────────────────
+
+async def _teardown_playwright(manager, browser) -> None:
+    """Bound both cleanup steps, including after launch or navigation times out."""
+    def consume_result(task):
+        if not task.cancelled():
+            task.exception()
+
+    error = None
+    steps = ([browser.close] if browser is not None else []) + [
+        lambda: manager.__aexit__(None, None, None),
+    ]
+    for close in steps:
+        task = create_task(close())
+        try:
+            # wait_for can itself hang while waiting for cancellation to finish.
+            done, _ = await wait({task}, timeout=PLAYWRIGHT_TEARDOWN_TIMEOUT)
+            if not done:
+                raise TimeoutError("Playwright teardown deadline exceeded")
+            task.result()
+        except (Exception, CancelledError) as exc:
+            task.cancel()
+            task.add_done_callback(consume_result)
+            # Playwright has no public force-stop API. Kill only this manager's
+            # driver, including when launch never returned a browser handle.
+            connection = getattr(manager, "_connection", None)
+            transport = getattr(connection, "_transport", None)
+            process = getattr(transport, "_proc", None)
+            if process is not None and process.returncode is None:
+                try:
+                    process.kill()
+                except ProcessLookupError:
+                    pass
+            if isinstance(exc, CancelledError):
+                raise
+            error = error or exc
+    if error is not None:
+        raise error
+
 
 async def _channel_playwright(url: str) -> str:
     """Playwright headless Chromium — renders JS fully. Optional, skipped if not installed."""
@@ -305,24 +360,60 @@ async def _channel_playwright(url: str) -> str:
 
     for attempt in range(MAX_RETRIES):
         try:
-            async with async_playwright() as p:
-                browser = await p.chromium.launch(headless=True)
-                page = await browser.new_page(user_agent=USER_AGENT)
-                await page.goto(url, timeout=TIMEOUT * 1000, wait_until="networkidle")
-                # Extract all text from body
-                content = await page.inner_text("body")
-                await browser.close()
+            manager = async_playwright()
+            browser = None
+            try:
+                async with attempt_timeout(TIMEOUT) as deadline:
+                    p = await manager.__aenter__()
+                    host_limiter.check(url)
+                    browser = await p.chromium.launch(headless=True)
 
-                if content and len(content.strip()) >= MIN_TEXT_LENGTH:
-                    # Clean up navigation noise
-                    lines = [l.strip() for l in content.split("\n") if len(l.strip()) > 40]
-                    text = "\n".join(lines)
-                    if len(text) >= MIN_TEXT_LENGTH:
-                        return text[:MAX_TEXT_LENGTH]
+                    async def paced_route(route):
+                        try:
+                            # Send browser traffic through HTTPX too: Playwright's
+                            # routing alone does not intercept every redirect hop.
+                            # Route callbacks can run in separate asyncio tasks.
+                            async with timeout_at(deadline.when()):
+                                response = await browser_http.request(
+                                    route.request.method, route.request.url,
+                                    headers=await route.request.all_headers(),
+                                    content=route.request.post_data_buffer,
+                                    extensions={"scraper_source_url": url},
+                                )
+                                headers = {
+                                    key: value for key, value in response.headers.items()
+                                    if key not in ("content-encoding", "content-length", "transfer-encoding")
+                                }
+                                await route.fulfill(status=response.status_code, headers=headers, body=response.content)
+                        except (HostCooldown, httpx.RequestError, TimeoutError):
+                            await route.abort()
 
-                logger.info("[CH4] Playwright: too short (%d chars)", len(content.strip()) if content else 0)
+                    page = await browser.new_page(user_agent=USER_AGENT, service_workers="block")
+                    # Browser redirects and subresources also need host pacing.
+                    await page.route("**/*", paced_route)
+                    async with httpx.AsyncClient(
+                        timeout=TIMEOUT, follow_redirects=True, event_hooks=SCRAPER_HTTP_HOOKS,
+                    ) as browser_http:
+                        response = await page.goto(url, timeout=TIMEOUT * 1000, wait_until="networkidle")
+                        if response is not None and response.status != 200:
+                            host_limiter.check(url)
+                            return ""
+                        content = await page.inner_text("body")
+            finally:
+                await _teardown_playwright(manager, browser)
+
+            if content and len(content.strip()) >= MIN_TEXT_LENGTH:
+                # Clean up navigation noise
+                lines = [l.strip() for l in content.split("\n") if len(l.strip()) > 40]
+                text = "\n".join(lines)
+                if len(text) >= MIN_TEXT_LENGTH:
+                    return text[:MAX_TEXT_LENGTH]
+
+            logger.info("[CH4] Playwright: too short (%d chars)", len(content.strip()) if content else 0)
+        except HostCooldown:
+            raise
         except Exception as e:
-            logger.warning("[CH4] Playwright attempt %d error: %s", attempt + 1, e)
+            logger.warning("[CH4] Playwright attempt %d error: %s", attempt + 1, type(e).__name__)
         if attempt < MAX_RETRIES - 1:
             await asyncio.sleep(3)
     return ""
@@ -330,60 +421,131 @@ async def _channel_playwright(url: str) -> str:
 
 # ─── Orchestrator ────────────────────────────────────────────────────────────
 
-async def fetch_bill_text(bill_id: str, parliament_url: str) -> str:
-    """
-    4-Kanal Text-Extraktion Pipeline.
-    Returns extracted text (>200 chars) or empty string.
-    Logs which channel succeeded.
-    """
-    if not parliament_url:
-        return ""
+async def _fetch_diavgeia_document(url: str) -> tuple[str, str]:
+    """Stream trusted HTTPS documents; close redirect bodies without reading them."""
+    for attempt in range(MAX_RETRIES):
+        try:
+            current_url = httpx.URL(url)
+            async with attempt_timeout(TIMEOUT), httpx.AsyncClient(
+                timeout=TIMEOUT, follow_redirects=False, event_hooks=SCRAPER_HTTP_HOOKS,
+            ) as client:
+                for hop in range(MAX_DOCUMENT_REDIRECTS + 1):
+                    if current_url.scheme != "https" or current_url.host not in DIAVGEIA_DOCUMENT_HOSTS:
+                        logger.info("[DIAVGEIA-TEXT] Untrusted document URL skipped; source link retained")
+                        return "", "skipped"
+                    async with client.stream(
+                        "GET", current_url, headers={"User-Agent": USER_AGENT, "Accept-Encoding": "identity"},
+                        extensions={"scraper_source_url": url},
+                    ) as resp:
+                        if resp.status_code in (301, 302, 303, 307, 308):
+                            location = resp.headers.get("location")
+                            if not location or hop == MAX_DOCUMENT_REDIRECTS:
+                                logger.info("[DIAVGEIA-TEXT] Redirect missing target or limit reached; source link retained")
+                                return "", "skipped"
+                            current_url = resp.url.join(location)
+                            # Exiting the stream closes this body unread. HTTPX's
+                            # automatic redirects would read and decompress it.
+                            continue
+                        if resp.status_code == 403:
+                            return "", "skipped"
+                        if resp.status_code == 200:
+                            content_type = resp.headers.get("content-type", "").split(";")[0].strip().lower()
+                            # No PDF library is declared in apps/api/requirements*.txt.
+                            if content_type == "application/pdf":
+                                logger.info("[DIAVGEIA-TEXT] PDF skipped: no declared PDF parser; source link retained")
+                                return "", "skipped"
+                            if content_type not in ("text/html", "application/xhtml+xml", "text/plain"):
+                                logger.info("[DIAVGEIA-TEXT] Unsupported content type; source link retained")
+                                return "", "skipped"
+                            # Some servers ignore Accept-Encoding. Skip their encoded
+                            # bodies before HTTPX can expand even one transport chunk.
+                            if resp.headers.get("content-encoding", "identity").strip().lower() != "identity":
+                                logger.info("[DIAVGEIA-TEXT] Encoded document skipped; source link retained")
+                                return "", "skipped"
+                            body = bytearray()
+                            # Identity makes the raw and decoded byte limits identical.
+                            async for chunk in resp.aiter_raw():
+                                # Do not buffer beyond the signature before checking it,
+                                # even when it is split across transport chunks.
+                                if len(body) < 5 and (body + chunk[:5])[:5] == b"%PDF-":
+                                    logger.info("[DIAVGEIA-TEXT] PDF signature detected; source link retained")
+                                    return "", "skipped"
+                                if len(body) + len(chunk) > MAX_DOCUMENT_BYTES:
+                                    logger.info("[DIAVGEIA-TEXT] Document size limit exceeded; source link retained")
+                                    return "", "skipped"
+                                body.extend(chunk)
+                            text = body.decode(resp.encoding or "utf-8", errors="replace")
+                            if content_type == "text/plain":
+                                return text.strip()[:MAX_TEXT_LENGTH], "fetched"
+                            return _extract_text_from_html(text)[:MAX_TEXT_LENGTH], "fetched"
+                        logger.warning("[DIAVGEIA-TEXT] status=%d attempt=%d", resp.status_code, attempt + 1)
+                        if resp.status_code != 429 and resp.status_code < 500:
+                            return "", "failed"
+                        break
+        except httpx.InvalidURL:
+            logger.info("[DIAVGEIA-TEXT] Invalid document URL skipped; source link retained")
+            return "", "skipped"
+        except HostCooldown:
+            raise
+        except (httpx.RequestError, TimeoutError) as exc:
+            logger.warning("[DIAVGEIA-TEXT] request error=%s", type(exc).__name__)
+        if attempt < MAX_RETRIES - 1:
+            await asyncio.sleep(3)
+    return "", "failed"
 
-    # Polite delay
-    await asyncio.sleep(3)
 
-    # Kanal 1: Jina Markdown
-    text = await _channel_jina_markdown(parliament_url)
-    if text:
-        if _is_bad_parliament_text(text):
-            logger.info("[SCRAPER] Kanal 1 rejected boilerplate: %s (%d chars)", bill_id, len(text))
-        else:
-            logger.info("[SCRAPER] Kanal 1 (Jina MD) OK: %s (%d chars)", bill_id, len(text))
-            return text
+async def _fetch_bill_text_result(
+    bill_id: str, parliament_url: str, *, source: str | None = None,
+) -> tuple[str, str]:
+    """Return text and outcome; emit one privacy-safe count line per fetch run."""
+    outcome = "failed"
+    try:
+        if not parliament_url:
+            outcome = "skipped"
+            return "", outcome
+        host_limiter.check(parliament_url)
+        host = (urlsplit(parliament_url).hostname or "").lower()
+        if source == "DIAVGEIA" or host == "diavgeia.gov.gr" or host.endswith(".diavgeia.gov.gr"):
+            text, outcome = await _fetch_diavgeia_document(parliament_url)
+            if outcome == "fetched" and _is_bad_parliament_text(text):
+                outcome = "failed"
+                text = ""
+            return text, outcome
 
-    # Kanal 2: Jina Raw HTML
-    await asyncio.sleep(2)
-    text = await _channel_jina_html(parliament_url)
-    if text:
-        if _is_bad_parliament_text(text):
-            logger.info("[SCRAPER] Kanal 2 rejected boilerplate: %s (%d chars)", bill_id, len(text))
-        else:
-            logger.info("[SCRAPER] Kanal 2 (Jina HTML) OK: %s (%d chars)", bill_id, len(text))
-            return text
+        deferred = False
+        for channel in (
+            _channel_jina_markdown, _channel_jina_html,
+            _channel_ollama_extract, _channel_playwright,
+        ):
+            try:
+                host_limiter.check(parliament_url)
+                text = await channel(parliament_url)
+            except HostCooldown:
+                deferred = True
+                continue
+            if text and not _is_bad_parliament_text(text):
+                logger.info("[TEXT-FETCH] channel=%s chars=%d", channel.__name__, len(text))
+                outcome = "fetched"
+                return text, outcome
+        outcome = "skipped" if deferred else "failed"
+        return "", outcome
+    except HostCooldown:
+        outcome = "skipped"
+        return "", outcome
+    except Exception as exc:
+        logger.warning("[TEXT-FETCH] error=%s", type(exc).__name__)
+        return "", outcome
+    finally:
+        logger.info(
+            "[TEXT-FETCH] fetched=%d skipped=%d failed=%d",
+            int(outcome == "fetched"), int(outcome == "skipped"), int(outcome == "failed"),
+        )
 
-    # Kanal 3: Ollama
-    await asyncio.sleep(2)
-    text = await _channel_ollama_extract(parliament_url)
-    if text:
-        if _is_bad_parliament_text(text):
-            logger.info("[SCRAPER] Kanal 3 rejected boilerplate: %s (%d chars)", bill_id, len(text))
-        else:
-            logger.info("[SCRAPER] Kanal 3 (Ollama) OK: %s (%d chars)", bill_id, len(text))
-            return text
 
-    # Kanal 4: Playwright (Not-Instanz)
-    await asyncio.sleep(2)
-    text = await _channel_playwright(parliament_url)
-    if text:
-        if _is_bad_parliament_text(text):
-            logger.info("[SCRAPER] Kanal 4 rejected boilerplate: %s (%d chars)", bill_id, len(text))
-        else:
-            logger.info("[SCRAPER] Kanal 4 (Playwright) OK: %s (%d chars)", bill_id, len(text))
-            return text
-
-    # Alle fehlgeschlagen
-    logger.error("[SCRAPER] ALLE 4 KANÄLE FEHLGESCHLAGEN: %s — %s", bill_id, parliament_url)
-    return ""
+async def fetch_bill_text(bill_id: str, parliament_url: str, *, source: str | None = None) -> str:
+    """Fetch inline text, using direct document handling for Diavgeia."""
+    text, _ = await _fetch_bill_text_result(bill_id, parliament_url, source=source)
+    return text
 
 
 # ─── Enrich All ──────────────────────────────────────────────────────────────
@@ -402,10 +564,9 @@ async def enrich_bill_with_text(bill_id: str, db, redis=None) -> dict:
     if not bill.parliament_url:
         return {"success": False, "error": "No parliament_url"}
 
-    text = await fetch_bill_text(bill_id, bill.parliament_url)
-    if text and _is_bad_parliament_text(text):
-        logger.info("[SCRAPER] Rejected bad parliament text for %s (%d chars, boilerplate)", bill_id, len(text))
-        return {"success": False, "error": "Rejected: parliament boilerplate"}
+    text, outcome = await _fetch_bill_text_result(bill_id, bill.parliament_url, source=bill.source)
+    if outcome == "skipped":
+        return {"success": False, "skipped": True, "error": "Text enrichment deferred; source link retained"}
     if text and len(text) >= MIN_TEXT_LENGTH:
         bill.summary_long_el = _merge_text_with_existing_document_block(text, bill.summary_long_el)
         await db.commit()
@@ -444,17 +605,17 @@ async def enrich_all_bills(db) -> dict:
         if bill.summary_long_el is None or _is_parliament_document_block_only(bill.summary_long_el)
     ]
 
-    stats = {"total": len(bills), "enriched": 0, "failed": 0, "channels": {"ch1": 0, "ch2": 0, "ch3": 0}}
+    stats = {"total": len(bills), "enriched": 0, "fetched": 0, "skipped": 0, "failed": 0, "channels": {"ch1": 0, "ch2": 0, "ch3": 0}}
 
     for bill in bills:
-        text = await fetch_bill_text(bill.id, bill.parliament_url)
-        if text and _is_bad_parliament_text(text):
-            logger.info("[ENRICH-ALL] Skipped bad text: %s", bill.id)
-            stats["failed"] += 1
+        text, outcome = await _fetch_bill_text_result(bill.id, bill.parliament_url, source=bill.source)
+        if outcome == "skipped":
+            stats["skipped"] += 1
             continue
         if text and len(text) >= MIN_TEXT_LENGTH:
             bill.summary_long_el = _merge_text_with_existing_document_block(text, bill.summary_long_el)
             stats["enriched"] += 1
+            stats["fetched"] += 1
         else:
             stats["failed"] += 1
 

@@ -777,7 +777,7 @@ async def scheduled_diavgeia_scrape():
                     logger.info("[NEA-199] Backfilled %d Diavgeia bill source dates", backfilled)
         except Exception as e:
             conversion_failed = True
-            logger.warning("[NEA-199] Conversion failed (non-blocking): %s", e)
+            logger.warning("[NEA-199] Conversion failed (non-blocking): %s", type(e).__name__)
 
         if scrape_error_count:
             await record_success(name, "degraded", "scrape_errors", scrape_error_count)
@@ -786,8 +786,8 @@ async def scheduled_diavgeia_scrape():
         else:
             await record_success(name)
     except Exception as e:
-        logger.error("[MOD-21] Scheduled Diavgeia scrape failed: %s", e)
-        await record_failure(name, str(e))
+        logger.error("[MOD-21] Scheduled Diavgeia scrape failed: %s", type(e).__name__)
+        await record_failure(name, type(e).__name__)
 
 
 async def scheduled_forum_sync():
@@ -931,6 +931,7 @@ async def scheduled_completeness_check():
     from database import AsyncSessionLocal
     name = "completeness_check"
     await record_run(name)
+    counts = {"fetched": 0, "skipped": 0, "failed": 0}
     try:
         async with AsyncSessionLocal() as db:
             from sqlalchemy import select, or_
@@ -940,7 +941,7 @@ async def scheduled_completeness_check():
                 _is_bad_parliament_text,
                 _is_parliament_document_block_only,
                 _merge_text_with_existing_document_block,
-                fetch_bill_text,
+                _fetch_bill_text_result,
             )
 
             text_candidate_statuses = [
@@ -968,6 +969,7 @@ async def scheduled_completeness_check():
             # Find PARLIAMENT_VOTED/OPEN_END bills with missing party votes
             result = await db.execute(
                 select(ParliamentBill).where(
+                    ParliamentBill.source == "PARLIAMENT",
                     ParliamentBill.status.in_([BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END]),
                     ParliamentBill.party_votes_parliament.is_(None),
                 )
@@ -987,22 +989,28 @@ async def scheduled_completeness_check():
                     and (bill.summary_long_el is None or _is_parliament_document_block_only(bill.summary_long_el))
                 ):
                     try:
-                        text = await fetch_bill_text(bill.id, bill.parliament_url)
-                        if text and not _is_bad_parliament_text(text):
+                        text, outcome = await _fetch_bill_text_result(bill.id, bill.parliament_url, source=bill.source)
+                        if outcome == "skipped":
+                            counts["skipped"] += 1
+                        elif outcome == "fetched" and text and not _is_bad_parliament_text(text):
                             bill.summary_long_el = _merge_text_with_existing_document_block(
                                 text[:10000],
                                 bill.summary_long_el,
                             )
-                            logger.info("[COMPLETENESS] Fetched text for %s", bill.id)
-                        elif text:
-                            logger.info("[COMPLETENESS] Rejected bad fetched text for %s", bill.id)
+                            counts["fetched"] += 1
+                        else:
+                            counts["failed"] += 1
+                            text_errors += 1
                     except Exception as e:
-                        logger.warning("[COMPLETENESS] Text fetch failed for %s: %s", bill.id, e)
+                        logger.warning("[COMPLETENESS] Text fetch error=%s", type(e).__name__)
+                        counts["failed"] += 1
                         text_errors += 1
+                else:
+                    counts["skipped"] += 1
 
                 # Log missing party votes (manual entry required via dashboard)
                 if not bill.party_votes_parliament:
-                    logger.info("[COMPLETENESS] %s missing party_votes — awaiting admin input", bill.id)
+                    logger.info("[COMPLETENESS] Parliament party votes missing; awaiting admin input")
 
             await db.commit()
         await record_success(
@@ -1012,8 +1020,12 @@ async def scheduled_completeness_check():
             count=text_errors,
         )
     except Exception as e:
-        logger.error("[COMPLETENESS] Failed: %s", e)
-        await record_failure(name, str(e))
+        counts["failed"] += 1
+        logger.error("[COMPLETENESS] error=%s", type(e).__name__)
+        await record_failure(name, type(e).__name__)
+    finally:
+        logger.info("[COMPLETENESS] fetched=%d skipped=%d failed=%d",
+                    counts["fetched"], counts["skipped"], counts["failed"])
 
 
 async def scheduled_zk_arweave_publication():

@@ -107,93 +107,101 @@ async def scrape_decisions(
 
     result = ScrapeResult()
 
-    # Determine published_after cursor
-    if published_after is None:
-        row = await session.execute(
-            text("SELECT MAX(publish_timestamp) FROM diavgeia_decisions")
-        )
-        latest = row.scalar_one_or_none()
-        if latest:
-            published_after = latest
-        else:
-            published_after = datetime.now(timezone.utc) - timedelta(days=7)
+    try:
+        # Determine published_after cursor
+        if published_after is None:
+            row = await session.execute(
+                text("SELECT MAX(publish_timestamp) FROM diavgeia_decisions")
+            )
+            latest = row.scalar_one_or_none()
+            if latest:
+                published_after = latest
+            else:
+                published_after = datetime.now(timezone.utc) - timedelta(days=7)
 
-    async with DiavgeiaClient() as client:
-        for type_uid in decision_type_uids:
-            logger.info("Scraping decision_type_uid=%s from %s (max %d pages)",
-                        type_uid, published_after.isoformat(), max_pages)
+        async with DiavgeiaClient() as client:
+            for type_uid in decision_type_uids:
+                logger.info("Scraping decision_type_uid=%s from %s (max %d pages)",
+                            type_uid, published_after.isoformat(), max_pages)
 
-            async for raw_decision in client.iter_decisions(
-                decision_type_uid=type_uid,
-                published_after=published_after,
-                max_pages=max_pages,
-            ):
-                result.fetched += 1
-                ada = raw_decision.get("ada")
-                if not ada:
-                    result.errors.append("Decision without ADA — skipped")
-                    continue
+                async for raw_decision in client.iter_decisions(
+                    decision_type_uid=type_uid,
+                    published_after=published_after,
+                    max_pages=max_pages,
+                ):
+                    result.fetched += 1
+                    ada = raw_decision.get("ada")
+                    if not ada:
+                        result.errors.append("Decision without ADA — skipped")
+                        result.skipped += 1
+                        continue
 
-                org_uid = str(raw_decision.get("organizationId", ""))
-                publish_ts = parse_timestamp(raw_decision.get("issueDate"))
-                submission_ts = parse_timestamp(raw_decision.get("submissionTimestamp"))
+                    org_uid = str(raw_decision.get("organizationId", ""))
+                    publish_ts = parse_timestamp(raw_decision.get("issueDate"))
+                    submission_ts = parse_timestamp(raw_decision.get("submissionTimestamp"))
 
-                if not publish_ts:
-                    result.errors.append(f"ADA {ada}: no publish timestamp — skipped")
-                    continue
+                    if not publish_ts:
+                        result.errors.append("Decision without publish timestamp — skipped")
+                        result.skipped += 1
+                        continue
 
-                # Resolve org → dimos/periferia/governance_level
-                dimos_id, periferia_id, gov_level = await _resolve_org(session, org_uid)
+                    # Resolve org → dimos/periferia/governance_level
+                    dimos_id, periferia_id, gov_level = await _resolve_org(session, org_uid)
 
-                # Resolve org label from snapshot (not API — API doesn't return it)
-                org_label = get_org_label(org_uid)
-                if org_label.startswith("[unknown:"):
-                    logger.warning("ADA %s: org %s not in snapshot — label unknown", ada, org_uid)
+                    # Resolve org label from snapshot (not API — API doesn't return it)
+                    org_label = get_org_label(org_uid)
+                    if org_label.startswith("[unknown:"):
+                        logger.warning("ADA %s: org %s not in snapshot — label unknown", ada, org_uid)
 
-                row_data = {
-                    "ada": ada,
-                    "subject": raw_decision.get("subject", ""),
-                    "decision_type_uid": raw_decision.get("decisionTypeId", type_uid),
-                    "decision_type_label": raw_decision.get("decisionTypeId", ""),
-                    "organization_uid": org_uid,
-                    "organization_label": org_label,
-                    "document_url": raw_decision.get("documentUrl", ""),
-                    "submission_timestamp": submission_ts,
-                    "publish_timestamp": publish_ts,
-                    "raw_payload": raw_decision,
-                    "dimos_id": dimos_id,
-                    "periferia_id": periferia_id,
-                    "governance_level": gov_level,
-                }
+                    row_data = {
+                        "ada": ada,
+                        "subject": raw_decision.get("subject", ""),
+                        "decision_type_uid": raw_decision.get("decisionTypeId", type_uid),
+                        "decision_type_label": raw_decision.get("decisionTypeId", ""),
+                        "organization_uid": org_uid,
+                        "organization_label": org_label,
+                        "document_url": raw_decision.get("documentUrl", ""),
+                        "submission_timestamp": submission_ts,
+                        "publish_timestamp": publish_ts,
+                        "raw_payload": raw_decision,
+                        "dimos_id": dimos_id,
+                        "periferia_id": periferia_id,
+                        "governance_level": gov_level,
+                    }
 
-                if dry_run:
-                    logger.info("[DRY RUN] Would upsert ADA %s (%s)", ada, org_uid)
-                    result.inserted += 1
-                    continue
-
-                # Upsert by ADA
-                stmt = pg_insert(DiavgeiaDecision).values(**row_data)
-                stmt = stmt.on_conflict_do_update(
-                    index_elements=["ada"],
-                    set_=_upsert_update_values(stmt),
-                )
-
-                try:
-                    res = await session.execute(stmt)
-                    if res.rowcount == 1:
+                    if dry_run:
+                        logger.info("[DRY RUN] Would upsert ADA %s (%s)", ada, org_uid)
                         result.inserted += 1
-                    else:
-                        result.updated += 1
-                except Exception as e:
-                    await session.rollback()
-                    result.errors.append(f"ADA {ada}: {e}")
-                    logger.error("Failed to upsert ADA %s: %s", ada, e)
+                        continue
 
-    if not dry_run:
-        await session.commit()
+                    # Upsert by ADA
+                    stmt = pg_insert(DiavgeiaDecision).values(**row_data)
+                    stmt = stmt.on_conflict_do_update(
+                        index_elements=["ada"],
+                        set_=_upsert_update_values(stmt),
+                    )
 
-    logger.info("Scrape complete: %s", result.to_dict())
-    return result
+                    try:
+                        res = await session.execute(stmt)
+                        if res.rowcount == 1:
+                            result.inserted += 1
+                        else:
+                            result.updated += 1
+                    except Exception as e:
+                        await session.rollback()
+                        result.errors.append(f"Upsert failed: {type(e).__name__}")
+                        logger.error("Diavgeia upsert error=%s", type(e).__name__)
+
+        if not dry_run:
+            await session.commit()
+
+        return result
+    except Exception as exc:
+        result.errors.append(f"Scrape failed: {type(exc).__name__}")
+        raise
+    finally:
+        logger.info("[DIAVGEIA] fetched=%d skipped=%d failed=%d",
+                    result.fetched, result.skipped, len(result.errors) - result.skipped)
 
 
 def _clean_org_label(label: str | None) -> str | None:
@@ -363,7 +371,7 @@ async def convert_decisions_to_bills(session: AsyncSession) -> dict:
         except Exception as e:
             await session.rollback()
             skipped += 1
-            logger.warning("[NEA-199] Skip ADA %s: %s", ada, e)
+            logger.warning("[NEA-199] Conversion error=%s", type(e).__name__)
 
     if created > 0 or scope_synced > 0:
         await session.commit()

@@ -1,5 +1,18 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-10-18 - T-9145 Round 3: Bounded Document Redirects
+
+- Diavgeia document fetches disable automatic redirects and follow at most
+  three hops over HTTPS to `diavgeia.gov.gr`, the document host used by the
+  current code and fixtures. Each hop uses the shared pacing/cooldown hooks;
+  redirect bodies close unread, and terminal identity streams retain the
+  raw and decoded byte cap.
+- Offline targeted checks with HTTPX 0.28.1: 154 passed across text fetching,
+  HTTP pacing, Parliament text quality and Diavgeia client tests. Regressions
+  cover oversized identity/gzip redirect bodies, terminal byte caps, rejected
+  hosts and HTTPS downgrades, redirect chains/loops, cooldown and Retry-After.
+  No network or push was performed.
+
 ## 2026-10-18 - T-9142 Round 2: Aggregate Plan Boundary
 
 - All six monitor views now select from SECURITY DEFINER aggregate functions
