@@ -31,7 +31,7 @@ def source_status(last_success, blocked_at=None, *, now=None) -> dict:
     last = datetime.fromisoformat(last_success) if last_success else None
     blocked = bool(blocked_at and (last is None or datetime.fromisoformat(blocked_at) > last))
     return {"last_success": last_success, "source_blocked": blocked,
-            "stale": last is None or last > now or now - last > timedelta(hours=48)}
+            "stale": blocked or last is None or last > now or now - last > timedelta(hours=48)}
 
 
 async def get_source_freshness() -> dict[str, dict]:

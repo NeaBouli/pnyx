@@ -28,11 +28,15 @@ def test_unknown_update_is_stale(value):
 
 
 def test_new_failure_does_not_advance_success_and_later_success_recovers():
-    success = NOW.isoformat()
-    blocked = (NOW + timedelta(minutes=1)).isoformat()
+    success = (NOW - timedelta(minutes=2)).isoformat()
+    blocked = (NOW - timedelta(minutes=1)).isoformat()
     state = freshness.source_status(success, blocked, now=NOW)
-    assert state["source_blocked"] is True and state["last_success"] == success
-    assert freshness.source_status((NOW + timedelta(minutes=2)).isoformat(), blocked)["source_blocked"] is False
+    assert state == {
+        "last_success": success, "source_blocked": True, "stale": True,
+    }
+    assert freshness.source_status(NOW.isoformat(), blocked, now=NOW) == {
+        "last_success": NOW.isoformat(), "source_blocked": False, "stale": False,
+    }
 
 
 @pytest.mark.asyncio
@@ -57,6 +61,7 @@ async def test_bill_list_detail_and_public_source_freshness_serialize_real_state
         sources = (await client.get("/api/v1/bills/sources/freshness")).json()
         assert sources["PARLIAMENT"]["last_success"] == success
         assert sources["PARLIAMENT"]["source_blocked"] is True
+        assert sources["PARLIAMENT"]["stale"] is True
         assert sources["DIAVGEIA"]["stale"] is True
         for path in ("/api/v1/bills", "/api/v1/bills/GR-actual"):
             response = await client.get(path)
@@ -66,6 +71,7 @@ async def test_bill_list_detail_and_public_source_freshness_serialize_real_state
                 payload = payload[0]
             assert payload["source_last_success"] == success
             assert payload["source_blocked"] is True
+            assert payload["source_stale"] is True
 
 
 @pytest.mark.asyncio

@@ -53,6 +53,13 @@ describe("Parliament freshness", () => {
     expect(html).toContain("Last updated:");
     expect(html).not.toContain("outdated");
   });
+  it.each([false, true])("shows the API stale notice for a recent success (blocked=%s)", async (blocked) => {
+    vi.useFakeTimers().setSystemTime(new Date("2026-10-18T12:00:00Z"));
+    const html = await hydrate({
+      source_last_success: "2026-10-18T11:00:00Z", source_blocked: blocked, source_stale: true,
+    });
+    expect(html).toContain("Parliament data may be outdated");
+  });
   it("makes an unknown update visible and excludes other sources", () => {
     const unknown = renderToStaticMarkup(<ParliamentFreshness locale="en" bill={{}} />);
     expect(unknown).toContain("Unavailable");
