@@ -6,6 +6,8 @@ import os
 import sys
 import types
 
+import pytest
+
 sys.modules.setdefault("psycopg2", types.SimpleNamespace(connect=lambda *a, **k: None))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "monitor"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -348,7 +350,7 @@ def _load_completeness(monkeypatch, bills, fetch, commit_exc=None, src_path=None
         "services.parliament_fetcher": types.SimpleNamespace(
             _DOCUMENT_BLOCK_HEADING="DOC", _is_bad_parliament_text=lambda t: t == "BAD",
             _is_parliament_document_block_only=lambda s: False,
-            _merge_text_with_existing_document_block=merge, fetch_bill_text=fetch),
+            _merge_text_with_existing_document_block=merge, _fetch_bill_text_result=fetch),
     }
     for k, v in fakes.items():
         monkeypatch.setitem(sys.modules, k, v)
@@ -358,7 +360,7 @@ def _load_completeness(monkeypatch, bills, fetch, commit_exc=None, src_path=None
 
 
 def _bill(bid, votes=None):
-    return types.SimpleNamespace(id=bid, parliament_url="u://" + bid, summary_long_el=None,
+    return types.SimpleNamespace(id=bid, source="PARLIAMENT", parliament_url="u://" + bid, summary_long_el=None,
                                  party_votes_parliament=votes)
 
 
@@ -377,10 +379,11 @@ def test_completeness_one_text_failure_degraded_other_merged(monkeypatch):
     _patch(monkeypatch, store)
     b1, b2 = _bill("B-1", votes={"x": 1}), _bill("B-2", votes={"x": 1})
 
-    async def fetch(bid, url):
+    async def fetch(bid, url, *, source):
+        assert source == "PARLIAMENT"
         if bid == "B-1":
             raise RuntimeError("boom-xyz dsn=pw")
-        return "good text"
+        return "good text", "fetched"
 
     fn, calls = _load_completeness(monkeypatch, [b1, b2], fetch)
     asyncio.run(fn())
@@ -396,26 +399,42 @@ def test_completeness_one_text_failure_degraded_other_merged(monkeypatch):
     _no_leak(store, alerts)
 
 
-def test_completeness_multiple_failures_counted_then_clean_clears(monkeypatch):
+@pytest.mark.parametrize("clean_outcome", ["fetched", "skipped"])
+def test_completeness_multiple_failures_counted_then_clean_clears(monkeypatch, clean_outcome):
     store = {}
     _patch(monkeypatch, store)
     bills = [_bill("B-1"), _bill("B-2"), _bill("B-3")]
 
-    async def fail(bid, url):
-        raise RuntimeError("boom-xyz")
+    async def fail(bid, url, *, source):
+        assert source == "PARLIAMENT"
+        return "", "failed"
 
-    fn, _ = _load_completeness(monkeypatch, bills, fail)
+    fn, calls = _load_completeness(monkeypatch, bills, fail)
     asyncio.run(fn())
+    assert calls.count("commit") == 1
+    assert all(b.summary_long_el is None for b in bills)
+    assert store["scraper:completeness_check:last_outcome"] == "degraded"
+    assert store["scraper:completeness_check:last_outcome_reason"] == "scrape_errors"
     assert store["scraper:completeness_check:last_outcome_count"] == "3"
+    assert store["scraper:completeness_check:error_count"] == "0"
     assert len(_cc_alerts(store)) == 1
     _no_leak(store, _cc_alerts(store))
 
-    async def ok(bid, url):
-        return "fine"
+    text = "fine" if clean_outcome == "fetched" else ""
 
-    fn, _ = _load_completeness(monkeypatch, [_bill("B-1")], ok)
+    async def ok(bid, url, *, source):
+        assert source == "PARLIAMENT"
+        return text, clean_outcome
+
+    bill = _bill("B-1")
+    fn, calls = _load_completeness(monkeypatch, [bill], ok)
     asyncio.run(fn())
+    assert calls.count("commit") == 1
+    assert bill.summary_long_el == (text or None)
     assert store["scraper:completeness_check:last_outcome"] == "clean"
+    assert store["scraper:completeness_check:last_outcome_reason"] == "none"
+    assert store["scraper:completeness_check:last_outcome_count"] == "0"
+    assert store["scraper:completeness_check:error_count"] == "0"
     assert _cc_alerts(store) == []
 
 
@@ -425,8 +444,10 @@ def test_completeness_empty_none_rejected_text_is_degraded(monkeypatch):
     texts = {"B-1": None, "B-2": "", "B-3": "BAD"}
     bills = [_bill(b) for b in texts]
 
-    async def fetch(bid, url):
-        return texts[bid]
+    async def fetch(bid, url, *, source):
+        assert source == "PARLIAMENT"
+        # Invalid content is still a failure even when the fetch reports success.
+        return texts[bid], "fetched"
 
     fn, calls = _load_completeness(monkeypatch, bills, fetch)
     asyncio.run(fn())
@@ -437,20 +458,26 @@ def test_completeness_empty_none_rejected_text_is_degraded(monkeypatch):
     assert len(_cc_alerts(store)) == 1
     # no candidates at all -> clean
     store.clear()
-    fn, _ = _load_completeness(monkeypatch, [], fetch)
+    fn, calls = _load_completeness(monkeypatch, [], fetch)
     asyncio.run(fn())
+    assert calls.count("commit") == 0
     assert store["scraper:completeness_check:last_outcome"] == "clean"
+    assert _cc_alerts(store) == []
 
 
 def test_completeness_commit_failure_stays_failed(monkeypatch):
     store = {}
     _patch(monkeypatch, store)
 
-    async def ok(bid, url):
-        return "fine"
+    async def ok(bid, url, *, source):
+        assert source == "PARLIAMENT"
+        return "fine", "fetched"
 
-    fn, _ = _load_completeness(monkeypatch, [_bill("B-1")], ok, commit_exc=RuntimeError("dsn=pw"))
+    bill = _bill("B-1")
+    fn, calls = _load_completeness(monkeypatch, [bill], ok, commit_exc=RuntimeError("dsn=pw"))
     asyncio.run(fn())
+    assert calls.count("commit") == 1
+    assert bill.summary_long_el == "fine"
     assert store["scraper:completeness_check:last_outcome"] == "failed"
     assert store["scraper:completeness_check:last_outcome_reason"] == "exception"
     assert store["scraper:completeness_check:error_count"] == "1"
