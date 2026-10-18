@@ -73,6 +73,21 @@ test('job health: degraded/failed outcome with error_count 0 is never green', ()
   assert.equal(jobHealth(job({ status: undefined, last_outcome: 'clean', last_outcome_count: 0 })), 'ok')
 })
 
+test('scheduler lifecycle fields and scrape quality survive the dashboard adapter', () => {
+  const value = job({ last_outcome: 'success', last_scrape_outcome: 'degraded', last_started: '2026-10-18T09:00:00Z', last_finished: '2026-10-18T09:01:00Z', next_run: '2026-10-18T21:00:00Z', last_duration_s: 60, consecutive_failures: 0 })
+  assert.equal(value.last_started, '2026-10-18T09:00:00Z')
+  assert.equal(value.last_finished, '2026-10-18T09:01:00Z')
+  assert.equal(value.next_run, '2026-10-18T21:00:00Z')
+  assert.equal(value.last_duration_s, 60)
+  assert.equal(value.consecutive_failures, 0)
+  assert.equal(jobHealth(value), 'degraded')
+  assert.equal(jobHealth(job({ last_outcome: 'interrupted' })), 'error')
+  assert.equal(job({ last_outcome: 'lock_busy' }).last_outcome, 'lock_busy')
+  assert.equal(job({ last_outcome: 'skipped' }).last_outcome, 'skipped')
+  const bad = job({ last_duration_s: Infinity, next_run: 'junk', consecutive_failures: -1 })
+  assert.deepEqual([bad.last_duration_s, bad.next_run, bad.consecutive_failures], [null, null, null])
+})
+
 test('job health: circuit/error/counter precedence and unknown without positive evidence', () => {
   assert.equal(jobHealth(job({ status: 'circuit_open', last_outcome: 'clean' })), 'error')
   assert.equal(jobHealth(job({ status: 'error', last_outcome: 'clean' })), 'error')

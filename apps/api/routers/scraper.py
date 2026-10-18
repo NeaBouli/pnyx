@@ -763,14 +763,13 @@ async def _scrape_parliament_bills(
 async def scraper_jobs():
     """Status aller Scraper-Jobs (Redis-backed)."""
     from services.scraper_state import get_all_states
-    names = [
-        "parliament", "diavgeia_municipal", "notify_new_bills", "notify_results",
-        "forum_sync", "bill_lifecycle", "cplm_refresh", "greek_topics",
-    ]
+    from services.scheduler_observability import JOB_NAMES, FIELDS, safe_state
+    names = list(JOB_NAMES)
     try:
         states = await get_all_states(names)
     except Exception:
-        states = [{"name": n, "status": "unknown", "error_count": 0} for n in names]
+        states = [{"name": n, "status": "unknown", "error_count": 0,
+                   "last_run": None, **safe_state([None] * len(FIELDS))} for n in names]
     return {"scrapers": states}
 
 

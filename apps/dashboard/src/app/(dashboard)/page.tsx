@@ -336,6 +336,9 @@ export default function OverviewPage() {
                         <span className="text-sm font-medium text-gray-800 truncate">{String(job.name ?? job.job_id ?? `Job ${i + 1}`)}</span>
                         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${ok ? 'bg-green-500' : 'bg-red-500'}`} />
                       </div>
+                      {job.last_outcome ? <div className="text-xs text-gray-500">{String(job.last_outcome)} · {String(job.last_duration_s ?? '—')}s · failures: {String(job.consecutive_failures ?? 0)}</div> : null}
+                      {job.next_run ? <div className="text-xs text-gray-400">Επόμενη: {new Date(String(job.next_run)).toLocaleString('el-GR')}</div> : null}
+                      {job.last_finished ? <div className="text-xs text-gray-400">Ολοκλήρωση: {new Date(String(job.last_finished)).toLocaleString('el-GR')}</div> : null}
                       {job.interval ? <div className="text-xs text-gray-400">{String(job.interval)}</div> : null}
                       {job.last_run ? <div className="text-xs text-gray-400 mt-0.5">Τελ.: {new Date(String(job.last_run)).toLocaleString('el-GR')}</div> : null}
                     </div>

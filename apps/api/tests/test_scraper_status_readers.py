@@ -119,7 +119,8 @@ async def test_degraded_producer_flows_to_jobs_and_mod21(env):
 
     job = _job(await _get("/api/v1/scraper/jobs"), "diavgeia_municipal")
     assert job["error_count"] == 0 and job["status"] == "warning"
-    assert job["last_outcome"] == "degraded" and job["last_outcome_reason"] == "scrape_errors"
+    assert job["last_outcome"] == "success" and job["last_outcome_reason"] == "scrape_errors"
+    assert job["last_scrape_outcome"] == "degraded"
     assert job["last_outcome_count"] == 2
     assert job["last_outcome_time"].endswith("+00:00") and job["last_nonclean_time"]
 
@@ -133,12 +134,37 @@ async def test_degraded_producer_flows_to_jobs_and_mod21(env):
 async def test_clean_is_ok_and_overall_ok(env):
     await _all_clean()
     job = _job(await _get("/api/v1/scraper/jobs"), "parliament")
-    assert job["status"] == "ok" and job["last_outcome"] == "clean"
+    assert job["status"] == "ok" and job["last_outcome"] == "success"
+    assert job["last_scrape_outcome"] == "clean"
     assert job["last_nonclean_time"] is None
     health = await _get("/api/v1/health/modules")
     assert all(health["modules"][m]["status"] == "ok" for m in SCRAPER_MODS)
     assert health["modules"]["MOD-23"]["status"] == "disabled"
     assert health["overall"] == "ok"
+
+
+async def test_scheduler_lifecycle_is_exposed_read_only_for_all_registered_jobs(env):
+    from services.scheduler_observability import JOB_NAMES
+    store, _ = env
+    stamp = "2026-10-18T09:00:00+00:00"
+    store.update({
+        "scheduler:parliament:last_started": stamp,
+        "scheduler:parliament:last_finished": "2026-10-18T09:01:00+00:00",
+        "scheduler:parliament:last_outcome": "interrupted",
+        "scheduler:parliament:last_duration_s": "60.5",
+        "scheduler:parliament:consecutive_failures": "3",
+        "scheduler:parliament:next_run": "2026-10-18T21:00:00+00:00",
+        "scraper:parliament:last_run": "old legacy history",
+    })
+    snapshot = dict(store)
+    body = await _get("/api/v1/scraper/jobs")
+    assert {job["name"] for job in body["scrapers"]} == set(JOB_NAMES)
+    job = _job(body, "parliament")
+    assert job["last_run"] == job["last_started"] == stamp
+    assert job["last_finished"] == "2026-10-18T09:01:00+00:00"
+    assert job["last_outcome"] == "interrupted" and job["last_duration_s"] == 60.5
+    assert job["consecutive_failures"] == 3 and job["next_run"] == "2026-10-18T21:00:00+00:00"
+    assert store == snapshot
 
 
 async def test_failed_outcome_no_raw_leak_in_new_fields(env):

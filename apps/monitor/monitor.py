@@ -68,6 +68,13 @@ REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
 TG_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TG_CHAT = os.getenv("TELEGRAM_ADMIN_CHAT_ID", "")
 CHECK_INTERVAL = int(os.getenv("MONITOR_INTERVAL_SECONDS", "1800"))
+SCHEDULER_MISS_GRACE_SECONDS = max(0, int(os.getenv("SCHEDULER_MISS_GRACE_SECONDS", "900")))
+SCHEDULER_JOBS = (
+    "parliament", "diavgeia_municipal", "notify_new_bills", "notify_results",
+    "forum_sync", "bill_lifecycle", "cplm_refresh", "greek_topics",
+    "completeness_check", "push_categories", "weekly_digest",
+    "zk_arweave_publication", "finance_export", "monthly_newsletter",
+)
 STARTUP_GRACE_SECONDS = max(0, int(os.getenv("MONITOR_STARTUP_GRACE_SECONDS", "90")))
 REPAIR_VERIFY_WAIT_SECONDS = max(0, int(os.getenv("MONITOR_REPAIR_VERIFY_WAIT_SECONDS", "30")))
 API_URL = os.getenv("API_URL", "http://api:8000")
@@ -614,14 +621,10 @@ def attempt_recovery(alert: Alert, r, conn=None, *, notify: bool = True):
 # ─── Health Checks (return Alert objects) ───────────────────────────────────
 
 def check_scraper_stale(r) -> list[Alert]:
-    alerts = []
-    last_success = r.get("scraper:parliament:last_success")
-    if last_success:
-        age_h = (datetime.now(timezone.utc) - datetime.fromisoformat(last_success)).total_seconds() / 3600
-        if age_h > 48:
-            alerts.append(Alert("scraper_parliament_stale", "ekklesia-api", "warning",
-                                f"Parliament Scraper: kein Erfolg seit {age_h:.0f}h", True))
-    return alerts
+    # Job health is evaluated once in check_scraper_jobs using next_run and
+    # consecutive_failures. Old last_success age duplicated that alert and
+    # falsely treated legitimate skips/circuit cooldown as missed schedules.
+    return []
 
 
 def check_no_new_bills(conn) -> list[Alert]:
@@ -1042,36 +1045,38 @@ def check_forum_completeness(conn) -> list[Alert]:
 
 
 def check_scraper_jobs(r) -> list[Alert]:
+    """Alert only on a missed schedule or three consecutive failed attempts.
+
+    Stable type + Job name reuses the existing Telegram cooldown/resolution
+    path. Missing/legacy telemetry is unknown, never proof of a missed run.
+    """
     alerts = []
-    job_names = ["parliament", "diavgeia_municipal", "bill_lifecycle",
-                 "cplm_refresh", "greek_topics", "notify_new_bills", "notify_results",
-                 "completeness_check"]
-    for name in job_names:
+    now = datetime.now(timezone.utc)
+    for name in SCHEDULER_JOBS:
         try:
-            count = int(r.get(f"scraper:{name}:error_count") or 0)
-        except (ValueError, TypeError):
-            count = 0
-        if count > 20:
-            alerts.append(Alert("scraper_job_errors", "ekklesia-api", "warning",
-                                f"Job {name}: {count} Fehler", False))
-            continue
-        try:
-            outcome = r.get(f"scraper:{name}:last_outcome")
-            reason = r.get(f"scraper:{name}:last_outcome_reason")
+            raw_count = r.get(f"scheduler:{name}:consecutive_failures")
+            raw_next = r.get(f"scheduler:{name}:next_run")
         except Exception:
             continue
-        outcome = outcome.decode("utf-8", "replace") if isinstance(outcome, bytes) else outcome
-        reason = reason.decode("utf-8", "replace") if isinstance(reason, bytes) else reason
-        if outcome in _NONCLEAN_OUTCOMES:
-            if reason not in _OUTCOME_REASONS:
-                reason = "unknown"
+        try:
+            count = int(raw_count) if isinstance(raw_count, (str, bytes)) and len(raw_count) <= 12 else 0
+        except (ValueError, TypeError):
+            count = 0
+        try:
+            if isinstance(raw_next, bytes):
+                raw_next = raw_next.decode("utf-8")
+            due = datetime.fromisoformat(raw_next) if isinstance(raw_next, str) and len(raw_next) <= 64 else None
+            if due is not None and due.tzinfo is None:
+                due = None
+        except (ValueError, TypeError, UnicodeError):
+            # A bad timestamp must not hide a valid failure streak.
+            due = None
+        missed = due is not None and (now - due).total_seconds() > SCHEDULER_MISS_GRACE_SECONDS
+        if count >= 3 or missed:
+            reason = f"{count} consecutive failures" if count >= 3 else "missed next_run + grace"
             alerts.append(Alert("scraper_job_errors", "ekklesia-api", "warning",
-                                f"Job {name}: last run {outcome} ({reason})", False))
+                                f"Job {name}: {reason}", False))
     return alerts
-
-
-_NONCLEAN_OUTCOMES = {"degraded", "failed"}
-_OUTCOME_REASONS = {"scrape_errors", "conversion_failed", "exception"}
 
 
 def _rollback_if_possible(conn) -> None:

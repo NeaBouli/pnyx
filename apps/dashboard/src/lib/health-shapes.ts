@@ -4,6 +4,12 @@ export interface ScraperJob {
   name: string
   last_run: string | null
   last_success: string | null
+  last_started?: string | null
+  last_finished?: string | null
+  last_duration_s?: number | null
+  next_run?: string | null
+  consecutive_failures?: number | null
+  last_scrape_outcome?: 'clean' | 'degraded' | 'failed' | null
   error_count: number
   last_error: string | null
   status?: string
@@ -13,11 +19,11 @@ export interface ScraperJob {
   last_outcome_time: string | null
 }
 
-export type JobOutcome = 'clean' | 'degraded' | 'failed'
+export type JobOutcome = 'success' | 'failed' | 'skipped' | 'interrupted' | 'lock_busy' | 'clean' | 'degraded'
 export type JobOutcomeReason = 'none' | 'scrape_errors' | 'conversion_failed' | 'exception'
 export type JobHealth = 'ok' | 'degraded' | 'error' | 'unknown'
 
-const OUTCOMES: readonly string[] = ['clean', 'degraded', 'failed']
+const OUTCOMES: readonly string[] = ['success', 'failed', 'skipped', 'interrupted', 'lock_busy', 'clean', 'degraded']
 const REASONS: readonly string[] = ['none', 'scrape_errors', 'conversion_failed', 'exception']
 const OUTCOME_COUNT_MAX = 10000
 // Timezone-bearing ISO 8601 only (Z or ±hh:mm); anything else is treated as unknown.
@@ -43,9 +49,9 @@ function isoTimeFrom(value: unknown): string | null {
 export function jobHealth(job: ScraperJob): JobHealth {
   const status = job.status?.toLowerCase()
   if (status === 'circuit_open' || status === 'error' || status === 'failed' || job.error_count >= 3) return 'error'
-  if (job.last_outcome === 'failed') return 'error'
-  if (status === 'warning' || status === 'degraded' || job.error_count > 0 || job.last_outcome === 'degraded') return 'degraded'
-  if (status === 'ok' || status === 'healthy' || job.last_outcome === 'clean') return 'ok'
+  if (job.last_outcome === 'failed' || job.last_outcome === 'interrupted' || (job.consecutive_failures ?? 0) >= 3) return 'error'
+  if (status === 'warning' || status === 'degraded' || job.error_count > 0 || job.last_outcome === 'degraded' || job.last_scrape_outcome === 'degraded') return 'degraded'
+  if (status === 'ok' || status === 'healthy' || job.last_outcome === 'clean' || job.last_outcome === 'success') return 'ok'
   return 'unknown'
 }
 
@@ -77,6 +83,12 @@ function toJob(value: unknown, fallbackName = ''): ScraperJob | null {
     last_error: typeof job.last_error === 'string' ? job.last_error : null,
     ...(typeof job.status === 'string' ? { status: job.status } : {}),
     last_outcome: enumFrom<JobOutcome>(job.last_outcome, OUTCOMES),
+    last_started: isoTimeFrom(job.last_started),
+    last_finished: isoTimeFrom(job.last_finished),
+    next_run: isoTimeFrom(job.next_run),
+    last_duration_s: typeof job.last_duration_s === 'number' && Number.isFinite(job.last_duration_s) && job.last_duration_s >= 0 ? job.last_duration_s : null,
+    consecutive_failures: outcomeCountFrom(job.consecutive_failures),
+    last_scrape_outcome: enumFrom(job.last_scrape_outcome, ['clean', 'degraded', 'failed']),
     last_outcome_reason: enumFrom<JobOutcomeReason>(job.last_outcome_reason, REASONS),
     last_outcome_count: outcomeCountFrom(job.last_outcome_count),
     last_outcome_time: isoTimeFrom(job.last_outcome_time),

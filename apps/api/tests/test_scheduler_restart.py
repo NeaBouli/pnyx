@@ -1,6 +1,7 @@
 """Restart cadence and worker exclusion, with real APScheduler jobs and fake Redis."""
 
 import asyncio
+import logging
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock
 
@@ -10,7 +11,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
 import main
-from services import scheduler_state, scraper_state
+from services import scheduler_state, scraper_state, scheduler_observability as obs
 
 NOW = datetime(2026, 10, 18, 9, tzinfo=timezone.utc)
 INTERVAL = timedelta(hours=48)
@@ -44,10 +45,49 @@ class FakeRedis:
         self.state["sets"].append((key, value, nx, ex))
         if nx and key in store:
             return False
-        store[key] = value
+        store[key] = str(value)
         return True
 
-    async def eval(self, script, num_keys, key, token):
+    def pipeline(self):
+        client = self
+
+        class Pipe:
+            def __init__(self):
+                self.ops = []
+
+            def set(self, key, value, ex=None):
+                self.ops.append(("set", key, value))
+
+            def incr(self, key):
+                self.ops.append(("incr", key, None))
+
+            def delete(self, key):
+                self.ops.append(("delete", key, None))
+
+            async def execute(self):
+                results = []
+                for op, key, value in self.ops:
+                    if op == "delete":
+                        client.state["store"].pop(key, None)
+                        results.append(1)
+                        continue
+                    if op == "incr":
+                        value = int(await client.get(key) or 0) + 1
+                    await client.set(key, value)
+                    results.append(value)
+                return results
+
+        return Pipe()
+
+    async def eval(self, script, num_keys, *args):
+        if num_keys == 6:
+            lock, start, finish, outcome, duration, failures, token, expected_start, expected_finish, now, seconds = args
+            store = self.state["store"]
+            if (store.get(lock) and store[lock] != token) or store.get(start) != expected_start or store.get(finish, "") != expected_finish:
+                return 0
+            store.update({finish: now, outcome: "interrupted", duration: str(seconds), failures: str(int(store.get(failures, 0)) + 1)})
+            return 1
+        key, token = args
         assert num_keys == 1
         assert "redis.call('get', KEYS[1]) == ARGV[1]" in script
         if self.state["down"]:
@@ -81,6 +121,9 @@ def state(monkeypatch):
 
     monkeypatch.setattr(scheduler_state, "datetime", Clock)
     monkeypatch.setattr(scraper_state, "datetime", Clock)
+    monkeypatch.setattr(obs, "datetime", Clock)
+    monkeypatch.setattr(scheduler_state.logger, "propagate", True)
+    monkeypatch.setattr(scheduler_state.logger, "level", logging.WARNING)
     monkeypatch.setattr(scraper_state, "_redis", redis_client)
     # The remaining short-interval catch-up uses the legacy Redis constructor.
     monkeypatch.setattr(scraper_state.aioredis, "Redis", client)
@@ -237,14 +280,17 @@ async def test_existing_worker_lock_excludes_execution_and_preserves_history(sta
     state["store"][LOCK_KEY] = "another-worker"
     state["store"][RUN_KEY] = (NOW - timedelta(hours=50)).isoformat()
     snapshot = dict(state["store"])
-    _, job, func = await register()
+    scheduler, job, func = await register()
 
     await job.func(**job.kwargs)
+    await asyncio.sleep(0)
 
     func.assert_not_awaited()
-    assert state["store"] == snapshot
-    key, _, nx, expiry = state["sets"][-1]
-    assert (key, nx, expiry) == (LOCK_KEY, True, 48 * 3600)
+    assert all(state["store"][key] == value for key, value in snapshot.items())
+    assert state["store"][f"scheduler:{NAME}:last_outcome"] == "lock_busy"
+    assert NOW + timedelta(minutes=5) <= scheduler.get_job(NAME).next_run_time <= NOW + timedelta(minutes=10)
+    key, _, nx, expiry = next(item for item in state["sets"] if item[0] == LOCK_KEY)
+    assert (key, nx, expiry) == (LOCK_KEY, True, scheduler_state.JOB_TIMEOUT_SECONDS + scheduler_state.LEASE_MARGIN_SECONDS)
     assert all(client.closed for client in state["clients"])
 
 
@@ -494,5 +540,156 @@ async def test_running_scheduler_retries_missed_body_after_redis_recovery(state,
         assert scheduler.get_job(NAME).trigger.interval == INTERVAL
         assert scheduler.get_job(NAME).next_run_time >= state["now"] + INTERVAL
     finally:
+        scheduler.shutdown()
+        await asyncio.sleep(0)
+
+
+@pytest.mark.parametrize("outcome", ["success", "failed", "skipped", "interrupted"])
+async def test_lifecycle_records_start_finish_duration_and_streak(state, outcome):
+    prefix = f"scheduler:{NAME}:"
+    state["store"][prefix + "consecutive_failures"] = "2"
+
+    async def body():
+        assert state["store"][prefix + "last_started"] == state["store"][RUN_KEY] == NOW.isoformat()
+        assert prefix + "last_finished" not in state["store"]
+        state["now"] += timedelta(seconds=7)
+        if outcome == "interrupted":
+            raise asyncio.CancelledError()
+        obs.report_outcome(outcome)
+
+    _, job, _ = await register(func=body)
+    if outcome == "interrupted":
+        with pytest.raises(asyncio.CancelledError):
+            await job.func(**job.kwargs)
+    else:
+        await job.func(**job.kwargs)
+    assert state["store"][prefix + "last_finished"] == state["now"].isoformat()
+    assert state["store"][prefix + "last_outcome"] == outcome
+    assert float(state["store"][prefix + "last_duration_s"]) >= 0
+    assert state["store"][prefix + "next_run"] == job.next_run_time.isoformat()
+    assert state["store"][prefix + "consecutive_failures"] == ("0" if outcome == "success" else "2" if outcome == "skipped" else "3")
+    assert LOCK_KEY not in state["store"]
+
+
+@pytest.mark.parametrize("live_lease", [False, True])
+async def test_startup_marks_stale_attempt_interrupted_once_and_preserves_live_worker(state, live_lease):
+    prefix = f"scheduler:{NAME}:"
+    state["store"][prefix + "last_started"] = (NOW - timedelta(minutes=8)).isoformat()
+    state["store"][prefix + "last_finished"] = (NOW - timedelta(hours=49)).isoformat()
+    if live_lease:
+        state["store"][LOCK_KEY] = "other-worker"
+    scheduler, _, _ = await register()
+    await scheduler_state.initialize_job_states(scheduler)
+    await scheduler_state.initialize_job_states(scheduler)
+    if live_lease:
+        assert prefix + "last_outcome" not in state["store"]
+    else:
+        assert state["store"][prefix + "last_outcome"] == "interrupted"
+        assert state["store"][prefix + "last_finished"] == NOW.isoformat()
+        assert state["store"][prefix + "consecutive_failures"] == "1"
+        assert float(state["store"][prefix + "last_duration_s"]) == 480
+
+
+async def test_stale_attempt_recovers_after_dead_workers_lease_expires(state):
+    prefix = f"scheduler:{NAME}:"
+    state["store"][prefix + "last_started"] = (NOW - timedelta(hours=2)).isoformat()
+    state["store"][LOCK_KEY] = "dead-worker"
+    scheduler, job, _ = await register()
+    await scheduler_state.initialize_job_states(scheduler)
+    del state["store"][LOCK_KEY]  # Redis expires the bounded lease.
+    state["store"][prefix + "consecutive_failures"] = "1"
+
+    async def body():
+        assert state["store"][prefix + "consecutive_failures"] == "2"
+        obs.report_outcome("skipped")
+
+    job.kwargs["func"] = body
+    await job.func(**job.kwargs)
+    assert state["store"][prefix + "consecutive_failures"] == "2"
+
+
+async def test_expired_dead_lease_is_recovered_before_cadence_recheck(state):
+    prefix = f"scheduler:{NAME}:"
+    previous = (NOW - timedelta(hours=2)).isoformat()
+    state["store"].update({prefix + "last_started": previous, RUN_KEY: previous,
+                           LOCK_KEY: "dead-worker"})
+    scheduler, job, func = await register()
+    await scheduler_state.initialize_job_states(scheduler)
+    assert prefix + "last_finished" not in state["store"]
+    del state["store"][LOCK_KEY]
+    await job.func(**job.kwargs)
+    await asyncio.sleep(0)
+    func.assert_not_awaited()
+    assert state["store"][prefix + "last_outcome"] == "interrupted"
+    assert state["store"][prefix + "last_finished"] == NOW.isoformat()
+    assert state["store"][prefix + "consecutive_failures"] == "1"
+    assert scheduler.get_job(NAME).next_run_time == NOW + timedelta(hours=46)
+
+
+@pytest.mark.parametrize("preflight", ["is_circuit_open", "record_run"])
+async def test_real_job_records_preflight_exception(state, monkeypatch, preflight):
+    monkeypatch.setattr(scraper_state, preflight, AsyncMock(side_effect=RuntimeError("preflight failed")))
+    _, job, _ = await register(func=main.scheduled_diavgeia_scrape)
+    await job.func(**job.kwargs)
+    prefix = f"scheduler:{NAME}:"
+    assert state["store"][prefix + "last_outcome"] == "failed"
+    assert state["store"][prefix + "consecutive_failures"] == "1"
+    assert prefix + "last_finished" in state["store"]
+    assert state["store"][f"scraper:{NAME}:error_count"] == "1"
+
+
+async def test_timeout_records_failure_and_releases_lease(state):
+    async def hung():
+        await asyncio.Event().wait()
+
+    _, job, _ = await register(func=hung)
+    with pytest.raises(TimeoutError):
+        await job.func(**job.kwargs, timeout_s=0.01)
+    assert state["store"][f"scheduler:{NAME}:last_outcome"] == "failed"
+    assert state["store"][f"scheduler:{NAME}:consecutive_failures"] == "1"
+    assert LOCK_KEY not in state["store"]
+
+
+async def test_start_end_log_format_and_logger_levels(state, caplog, monkeypatch):
+    import re
+    caplog.set_level(logging.INFO)
+    monkeypatch.setattr(scheduler_state.logger, "level", logging.INFO)
+    _, job, _ = await register()
+    caplog.clear()
+    await job.func(**job.kwargs)
+    lines = [r.getMessage() for r in caplog.records if r.name == "scheduler"]
+    assert len(lines) == 2
+    for event, line in zip(("start", "end"), lines):
+        assert re.fullmatch(rf"event={event} job={NAME} outcome=\w+ duration_s=[0-9.]+ next_run=\S+", line)
+    assert "outcome=success" in lines[1]
+
+    root_level = logging.getLogger().level
+    obs.configure_logging()
+    assert logging.getLogger("scheduler").level == logging.INFO
+    assert logging.getLogger("scheduler").propagate is False
+    assert any(h.scheduler_handler for h in logging.getLogger("scheduler").handlers if hasattr(h, "scheduler_handler"))
+    assert logging.getLogger().level == root_level
+    assert all(logging.getLogger(name).level == logging.WARNING for name in ("httpx", "httpcore", "apscheduler"))
+
+
+async def test_running_scheduler_publishes_advanced_next_run_before_body_finishes(state):
+    state["now"] = datetime.now(timezone.utc)
+    entered, release = asyncio.Event(), asyncio.Event()
+
+    async def body():
+        entered.set()
+        await release.wait()
+
+    scheduler, _, _ = await register(func=body)
+    scheduler_state.install_schedule_listener(scheduler)
+    scheduler.modify_job(NAME, next_run_time=state["now"])
+    scheduler.start()
+    try:
+        await asyncio.wait_for(entered.wait(), timeout=1)
+        assert datetime.fromisoformat(state["store"][f"scheduler:{NAME}:next_run"]) == scheduler.get_job(NAME).next_run_time
+        assert scheduler.get_job(NAME).next_run_time > state["now"]
+    finally:
+        release.set()
+        await asyncio.sleep(0.02)
         scheduler.shutdown()
         await asyncio.sleep(0)

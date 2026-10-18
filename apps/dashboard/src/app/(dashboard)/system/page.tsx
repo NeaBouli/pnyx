@@ -1,17 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import type { ScraperJob } from '@/lib/health-shapes'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
-
-interface ScraperJob {
-  name: string
-  last_run: string | null
-  last_success: string | null
-  last_error: string | null
-  error_count: number
-  status: string
-}
 
 interface DeepLUsage {
   character_count?: number
@@ -204,7 +196,7 @@ export default function SystemPage() {
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
         <div className="px-6 py-4 border-b border-gray-100">
           <h2 className="text-base font-semibold text-gray-800">Εργασίες Χρονοδρομολογητή</h2>
-          <p className="text-xs text-gray-400 mt-0.5">8 Scheduler Jobs — τελευταία εκτέλεση, σφάλματα, circuit breaker</p>
+          <p className="text-xs text-gray-400 mt-0.5">{scraperJobs.length} Scheduler Jobs — έναρξη, ολοκλήρωση, επόμενη εκτέλεση</p>
         </div>
         <div className="p-4">
           {scraperJobs.length > 0 ? (
@@ -229,9 +221,13 @@ export default function SystemPage() {
                           {isOk ? 'OK' : isCircuitOpen ? 'Circuit Open' : isWarning ? 'Προσοχή' : job.status}
                         </span>
                       </div>
-                      <div className="flex gap-4 mt-1 text-xs text-gray-400">
+                      <div className="flex flex-wrap gap-4 mt-1 text-xs text-gray-400">
                         <span>Τελ. εκτέλεση: {lastRun}</span>
                         <span>Τελ. επιτυχία: {lastSuccess}</span>
+                        <span>Ολοκλήρωση: {job.last_finished ? new Date(job.last_finished).toLocaleString('el-GR') : '—'}</span>
+                        <span>Αποτέλεσμα: {job.last_outcome ?? '—'} ({job.last_duration_s ?? '—'}s)</span>
+                        <span>Επόμενη: {job.next_run ? new Date(job.next_run).toLocaleString('el-GR') : '—'}</span>
+                        <span>Διαδοχικές αποτυχίες: {job.consecutive_failures ?? 0}</span>
                       </div>
                     </div>
                     <div className="text-right ml-4">

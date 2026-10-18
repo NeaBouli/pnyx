@@ -17,7 +17,10 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from rate_limit import limiter
 from security_startup import validate_identity_kdf_config, validate_server_salt_config
-from services.scheduler_state import add_persisted_interval_job
+from services.scheduler_state import add_persisted_interval_job, add_observed_job, initialize_job_states, install_schedule_listener
+from services.scheduler_observability import configure_logging, report_outcome, attempt
+
+configure_logging()
 
 logger = logging.getLogger(__name__)
 local_error_logger = logging.getLogger("ekklesia.errors")
@@ -443,11 +446,12 @@ async def scheduled_scrape():
     import hashlib
 
     name = "parliament"
-    if await is_circuit_open(name):
-        logger.warning("[MOD-03] Circuit breaker OPEN for %s — skipping", name)
-        return
-    await record_run(name)
     try:
+        if await is_circuit_open(name):
+            logger.warning("[MOD-03] Circuit breaker OPEN for %s — skipping", name)
+            report_outcome("skipped")
+            return
+        await record_run(name)
         bills = await scrape_parliament_bills(limit=20, require_dates=True)
         logger.info(f"[MOD-03] Scheduled scrape: {len(bills)} bills fetched from API")
 
@@ -591,8 +595,8 @@ async def scheduled_notify_new_bills():
     from services.scraper_state import record_run, record_success, record_failure
 
     name = "notify_new_bills"
-    await record_run(name)
     try:
+        await record_run(name)
         r = aioredis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"), decode_responses=True)
         async with AsyncSessionLocal() as db:
             result = await db.execute(
@@ -634,6 +638,7 @@ async def scheduled_push_categories():
     )
 
     if not data_only_enabled():
+        report_outcome("skipped")
         return
     from datetime import datetime, timezone
     import redis.asyncio as aioredis
@@ -665,6 +670,7 @@ async def scheduled_push_categories():
         await push_system_update(r, LATEST_VERSION)
     except Exception as e:
         logger.error(f"[MOD-20] Data-only category push failed: {e}")
+        report_outcome("failed")
     finally:
         await r.aclose()
     if weekly_digest_due(datetime.now(timezone.utc)):
@@ -676,6 +682,7 @@ async def scheduled_weekly_digest():
     from services.push_categories import data_only_enabled, push_weekly_digest
 
     if not data_only_enabled():
+        report_outcome("skipped")
         return
     from datetime import datetime, timedelta, timezone
     import redis.asyncio as aioredis
@@ -699,6 +706,7 @@ async def scheduled_weekly_digest():
         await push_weekly_digest(r, int(active or 0), int(results or 0), now=now)
     except Exception as e:
         logger.error(f"[MOD-20] Weekly digest push failed: {e}")
+        report_outcome("failed")
     finally:
         await r.aclose()
 
@@ -713,8 +721,8 @@ async def scheduled_notify_results():
     from services.scraper_state import record_run, record_success, record_failure
 
     name = "notify_results"
-    await record_run(name)
     try:
+        await record_run(name)
         r = aioredis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"), decode_responses=True)
         async with AsyncSessionLocal() as db:
             result = await db.execute(
@@ -744,14 +752,15 @@ async def scheduled_diavgeia_scrape():
     from services.diavgeia_scraper import scrape_decisions
     from database import AsyncSessionLocal
 
-    name = "diavgeia_municipal"
-    if await is_circuit_open(name):
-        logger.warning("[MOD-21] Circuit breaker OPEN for %s — skipping", name)
-        return
-    await record_run(name)
     scrape_error_count = 0
     conversion_failed = False
+    name = "diavgeia_municipal"
     try:
+        if await is_circuit_open(name):
+            logger.warning("[MOD-21] Circuit breaker OPEN for %s — skipping", name)
+            report_outcome("skipped")
+            return
+        await record_run(name)
         async with AsyncSessionLocal() as session:
             result = await scrape_decisions(
                 session=session,
@@ -802,16 +811,21 @@ async def scheduled_forum_sync():
     from services.scraper_state import record_run, record_success, record_failure
     _category_cache.clear()
     name = "forum_sync"
-    if not FORUM_SYNC_ENABLED or not DISCOURSE_API_KEY:
-        await record_run(name)
-        await record_success(name)
-        logger.debug("[Forum] Sync disabled — recording idle state")
-        return
     lock_client = None
     lock_token = None
     try:
-        lock_client, lock_token = await _acquire_forum_sync_lock()
+        if not FORUM_SYNC_ENABLED or not DISCOURSE_API_KEY:
+            await record_run(name)
+            await record_success(name)
+            report_outcome("skipped")
+            logger.debug("[Forum] Sync disabled — recording idle state")
+            return
+        if attempt.get() is not None:
+            lock_token = "scheduler-owned"
+        else:
+            lock_client, lock_token = await _acquire_forum_sync_lock()
         if not lock_token:
+            report_outcome("lock_busy")
             logger.debug("[Forum] Another worker owns the forum-sync lease — skipping")
             return
         await record_run(name)
@@ -851,8 +865,8 @@ async def scheduled_bill_lifecycle():
     from services.scraper_state import record_run, record_success, record_failure
     from database import AsyncSessionLocal
     name = "bill_lifecycle"
-    await record_run(name)
     try:
+        await record_run(name)
         async with AsyncSessionLocal() as db:
             stats = await run_bill_lifecycle(db)
             if stats["transitioned"] > 0:
@@ -869,8 +883,8 @@ async def scheduled_cplm_refresh():
     from services.scraper_state import record_run, record_success, record_failure
     from database import AsyncSessionLocal
     name = "cplm_refresh"
-    await record_run(name)
     try:
+        await record_run(name)
         async with AsyncSessionLocal() as db:
             result = await refresh_cplm_cache(db)
             logger.info("[CPLM] Refreshed: x=%.4f y=%.4f voters=%d", result["x"], result["y"], result["total_voters"])
@@ -885,23 +899,26 @@ async def scheduled_greek_topics():
     from services.scraper_state import record_run, record_success, record_failure, is_circuit_open
     name = "greek_topics"
     try:
-        from services.greek_topics_scraper import scrape_greek_topics, GREEK_SCRAPER_ENABLED
-    except ImportError:
-        logger.debug("[GreekScraper] Module nicht verfuegbar — Job deaktiviert")
-        await record_run(name)
-        await record_success(name)
-        return
+        try:
+            from services.greek_topics_scraper import scrape_greek_topics, GREEK_SCRAPER_ENABLED
+        except ImportError:
+            logger.debug("[GreekScraper] Module nicht verfuegbar — Job deaktiviert")
+            await record_run(name)
+            await record_success(name)
+            report_outcome("skipped")
+            return
 
-    if not GREEK_SCRAPER_ENABLED:
+        if not GREEK_SCRAPER_ENABLED:
+            await record_run(name)
+            await record_success(name)
+            logger.debug("[GreekScraper] Disabled — recording idle state")
+            report_outcome("skipped")
+            return
+        if await is_circuit_open(name):
+            logger.warning("[GreekScraper] Circuit breaker OPEN — skipping")
+            report_outcome("skipped")
+            return
         await record_run(name)
-        await record_success(name)
-        logger.debug("[GreekScraper] Disabled — recording idle state")
-        return
-    if await is_circuit_open(name):
-        logger.warning("[GreekScraper] Circuit breaker OPEN — skipping")
-        return
-    await record_run(name)
-    try:
         stats = await scrape_greek_topics()
         logger.info("[GreekScraper] %s", stats)
         await record_success(name)
@@ -921,8 +938,10 @@ async def scheduled_monthly_newsletter():
                 logger.info("[NEWSLETTER] Monthly report sent")
             else:
                 logger.warning("[NEWSLETTER] Monthly report failed")
+                report_outcome("failed")
     except Exception as e:
         logger.error("[NEWSLETTER] Monthly report error: %s", e)
+        report_outcome("failed")
 
 
 async def scheduled_completeness_check():
@@ -930,9 +949,9 @@ async def scheduled_completeness_check():
     from services.scraper_state import record_run, record_success, record_failure
     from database import AsyncSessionLocal
     name = "completeness_check"
-    await record_run(name)
     counts = {"fetched": 0, "skipped": 0, "failed": 0}
     try:
+        await record_run(name)
         async with AsyncSessionLocal() as db:
             from sqlalchemy import select, or_
             from models import ParliamentBill, BillStatus
@@ -1040,6 +1059,8 @@ async def scheduled_zk_arweave_publication():
             published = sum(item.published for item in results)
             skipped = sum(item.skipped_small_group for item in results)
             failed = sum(item.failed for item in results)
+            if failed:
+                report_outcome("failed")
             logger.info(
                 "[ZK-ARWEAVE] Auto publication checked %d scopes: published=%d skipped_small_group=%d failed=%d",
                 len(results),
@@ -1049,6 +1070,7 @@ async def scheduled_zk_arweave_publication():
             )
     except Exception as e:
         logger.warning("[ZK-ARWEAVE] Auto publication failed: %s", e)
+        report_outcome("failed")
 
 
 async def scheduled_finance_export() -> None:
@@ -1062,10 +1084,13 @@ async def scheduled_finance_export() -> None:
             logger.info("[FINANCE-EXPORT] Exported %d PII-free events", result.exported)
         if result.quarantined:
             logger.error("[FINANCE-EXPORT] Quarantined %d invalid event; private review required", result.quarantined)
+            report_outcome("failed")
     except FinanceExportError as exc:
         logger.warning("[FINANCE-EXPORT] Batch retained: %s", exc)
+        report_outcome("failed")
     except Exception as exc:
         logger.warning("[FINANCE-EXPORT] Batch retained after %s", type(exc).__name__)
+        report_outcome("failed")
 
 
 @asynccontextmanager
@@ -1076,18 +1101,20 @@ async def lifespan(app):
     sso.validate_forum_sso_config()
     await add_persisted_interval_job(scheduler, scheduled_completeness_check, hours=6, name="completeness_check")
     await add_persisted_interval_job(scheduler, scheduled_scrape, hours=12, name="parliament", job_id="parliament_scrape")
-    scheduler.add_job(scheduled_notify_new_bills, IntervalTrigger(minutes=30), id="notify_new_bills", replace_existing=True)
-    scheduler.add_job(scheduled_notify_results, IntervalTrigger(hours=1), id="notify_results", replace_existing=True)
-    scheduler.add_job(scheduled_push_categories, IntervalTrigger(minutes=30), id="push_categories", replace_existing=True)
-    scheduler.add_job(scheduled_weekly_digest, CronTrigger(day_of_week="mon", hour=7, minute=0), id="weekly_digest", replace_existing=True)
+    add_observed_job(scheduler, scheduled_notify_new_bills, IntervalTrigger(minutes=30), name="notify_new_bills")
+    add_observed_job(scheduler, scheduled_notify_results, IntervalTrigger(hours=1), name="notify_results")
+    add_observed_job(scheduler, scheduled_push_categories, IntervalTrigger(minutes=30), name="push_categories")
+    add_observed_job(scheduler, scheduled_weekly_digest, CronTrigger(day_of_week="mon", hour=7, minute=0), name="weekly_digest")
     await add_persisted_interval_job(scheduler, scheduled_diavgeia_scrape, hours=48, name="diavgeia_municipal")
-    scheduler.add_job(scheduled_forum_sync, IntervalTrigger(minutes=10), id="forum_sync", replace_existing=True)
-    scheduler.add_job(scheduled_bill_lifecycle, IntervalTrigger(hours=1), id="bill_lifecycle", replace_existing=True)
-    scheduler.add_job(scheduled_zk_arweave_publication, IntervalTrigger(minutes=30), id="zk_arweave_publication", replace_existing=True)
-    scheduler.add_job(scheduled_finance_export, IntervalTrigger(minutes=5), id="finance_export", replace_existing=True)
+    add_observed_job(scheduler, scheduled_forum_sync, IntervalTrigger(minutes=10), name="forum_sync")
+    add_observed_job(scheduler, scheduled_bill_lifecycle, IntervalTrigger(hours=1), name="bill_lifecycle")
+    add_observed_job(scheduler, scheduled_zk_arweave_publication, IntervalTrigger(minutes=30), name="zk_arweave_publication")
+    add_observed_job(scheduler, scheduled_finance_export, IntervalTrigger(minutes=5), name="finance_export")
     await add_persisted_interval_job(scheduler, scheduled_cplm_refresh, hours=6, name="cplm_refresh")
     await add_persisted_interval_job(scheduler, scheduled_greek_topics, hours=6, name="greek_topics")
-    scheduler.add_job(scheduled_monthly_newsletter, CronTrigger(day=1, hour=9, minute=0), id="monthly_newsletter", replace_existing=True)
+    add_observed_job(scheduler, scheduled_monthly_newsletter, CronTrigger(day=1, hour=9, minute=0), name="monthly_newsletter")
+    await initialize_job_states(scheduler)
+    install_schedule_listener(scheduler)
     scheduler.start()
     logger.info("[Scheduler] Started — completeness 6h, lifecycle 1h, ZK-Arweave 30m, parliament 12h, diavgeia 48h, notify-bills 30m, notify-results 1h, forum-sync 10m, greek-topics 6h, newsletter 1st/month")
 
@@ -1109,7 +1136,7 @@ async def lifespan(app):
                     age = (datetime.now(timezone.utc) - lr).total_seconds()
                     if age >= interval_sec:
                         logger.info("[Scheduler] Catch-up: %s overdue by %.0fh, triggering now", name, age / 3600)
-                        scheduler.add_job(func, id=f"catchup_{name}", replace_existing=True)
+                        scheduler.modify_job(name, next_run_time=datetime.now(timezone.utc))
                 except Exception:
                     pass
         await r.aclose()
