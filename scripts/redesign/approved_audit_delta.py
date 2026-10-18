@@ -76,8 +76,8 @@ import r0_inventory
 # community model attribution is fixed to V-Labs Artificial Systems · vlabs.gr.
 # Only the changed pages below receive new exact inventory fingerprints.
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/community.html": "107e5df2706844c19233c66ee4bec03e70b82ca3df4050e3482c3e9bdab44a8c",  # T-9148: neutral public AI wording
-    "docs/wiki/api.html": "4b384bd68936516e361bdb7fc3691969ad5b7dc9ad4e20d8b4fcc9f9769b4630",  # T-9148: neutral public AI wording
+    "docs/community.html": "815c001ae1b312e97224e26acb8a8353395438aae8c75cd09b268505c7d8f477",  # T-9148: reviewed EL/EN AI wording
+    "docs/wiki/api.html": "1f2847e55cff6d3f165a1d6cded96736be774a2ad0ba3e919b49eca61e10a938",  # T-9148: reviewed EL/EN AI wording
     "docs/wiki/architecture.html": "1af2aa9c102d66887e52627c277ebfea03935a2ff3b772235cf07ed3d4313f0b",
     "docs/wiki/broadcasting.html": "eb345ed4551a94220e47aeb4b40c7c745bf6dfeaa5f330eac6f629a09d31f716",
     "docs/wiki/contributing.html": "bb4048480c3b75cb98ee668305833fe36b2c939f29ef27f1f8bec230c9d49d88",
@@ -85,7 +85,7 @@ APPROVED_WIKI_INVENTORY_HASH = {
     "docs/wiki/delete-account.html": "3d7090ca86d5d17207477b664fa9d29066c0073a446d67e13dfd7eaf26822d1e",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
     "docs/wiki/faq.html": "973af876639742d7068fa826bab084c106c129a4fac83711c70569b531c05fb6",  # T-9148: neutral public AI wording
     "docs/wiki/index.html": "ea418f9164a41aafa72721bdc8feaf7612a26fc83a32e7e781d7f166fe278419",  # T-9047/T-9048: named code region, contrast, headings and document language; T-9106: legal-modal claims text
-    "docs/wiki/modules.html": "3eb29098b759fef6accfc7b0e915bac145dfe3810f15c4b563c21ff0e975f8ca",  # T-9148: neutral public AI wording
+    "docs/wiki/modules.html": "0aca880fb3e377bfec1d8901d32155e93ca2c5c8a83411b38455299fb131d472",  # T-9148: reviewed EL/EN AI wording
     "docs/wiki/privacy.html": "58550c4a6d68fb39a43c46b2810819dcb8af70cc141f43d9fa5651aac4e990b8",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
     "docs/wiki/roadmap.html": "8fae28938db627f3cade818fc490e1fac5f1be3984544c72a16817fd9aa84ff5",
     "docs/wiki/security.html": "0546a8aaf80b51cd4a9de72a33ce82059f8da96ce7ab2a20af7ad278932edc36",  # T-9127: OPEN_END voting closed

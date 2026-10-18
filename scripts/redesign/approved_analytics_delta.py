@@ -60,7 +60,7 @@ SECURITY_REMEDIATION_SHA256 = {
 # T-9132 review: demo discloses possible linkage through verification; demo and
 # govgr-dimos separate expiring daily HMAC counters from size-rotated IP logs.
 CONTENT_REMEDIATION_SHA256 = {
-    "docs/demo/admin.html": "8fa1d743053d9218801f4eacab002b609478292ff1d6118bfbde904ee293501e",  # T-9148: neutral AI labels on the public demo.
+    "docs/demo/admin.html": "935fdabc0792278216386b5bbb26b2735bbc5ad5f4d1d52609069070c141d52d",  # T-9148: neutral AI label without a zero-cost claim.
     "docs/embed/results.html": "63689f8561e348cb00fa600f4170f3b42cebe2cbf72218b1b4b8f0359cde1cfd",  # T-9128: nullable public result cells
     "docs/demo/index.html": "0b5b6325ca36af9f8ffa056b171f197fc4daef520c17238923dfd1825779439e",  # T-9132: approved pseudonymous vote wording
     "docs/demo/bills.html": "bcc57f45c9e25c3ac3a6eb0fe9b17b29a2908c5863ad744407dc2cd56215dee8",  # T-9127: OPEN_END voting closed
@@ -78,8 +78,8 @@ CONTENT_REMEDIATION_SHA256 = {
 LANDING_BILINGUAL_REPLACEMENTS = {
     ("Ollama + DeepL: Περιλήψεις νόμων, Chat Q&A, επιτήρηση server, αυτόματη επισκευή scraper, ανάλυση logs.",
      "Ollama + DeepL: Bill summaries, Chat Q&A, server monitoring, auto-healing scraper, log analysis."):
-    ("AI: Περιλήψεις νόμων, Chat Q&A, επιτήρηση server, αυτόματη επισκευή scraper, ανάλυση logs.",
-     "AI: Bill summaries, Chat Q&A, server monitoring, auto-healing scraper, log analysis."),
+    ("AI: Περιλήψεις νομοσχεδίων, ερωτήσεις και απαντήσεις πολιτών, παρακολούθηση διακομιστή, αυτόματη επιδιόρθωση του συλλέκτη δεδομένων, ανάλυση αρχείων καταγραφής.",
+     "AI: Bill summaries, citizen Q&A, server monitoring, auto-healing scraper, log analysis."),
     ("AI Agent (Ollama + DeepL)", "AI Agent (Ollama + DeepL)"): ("AI Agent", "AI Agent"),
 }
 

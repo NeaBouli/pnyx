@@ -8,7 +8,7 @@
       "changefreq": "weekly",
       "priority": "1.0",
       "lastmod": "2026-10-18",
-      "sha256": "9d66c14f3b65c197608682553e6ef18722447150b4c9bcf8b83ef740168a08a5"
+      "sha256": "755e2587e253ab284b7ed358418ef82ee4a1975a49b5659fd42ecb068ca81651"
     },
     {
       "loc": "/el/bills",
@@ -34,7 +34,7 @@
       "changefreq": "monthly",
       "priority": "0.8",
       "lastmod": "2026-10-18",
-      "sha256": "de132ca5b6a15a94282ed855c4bd3cb3b207c9124a3219749174af2fdff21efb"
+      "sha256": "4cd345cf77dd65b0d3de56b3ce8ed87af7d53a4ce9bcc95b0875512e10acd035"
     },
     {
       "loc": "/legal.html",
@@ -114,7 +114,7 @@
       "changefreq": "monthly",
       "priority": "0.7",
       "lastmod": "2026-10-18",
-      "sha256": "270ce7ab943018d34cb91092c36cef08027151ded27090601014d947b5256b70"
+      "sha256": "beda2e1642b17570131d31022bd8bd0b155c1afbd98159ad55fc7f4c1d0a340c"
     },
     {
       "loc": "/wiki/architecture.html",
@@ -130,7 +130,7 @@
       "changefreq": "monthly",
       "priority": "0.7",
       "lastmod": "2026-10-18",
-      "sha256": "b52db9199e1e79604fdcdb87fcbf3159904ff21c36476a747014dafcd1a39fa8"
+      "sha256": "f80f1da8db807398bc2b997b5e8364916f37ed4a87e74a21c001dd13d148b539"
     },
     {
       "loc": "/wiki/roadmap.html",
