@@ -3,6 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, 
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { fetchBills } from "../lib/api";
+import { parliamentFreshness } from "../lib/source-freshness";
 import { mergeBillsUnique, prioritizeBillsPage } from "../lib/bill-feed";
 import { availableGeographicFilters, scopedBillQuery } from "../lib/bill-scope";
 import { loadUserBillScope } from "../lib/bill-scope-storage";
@@ -265,6 +266,13 @@ export default function BillsScreen() {
             <View style={[s.dot, { backgroundColor: STATUS_COLORS[item.status] ?? colors.textTertiary }]} />
             <View style={s.cardContent}>
               <Text style={s.cardTitle}>{item.title_el}</Text>
+              {(() => {
+                const freshness = parliamentFreshness(item);
+                return freshness && <View>
+                  <Text style={s.cardPill}>{freshness.updated}</Text>
+                  {freshness.notice && <Text style={s.cardPill}>{freshness.notice}</Text>}
+                </View>;
+              })()}
               {readableText(item.summary_short_el || item.pill_el) && (
                 <Text style={s.cardPill} numberOfLines={3}>{item.summary_short_el || item.pill_el}</Text>
               )}

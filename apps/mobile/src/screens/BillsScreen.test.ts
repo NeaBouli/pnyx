@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 import { mergeBillsUnique, prioritizeBillsPage } from "../lib/bill-feed";
 import { availableGeographicFilters, scopedBillQuery } from "../lib/bill-scope";
 import { tileVoteLabel, type VoteMarks } from "../lib/vote-marks";
+import { parliamentFreshness } from "../lib/source-freshness";
 import { colors } from "../theme";
 
 vi.mock("expo-secure-store", () => {
@@ -166,6 +167,7 @@ function loadScreen(voteState: {
       useFocusEffect: harness.api.useFocusEffect,
     },
     "../lib/api": { fetchBills },
+    "../lib/source-freshness": { parliamentFreshness },
     "../lib/bill-feed": { mergeBillsUnique, prioritizeBillsPage },
     "../lib/bill-scope": { availableGeographicFilters, scopedBillQuery },
     "../lib/bill-scope-storage": {
@@ -273,6 +275,11 @@ async function initialList(items: Bill[] = [bill("A")]): Promise<Screen> {
 }
 
 describe("BillsScreen fetch failure state", () => {
+  it("renders the Parliament freshness and unavailable-data notice on tiles", async () => {
+    const screen = await initialList();
+    expect(cardTexts(screen)[0]).toContain("Τελευταία ενημέρωση:");
+    expect(cardTexts(screen)[0]).toContain("Τα δεδομένα της Βουλής ενδέχεται να μην είναι ενημερωμένα");
+  });
   it.each(["refresh", "filter"] as const)("clears A after a %s failure and loads B through retry", async trigger => {
     const screen = await initialList();
     expect(cardTexts(screen)[0]).toContain("Fixture bill A");

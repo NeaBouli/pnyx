@@ -18,6 +18,7 @@ import re
 import sys
 import time
 import urllib.request
+import urllib.parse
 from urllib.error import HTTPError, URLError
 
 
@@ -65,10 +66,15 @@ def _read_env_file(path: str) -> None:
 
 
 def _http_text(url: str, timeout: int = 60) -> str:
+    # T-9147: backfills may not fetch Parliament from a third-party IP either.
+    target = url.removeprefix(JINA_BASE)
+    host = (urllib.parse.urlsplit(target).hostname or "").lower()
+    if host == "hellenicparliament.gr" or host.endswith(".hellenicparliament.gr"):
+        return ""
     req = urllib.request.Request(
         url,
         headers={
-            "User-Agent": "ekklesia-analysis/1.0",
+            "User-Agent": "ekklesia.gr-bot/1.0 (+https://ekklesia.gr/bot.html; contact: kaspartisan@proton.me)",
             "X-Respond-With": "markdown",
         },
     )

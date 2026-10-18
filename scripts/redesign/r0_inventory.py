@@ -758,6 +758,13 @@ def verify_surface(allowlist: list[str]) -> list[str]:
         if DOCS_DIR.resolve() == (Path(__file__).resolve().parents[2] / "docs").resolve()
         else set()
     )
+    # T-9147: admit only the exact owner-requested bot page; preserve R0 bytes.
+    if DOCS_DIR.resolve() == (Path(__file__).resolve().parents[2] / "docs").resolve():
+        from approved_analytics_delta import ADDITIONAL_PAGE_SHA256
+        for path, expected in ADDITIONAL_PAGE_SHA256.items():
+            approved_addition.add(path)
+            if path in discovered and sha256_bytes((REPO_ROOT / path).read_bytes()) != expected:
+                errors.append(f"approved public HTML content drift: {path}")
     for missing in sorted((allowed | approved_addition) - discovered):
         errors.append(f"allowlisted file missing: {missing}")
     for extra in sorted(discovered - (allowed | approved_addition)):

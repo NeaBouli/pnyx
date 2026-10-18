@@ -53,6 +53,7 @@ READ_EXCEPTIONS = {
     "/api/v1/auth/govgr/family/verify": "public cacheable read; SSR shares one IP",
     "/api/v1/auth/govgr/info": "Static integration metadata.",
     "/api/v1/auth/govgr/status": "public cacheable read; SSR shares one IP",
+    "/api/v1/bills/sources/freshness": "public cacheable read; SSR shares one IP",
     "/api/v1/bills": "Paginated public feed; retain existing SSR access policy.",
     "/api/v1/bills/trending": "public cacheable read; SSR shares one IP",
     "/api/v1/bills/{bill_id}": "Single public bill lookup.",

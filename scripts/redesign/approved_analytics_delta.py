@@ -65,7 +65,7 @@ CONTENT_REMEDIATION_SHA256 = {
     "docs/demo/bills.html": "bcc57f45c9e25c3ac3a6eb0fe9b17b29a2908c5863ad744407dc2cd56215dee8",  # T-9127: OPEN_END voting closed
     "docs/embed/vote.html": "79694a0db62fa63f93a8e0f0115ceed0db6ed65579695a54948f53db979c203f",  # T-9127: OPEN_END voting closed
     "docs/govgr-dimos.html": "2a688aeda5af19061db9d64e2a7180fa4a292511fdc201712e8f243d2616a176",
-    "docs/legal.html": "42edc8e9c7db5d3fa4bb141adc915d47acc232ff93d405a38871b83ee1b5b4b7",
+    "docs/legal.html": "4c7983111e2119c10e894c9dc383008cece88451e836059154ea97fe78608adf",  # T-9147: bilingual bot footer link.
     "docs/municipality/article.html": "aebe3b819ec76fc9c3769ad38a847246657bd5d85b70c914cb84528d4b658123",
     "docs/municipality/index.html": "b553913780f18868fc49157f303379cbf630b12651ad1877b31a09b3483f5f84",
     "docs/tickets/index.html": "e7ac386295ade2c52c6d3826c89ade8ffc140f290dbc78ac8487d32394f2b225",
@@ -98,3 +98,8 @@ def baseline_without_analytics(page: dict) -> dict:
     expected["resources"].remove(RESOURCE)
     expected["external_hosts"].remove("analytics.ekklesia.gr")
     return expected
+
+# T-9147 (Gio, 2026-10-18): bilingual bot policy, exact new-page bytes.
+ADDITIONAL_PAGE_SHA256 = {
+    "docs/bot.html": "c4fc5ce19e0c37ea9b93b15ec3167572fdbeb20e71f73ab9af065bd500359e17",
+}

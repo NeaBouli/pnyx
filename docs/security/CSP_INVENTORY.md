@@ -2,7 +2,7 @@
 
 Snapshot: 2026-10-17. Regenerate with `python3 scripts/csp-inventory.py`; verify with `--check`.
 
-The 35 live `docs/**/*.html` pages contain **55 executable inline blocks**, **25 JSON-LD blocks**, **1 empty block**, **231 literal event-handler attributes**, and **0 javascript: URLs** after this change. There are also **12 handler template sites** inside HTML script blocks and **6** in external docs JavaScript; runtime instances depend on data.
+The 36 live `docs/**/*.html` pages contain **55 executable inline blocks**, **26 JSON-LD blocks**, **1 empty block**, **231 literal event-handler attributes**, and **0 javascript: URLs** after this change. There are also **12 handler template sites** inside HTML script blocks and **6** in external docs JavaScript; runtime instances depend on data.
 
 Scope includes redirects, embeds, demos, and the live `wiki/audit.html` disclosure. Historical planning/community audit reports and `animation-spec/LANDING_SNIPPETS.html` (a design snippet, zero inline scripts/handlers) are excluded. The frozen `docs/planning/r0` inventory is unchanged. Production copies only the docs paths listed in `apps/web/Dockerfile.prod`; demos, mirror-setup and the legacy static sso-verify page are also inventoried because they are live docs pages on the static host.
 
@@ -14,7 +14,7 @@ The target changes `script-src 'self' 'unsafe-inline'` to `script-src 'self'` pl
 
 | Allowed inline script | SHA-256 source (exact UTF-8 body, including whitespace) |
 | --- | --- |
-| `docs/legal.html:226` — language toggle | `'sha256-Dj8kl3l3xRPY+CsP2kC3GsPGU1uHVf8DpiAitpCfAeQ='` |
+| `docs/legal.html:227` — language toggle | `'sha256-Dj8kl3l3xRPY+CsP2kC3GsPGU1uHVf8DpiAitpCfAeQ='` |
 | `docs/municipality/article.html:561` — scroll reveals | `'sha256-VOp/zUPtScCqBHSO9r9FbsJDFk2RkAWNKFzns7sDCT4='` |
 
 No CSP report receiver, `report-uri`, `report-to`, or Reporting-Endpoints configuration exists in the inspected API/web/infra sources. No receiver or third party is added: violations are browser-console-only. Remaining inline scripts and handlers, including Next bootstrap, intentionally produce Report-Only violations; their execution still follows the unchanged enforced policy.
@@ -27,6 +27,7 @@ This change moves `docs/mirror-setup.html`'s 292-character language toggle to `d
 
 | File | Executable blocks | JSON-LD | Empty | Literal handlers | Generated handler sites | javascript: URLs |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `docs/bot.html` | 0 | 1 | 0 | 0 | 0 | 0 |
 | `docs/community.html` | 6 | 1 | 1 | 14 | 0 | 0 |
 | `docs/demo/admin.html` | 1 | 0 | 0 | 1 | 1 | 0 |
 | `docs/demo/bills.html` | 1 | 0 | 0 | 0 | 6 | 0 |
@@ -66,6 +67,12 @@ This change moves `docs/mirror-setup.html`'s 292-character language toggle to `d
 ## Every remaining block and handler
 
 Locations refer to this tree. Identical handler bodies are grouped with every source line listed; counts are attribute occurrences, not distinct code strings. Template rows count creation sites, not runtime elements.
+
+### `docs/bot.html`
+
+| Location(s) | Category / item | Plan |
+| --- | --- | --- |
+| 26 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
 
 ### `docs/community.html`
 
@@ -202,7 +209,7 @@ Locations refer to this tree. Identical handler bodies are grouped with every so
 | Location(s) | Category / item | Plan |
 | --- | --- | --- |
 | 26 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-| 226 | Executable: <code>(function () {</code> | Hash: exact digest already in Report-Only. |
+| 227 | Executable: <code>(function () {</code> | Hash: exact digest already in Report-Only. |
 
 ### `docs/mirror-setup.html`
 
@@ -501,7 +508,7 @@ Externalizing a script alone does not remove the handlers it creates. These site
 
 ## Next.js app inventory and nonce prerequisite
 
-Source scan of 42 production JS/TS/JSX/TSX/MJS files in `apps/web/src` plus `apps/web/next.config.mjs` (tests excluded): **0 Inline scripts**, **0 next/script elements**, **0 beforeInteractive**, **1 dangerouslySetInnerHTML**, **0 String handlers**, **0 javascript: URLs**.
+Source scan of 43 production JS/TS/JSX/TSX/MJS files in `apps/web/src` plus `apps/web/next.config.mjs` (tests excluded): **0 Inline scripts**, **0 next/script elements**, **0 beforeInteractive**, **1 dangerouslySetInnerHTML**, **0 String handlers**, **0 javascript: URLs**.
 
 Counts are generated from source sites, including literal HTML strings; comments are ignored. Inline script elements include data blocks and `next/script` elements without an actual `src` attribute; `data-src` and mentions inside attribute values do not make a script external. Default imports of `next/script` are tracked by their local name, including combined default/named imports and `default as` aliases within named imports; `beforeInteractive` is counted even for external scripts. All `dangerouslySetInnerHTML` sites are listed for review, including styles and non-script HTML. Categories can overlap. This conservative scan does not evaluate spreads, computed props or dynamically assembled HTML; inspect production output before enforcement. React callback props are counted separately and do not require `unsafe-inline`.
 

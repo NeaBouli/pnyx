@@ -2,12 +2,11 @@ name: Parliament Bill Scraper
 
 # Fetches latest bills from hellenicparliament.gr Open Data API
 # and imports them into ekklesia.gr via POST /api/v1/scraper/import.
-# Tries GitHub runner source access first. If all runner-side source paths are
-# blocked, it validates the canonical Production freshness probe before import.
+# Uses only the canonical server policy. No runner IP or third-party detours.
 
 on:
   schedule:
-    - cron: '0 */6 * * *'  # Every 6 hours
+    - cron: '0 3 * * *'  # Daily, through the canonical server policy
   workflow_dispatch:        # Manual trigger
 
 jobs:
@@ -27,7 +26,7 @@ jobs:
             exit 1
           fi
 
-      - name: Fetch bills from hellenicparliament.gr with fallbacks
+      - name: Read bills through the canonical Parliament access policy
         env:
           PARLIAMENT_IMPORT_ATTESTATION_KEY: ${{ secrets.PARLIAMENT_IMPORT_ATTESTATION_KEY }}
         run: |

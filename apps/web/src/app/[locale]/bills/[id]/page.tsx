@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ekklesia, Bill, BillResults, submitSignedVote } from "@/lib/api";
 import { withSigner } from "@/lib/keystore";
 import { RequestTimeoutError, requestTimeoutMessage } from "@/lib/request-deadline";
+import ParliamentFreshness from "@/components/ParliamentFreshness";
 import StatusBadge from "@/components/StatusBadge";
 import RelevanceButtons from "@/components/RelevanceButtons";
 import BillResultReport from "@/components/BillResultReport";
@@ -258,20 +259,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
             >
               {isDiavgeia ? "📋" : "🏛️"} {officialLabel}
             </a>
-            {!isDiavgeia && (
-              <span className="text-xs text-gray-600">
-                ({locale === "el" ? "αν δεν ανοίγει:" : "if blocked:"}
-                <a
-                  href={`https://r.jina.ai/${officialUrl}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline ml-1 hover:text-gray-600"
-                  title={locale === "el" ? "Μέσω Jina Reader — τρίτος πάροχος" : "Via Jina Reader — third-party provider"}
-                >
-                  {locale === "el" ? "εναλλακτικός σύνδεσμος ↗" : "alternative link ↗"}
-                </a>)
-              </span>
-            )}
+
           </div>
         )}
 
@@ -287,6 +275,8 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
         <h1 className="text-2xl font-black text-gray-900 leading-snug mb-6">
           {bill[titleKey as keyof Bill] as string || bill.title_el}
         </h1>
+
+        <ParliamentFreshness bill={bill} locale={locale} />
 
         {/* Categories */}
         {bill.categories && (

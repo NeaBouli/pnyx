@@ -21,6 +21,8 @@ class _HostState:
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
     next_request: float = 0.0
     cooldown_until: float = 0.0
+    robots_interval: float = 0.0
+    last_request: float = 0.0
 
 
 class HostRateLimiter:
@@ -31,6 +33,8 @@ class HostRateLimiter:
 
     def _state(self, url: str) -> _HostState:
         host = (urlsplit(url).hostname or "").lower()
+        if host == "hellenicparliament.gr" or host.endswith(".hellenicparliament.gr"):
+            host = "hellenicparliament.gr"
         return self._hosts.setdefault(host, _HostState())
 
     def check(self, url: str) -> None:
@@ -44,7 +48,10 @@ class HostRateLimiter:
                 self.check(url)
                 delay = state.next_request - time.monotonic()
                 if delay <= 0:
-                    state.next_request = time.monotonic() + self.min_interval
+                    from services.parliament_access import is_parliament
+                    interval = max(10.0, self.min_interval, state.robots_interval) if is_parliament(url) else self.min_interval
+                    state.last_request = time.monotonic()
+                    state.next_request = time.monotonic() + interval
                     return
                 await asyncio.sleep(delay)
 
@@ -81,7 +88,10 @@ class _ScraperRequestLogFilter(logging.Filter):
         # to hosts used by these scrapers, including paths and reason phrases.
         args = record.args
         if record.msg == 'HTTP Request: %s %s "%s %d %s"' and isinstance(args, tuple) and len(args) == 5:
-            if isinstance(args[1], httpx.URL) and args[1].host in host_limiter._hosts:
+            from services.parliament_access import is_parliament
+            if isinstance(args[1], httpx.URL) and (args[1].host in host_limiter._hosts or (
+                is_parliament(str(args[1])) and "hellenicparliament.gr" in host_limiter._hosts
+            )):
                 record.msg = "Scraper HTTP response status=%d"
                 record.args = (args[3],)
         return True
@@ -91,6 +101,7 @@ logging.getLogger("httpx").addFilter(_ScraperRequestLogFilter())
 
 
 async def pace_request(request: httpx.Request) -> None:
+    from services.parliament_access import prepare
     # A source cooldown also applies when a caller tries Jina for that source.
     url = str(request.url)
     source = request.extensions.get("scraper_source_url", url)
@@ -98,6 +109,7 @@ async def pace_request(request: httpx.Request) -> None:
         source = source[len("https://r.jina.ai/"):]
     request.extensions["scraper_source_url"] = source
     host_limiter.check(source)
+    await prepare(request)
     await host_limiter.acquire(url)
     # A concurrent response may have forbidden the source while we queued.
     host_limiter.check(source)
@@ -106,6 +118,8 @@ async def pace_request(request: httpx.Request) -> None:
 
 async def record_response(response: httpx.Response) -> None:
     host_limiter.observe(str(response.url), response.status_code, response.headers)
+    from services.parliament_access import observe
+    await observe(response)
 
 
 SCRAPER_HTTP_HOOKS = {"request": [pace_request], "response": [record_response]}

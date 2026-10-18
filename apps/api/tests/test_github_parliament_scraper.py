@@ -85,31 +85,16 @@ def test_parse_markdown_fallback_keeps_pdf_document_block():
     assert "13353094.pdf" in bills[0]["summary_long_el"]
 
 
-def test_scrape_uses_direct_html_when_api_is_blocked(monkeypatch):
-    html = """
-<table><tr>
-<td><a href="/Nomothetiko-Ergo/Katatethenta-Nomosxedia?law_id=e744abc6-3e81-4e56-a4cd-b47f0174f2b1">Μέτρα εφαρμογής του Κανονισμού</a></td>
-<td>Σχέδιο νόμου</td><td>06/07/2026</td><td>Κατατεθέντα</td>
-<td><a href="https://www.hellenicparliament.gr/UserFiles/c8827c35/13353094.pdf">PDF</a></td>
-</tr></table>
-"""
+def test_runner_never_fetches_parliament_or_third_party_content(monkeypatch):
+    def unexpected(*args, **kwargs):
+        raise AssertionError("Runner must use the canonical server policy")
 
-    def fake_get(url, *, accept="*/*", timeout=30):
-        if "api.ashx" in url:
-            return parliament_scraper.FetchResult(url=url, status=403, text="Access Denied", error="http_403")
-        if url.startswith("https://r.jina.ai/"):
-            return parliament_scraper.FetchResult(url=url, status=401, text="AuthenticationRequiredError", error="http_401")
-        return parliament_scraper.FetchResult(url=url, status=200, text=html)
-
-    monkeypatch.setattr(parliament_scraper, "_http_get", fake_get)
-    monkeypatch.setattr(parliament_scraper.time, "sleep", lambda *_args, **_kwargs: None)
-
-    bills, errors = parliament_scraper.scrape(limit=20)
-
-    assert bills
-    assert bills[0]["bill_id"] == "GR-e744abc6"
-    assert bills[0]["submitted_date"] == "2026-07-06T00:00:00+00:00"
-    assert any(error.startswith("api_blocked_or_unavailable") for error in errors)
+    monkeypatch.setattr(parliament_scraper.urllib.request, "urlopen", unexpected)
+    for url in (parliament_scraper.PARLIAMENT_API,
+                "https://r.jina.ai/https://www.hellenicparliament.gr/law"):
+        assert parliament_scraper._http_get(url).error == "runner_source_access_disabled"
+    monkeypatch.setattr(parliament_scraper, "_http_get", unexpected)
+    assert parliament_scraper.scrape(20) == ([], ["runner_source_access_disabled"])
 
 
 def test_parse_detail_markdown_recovers_full_title_and_labeled_pdfs():
@@ -321,37 +306,20 @@ def test_direct_detail_html_is_normalized_before_field_parsing():
     }]
 
 
-def test_scrape_bounds_expensive_detail_enrichment(monkeypatch):
-    bills = [
-        {
-            "bill_id": f"GR-{index:08d}",
-            "law_id": f"{index:08d}-0000-0000-0000-000000000000",
-            "title_el": f"Πλήρης τίτλος νομοσχεδίου {index}",
-            "url": (
-                "https://www.hellenicparliament.gr/Nomothetiko-Ergo/all-laws"
-                f"?law_id={index:08d}-0000-0000-0000-000000000000"
-            ),
-            "submitted_date": f"2026-07-{index + 1:02d}T00:00:00+00:00",
-        }
-        for index in range(10)
-    ]
-    enriched: list[str] = []
+def test_runner_import_uses_canonical_server_data(monkeypatch):
+    payload = {"source_status": "ok", "dated_count": 1, "bills": [{
+        "title_el": "Πλήρης τίτλος νομοσχεδίου",
+        "url": "https://www.hellenicparliament.gr/Nomothetiko-Ergo/all-laws?law_id=test-id",
+        "submitted_date": "2026-10-17T00:00:00+00:00",
+    }]}
+    url = "https://api.ekklesia.gr/api/v1/scraper/parliament/freshness?limit=20"
+    calls = []
 
-    def fake_get(url, *, accept="*/*", timeout=30):
-        if "api.ashx" in url:
-            return parliament_scraper.FetchResult(url=url, status=200, text="{}")
-        return parliament_scraper.FetchResult(url=url, status=403, text="Access Denied", error="http_403")
+    def fake_get(target, **kwargs):
+        calls.append(target)
+        return parliament_scraper.FetchResult(target, 200, json.dumps(payload))
 
     monkeypatch.setattr(parliament_scraper, "_http_get", fake_get)
-    monkeypatch.setattr(parliament_scraper, "parse_api_payload", lambda _payload: bills)
-    monkeypatch.setattr(
-        parliament_scraper,
-        "enrich_bill_from_official_sources",
-        lambda bill: enriched.append(bill["bill_id"]),
-    )
-    monkeypatch.setattr(parliament_scraper.time, "sleep", lambda *_args, **_kwargs: None)
-
-    result, _errors = parliament_scraper.scrape(limit=20)
-
-    assert len(result) == 10
-    assert enriched == [bill["bill_id"] for bill in result[:parliament_scraper.MAX_ENRICHED_BILLS]]
+    result = parliament_scraper.fetch_server_fallback(url, limit=20)
+    assert len(result) == 1
+    assert calls == [url]

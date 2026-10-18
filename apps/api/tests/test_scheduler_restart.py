@@ -20,7 +20,7 @@ RUN_KEY = f"scraper:{NAME}:last_run"
 LOCK_KEY = f"scheduler:{NAME}:lock"
 LONG_JOBS = {
     "completeness_check": ("completeness_check", 6, "scheduled_completeness_check"),
-    "parliament_scrape": ("parliament", 12, "scheduled_scrape"),
+    "parliament_scrape": ("parliament", 24, "scheduled_scrape"),
     "diavgeia_municipal": ("diavgeia_municipal", 48, "scheduled_diavgeia_scrape"),
     "cplm_refresh": ("cplm_refresh", 6, "scheduled_cplm_refresh"),
     "greek_topics": ("greek_topics", 6, "scheduled_greek_topics"),

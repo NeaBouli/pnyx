@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ekklesia, municipal, Bill, BillQueryParams } from "@/lib/api";
 import { BILLS_PAGE_SIZE, type InitialBills } from "@/lib/initial-data";
+import ParliamentFreshness from "@/components/ParliamentFreshness";
 import StatusBadge from "@/components/StatusBadge";
 import RelevanceButtons from "@/components/RelevanceButtons";
 
@@ -336,6 +337,7 @@ export default function BillsClient({ initial }: { initial: InitialBills | null 
               <h2 className="font-semibold text-lg text-gray-900 mb-2 group-hover:text-blue-700 transition-colors leading-snug">
                 {bill[titleKey as keyof Bill] as string || bill.title_el}
               </h2>
+              <ParliamentFreshness bill={bill} locale={locale} />
 
               {(bill[shortKey as keyof Bill] || bill[pillKey as keyof Bill]) && (
                 <p className="text-gray-500 text-sm leading-relaxed">
