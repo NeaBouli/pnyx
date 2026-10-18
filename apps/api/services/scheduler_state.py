@@ -206,6 +206,9 @@ def add_observed_job(scheduler: BaseScheduler, func, trigger, *, name: str) -> N
 
 def install_schedule_listener(scheduler: BaseScheduler) -> None:
     """Publish dates after APScheduler advances a trigger or accepts a retry."""
+    if not hasattr(scheduler, "add_listener"):
+        return
+
     async def publish(job_id):
         client = None
         try:
@@ -234,6 +237,9 @@ def install_schedule_listener(scheduler: BaseScheduler) -> None:
 
 async def initialize_job_states(scheduler: BaseScheduler) -> None:
     """Recover stale attempts before starting; publish APScheduler's actual dates."""
+    if not hasattr(scheduler, "get_jobs"):
+        return
+
     try:
         client = await scraper_state._redis()
         try:

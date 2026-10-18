@@ -88,7 +88,7 @@ function toJob(value: unknown, fallbackName = ''): ScraperJob | null {
     next_run: isoTimeFrom(job.next_run),
     last_duration_s: typeof job.last_duration_s === 'number' && Number.isFinite(job.last_duration_s) && job.last_duration_s >= 0 ? job.last_duration_s : null,
     consecutive_failures: outcomeCountFrom(job.consecutive_failures),
-    last_scrape_outcome: enumFrom(job.last_scrape_outcome, ['clean', 'degraded', 'failed']),
+    last_scrape_outcome: enumFrom<'clean' | 'degraded' | 'failed'>(job.last_scrape_outcome, ['clean', 'degraded', 'failed']),
     last_outcome_reason: enumFrom<JobOutcomeReason>(job.last_outcome_reason, REASONS),
     last_outcome_count: outcomeCountFrom(job.last_outcome_count),
     last_outcome_time: isoTimeFrom(job.last_outcome_time),
