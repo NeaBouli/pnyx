@@ -159,19 +159,26 @@ class PreservationTest(unittest.TestCase):
         self.assertTrue(any("api_contracts" in item for item in violations))
 
     def test_lost_bilingual_pair_fails_closed(self) -> None:
-        changed = copy.deepcopy(self.current)
         target = next(
             (item.get("data_el", ""), item.get("data_en", ""))
             for item in self.baseline["bilingual"]["pairs"]
             if (item.get("data_el", ""), item.get("data_en", ""))
             not in r2_landing_check.REMOVABLE_HEADER_PAIRS
         )
-        changed["bilingual"]["pairs"] = [
-            item for item in changed["bilingual"]["pairs"]
-            if (item.get("data_el", ""), item.get("data_en", "")) != target
-        ]
-        violations = r2_landing_check.check_index_preservation(self.baseline, changed)
-        self.assertTrue(any("bilingual content" in item for item in violations))
+        replacements = r2_landing_check.approved_analytics_delta.LANDING_BILINGUAL_REPLACEMENTS.values()
+        for pair in [target, *replacements]:
+            for language in ("data_el", "data_en"):
+                with self.subTest(pair=pair, language=language):
+                    changed = copy.deepcopy(self.current)
+                    matches = [
+                        item for item in changed["bilingual"]["pairs"]
+                        if (item.get("data_el", ""), item.get("data_en", "")) == pair
+                    ]
+                    self.assertTrue(matches)
+                    for item in matches:
+                        item[language] = ""
+                    violations = r2_landing_check.check_index_preservation(self.baseline, changed)
+                    self.assertTrue(any("bilingual content" in item for item in violations))
 
     def test_header_pair_body_occurrence_remains_protected(self) -> None:
         changed = copy.deepcopy(self.current)

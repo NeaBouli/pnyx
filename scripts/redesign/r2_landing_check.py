@@ -420,7 +420,10 @@ def check_index_preservation(baseline: dict, current: dict) -> list[str]:
     # one known R0 header occurrence of each replaced pair; same-valued body
     # content remains protected.
     baseline_pairs = Counter(
-        (item.get("data_el", ""), item.get("data_en", ""))
+        approved_analytics_delta.LANDING_BILINGUAL_REPLACEMENTS.get(
+            (item.get("data_el", ""), item.get("data_en", "")),
+            (item.get("data_el", ""), item.get("data_en", "")),
+        )
         for item in baseline["bilingual"]["pairs"]
     )
     for pair in (REMOVABLE_HEADER_PAIRS | ALLOWED_R5_BILINGUAL_REMOVALS

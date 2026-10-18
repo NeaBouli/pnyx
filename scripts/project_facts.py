@@ -82,7 +82,7 @@ def compute() -> dict[str, object]:
         },
         "details": {
             "modules_missing_numbers": [f"MOD-{n:02d}" for n in range(1, max(numbers) + 1) if n not in numbers],
-            "prod_services": services,
+            "prod_services": ["assistant" if name == "ollama" else name for name in services],
         },
     }
 

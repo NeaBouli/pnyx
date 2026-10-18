@@ -621,7 +621,7 @@
     <div class="fc" id="deeplCard" style="border-color:#86efac">
       <div class="fc-badge" style="background:#22c55e" data-el="ΕΝΕΡΓΟ" data-en="ACTIVE">ΕΝΕΡΓΟ</div>
       <div class="fc-icon">🌐</div>
-      <div class="fc-title" data-el="DeepL Μετάφραση" data-en="DeepL Translation">DeepL Μετάφραση</div>
+      <div class="fc-title" data-el="Μετάφραση" data-en="Translation">Μετάφραση</div>
       <div class="fc-sub" data-el="Free API — EN↔EL για AI Summaries + RAG Agent" data-en="Free API — EN↔EL for AI Summaries + RAG Agent">Free API — EN↔EL</div>
       <div class="fc-info">
         <div class="fc-row"><span style="color:var(--gray-700)" data-el="Πρόγραμμα:" data-en="Plan:">Πρόγραμμα:</span><strong>Free API</strong></div>
@@ -645,8 +645,8 @@
     <div class="fc" id="claudeCard" style="border-color:#86efac">
       <div class="fc-badge" id="claudeBadge" style="background:#22c55e" data-el="ΕΝΕΡΓΟ" data-en="ACTIVE">ΕΝΕΡΓΟ</div>
       <div class="fc-icon">🤖</div>
-      <div class="fc-title" data-el="AI Claude" data-en="AI Claude">AI Claude</div>
-      <div class="fc-sub" data-el="Claude Haiku — ερωτήσεις πολιτών + ανάλυση νομοσχεδίων" data-en="Claude Haiku — citizen Q&A + bill analysis">Claude Haiku — ερωτήσεις + ανάλυση</div>
+      <div class="fc-title" data-el="Βοηθός AI" data-en="AI Assistant">Βοηθός AI</div>
+      <div class="fc-sub" data-el="Ερωτήσεις και απαντήσεις πολιτών + ανάλυση νομοσχεδίων" data-en="Citizen Q&A + bill analysis">Ερωτήσεις και απαντήσεις πολιτών + ανάλυση νομοσχεδίων</div>
       <div class="fc-info">
         <div class="fc-row"><span style="color:var(--gray-700)" data-el="Σήμερα:" data-en="Today:">Σήμερα:</span><strong id="claudeToday">—</strong></div>
         <div class="fc-row"><span style="color:var(--gray-700)" data-el="Μήνας:" data-en="Month:">Μήνας:</span><strong id="claudeMonth">—</strong></div>
@@ -655,7 +655,7 @@
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.6rem;color:var(--gray-400);margin-top:0.4rem">
         <span class="fc-live"><span class="fc-live-dot"></span> Live</span>
-        <span id="claudeModel">Haiku 4.5</span>
+        <span id="claudeModel">V-Labs Artificial Systems · vlabs.gr</span>
       </div>
       <div class="fc-status" id="claudeStatus" style="background:#f0fdf4;color:#166534;margin-top:0.3rem">✅ <span data-el="AI ενεργή" data-en="AI active">AI ενεργή</span></div>
       <a id="claudeDonateBtn" href="#payment-intake-paused" aria-disabled="true" style="display:none;text-align:center;padding:0.5rem;background:#64748b;color:white;border-radius:0.4rem;font-weight:700;font-size:0.78rem;text-decoration:none;margin-top:0.4rem" data-el="Προσωρινά σε παύση" data-en="Temporarily paused">Προσωρινά σε παύση</a>
@@ -1691,7 +1691,7 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
           cost.textContent = costVal != null ? "$" + Number(costVal).toFixed(4) : (currentLang==="en" ? "usage only" : "μόνο χρήση");
         }
         var model=document.getElementById("claudeModel");
-        if(model && d.model) model.textContent=String(d.model).replace("claude-","").replace("-20251001","");
+        if(model) model.textContent="V-Labs Artificial Systems · vlabs.gr";
         var card=document.getElementById("claudeCard");
         var badge=document.getElementById("claudeBadge");
         var status=document.getElementById("claudeStatus");

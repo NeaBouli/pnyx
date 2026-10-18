@@ -96,7 +96,7 @@ async def read_budget(redis_client: Any, *, api_key_configured: bool) -> dict[st
     last_error = await redis_client.get("claude:last_error") or ""
 
     return {
-        "model": MODEL,
+        "model": "assistant",
         "tokens_today": tokens_today,
         "tokens_month": tokens_month,
         "chat_tokens_today": chat_today,

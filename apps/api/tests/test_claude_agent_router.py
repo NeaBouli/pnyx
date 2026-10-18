@@ -7,6 +7,7 @@ GET /api/v1/claude/budget status surface keeps its field contract.
 """
 
 from collections.abc import Generator
+import re
 from typing import Any
 
 import httpx
@@ -72,6 +73,12 @@ def test_openapi_schema_excludes_ask_keeps_budget() -> None:
     assert ASK_PATH not in paths
     assert BUDGET_PATH in paths
     assert "get" in paths[BUDGET_PATH]
+    # Paths and operation IDs remain compatible; displayed API text is neutral.
+    names = re.compile(r"claude|anthropic|openai|\bgpt\w*|codex|ollama|llama|deepl|gemini|mistral|hugging.?face|haiku|sonnet", re.I)
+    for path, methods in paths.items():
+        for operation in methods.values():
+            for field in ("tags", "summary", "description"):
+                assert not names.search(str(operation.get(field, ""))), (path, field)
 
 
 def test_post_ask_with_dummy_key_triggers_no_provider_or_redis(
@@ -113,6 +120,7 @@ def test_get_budget_keeps_field_contract(
     )
     assert body["is_active"] is True
     assert body["balance_available"] is False
+    assert body["model"] == "assistant"
 
 
 def test_get_budget_reports_inactive_without_api_key(

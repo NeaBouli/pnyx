@@ -89,7 +89,7 @@ All paths below are relative to the base URL.
 | GET | `/scraper/status` | AI scraper provider status |
 | GET | `/scraper/test` | Scraper test without DB |
 | GET | `/scraper/parliament/latest` | Scrape hellenicparliament.gr |
-| POST | `/scraper/fetch` | Scrape + Ollama → DB (admin) |
+| POST | `/scraper/fetch` | Scrape + AI → DB (admin) |
 
 ## MOD-11: Public API
 
@@ -169,7 +169,7 @@ All paths below are relative to the base URL.
 |---|---|---|
 | POST | `/agent/ask` | RAG agent — citizen Q&A (5 req/min) |
 | GET | `/bills/{id}/summary` | AI bill summary (Redis cache 7d) |
-| POST | `/admin/logs/explain` | Ollama log analysis (admin) |
+| POST | `/admin/logs/explain` | AI log analysis (admin) |
 | POST | `/admin/scraper/heal-status` | Auto-healing status (admin) |
 
 ## MOD-19: Newsletter

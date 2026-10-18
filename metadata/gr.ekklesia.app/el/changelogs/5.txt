@@ -1,5 +1,5 @@
 Έκδοση 5
-• AI Agent: Ollama + DeepL περιλήψεις νόμων και Q&A πολιτών
+• AI Agent: περιλήψεις νόμων και Q&A πολιτών — V-Labs Artificial Systems · vlabs.gr
 • Τοπική ψηφοφορία: ψηφίστε σε αποφάσεις Διαύγειας
 • Οδηγός εισαγωγής (5 οθόνες)
 • QR-Code σύνδεση POLIS στον browser

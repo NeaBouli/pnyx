@@ -132,7 +132,7 @@ async def test_rag_kb_and_disclaimer_share_canonical_lang(
     response = await _ask("How do I vote (ψηφ)?", raw, _FakeDb([KB_VOTE]))
 
     assert response["lang"] == lang
-    assert response["model"] == "ollama"
+    assert response["model"] == "assistant"
     assert kb_mark in seen["prompt"]
     assert disclaimer in response["answer"] and other not in response["answer"]
 
@@ -395,7 +395,7 @@ async def test_claude_fallback_returns_same_sources(monkeypatch: pytest.MonkeyPa
     monkeypatch.setattr(agent, "_claude_answer", claude)
     response = await _ask("How do I vote ψηφ?", "en-GB", _FakeDb([KB_VOTE]))
 
-    assert response["model"] == "claude-haiku"
+    assert response["model"] == "assistant"
     assert response["lang"] == "en"
     assert DISCLAIMER_EN_MARK in response["answer"]
     assert response["sources"] == [
@@ -545,7 +545,7 @@ async def test_over_cap_cites_exactly_the_serialised_prefix(
 
     response = await _ask("Which bills are open? kbq", "en", _FakeDb(BIG_KB, BIG_BILLS))
 
-    assert response["model"] == model
+    assert response["model"] == "assistant"
     records = _prompt_records(seen["prompt"])
     all_records = contexts[0]
     assert len(all_records) == len(BIG_KB) + len(BIG_BILLS)
@@ -579,7 +579,7 @@ async def test_greek_ollama_sends_structured_records_and_cites_them(
     question = "Ποια νομοσχέδια είναι ανοιχτά; ψηφ"
     response = await _ask(question, "el-GR", _FakeDb([KB_VOTE], [BILL, TEN_BILLS[0]]))
 
-    assert response["model"] == "ollama" and response["lang"] == "el"
+    assert response["model"] == "assistant" and response["lang"] == "el"
     assert response["answer"].startswith("Το GR-2026-0002 είναι ανοιχτό.")
     assert DISCLAIMER_EL_MARK in response["answer"]
     assert [t for _, t in translated] == ["EN", "EL"] and translated[0][0] == question

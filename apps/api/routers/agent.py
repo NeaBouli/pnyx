@@ -1001,7 +1001,7 @@ async def ask_agent(
 ):
     """Safety/canonical answers first, then a deterministic FAQ with disclaimer.
 
-    Only AGENT_MODE=hybrid enables the legacy database/Ollama/Claude path.
+    Only AGENT_MODE=hybrid enables the legacy database and hybrid assistant path.
     """
     safety = _safety_response(req.question, req.lang)
     if safety:
@@ -1018,7 +1018,7 @@ async def ask_agent(
     sources = _sources(
         kb_entries, bills, include_bills, req.lang, retained_record_count(context),
     )
-    model_used = "ollama"
+    model_used = "assistant"
 
     # Step 1: Try Ollama (bounded by OLLAMA_TIMEOUT inside ollama_service)
     ollama_answer = ""
@@ -1050,7 +1050,7 @@ async def ask_agent(
             logger.warning("[Hybrid] chat answer path=outage-guard (claude claimed an outage)")
             return _outage_claim_response(req.question, req.lang, sources)
         if claude_answer:
-            model_used = "claude-haiku"
+            model_used = "assistant"
             logger.warning("[Hybrid] chat answer path=claude")
             return {
                 "question": req.question,

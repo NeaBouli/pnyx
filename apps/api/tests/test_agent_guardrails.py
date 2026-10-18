@@ -176,7 +176,7 @@ async def test_empty_ollama_answer_uses_claude_fallback(
         claude_answer="Claude fallback answer.",
     )
 
-    assert response["model"] == "claude-haiku"
+    assert response["model"] == "assistant"
     assert response["answer"].startswith("Claude fallback answer.")
     assert response["sources"] == []
 

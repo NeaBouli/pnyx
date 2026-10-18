@@ -1264,7 +1264,7 @@ async def health():
             "MOD-19 Newsletter (Listmonk + Brevo)",
             "MOD-20 Push Notifications (Expo)",
             "MOD-21 Diavgeia Integration",
-            "MOD-22 RAG Agent (Ollama + DeepL)",
+            "MOD-22 RAG Agent",
             "MOD-23 Greek Topics Scraper (disabled)",
             "MOD-24 CPLM (Citizens Political Liquid Mirror)",
             "MOD-25 Politikoi — Liquid Evaluation",
@@ -1372,13 +1372,13 @@ async def health_modules():
         ollama_ok = await ollama_available()
         deepl_ok = await deepl_available()
         if ollama_ok and deepl_ok:
-            modules["MOD-22"] = {"name": "RAG Agent (Ollama + DeepL)", "status": "ok", "ollama": True, "deepl": True}
+            modules["MOD-22"] = {"name": "RAG Agent", "status": "ok", "ollama": True, "deepl": True}
         elif ollama_ok:
-            modules["MOD-22"] = {"name": "RAG Agent (Ollama + DeepL)", "status": "degraded", "ollama": True, "deepl": False, "error": "DeepL unavailable"}
+            modules["MOD-22"] = {"name": "RAG Agent", "status": "degraded", "ollama": True, "deepl": False, "error": "Translation unavailable"}
         else:
-            modules["MOD-22"] = {"name": "RAG Agent (Ollama + DeepL)", "status": "error", "ollama": False, "deepl": deepl_ok, "error": "Ollama offline"}
-    except Exception as e:
-        modules["MOD-22"] = {"name": "RAG Agent", "status": "error", "error": str(e)}
+            modules["MOD-22"] = {"name": "RAG Agent", "status": "error", "ollama": False, "deepl": deepl_ok, "error": "Assistant offline"}
+    except Exception:
+        modules["MOD-22"] = {"name": "RAG Agent", "status": "error", "error": "Assistant unavailable"}
 
     # MOD-24 Forum Sync
     forum_st = await scraper_status("forum_sync")

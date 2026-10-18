@@ -72,17 +72,20 @@ import r0_inventory
 # README instead of the obsolete setup page (mirror-setup.sh is absent). EL/EN
 # mirror copy follows the current read-only sandbox boundary, without promising
 # a one-command installer, five-minute cache sync or unsupported minimum specs.
+# T-9148 (#636, owner-requested): neutral AI labels and FAQ text (EL/EN/JSON-LD);
+# community model attribution is fixed to V-Labs Artificial Systems · vlabs.gr.
+# Only the changed pages below receive new exact inventory fingerprints.
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/community.html": "aaed5bed78905149e75a31e74f930363fb7da6709de39c783b8e342a8d5cd6a4",  # T-9140: current sandbox mirror documentation and EL/EN boundary
-    "docs/wiki/api.html": "96fc5780f70af8945a5f3c7bded3e3a9bb206e806babebd83fb1e95adf807ecf",  # T-9136: signed preflight 120/IP; QR 30/session + 600/IP (EL/EN).
+    "docs/community.html": "815c001ae1b312e97224e26acb8a8353395438aae8c75cd09b268505c7d8f477",  # T-9148: reviewed EL/EN AI wording
+    "docs/wiki/api.html": "1f2847e55cff6d3f165a1d6cded96736be774a2ad0ba3e919b49eca61e10a938",  # T-9148: reviewed EL/EN AI wording
     "docs/wiki/architecture.html": "1af2aa9c102d66887e52627c277ebfea03935a2ff3b772235cf07ed3d4313f0b",
     "docs/wiki/broadcasting.html": "eb345ed4551a94220e47aeb4b40c7c745bf6dfeaa5f330eac6f629a09d31f716",
     "docs/wiki/contributing.html": "bb4048480c3b75cb98ee668305833fe36b2c939f29ef27f1f8bec230c9d49d88",
     "docs/wiki/database.html": "08ac70323ffa6a6db969f41678ad8de9afd5fdd8f5b74981665cbf8e38afb9f9",
     "docs/wiki/delete-account.html": "3d7090ca86d5d17207477b664fa9d29066c0073a446d67e13dfd7eaf26822d1e",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
-    "docs/wiki/faq.html": "6d30811a91c2ef6924e7d13a361de401d1a169c22c82dd9f1bd43e5f54676942",  # T-9117: current main operator/HLR, key custody, pseudonymous aggregates, lifecycle, rates; EL/EN/JSON-LD
+    "docs/wiki/faq.html": "973af876639742d7068fa826bab084c106c129a4fac83711c70569b531c05fb6",  # T-9148: neutral public AI wording
     "docs/wiki/index.html": "ea418f9164a41aafa72721bdc8feaf7612a26fc83a32e7e781d7f166fe278419",  # T-9047/T-9048: named code region, contrast, headings and document language; T-9106: legal-modal claims text
-    "docs/wiki/modules.html": "dd1f4addfdc25337790028ac3f3d4d608832a11ad682c9068dae1c9b0a265544",  # T-9072: neutral unknown health dots, MOD-23/25 mapping, localized status labels; T-9106: legal-modal claims text
+    "docs/wiki/modules.html": "0aca880fb3e377bfec1d8901d32155e93ca2c5c8a83411b38455299fb131d472",  # T-9148: reviewed EL/EN AI wording
     "docs/wiki/privacy.html": "58550c4a6d68fb39a43c46b2810819dcb8af70cc141f43d9fa5651aac4e990b8",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
     "docs/wiki/roadmap.html": "8fae28938db627f3cade818fc490e1fac5f1be3984544c72a16817fd9aa84ff5",
     "docs/wiki/security.html": "0546a8aaf80b51cd4a9de72a33ce82059f8da96ce7ab2a20af7ad278932edc36",  # T-9127: OPEN_END voting closed

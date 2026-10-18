@@ -28,7 +28,7 @@
       "api",
       "migrator",
       "web",
-      "ollama",
+      "assistant",
       "dashboard",
       "docker-proxy",
       "monitor"

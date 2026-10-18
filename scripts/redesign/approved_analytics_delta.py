@@ -60,6 +60,7 @@ SECURITY_REMEDIATION_SHA256 = {
 # T-9132 review: demo discloses possible linkage through verification; demo and
 # govgr-dimos separate expiring daily HMAC counters from size-rotated IP logs.
 CONTENT_REMEDIATION_SHA256 = {
+    "docs/demo/admin.html": "935fdabc0792278216386b5bbb26b2735bbc5ad5f4d1d52609069070c141d52d",  # T-9148: neutral AI label without a zero-cost claim.
     "docs/embed/results.html": "63689f8561e348cb00fa600f4170f3b42cebe2cbf72218b1b4b8f0359cde1cfd",  # T-9128: nullable public result cells
     "docs/demo/index.html": "0b5b6325ca36af9f8ffa056b171f197fc4daef520c17238923dfd1825779439e",  # T-9132: approved pseudonymous vote wording
     "docs/demo/bills.html": "bcc57f45c9e25c3ac3a6eb0fe9b17b29a2908c5863ad744407dc2cd56215dee8",  # T-9127: OPEN_END voting closed
@@ -69,6 +70,17 @@ CONTENT_REMEDIATION_SHA256 = {
     "docs/municipality/article.html": "aebe3b819ec76fc9c3769ad38a847246657bd5d85b70c914cb84528d4b658123",
     "docs/municipality/index.html": "b553913780f18868fc49157f303379cbf630b12651ad1877b31a09b3483f5f84",
     "docs/tickets/index.html": "e7ac386295ade2c52c6d3826c89ade8ffc140f290dbc78ac8487d32394f2b225",
+}
+
+# T-9148 (#636, owner-requested): replace only the two vendor-naming landing
+# pairs. The R2 gate requires their exact neutral replacements, including both
+# languages, rather than permitting the feature text to disappear.
+LANDING_BILINGUAL_REPLACEMENTS = {
+    ("Ollama + DeepL: Περιλήψεις νόμων, Chat Q&A, επιτήρηση server, αυτόματη επισκευή scraper, ανάλυση logs.",
+     "Ollama + DeepL: Bill summaries, Chat Q&A, server monitoring, auto-healing scraper, log analysis."):
+    ("AI: Περιλήψεις νομοσχεδίων, ερωτήσεις και απαντήσεις πολιτών, παρακολούθηση διακομιστή, αυτόματη επιδιόρθωση του συλλέκτη δεδομένων, ανάλυση αρχείων καταγραφής.",
+     "AI: Bill summaries, citizen Q&A, server monitoring, auto-healing scraper, log analysis."),
+    ("AI Agent (Ollama + DeepL)", "AI Agent (Ollama + DeepL)"): ("AI Agent", "AI Agent"),
 }
 
 # T-9128: embed vote/results nullable counts and withheld breakdowns.
@@ -101,5 +113,5 @@ def baseline_without_analytics(page: dict) -> dict:
 
 # T-9147 (Gio, 2026-10-18): bilingual bot policy, exact new-page bytes.
 ADDITIONAL_PAGE_SHA256 = {
-    "docs/bot.html": "c4fc5ce19e0c37ea9b93b15ec3167572fdbeb20e71f73ab9af065bd500359e17",
+    "docs/bot.html": "b8b19fb58ca2320030fc7df67e0734a8bd5c901f7a5ecea60fc36a15320e005f",  # T-9148: neutral EL/EN bot-policy text.
 }

@@ -13,7 +13,7 @@ import redis.asyncio as aioredis
 
 from services.claude_usage import read_budget
 
-router = APIRouter(prefix="/api/v1/claude", tags=["Claude Agent"])
+router = APIRouter(prefix="/api/v1/claude", tags=["AI Assistant"])
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")

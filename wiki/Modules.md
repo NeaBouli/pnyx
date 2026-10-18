@@ -22,7 +22,7 @@ registered; relevance voting belongs to MOD-14.
 | MOD-07 | Notifications | 🟡 Alpha | SSE, WebSocket and RSS notification paths |
 | MOD-08 | Arweave L2 | ✅ Beta | Permanent audit trail for eligible public results |
 | MOD-09 | Gov.gr Verification | 📋 Alpha 0.1 design | [Official OAuth or holder-authenticated fresh challenge-bound QR/eSeal verification](https://github.com/NeaBouli/pnyx/blob/main/docs/GOVGR_DOCUMENT_VERIFICATION_ALPHA.md); official integration, DPIA, migration design, independent review and sandbox canary required; not active in Beta |
-| MOD-10 | AI Scraper | 🟡 Alpha | Ollama, Hugging Face and rule-based fallback |
+| MOD-10 | AI Scraper | 🟡 Alpha | AI processing, secondary service and rule-based fallback |
 | MOD-11 | Public API | 🟡 Alpha | OpenAPI, REST, rate limits and API keys |
 | MOD-12 | MP Comparison | 🟡 Alpha | Party and representative comparison |
 | MOD-14 | Relevance + Data Export | 🟡 Alpha | Up/down relevance signal, trending feed, CSV and JSON exports |
@@ -32,7 +32,7 @@ registered; relevance voting belongs to MOD-14.
 | MOD-19 | Newsletter | ✅ Beta | Listmonk, Brevo SMTP, six lists and double opt-in |
 | MOD-20 | Push Notifications | ✅ Beta | Expo push, scheduler and Redis deduplication; native icon badges ship in v1.0.32 outside the F-Droid flavor |
 | MOD-21 | Diavgeia Integration | ✅ Beta | OpenData decisions and scheduled municipal ingestion |
-| MOD-22 | RAG Agent | ✅ Beta | Ollama citizen Q&A, bill context and reviewed summaries |
+| MOD-22 | RAG Agent | ✅ Beta | Citizen Q&A, bill context and reviewed summaries |
 | MOD-23 | Greek Topics Scraper | ⏸ Disabled | Feature-flagged RSS categorization; not active |
 | MOD-24 | CPLM | ✅ Beta | Aggregate political-positioning data under CC BY 4.0 |
 | MOD-25 | Politicians | ✅ Beta | Voluntary representative evaluation from -5 to +5 |
