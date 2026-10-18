@@ -42,7 +42,7 @@ nicht die neue Plattformgeneration.
 - [ ] Zukünftige TrueRepublic Bridge (PnyxCoin, Cosmos SDK); nicht mit dem
       aktuellen MOD-08 Arweave-Modul verwechseln
 - [ ] Zukünftige Weiterentwicklung von MOD-10/11 KI-Scraper und Zusammenfassung
-      (Crawl4AI)
+      (automatisiertes Crawling)
 - [ ] Mein-Abgeordneter-Erweiterung auf Basis von MOD-12 MP Comparison; keine
       separate aktive Runtime-Modul-ID
 - [ ] Deliberation (pol.is-Modell)

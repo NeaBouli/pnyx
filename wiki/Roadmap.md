@@ -46,7 +46,7 @@
 
 - packages/crypto-rs (Rust + WASM, ed25519-dalek)
 - Future TrueRepublic Bridge (PnyxCoin, Cosmos SDK); this is not the current MOD-08 Arweave module
-- Future MOD-10/11 scraper and summarization evolution (Crawl4AI + Claude API)
+- Future MOD-10/11 scraper and summarization evolution (automated crawling + assistant API)
 - My MP evolution built on MOD-12 MP Comparison; no separate runtime module ID is active
 - WebSocket Live Counter (WINDOW_24H)
 - Deliberation Layer (pol.is model)

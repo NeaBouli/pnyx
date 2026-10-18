@@ -104,18 +104,34 @@ async def test_scraper_ollama_summary_rejects_incomplete_json(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_scraper_status_uses_central_ollama_availability(monkeypatch):
+@pytest.mark.parametrize("available", [False, True])
+async def test_scraper_status_uses_central_ollama_availability(monkeypatch, available):
     from routers import scraper
 
-    async def unavailable():
-        return False
+    async def availability():
+        return available
 
-    monkeypatch.setattr(scraper, "ollama_available", unavailable)
+    monkeypatch.setattr(scraper, "ollama_available", availability)
 
     status = await scraper.scraper_status()
 
-    assert status["providers"]["ollama"]["status"] == "offline"
-    assert status["active_provider"] in {"huggingface", "rule_based"}
+    assert status["providers"]["ollama"]["status"] == ("active" if available else "offline")
+    assert status["providers"]["ollama"]["model"] == "assistant"
+    assert status["providers"]["ollama"]["url"] is None
+    if available:
+        assert status["active_provider"] == "assistant"
+    else:
+        assert status["active_provider"] in {"fallback", "rule_based"}
+
+    async def no_bills(limit):
+        return []
+
+    monkeypatch.setattr(scraper, "scrape_parliament_bills", no_bills)
+    probe = await scraper.test_scraper()
+    assert probe["ollama_running"] is available
+    assert probe["ollama_model"] == "assistant"
+    assert probe["ollama_url"] is None
+    assert probe["ai_provider"] == ("assistant" if available else "rule_based")
 
 
 def test_scraper_healer_rejects_prose_and_accepts_selectors():

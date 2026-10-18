@@ -1,5 +1,5 @@
 Version 5
-• AI Agent: Ollama + DeepL bill summaries and citizen Q&A
+• AI Agent: bill summaries and citizen Q&A — V-Labs Artificial Systems · vlabs.gr
 • Municipal voting: vote on local Diavgeia decisions
 • Onboarding wizard (5 screens)
 • QR-Code POLIS browser login

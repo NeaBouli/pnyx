@@ -20,7 +20,7 @@ ekklesia.gr (εκκλησία του έθνους) is an independent civic initi
 - Public API (CC BY 4.0) for researchers
 - Arweave blockchain archiving for transparency
 - Mobile App (Android) + Progressive Web App
-- FAQ assistant: deterministic answers by default; Ollama + Claude hybrid only when explicitly configured for rollback
+- FAQ assistant: deterministic answers by default; the legacy hybrid path only when explicitly configured for rollback
 
 ## Privacy
 
@@ -45,7 +45,7 @@ ekklesia.gr (εκκλησία του έθνους) is an independent civic initi
 - Frontend: Next.js 16 (SSR, i18n el/en)
 - Mobile: Expo React Native (Android vC62 / v1.0.33 published for Direct download, live through the public API/latest-APK alias and live for testers in Play Closed Testing; icon notification counts are enabled where the Android launcher supports them; Play production access remains pending; F-Droid lists the app from its own independent build, which can trail the Direct release; Direct, Play and F-Droid stay separately routed)
 - Crypto: Ed25519 (PyNaCl + @noble/curves), HMAC nullifier chain
-- Assistant: deterministic FAQ by default (AGENT_MODE=hybrid explicitly restores Ollama + Claude); summaries and translations have separate provider paths
+- Assistant: deterministic FAQ by default (AGENT_MODE=hybrid explicitly restores the legacy hybrid path); summaries and translations have separate provider paths
 - Forum: Discourse (pnyx.ekklesia.gr)
 - Generated-content ownership: system summaries/forum bodies refresh only while their SHA-256 ownership digest still matches; admin/moderator edits are preserved
 - Archiving: Arweave permanent storage

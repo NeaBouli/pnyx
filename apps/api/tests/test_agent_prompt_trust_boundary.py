@@ -466,5 +466,5 @@ async def test_unsafe_claude_answer_fails_closed_without_echo(monkeypatch):
 async def test_normal_rag_answer_is_unchanged(monkeypatch):
     answer = "Bill GR-2026-0002 is active and open for citizen votes."
     response, _ = await _ask(monkeypatch, ollama=answer)
-    assert response["model"] == "ollama"
+    assert response["model"] == "assistant"
     assert response["answer"] == answer

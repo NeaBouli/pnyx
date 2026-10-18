@@ -497,7 +497,7 @@ async def admin_explain_logs(
     _key=Depends(verify_admin),
     lines: int = Query(default=30, ge=5, le=200),
 ):
-    """Ask Ollama to analyze recent API container logs. Secrets are redacted before analysis."""
+    """Ask the assistant to analyze recent API container logs. Secrets are redacted before analysis."""
     from services.ollama_service import ollama_generate, ollama_available
     if not await ollama_available():
         raise HTTPException(503, "Ollama unavailable")
@@ -566,9 +566,9 @@ async def admin_log_containers(_key=Depends(verify_admin)):
     return {"containers": containers}
 
 
-@router.get("/logs/ollama")
+@router.get("/logs/ollama", summary="Assistant diagnostics")
 async def admin_log_ollama(_key=Depends(verify_admin)):
-    """Check Ollama reachability and available models."""
+    """Check assistant reachability and available models."""
     import httpx
     try:
         async with httpx.AsyncClient(timeout=3) as client:
@@ -754,7 +754,7 @@ async def admin_generate_compass(
     _key=Depends(verify_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """Generate new compass questions from recent bills (Ollama + DeepL)."""
+    """Generate new compass questions from recent bills using AI and translation."""
     from services.compass_generator import run_compass_update
     questions = await run_compass_update(db)
     return {

@@ -31,7 +31,7 @@ The **ekklesia** was the popular assembly of ancient Athens &mdash; where every 
 - **Party Comparison** &mdash; Which party votes like the people?
 - **Municipal Governance** &mdash; Diavgeia decisions and aggregate consensus results by municipality, region, and nationwide
 - **Politician Evaluation** &mdash; Rate elected officials on transparency and performance
-- **AI Assistant** &mdash; Ollama-powered citizen Q&A; reviewed summaries and official source text for bills
+- **AI Assistant** &mdash; citizen Q&A; reviewed summaries and official source text for bills
 - **Privacy by Design** &mdash; Ed25519 signatures, nullifier hashes, no phone-number storage
 
 > This platform is not affiliated with any government entity. All votes are informational only and carry no legal binding force.
@@ -60,8 +60,8 @@ This project uses publicly available government data from:
 | Municipal Governance | 13 regions, 325 municipalities, Diavgeia integration | Beta |
 | Politician Evaluation | Citizen ratings for elected officials | Beta |
 | Bill Text + Summaries | Official full text/PDF links plus short summaries or safe metadata context; reviewed/manual text is pinned | Beta |
-| RAG Agent | Citizen Q&A: Ollama + DeepL translation | Beta |
-| Auto-Healing Scraper | Ollama repairs broken CSS selectors | Beta |
+| RAG Agent | Citizen Q&A and translation | Beta |
+| Auto-Healing Scraper | AI repairs broken CSS selectors | Beta |
 | Newsletter + Telegram | Brevo SMTP + Telegram cross-publish | Beta; subscriber handoff repair gated ([#261](https://github.com/NeaBouli/pnyx/issues/261)) |
 | Push Notifications | Expo Push API, APScheduler | Beta |
 | Stripe / PayPal Donations | Voluntary support; runtime intake and public links fail-closed | Paused pending legal/provider E2E |
@@ -90,13 +90,13 @@ pnyx/
 |   +-- crypto/       -> Ed25519, Nullifier, HMAC Chain (47 tests)
 |   +-- db/           -> Alembic Migrations (18+ tables)
 +-- infra/
-|   +-- docker/       -> PostgreSQL, Redis, Ollama, Traefik
+|   +-- docker/       -> PostgreSQL, Redis, AI service, Traefik
 +-- docs/             -> Landing page + Wiki (14 pages) + Community
 ```
 
 ### Server Infrastructure (Hetzner CX43)
-- **11 containers**: API, Web, Dashboard, Monitor, DB, Redis, Ollama, Docker-Proxy, VR, Test-Node, ekprosopos
-- **Ollama llama3.2:3b**: 2.6 GB RAM, 5 GB limit
+- **11 containers**: API, Web, Dashboard, Monitor, DB, Redis, AI service, Docker-Proxy, VR, Test-Node, ekprosopos
+- **AI service**: 2.6 GB RAM, 5 GB limit
 - **Rate limiting**: SlowAPI defaults to 60 req/min/IP per endpoint on default-covered routes (for example `/health`), not on the public reads using `Depends(rate_limit_check)`. Those reads share 100 anonymous / 1000 valid-key requests per 60 seconds across participating endpoints ([client guide](docs/operations/PUBLIC_API_CLIENT_GUIDE.md)); AI endpoints have 5 req/min/IP. Configured Redis coordinates SlowAPI workers, while absent/unavailable Redis falls back to bounded per-process memory
 - **Circuit breaker**: 3 errors &rarr; 24h pause, auto-reset
 - **Discourse**: pnyx.ekklesia.gr &mdash; automated forum sync per bill
@@ -242,7 +242,7 @@ production rollout.
 
 ## SEO & AI Indexing
 
-- **robots.txt**: AI crawlers allowed (GPTBot, ClaudeBot, PerplexityBot, Google-Extended)
+- **robots.txt**: AI crawlers allowed under the published bot policy
 - **llms.txt**: Machine-readable project description (71 lines)
 - **JSON-LD**: Structured data on 17 pages (TechArticle, WebPage, FAQPage, WebApplication)
 - **Sitemap**: 21 indexed URLs

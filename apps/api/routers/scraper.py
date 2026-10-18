@@ -33,8 +33,6 @@ from rate_limit import limiter
 from models import ParliamentBill, BillStatus
 from dependencies import verify_admin_key
 from services.ollama_service import (
-    OLLAMA_MODEL,
-    OLLAMA_URL,
     ollama_available,
     ollama_json_generate,
 )
@@ -723,11 +721,11 @@ async def scraper_status(request: Request = None):
 
     return {
         "providers": {
-            "ollama":      {"status": "active" if ollama_ok else "offline", "url": OLLAMA_URL, "model": OLLAMA_MODEL},
+            "ollama":      {"status": "active" if ollama_ok else "offline", "url": None, "model": "assistant"},
             "huggingface": {"status": "active" if HF_API_KEY else "free_tier"},
             "rule_based":  {"status": "always_available"},
         },
-        "active_provider": "ollama" if ollama_ok else ("huggingface" if HF_API_KEY else "rule_based"),
+        "active_provider": "assistant" if ollama_ok else ("fallback" if HF_API_KEY else "rule_based"),
     }
 
 
@@ -740,10 +738,10 @@ async def test_scraper(request: Request = None):
 
     return {
         "scraper":        {"bills_found": len(bills), "sample": bills[:2]},
-        "ai_provider":    "ollama" if ollama_ok else "rule_based",
+        "ai_provider":    "assistant" if ollama_ok else "rule_based",
         "ollama_running": ollama_ok,
-        "ollama_url":     OLLAMA_URL,
-        "ollama_model":   OLLAMA_MODEL,
+        "ollama_url":     None,
+        "ollama_model":   "assistant",
     }
 
 

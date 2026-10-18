@@ -581,10 +581,10 @@ async def public_mirror_status(request: Request = None):
     return await _build_mirror_status()
 
 
-@router.get("/deepl/usage")
+@router.get("/deepl/usage", summary="Translation usage")
 @limiter.limit("30/minute")
 async def public_deepl_usage(request: Request = None):
-    """Public: aggregate DeepL usage (available/count/limit only; key stays server-side)."""
+    """Public: aggregate translation usage (available/count/limit only; key stays server-side)."""
     api_key = os.getenv("DEEPL_API_KEY", "")
     if not api_key:
         return {"available": False, "character_count": 0, "character_limit": 0}
