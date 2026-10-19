@@ -214,12 +214,12 @@
       card.className = "fc pulse-red";
       card.style.borderColor = "#ef4444";
       badge.style.background = "#ef4444";
-      badge.textContent = t("ΧΡΕΙΑΖΕΤΑΙ ΧΡΗΜΑΤΟΔΟΤΗΣΗ","NEEDS FUNDING");
+      badge.textContent = t("ΑΡΝΗΤΙΚΟ ΥΠΟΛΟΙΠΟ","NEGATIVE BALANCE");
       if (tbox) { tbox.style.background = "#fef2f2"; }
       if (timer) timer.style.color = "#dc2626";
       if (tsub) { tsub.style.color = "#dc2626"; tsub.textContent = Math.abs(days) + t(" ημ. εκκρεμότητα"," days overdue"); }
-      if (tboxLabel) { tboxLabel.textContent = t("Κρίσιμο — χρειάζεται δωρεά","Critical — donation needed"); tboxLabel.style.color = "#dc2626"; }
-      if (sDue) { sDue.textContent = t("Χρειάζεται χρηματοδότηση","Needs funding"); sDue.style.color = "#dc2626"; }
+      if (tboxLabel) { tboxLabel.textContent = t("Κρίσιμο υπόλοιπο — οι δωρεές είναι σε παύση","Critical balance — donations paused"); tboxLabel.style.color = "#dc2626"; }
+      if (sDue) { sDue.textContent = t("Αρνητικό υπόλοιπο","Negative balance"); sDue.style.color = "#dc2626"; }
       if (green) green.style.display = "none";
       if (yell) yell.style.display = "none";
       if (red) red.style.display = "block";
@@ -381,13 +381,13 @@
       if (card) { card.className = "fc pulse-red"; card.style.borderColor = "#ef4444"; }
       if (badge) { badge.style.background = "#ef4444"; badge.textContent = t("ΚΡΙΣΙΜΟ","CRITICAL"); }
       if (statusBox) { statusBox.style.background = "#fef2f2"; statusBox.style.color = "#dc2626"; }
-      if (statusEl) statusEl.textContent = t("Κρίσιμο υπόλοιπο — χρειάζεται AR","Critical balance — AR needed");
+      if (statusEl) statusEl.textContent = t("Κρίσιμο υπόλοιπο — οι δωρεές είναι σε παύση","Critical balance — donations paused");
     } else if (arLastBalance < AR_WARN_THRESHOLD) {
       // YELLOW
       if (card) { card.className = "fc"; card.style.borderColor = "#fde047"; }
       if (badge) { badge.style.background = "#f59e0b"; badge.textContent = t("ΧΑΜΗΛΟ","LOW"); }
       if (statusBox) { statusBox.style.background = "#fefce8"; statusBox.style.color = "#92400e"; }
-      if (statusEl) statusEl.textContent = t("Χαμηλό υπόλοιπο — σκεφτείτε δωρεά AR","Low balance — consider donating AR");
+      if (statusEl) statusEl.textContent = t("Χαμηλό υπόλοιπο — οι δωρεές είναι σε παύση","Low balance — donations paused");
     } else {
       // GREEN
       if (card) { card.className = "fc"; card.style.borderColor = "#86efac"; }
@@ -550,6 +550,7 @@
     updateServerTile();
     updateDomainTile();
     updateReserveTile();
+    updateArweaveTile();
     updateAutoRecoveryTransparency();
   }
 

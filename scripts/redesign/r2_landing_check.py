@@ -170,6 +170,12 @@ ALLOWED_R5_BILINGUAL_REMOVALS = {
     ("📲 APK", "📲 APK"),
 }
 
+# T-9153 (owner-requested): donation intake stays paused; remove the active
+# Beta roadmap claim in both languages. All other roadmap content is preserved.
+ALLOWED_PAUSED_DONATION_BILINGUAL_REMOVALS = {
+    ("Stripe Δωρεές", "Stripe Donations"),
+}
+
 # #356: approved democracy-cycle rework. The legacy phase copy is
 # replaced by the six handoff phases, the result tile's permanently hidden
 # representativity widget is removed (the Rep/CPLM row now sits directly
@@ -441,7 +447,7 @@ def check_index_preservation(baseline: dict, current: dict) -> list[str]:
     )
     for pair in (REMOVABLE_HEADER_PAIRS | ALLOWED_R5_BILINGUAL_REMOVALS
                  | ALLOWED_DEMO_CYCLE_BILINGUAL_REMOVALS | ALLOWED_ZK_PAUSE_BILINGUAL_REMOVALS
-                 | ALLOWED_V62_BILINGUAL_REMOVALS):
+                 | ALLOWED_V62_BILINGUAL_REMOVALS | ALLOWED_PAUSED_DONATION_BILINGUAL_REMOVALS):
         if baseline_pairs[pair]:
             baseline_pairs[pair] -= 1
             if not baseline_pairs[pair]:

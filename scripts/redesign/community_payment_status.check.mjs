@@ -297,7 +297,7 @@ test('payment response data never attempts an innerHTML sink in accounting value
 });
 
 test('dated annual infrastructure text keeps EUR, USD, once and variable fees separate', () => {
-  const support = html.slice(html.indexOf('<!-- DEVELOPER DONATIONS'), html.indexOf('<!-- Transparenz Live-Zusammenfassung'));
+  const support = html.slice(html.indexOf('<!-- DEVELOPER FUNDING'), html.indexOf('<!-- Transparenz Live-Zusammenfassung'));
   const banner = html.slice(html.indexOf('<!-- TOTAL BANNER'), html.indexOf('<h2 class="fade-in" data-el="Πώς να Συμμετέχεις"'));
   for (const text of ['25 € × 12 = 300 €/έτος', '€25 × 12 = €300/year', '9,30 €/έτος', '€9.30/year', '~309,30 €', '~€309.30', '10.2026', '$99/έτος (ξεχωριστά USD)', '$99/year (separate USD)', '$25 εφάπαξ', '$25 one-time', '~$0.002/έλεγχο (μεταβλητό)', '~$0.002/lookup (variable)', 'no currency conversion']) {
     assert.ok(support.includes(text), `Missing support cost text: ${text}`);

@@ -8,7 +8,7 @@
       "changefreq": "weekly",
       "priority": "1.0",
       "lastmod": "2026-10-19",
-      "sha256": "51148cf84a547b3d5b2923010f177ab1523fa4fd736f116cbaf108e1420932fa"
+      "sha256": "fcb7abd1d8b3442f6c44ec19ba3e3a53a6c1f847e1a1a6e6ca909d58ec6f8c89"
     },
     {
       "loc": "/el/bills",
@@ -34,7 +34,7 @@
       "changefreq": "monthly",
       "priority": "0.8",
       "lastmod": "2026-10-19",
-      "sha256": "60611479fb0268f1df359f79a46d872f3f9d44eb84964ab606197f7821759704"
+      "sha256": "dc2e9062b097dc28aff651ca322e0b8350ed8da7118c19a958fcb973b8474d72"
     },
     {
       "loc": "/legal.html",
@@ -82,7 +82,7 @@
       "changefreq": "monthly",
       "priority": "0.9",
       "lastmod": "2026-10-19",
-      "sha256": "3a408799838822604faf233ee29485272a0b94dcd65cac0c75a766d1a0fac668"
+      "sha256": "d18486c5224b760a19eaee56a71e78c30ff423927f806a2eb65bfc9a416ca28d"
     },
     {
       "loc": "/wiki/whitepaper.html",
