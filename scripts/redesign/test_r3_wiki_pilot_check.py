@@ -102,7 +102,7 @@ class PreservationTest(unittest.TestCase):
 
     def test_script_change_fails(self) -> None:
         changed = copy.deepcopy(self.current)
-        changed["scripts"]["inline"].pop()
+        changed["scripts"]["external"].pop()
         self.assertTrue(any("scripts" in v for v in r3.check_pilot_preservation(self.baseline, changed)))
 
     def test_bilingual_loss_fails(self) -> None:

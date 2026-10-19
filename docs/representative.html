@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="el" data-lang="el">
 <head>
+<script src="assets/js/events.js"></script>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>εκπρόσωπος — Η εφαρμογή για Λαϊκούς Αντιπροσώπους | ekklesia.gr</title>
@@ -89,7 +90,7 @@
     <a href="representative.html" class="active" data-el="Εκπρόσωπος" data-en="Representative">Εκπρόσωπος</a>
     <a href="wiki/security.html" data-el="Ασφάλεια" data-en="Security">Ασφάλεια</a>
     <a href="wiki/faq.html">FAQ</a>
-    <button style="cursor:pointer;border:2px solid rgba(255,255,255,0.3);background:transparent;border-radius:0.4rem;padding:0.22rem 0.55rem;font-size:0.75rem;font-weight:700;color:rgba(255,255,255,0.7);margin-left:0.3rem;transition:all 0.2s" onclick="toggleLang()" id="langBtn">EN</button>
+    <button style="cursor:pointer;border:2px solid rgba(255,255,255,0.3);background:transparent;border-radius:0.4rem;padding:0.22rem 0.55rem;font-size:0.75rem;font-weight:700;color:rgba(255,255,255,0.7);margin-left:0.3rem;transition:all 0.2s" data-csp-click="toggle-language" id="langBtn">EN</button>
   </div>
 </nav>
 
@@ -199,16 +200,6 @@
   <p>εκπρόσωπος · εκκλησία · © 2026 V-Labs Development · MIT License</p>
 </footer>
 
-<script>
-var currentLang="el";
-function toggleLang(){
-  currentLang=currentLang==="el"?"en":"el";
-  document.getElementById("langBtn").textContent=currentLang==="el"?"EN":"ΕΛ";
-  document.querySelectorAll("[data-el]").forEach(function(el){
-    var t=el.getAttribute("data-"+currentLang);
-    if(t)el.innerHTML=t;
-  });
-}
-</script>
+<script src="assets/js/representative-language.js"></script>
 </body>
 </html>

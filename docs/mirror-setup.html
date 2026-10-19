@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="el" data-lang="el">
 <head>
+<script src="assets/js/events.js"></script>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Mirror Setup — εκκλησία</title>
@@ -62,7 +63,7 @@
 
   <div class="step">
     <p><span class="step-num">2</span> <strong data-el="Εκτελέστε στο terminal" data-en="Run in terminal">Εκτελέστε στο terminal</strong></p>
-    <div class="code" id="setupCmd">curl -fsSL https://ekklesia.gr/mirror-setup.sh | sudo bash<button class="copy-btn" onclick="navigator.clipboard.writeText('curl -fsSL https://ekklesia.gr/mirror-setup.sh | sudo bash')">copy</button></div>
+    <div class="code" id="setupCmd">curl -fsSL https://ekklesia.gr/mirror-setup.sh | sudo bash<button class="copy-btn" data-csp-click="copy-mirror-command">copy</button></div>
   </div>
 
   <div class="step">
@@ -135,6 +136,6 @@
   <p style="margin-top:0.5rem">© 2026 V-Labs Development · MIT License</p>
 </footer>
 
-<script src="assets/csp/mirror-setup.js"></script>
+<script src="assets/js/mirror-setup-language.js"></script>
 </body>
 </html>

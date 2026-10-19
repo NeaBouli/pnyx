@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="el" data-lang="el">
 <head>
+<script src="../assets/js/events.js"></script>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Οδικός Χάρτης & Συχνές Ερωτήσεις — εκκλησία Wiki</title>
@@ -252,7 +253,7 @@
     <a href="whitepaper.html">Whitepaper</a>
     <a href="faq.html">FAQ</a>
     <a href="broadcasting.html">Broadcasting</a>
-    <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
+    <button class="lang-btn" data-csp-click="toggle-language" id="langBtn">EN</button>
   </div>
 </nav>
 <main id="main">
@@ -264,7 +265,7 @@
 <div class="layout">
 
   <!-- ===== SECTION 1: Τι είναι η εκκλησία ===== -->
-  <div class="roadmap-section fade-in" onclick="toggleSection(this)">
+  <div class="roadmap-section fade-in" data-csp-click="toggle-section">
     <h3 data-el="Τι είναι η εκκλησία;" data-en="What is ekklesia?"><span class="section-icon">🏛️</span> Τι είναι η εκκλησία;</h3>
     <div class="roadmap-content">
       <p data-el="Η εκκλησία είναι μια ψηφιακή πλατφόρμα που σας επιτρέπει να ψηφίζετε σε πραγματικά νομοσχέδια της Βουλής — χωρίς κόμμα, χωρίς μεσάζοντα, χωρίς γραφειοκρατία. Ψηφίζετε με ψευδώνυμο από το κινητό σας, όποτε θέλετε. Τα αποτελέσματα δημοσιεύονται ανοιχτά ώστε να φαίνεται τι θέλουν πραγματικά οι πολίτες." data-en="Ekklesia is a digital platform that lets you vote on real parliamentary bills — without a party, without a middleman, without bureaucracy. You vote pseudonymously from your phone, whenever you want. Results are published openly so everyone can see what citizens truly want.">
@@ -277,7 +278,7 @@
   </div>
 
   <!-- ===== SECTION 2: Φάση Β — Τώρα ===== -->
-  <div class="roadmap-section fade-in" onclick="toggleSection(this)">
+  <div class="roadmap-section fade-in" data-csp-click="toggle-section">
     <h3 data-el="Φάση Β — Τώρα" data-en="Phase B — Now"><span class="section-icon">📱</span> Φάση Β — Τώρα</h3>
     <div class="roadmap-content">
       <p data-el="Η πλατφόρμα βρίσκεται σε φάση Beta. Σήμερα λειτουργεί ως εξής:" data-en="The platform is in Beta phase. Here is how it currently works:">
@@ -303,7 +304,7 @@
   </div>
 
   <!-- ===== SECTION 3: Πώς δημιουργείται το κλειδί σας ===== -->
-  <div class="roadmap-section fade-in" onclick="toggleSection(this)">
+  <div class="roadmap-section fade-in" data-csp-click="toggle-section">
     <h3 data-el="Πώς δημιουργείται και φυλάσσεται το κλειδί σας" data-en="How your key is created and stored"><span class="section-icon">🔑</span> Πώς δημιουργείται και φυλάσσεται το κλειδί σας</h3>
     <div class="roadmap-content">
       <p data-el="Σκεφτείτε το κλειδί σαν μια ψηφιακή υπογραφή — σαν το μοναδικό γράψιμο του χεριού σας, αλλά στον ψηφιακό κόσμο." data-en="Think of the key as a digital signature — like your unique handwriting, but in the digital world.">
@@ -325,7 +326,7 @@
   </div>
 
   <!-- ===== SECTION 4: Φάση Alpha 0.1 — Σχεδιασμός ===== -->
-  <div class="roadmap-section fade-in" onclick="toggleSection(this)">
+  <div class="roadmap-section fade-in" data-csp-click="toggle-section">
     <h3 data-el="Φάση Alpha 0.1 — Σχεδιασμός" data-en="Alpha 0.1 — Design"><span class="section-icon">🏗️</span> Φάση Alpha 0.1 — Σχεδιασμός</h3>
     <div class="roadmap-content">
       <p data-el="Στην Alpha 0.1 διερευνώνται επίσημο gov.gr OAuth ή νέο challenge-bound QR/PDF με έλεγχο κατόχου και eSeal. Απαιτούνται επίσημη διασύνδεση, DPIA, migration design, ανεξάρτητος security/privacy review και sandbox canary. Καμία μέθοδος δεν είναι ενεργή στη Beta." data-en="Alpha 0.1 evaluates official gov.gr OAuth or a fresh challenge-bound QR/PDF with holder authentication and eSeal. An official integration, DPIA, migration design, independent security/privacy review and sandbox canary are required. Neither method is active in Beta.">
@@ -346,7 +347,7 @@
   </div>
 
   <!-- ===== SECTION 5: Πώς υπολογίζεται η ψήφος σας ===== -->
-  <div class="roadmap-section fade-in" onclick="toggleSection(this)">
+  <div class="roadmap-section fade-in" data-csp-click="toggle-section">
     <h3 data-el="Πώς υπολογίζεται η ψήφος σας" data-en="How your vote is calculated"><span class="section-icon">⚖️</span> Πώς υπολογίζεται η ψήφος σας</h3>
     <div class="roadmap-content">
       <p data-el="Κάθε έγκυρη ψήφος πολίτη έχει το ίδιο βάρος. Η μέθοδος επαλήθευσης είναι metadata ασφάλειας, όχι πολλαπλασιαστής ψήφου:" data-en="Every valid citizen vote has equal weight. Verification method is security metadata, not a vote multiplier:">
@@ -387,7 +388,7 @@
   </div>
 
   <!-- ===== SECTION 6: Η Πολιτική Σας Πυξίδα ===== -->
-  <div class="roadmap-section fade-in" onclick="toggleSection(this)">
+  <div class="roadmap-section fade-in" data-csp-click="toggle-section">
     <h3 data-el="Η Πολιτική Σας Πυξίδα" data-en="Your Political Compass"><span class="section-icon">🧭</span> Η Πολιτική Σας Πυξίδα</h3>
     <div class="roadmap-content">
       <p data-el="Η Πολιτική Πυξίδα είναι ένα ερωτηματολόγιο 48 ερωτήσεων που σας βοηθάει να δείτε πού στέκεστε πολιτικά — χωρίς ετικέτες." data-en="The Political Compass is a 48-question quiz that helps you see where you stand politically — without labels.">
@@ -406,7 +407,7 @@
   </div>
 
   <!-- ===== SECTION 7: Ειδοποιήσεις ===== -->
-  <div class="roadmap-section fade-in" onclick="toggleSection(this)">
+  <div class="roadmap-section fade-in" data-csp-click="toggle-section">
     <h3 data-el="Ειδοποιήσεις" data-en="Notifications"><span class="section-icon">🔔</span> Ειδοποιήσεις</h3>
     <div class="roadmap-content">
       <p data-el="Θα μπορείτε να λαμβάνετε ειδοποιήσεις όταν υπάρχει νέα ψηφοφορία — αλλά μόνο αν εσείς το θέλετε." data-en="You will be able to receive notifications when there is a new vote — but only if you choose to.">
@@ -426,7 +427,7 @@
   </div>
 
   <!-- ===== SECTION 8: gov.gr — Ο Ρόλος των Δήμων ===== -->
-  <div class="roadmap-section fade-in" onclick="toggleSection(this)">
+  <div class="roadmap-section fade-in" data-csp-click="toggle-section">
     <h3 data-el="gov.gr — Ο Ρόλος των Δήμων" data-en="gov.gr — The Role of Municipalities"><span class="section-icon">🏢</span> gov.gr — Ο Ρόλος των Δήμων</h3>
     <div class="roadmap-content">
       <p data-el="Στη Φάση Α, οι Δήμοι της Ελλάδας θα μπορούν να χρησιμοποιήσουν την εκκλησία για να ρωτήσουν τους κατοίκους τους σε τοπικά θέματα." data-en="In Phase A, Greek municipalities will be able to use ekklesia to ask their residents about local issues.">
@@ -447,7 +448,7 @@
   </div>
 
   <!-- ===== SECTION 9: Αρχιτεκτονική Ψηφοφορίας ===== -->
-  <div class="roadmap-section fade-in" onclick="toggleSection(this)">
+  <div class="roadmap-section fade-in" data-csp-click="toggle-section">
     <h3 data-el="Αρχιτεκτονική Ψηφοφορίας" data-en="Voting Architecture"><span class="section-icon">🗳️</span> Αρχιτεκτονική Ψηφοφορίας</h3>
     <div class="roadmap-content">
       <p data-el="Πώς λειτουργεί η ψηφοφορία τεχνικά — με απλά λόγια:" data-en="How voting works technically — in simple terms:">
@@ -475,7 +476,7 @@
   </div>
 
   <!-- ===== SECTION 10: Πρακτικές Συχνές Ερωτήσεις ===== -->
-  <div class="roadmap-section fade-in" onclick="toggleSection(this)">
+  <div class="roadmap-section fade-in" data-csp-click="toggle-section">
     <h3 data-el="Πρακτικές Συχνές Ερωτήσεις" data-en="Practical Frequently Asked Questions"><span class="section-icon">❓</span> Πρακτικές Συχνές Ερωτήσεις</h3>
     <div class="roadmap-content">
       <h3 data-el="Είναι κρατική υπηρεσία ή δεσμευτική ψηφοφορία;" data-en="Is this a government service or a binding vote?">Είναι κρατική υπηρεσία ή δεσμευτική ψηφοφορία;</h3>
@@ -501,7 +502,7 @@
   </div>
 
   <!-- ===== SECTION 11: Οδικός Χάρτης ===== -->
-  <div class="roadmap-section fade-in" onclick="toggleSection(this)">
+  <div class="roadmap-section fade-in" data-csp-click="toggle-section">
     <h3 data-el="Οδικός Χάρτης" data-en="Roadmap"><span class="section-icon">🗺️</span> Οδικός Χάρτης</h3>
     <div class="roadmap-content">
       <div class="card-grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
@@ -574,56 +575,21 @@
     <a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a>
   </div>
   <div class="footer-links" style="margin-top:0.5rem;font-size:0.75rem">
-    <a href="#" onclick="openLegalModal('privacy');return false" data-el="Πολιτική Απορρήτου" data-en="Privacy Policy">Πολιτική Απορρήτου</a>
-    <a href="#" onclick="openLegalModal('delete');return false" data-el="Διαγραφή Λογαριασμού" data-en="Delete Account">Διαγραφή Λογαριασμού</a>
+    <a href="#" data-csp-click="open-legal-modal-privacy-link" data-el="Πολιτική Απορρήτου" data-en="Privacy Policy">Πολιτική Απορρήτου</a>
+    <a href="#" data-csp-click="open-legal-modal-delete-link" data-el="Διαγραφή Λογαριασμού" data-en="Delete Account">Διαγραφή Λογαριασμού</a>
   </div>
   <p>εκκλησία &middot; &copy; 2026 V-Labs Development &middot; MIT License</p>
 </footer>
 
-<div id="legalModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:center;justify-content:center" onclick="if(event.target===this)closeLegalModal()">
+<div id="legalModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:center;justify-content:center" data-csp-click="legal-backdrop">
   <div style="background:#fff;border-radius:1rem;max-width:700px;width:92%;max-height:85vh;overflow-y:auto;padding:2rem;position:relative;box-shadow:0 8px 40px rgba(0,0,0,0.2)">
-    <button onclick="closeLegalModal()" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.5rem;cursor:pointer;color:#64748b;line-height:1">&times;</button>
+    <button data-csp-click="close-legal-modal" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.5rem;cursor:pointer;color:#64748b;line-height:1">&times;</button>
     <div id="legalContent"></div>
   </div>
 </div>
-<script>
-var _privacyHtml='<h2 style="margin-top:0">Πολιτική Απορρήτου</h2><p><strong>Τι ΔΕΝ αποθηκεύουμε:</strong> Αριθμό κινητού, Private Key, IP συνδεδεμένη με ψήφο ή ταυτότητα.</p><p><strong>Τι αποθηκεύουμε:</strong> Nullifier Hash, Public Key, Ψήφοι (ψευδώνυμα).</p><p><strong>GDPR:</strong> Servers στην Ευρώπη. Privacy by design.</p><p><a href="privacy.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#2563eb;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Πλήρης Πολιτική Απορρήτου →</a></p>';
-var _deleteHtml='<h2 style="margin-top:0">Διαγραφή Λογαριασμού</h2><p>Απεγκαταστήστε την εφαρμογή — Private Key και Nullifier διαγράφονται αμέσως.</p><p><a href="delete-account.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#ef4444;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Αναλυτικές Οδηγίες Διαγραφής →</a></p>';
-function openLegalModal(t){document.getElementById("legalContent").innerHTML=t==="privacy"?_privacyHtml:_deleteHtml;document.getElementById("legalModal").style.display="flex"}
-function closeLegalModal(){document.getElementById("legalModal").style.display="none"}
-document.addEventListener("keydown",function(e){if(e.key==="Escape")closeLegalModal()});
-</script>
+<script src="../assets/js/wiki-legal.js"></script>
 
-<script>
-var currentLang = "el";
-function toggleLang() {
-  currentLang = currentLang === "el" ? "en" : "el";
-  document.getElementById("langBtn").textContent = currentLang === "el" ? "EN" : "ΕΛ";
-  document.querySelectorAll("[data-el]").forEach(function(el) {
-    var t = el.getAttribute("data-" + currentLang);
-    if (t) el.innerHTML = t;
-  });
-}
-function toggleSection(el) {
-  var isOpen = el.classList.toggle("open");
-  el.setAttribute("aria-expanded", String(isOpen));
-}
-document.querySelectorAll(".roadmap-section").forEach(function(section) {
-  section.setAttribute("role", "button");
-  section.setAttribute("tabindex", "0");
-  section.setAttribute("aria-expanded", String(section.classList.contains("open")));
-  section.addEventListener("keydown", function(event) {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      toggleSection(section);
-    }
-  });
-});
-var obs = new IntersectionObserver(function(entries) {
-  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add("visible"); });
-}, { threshold: 0.1 });
-document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); });
-</script>
+<script src="../assets/js/wiki-roadmap-2.js"></script>
 
 
 </body>

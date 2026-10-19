@@ -75,26 +75,27 @@ import r0_inventory
 # T-9148 (#636, owner-requested): neutral AI labels and FAQ text (EL/EN/JSON-LD);
 # community model attribution is fixed to V-Labs Artificial Systems · vlabs.gr.
 # Only the changed pages below receive new exact inventory fingerprints.
+# T-9149: exact script/listener migration; public copy and JSON-LD are unchanged.
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/community.html": "815c001ae1b312e97224e26acb8a8353395438aae8c75cd09b268505c7d8f477",  # T-9148: reviewed EL/EN AI wording
-    "docs/wiki/api.html": "1f2847e55cff6d3f165a1d6cded96736be774a2ad0ba3e919b49eca61e10a938",  # T-9148: reviewed EL/EN AI wording
-    "docs/wiki/architecture.html": "1af2aa9c102d66887e52627c277ebfea03935a2ff3b772235cf07ed3d4313f0b",
-    "docs/wiki/broadcasting.html": "eb345ed4551a94220e47aeb4b40c7c745bf6dfeaa5f330eac6f629a09d31f716",
-    "docs/wiki/contributing.html": "bb4048480c3b75cb98ee668305833fe36b2c939f29ef27f1f8bec230c9d49d88",
-    "docs/wiki/database.html": "08ac70323ffa6a6db969f41678ad8de9afd5fdd8f5b74981665cbf8e38afb9f9",
-    "docs/wiki/delete-account.html": "3d7090ca86d5d17207477b664fa9d29066c0073a446d67e13dfd7eaf26822d1e",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
-    "docs/wiki/faq.html": "973af876639742d7068fa826bab084c106c129a4fac83711c70569b531c05fb6",  # T-9148: neutral public AI wording
-    "docs/wiki/index.html": "ea418f9164a41aafa72721bdc8feaf7612a26fc83a32e7e781d7f166fe278419",  # T-9047/T-9048: named code region, contrast, headings and document language; T-9106: legal-modal claims text
-    "docs/wiki/modules.html": "0aca880fb3e377bfec1d8901d32155e93ca2c5c8a83411b38455299fb131d472",  # T-9148: reviewed EL/EN AI wording
-    "docs/wiki/privacy.html": "58550c4a6d68fb39a43c46b2810819dcb8af70cc141f43d9fa5651aac4e990b8",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
-    "docs/wiki/roadmap.html": "8fae28938db627f3cade818fc490e1fac5f1be3984544c72a16817fd9aa84ff5",
-    "docs/wiki/security.html": "0546a8aaf80b51cd4a9de72a33ce82059f8da96ce7ab2a20af7ad278932edc36",  # T-9127: OPEN_END voting closed
-    "docs/wiki/whitepaper.html": "c657de01e6cb47060bae0b28b2dab96349e0d663eb16e584daafc0940af56f1f",  # T-9127: OPEN_END voting closed
-    "docs/wiki/zk-voting.html": "5dafa29250109c593a4aaabe65b7bc2a824d9f1efc90485d0278dd6325b07ccf",
+    "docs/community.html": "ae24926c43df3cc008cbed1a652a4a947bd1453b295c7c5b7b2526427cf5b3bc",  # T-9148: reviewed EL/EN AI wording
+    "docs/wiki/api.html": "346edd578d6cbc4c9910bbda0932a18b546bf11d23b90b1710cd754da136d49c",  # T-9148: reviewed EL/EN AI wording
+    "docs/wiki/architecture.html": "ea6ee279e1faab60cf8992f9ad8962cedb75e8b369d76d39dc19e81c2eb40e24",
+    "docs/wiki/broadcasting.html": "6829e43472185780402c627c86725d908eef8397ea276ae450887f0980318f56",
+    "docs/wiki/contributing.html": "932b3ec81659495889cdc833fede10bfd3af757fea9c7da34264f15ae7d3551d",
+    "docs/wiki/database.html": "5eca4ae8c7bedadcc395a9b95fbe6fd7f7cfd29dbdd15e519c1373d3be5d82a5",
+    "docs/wiki/delete-account.html": "82c76020a3a7552002a4299405d38f8dfbe19a3ed837dd066dfb4590f8fd4e27",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
+    "docs/wiki/faq.html": "3832235dd443d3d12bc48895eb488ecf7083967780dc53cd2f57ad28237e6195",  # T-9148: neutral public AI wording
+    "docs/wiki/index.html": "c63a5fdcace1e259b8e7ada62c7159af2d787e22c6f8861b71d365d7877c9ccd",  # T-9047/T-9048: named code region, contrast, headings and document language; T-9106: legal-modal claims text
+    "docs/wiki/modules.html": "316b661eb540b6aafe91841b8935931ba9ad0e89db277a5c7c9f492dc696ee53",  # T-9148: reviewed EL/EN AI wording
+    "docs/wiki/privacy.html": "67de629d0d035ebd4e9715ea8c9c471c1f9cf4ec502966b1539b42dbc7b4034a",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
+    "docs/wiki/roadmap.html": "a4d32da00db577ca47ba683ecf01692cd34542070c819213a6a5868c67ea55b4",
+    "docs/wiki/security.html": "c2fa9fa3ebb846d421a58cd507968b8044fdfb1f98125e0fca6d2b164be16bff",  # T-9127: OPEN_END voting closed
+    "docs/wiki/whitepaper.html": "cc7725fcbccb1eb1c1d286c16b4c640a3760ebfcc49869d96262ac8a1c8d6072",  # T-9127: OPEN_END voting closed
+    "docs/wiki/zk-voting.html": "63c08e5655437d2afca0f32d71c417029c37bae90e75c03877b78a135a4d6e3a",
 }
 # T-420 changed only the "24 Ώρες" footer target; T-421 only drops the same-URL
 # hreflang="en" head link. Findings text is unchanged.
-APPROVED_AUDIT_PAGE_SHA256 = "da5941f263ad117d68f41cd93d919b45ac6b8d894410255b89b5d43a1ff077e7"
+APPROVED_AUDIT_PAGE_SHA256 = "4f6db0cbd17dc6928bff56364cf52aabffaa6931d7fba82b29e8ef9f5798095f"
 
 
 def matches_approved_content(path: str, current: dict) -> bool:

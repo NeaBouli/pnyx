@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { pageWithScripts, scriptBodies } from "../../../../scripts/docs-scripts.mjs";
 import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
 
@@ -10,7 +10,7 @@ function testDocument() {
   }, nodes };
 }
 const docs = new URL("../../../../docs/", import.meta.url);
-const read = (name: string) => readFileSync(new URL(name, docs), "utf8");
+const read = (name: string) => pageWithScripts(new URL(name, docs));
 const withheld = {
   bill_id: "TEST", total_votes: 41, yes_pct: null, no_pct: null, abstain_pct: null,
   yes_count: null as number | null, no_count: null as number | null, abstain_count: null as number | null,
@@ -46,10 +46,9 @@ describe("public results consumers", () => {
 
   it.each(["results", "vote"])("%s embed preserves nulls and reads API fields", (embed) => {
     for (const lang of ["el", "en"]) {
-      const html = read(`embed/${embed}.html`);
       const document = testDocument();
       const window = { location: { search: `?bill_id=TEST&lang=${lang}` }, addEventListener() {} };
-      const script = html.match(/<script>([\s\S]*?)<\/script>/)![1];
+      const script = scriptBodies(new URL(`embed/${embed}.html`, docs)).find((body: string) => body.includes("var API="))!;
       const context = { window, document, URLSearchParams,
         fetch: () => new Promise(() => {}), setInterval: () => 0, data: withheld };
       runInNewContext(`${script};render({title_el:"Test",status:"PARLIAMENT_VOTED",party_votes_parliament:{A:"YES"}},data);`, context);

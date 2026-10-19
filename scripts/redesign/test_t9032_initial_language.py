@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from html.parser import HTMLParser
 import json
 from pathlib import Path
+from docs_script_source import page_with_scripts
 import re
 import unittest
 
@@ -115,7 +116,7 @@ class InitialLanguageTests(unittest.TestCase):
             (REPO / "docs/index.html").read_text(encoding="utf-8")
         )
         cls.wiki = InitialTextParser(
-            (REPO / "docs/wiki/zk-voting.html").read_text(encoding="utf-8")
+            page_with_scripts(REPO / "docs/wiki/zk-voting.html")
         )
 
     def assert_initial_greek(self, elements: list[Element]) -> None:
@@ -150,7 +151,7 @@ class InitialLanguageTests(unittest.TestCase):
         button = buttons[0]
         self.assertEqual(button.tag, "button")
         self.assertTrue(button.in_nav)
-        self.assertEqual(button.attrs.get("onclick"), "toggleLang()")
+        self.assertEqual(button.attrs.get("data-csp-click"), "toggle-language")
         self.assertEqual(normalize("".join(button.text)), "EN")
 
     def test_zk_wiki_existing_toggle_updates_document_and_bilingual_elements(self) -> None:

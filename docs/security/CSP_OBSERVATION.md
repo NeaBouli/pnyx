@@ -107,13 +107,13 @@ locations are converted from Playwright's zero-based line numbering).
 
 | Observation | Inventory item / follow-up |
 | --- | --- |
-| Static HTML `script-src-elem` / `script-src`, `blockedURI: inline` | Match `docs` + source path and nearby line to “Every remaining block and handler”. `/` maps to `docs/index.html`; `/tickets/` maps to `docs/tickets/index.html`. Externalize the listed executable block, preserving order and globals. |
-| `script-src-attr`, `inline` | Match literal handlers or generated handler sites. Move to listeners or delegation. Load-only observation does not trigger all handlers; their absence here does not clear inventory items. |
-| Ticket-generated handlers | Check “Generated handlers in external docs scripts”, including `docs/tickets/polis.js`. Runtime lines can identify the document/insertion site rather than the template line. Public data from blocked external origins may not render. |
-| `/el`, `/en`, locale bills/results/analytics; bootstrap or Flight snippets | Match “Next.js app inventory and nonce prerequisite”. Runtime bootstrap is response-dependent; plan the per-response nonce and rendering/cache work there. React callback props are not string handlers. |
-| `docs/legal.html` or `docs/municipality/article.html` inline block | Compare the inventory's two approved stable hashes with deployed bytes. Their approved blocks should not violate; other blocks, including JSON-LD, are separate items. |
-| JSON-LD source line | Match the separately listed inert JSON-LD item; retain SEO data and follow the inventory's hash guidance if authorization is required. |
-| Other directives or blocked origins | Review the inventory's policy strategy and “Work remaining before enforcement”, including other HTML on the shared origin. Scheme/opaque resource details are deliberately unavailable. |
+| Static HTML `script-src-elem` / `script-src`, `blockedURI: inline` | For pre-migration runs, match the old path/line to `scripts/csp-migration.json`. `/` maps to `docs/index.html`; `/tickets/` maps to `docs/tickets/index.html`. The current inventory permits no executable static inline blocks. |
+| `script-src-attr`, `inline` | Current controls use data attributes and external listeners. A new inline-attribute violation indicates stale HTML or a regression. Load-only observation does not exercise all controls. |
+| Ticket-generated handlers | `docs/tickets/polis.js` and tickets-board.js now emit data attributes. Runtime lines can identify the document/insertion site rather than the template line. Public data from blocked external origins may not render. |
+| `/el`, `/en`, locale bills/results/analytics; bootstrap or Flight snippets | Match “Next.js nonce and rendering”. Bootstrap/Flight scripts must carry the response nonce, and the dynamic header must survive Traefik. React callback props are not string handlers. |
+| `docs/legal.html` or `docs/municipality/article.html` inline block | These blocks now load legal-language.js and municipality-article.js. The old inline hashes have been removed from the target. |
+| JSON-LD source line | JSON-LD is inert data and needs no script authorization; retain it inline and distinguish it from nearby executable scripts. |
+| Other directives or blocked origins | Review the inventory's policy/promotion strategy and “Evidence and rollout gate”, including the representative app on the shared origin. Scheme/opaque resource details are deliberately unavailable. |
 
 DOM events are captured using `addInitScript` before application code and the
 `securitypolicyviolation` listener. `disposition: report` belongs to Report-Only;
@@ -130,3 +130,105 @@ Blocked dependencies, unclicked handlers, deferred/lazy interactions, translatio
 service worker updates and authenticated pages remain outside that coverage. Zero
 observations do not establish readiness to enforce the candidate policy; retain the
 inventory's remaining work and review the coverage/header tables first.
+
+## T-9149: next observation and promotion
+
+Run 2 covered 132 visits in Chromium/WebKit at 390/1280. It predates the
+externalization and nonce work. Its script violations map to the migrated docs
+assets and Next bootstrap; the municipality style violations came from Google
+Fonts links, now removed in favor of the existing local fallbacks. No JSON-LD
+source lines were reported as script violations; those 26 inert data blocks stay
+inline with their exact original bytes. New SSO script requests also set
+`referrerpolicy="no-referrer"` so the verification nonce query does not reach
+asset-request referrers. A new observation is required for this revision before
+enforcement.
+
+The target header now has these differences from the original enforced policy:
+
+| Surface | `script-src` | Additional directives |
+| --- | --- | --- |
+| Static HTML, Traefik `ekklesia-static-csp` | `'self'` | `object-src 'none'; base-uri 'self'` |
+| Next HTML, `src/proxy.ts` | `'self' 'nonce-<fresh 256-bit value>'` | `object-src 'none'; base-uri 'self'` |
+
+The two old static script hashes are gone. Every other directive is preserved,
+including `frame-ancestors 'none'` and inline **styles**. Scripts have no
+`unsafe-inline`, `unsafe-eval`, `unsafe-hashes` or `strict-dynamic` allowance.
+The existing enforced header remains unchanged in the default production Compose
+configuration. Dynamic responses carry their own nonce Report-Only header; a
+shared fixed target at Traefik would overwrite it and block Next bootstrap.
+
+Next 16's proxy forwards the nonce and CSP through next-intl's request-header
+updates. The renderer reads the request CSP and stamps bootstrap/Flight scripts.
+There are no authored inline scripts or `next/script` components; future ones
+must receive `(await headers()).get('x-nonce')` as their `nonce` prop. The locale
+layout is `force-dynamic`, so formerly static client routes render per request.
+Nonce-bearing HTML cannot use prerender/ISR document caching; current SSR data
+fetches already use `no-store`. Static docs remain static and need no nonce.
+Bill detail identifiers containing dots also pass through the proxy matcher.
+
+PWA configuration now uses the plugin's supported `workboxOptions` nesting.
+Start-URL and navigation caching are disabled, HTML is excluded from precaching,
+and the same-origin runtime rule accepts only script/style/image/font requests.
+It never reads cached document or Flight responses. Before promotion, confirm
+the new service worker has activated and repeat checks with a clean browser and
+an existing profile upgraded from the previous worker. Avoid caching dynamic
+HTML at another proxy/CDN layer.
+
+The observer ignores Chromium's specific “Report-Only has no report-uri / no
+effect” configuration warning, which is not an execution violation. Run 2 also
+has 66 `default-src` console diagnostics; the aggregate omits raw messages, so
+their cause cannot be conclusively classified. This warning is one possible
+source. The new filter matches only that specific warning; real DOM events and
+script refusal messages are still collected. No report endpoint was added.
+Compare DOM events and console evidence separately.
+
+Additional offline checks (no downloads or network):
+
+```sh
+python3 scripts/csp-inventory.py --check
+node --test scripts/csp-observe.check.mjs scripts/csp-docs.check.mjs
+```
+
+With an **already installed** Playwright and browser binaries, the optional docs
+browser regression fulfills every request from local files or aborts it; it
+performs no HTTP fetches. It checks JSON-LD, EL/EN, FAQ and generated demo controls
+first with Report-Only and then enforcement:
+
+```sh
+PLAYWRIGHT_MODULE=/absolute/path/to/existing/playwright \
+  node --test scripts/csp-docs.check.mjs
+```
+
+The local macOS sandbox denied Chromium's Mach port during launch, so this browser
+regression could not run here. Dependency-free listener tests and Next middleware /
+actual Flight-stream emission tests ran offline. The available dependency tree
+uses Next 16.3.8 and Vitest 5.0.2; the repository pins Next 16.4.1 and Vitest 5.0.4.
+No package installation or production build was attempted. Run the browser checks
+and a production render with pinned dependencies before approving enforcement.
+
+For **gio-dd**, after deploying the default Report-Only revision, rerun the
+observation command above. Require complete coverage, matching target headers,
+zero actual violations, and successful hydration, navigation, errors and streamed
+responses. Supplement load-only observation with language, FAQ/roadmap, legal and
+contact modals, newsletter/chat, ticket login/QR/create/vote, embed and
+representative controls, plus service-worker upgrade checks. The restricted
+observer blocks third-party API requests and does not exercise authenticated
+flows; zero load-time observations alone cannot validate those interactions.
+
+Only in a separate deploy after that evidence, add the override **after** the
+production Compose file (run from the repository root):
+
+```sh
+docker compose --env-file infra/docker/.env \
+  -f infra/docker/docker-compose.prod.yml \
+  -f infra/docker/docker-compose.csp-enforce.yml \
+  up -d --no-deps web
+```
+
+Use the deployment's usual env-file path if different. The override merges
+mapping labels: it disables the shared legacy CSP writer, enables the static
+strict enforced header and sets `CSP_ENFORCE=true` for Next's nonce-aware enforced
+header. Both surfaces keep their Report-Only target. Confirm both final HTTP
+headers; Next's nonce must match its bootstrap/Flight script attributes and change
+on repeated responses. Roll back by recreating `web` with only the base production
+file. Nothing in T-9149 promotes enforcement or deploys these changes.

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="el" data-lang="el">
 <head>
+<script src="../assets/js/events.js"></script>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Broadcasting — Κοινοποίηση & ΜΜΕ | εκκλησία</title>
@@ -93,7 +94,7 @@
     <a href="whitepaper.html">Whitepaper</a>
     <a href="faq.html">FAQ</a>
     <a href="broadcasting.html" class="active">Broadcasting</a>
-    <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
+    <button class="lang-btn" data-csp-click="toggle-language" id="langBtn">EN</button>
   </div>
 </nav>
 <main id="main">
@@ -154,23 +155,23 @@
 
   <h3 data-el="Κοινωνικά Δίκτυα" data-en="Social Networks">Κοινωνικά Δίκτυα</h3>
   <div style="display:flex;flex-wrap:wrap;gap:0.6rem;margin:1rem 0">
-    <a href="https://t.me/ekklesia_gr" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.55rem 1.1rem;background:#0088cc;color:white;border-radius:0.5rem;font-weight:700;font-size:0.82rem;text-decoration:none;transition:opacity 0.2s" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+    <a href="https://t.me/ekklesia_gr" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.55rem 1.1rem;background:#0088cc;color:white;border-radius:0.5rem;font-weight:700;font-size:0.82rem;text-decoration:none;transition:opacity 0.2s" data-csp-mouseover="style-d0bd26b364" data-csp-mouseout="style-b248670bf6">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121L8.32 13.617l-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.94z"/></svg>
       <span data-el="Κανάλι" data-en="Channel">Κανάλι</span>
     </a>
-    <a href="https://t.me/ekklesia_el" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.55rem 1.1rem;background:#0088cc;color:white;border-radius:0.5rem;font-weight:700;font-size:0.82rem;text-decoration:none;transition:opacity 0.2s" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+    <a href="https://t.me/ekklesia_el" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.55rem 1.1rem;background:#0088cc;color:white;border-radius:0.5rem;font-weight:700;font-size:0.82rem;text-decoration:none;transition:opacity 0.2s" data-csp-mouseover="style-d0bd26b364" data-csp-mouseout="style-b248670bf6">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121L8.32 13.617l-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.832.94z"/></svg>
       <span data-el="Ομάδα Συζήτησης" data-en="Discussion Group">Ομάδα Συζήτησης</span>
     </a>
-    <a href="https://github.com/NeaBouli/pnyx" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.55rem 1.1rem;background:#24292e;color:white;border-radius:0.5rem;font-weight:700;font-size:0.82rem;text-decoration:none;transition:opacity 0.2s" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+    <a href="https://github.com/NeaBouli/pnyx" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.55rem 1.1rem;background:#24292e;color:white;border-radius:0.5rem;font-weight:700;font-size:0.82rem;text-decoration:none;transition:opacity 0.2s" data-csp-mouseover="style-d0bd26b364" data-csp-mouseout="style-b248670bf6">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.6.11.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
       GitHub
     </a>
-    <a href="https://pnyx.ekklesia.gr" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.55rem 1.1rem;background:var(--blue, #2563eb);color:white;border-radius:0.5rem;font-weight:700;font-size:0.82rem;text-decoration:none;transition:opacity 0.2s" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+    <a href="https://pnyx.ekklesia.gr" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.55rem 1.1rem;background:var(--blue, #2563eb);color:white;border-radius:0.5rem;font-weight:700;font-size:0.82rem;text-decoration:none;transition:opacity 0.2s" data-csp-mouseover="style-d0bd26b364" data-csp-mouseout="style-b248670bf6">
       <span style="font-size:1.1rem">💬</span>
       <span data-el="Forum" data-en="Forum">Forum</span>
     </a>
-    <a href="https://www.facebook.com/share/1MbLJG6eth/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.55rem 1.1rem;background:#1877f2;color:white;border-radius:0.5rem;font-weight:700;font-size:0.82rem;text-decoration:none;transition:opacity 0.2s" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+    <a href="https://www.facebook.com/share/1MbLJG6eth/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.55rem 1.1rem;background:#1877f2;color:white;border-radius:0.5rem;font-weight:700;font-size:0.82rem;text-decoration:none;transition:opacity 0.2s" data-csp-mouseover="style-d0bd26b364" data-csp-mouseout="style-b248670bf6">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
       <span>Facebook</span>
     </a>
@@ -179,15 +180,15 @@
   <h3 data-el="Κοινοποίηση" data-en="Share">Κοινοποίηση</h3>
   <p data-el="Μοιραστείτε το ekklesia.gr με ένα κλικ:" data-en="Share ekklesia.gr with one click:">Μοιραστείτε το ekklesia.gr με ένα κλικ:</p>
   <div style="display:flex;flex-wrap:wrap;gap:0.6rem;margin:1rem 0">
-    <a href="https://twitter.com/intent/tweet?text=%CE%A8%CE%B7%CF%86%CE%AF%CF%83%CF%84%CE%B5%20%CF%83%CF%84%CE%BF%20ekklesia.gr%20%E2%80%94%20%CE%B7%20%CF%88%CE%B7%CF%86%CE%B9%CE%B1%CE%BA%CE%AE%20%CE%AC%CE%BC%CE%B5%CF%83%CE%B7%20%CE%B4%CE%B7%CE%BC%CE%BF%CE%BA%CF%81%CE%B1%CF%84%CE%AF%CE%B1%20%F0%9F%87%AC%F0%9F%87%B7%20%23%CE%B5%CE%BA%CE%BA%CE%BB%CE%B7%CF%83%CE%AF%CE%B1%20%F0%9F%91%89%20https://ekklesia.gr" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.55rem 1.1rem;background:#000;color:white;border-radius:0.5rem;font-weight:700;font-size:0.82rem;text-decoration:none;transition:opacity 0.2s" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+    <a href="https://twitter.com/intent/tweet?text=%CE%A8%CE%B7%CF%86%CE%AF%CF%83%CF%84%CE%B5%20%CF%83%CF%84%CE%BF%20ekklesia.gr%20%E2%80%94%20%CE%B7%20%CF%88%CE%B7%CF%86%CE%B9%CE%B1%CE%BA%CE%AE%20%CE%AC%CE%BC%CE%B5%CF%83%CE%B7%20%CE%B4%CE%B7%CE%BC%CE%BF%CE%BA%CF%81%CE%B1%CF%84%CE%AF%CE%B1%20%F0%9F%87%AC%F0%9F%87%B7%20%23%CE%B5%CE%BA%CE%BA%CE%BB%CE%B7%CF%83%CE%AF%CE%B1%20%F0%9F%91%89%20https://ekklesia.gr" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.55rem 1.1rem;background:#000;color:white;border-radius:0.5rem;font-weight:700;font-size:0.82rem;text-decoration:none;transition:opacity 0.2s" data-csp-mouseover="style-d0bd26b364" data-csp-mouseout="style-b248670bf6">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
       <span data-el="Μοιραστείτε στο X" data-en="Share on X">Μοιραστείτε στο X</span>
     </a>
-    <a href="https://www.facebook.com/sharer/sharer.php?u=https://ekklesia.gr" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.55rem 1.1rem;background:#1877f2;color:white;border-radius:0.5rem;font-weight:700;font-size:0.82rem;text-decoration:none;transition:opacity 0.2s" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https://ekklesia.gr" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.55rem 1.1rem;background:#1877f2;color:white;border-radius:0.5rem;font-weight:700;font-size:0.82rem;text-decoration:none;transition:opacity 0.2s" data-csp-mouseover="style-d0bd26b364" data-csp-mouseout="style-b248670bf6">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
       <span data-el="Μοιραστείτε στο Facebook" data-en="Share on Facebook">Μοιραστείτε στο Facebook</span>
     </a>
-    <a href="https://www.linkedin.com/sharing/share-offsite/?url=https://ekklesia.gr" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.55rem 1.1rem;background:#0a66c2;color:white;border-radius:0.5rem;font-weight:700;font-size:0.82rem;text-decoration:none;transition:opacity 0.2s" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+    <a href="https://www.linkedin.com/sharing/share-offsite/?url=https://ekklesia.gr" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.55rem 1.1rem;background:#0a66c2;color:white;border-radius:0.5rem;font-weight:700;font-size:0.82rem;text-decoration:none;transition:opacity 0.2s" data-csp-mouseover="style-d0bd26b364" data-csp-mouseout="style-b248670bf6">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
       <span data-el="Μοιραστείτε στο LinkedIn" data-en="Share on LinkedIn">Μοιραστείτε στο LinkedIn</span>
     </a>
@@ -204,7 +205,7 @@
   frameborder="0"
   title="ekklesia.gr — Ψηφοφορία Πολιτών"&gt;
 &lt;/iframe&gt;</div>
-  <button onclick="navigator.clipboard.writeText(document.getElementById('embed-all').innerText)" style="background:var(--blue);color:white;border:none;padding:0.4rem 1rem;border-radius:0.4rem;font-size:0.82rem;font-weight:700;cursor:pointer;margin-bottom:1.5rem" data-el="Αντιγραφή" data-en="Copy">Αντιγραφή</button>
+  <button data-csp-click="action-9c7de49086" style="background:var(--blue);color:white;border:none;padding:0.4rem 1rem;border-radius:0.4rem;font-size:0.82rem;font-weight:700;cursor:pointer;margin-bottom:1.5rem" data-el="Αντιγραφή" data-en="Copy">Αντιγραφή</button>
 
   <h3 data-el="Συγκεκριμένο Νομοσχέδιο" data-en="Specific Bill">Συγκεκριμένο Νομοσχέδιο</h3>
   <div class="code-block" id="embed-single">&lt;iframe
@@ -214,7 +215,7 @@
   frameborder="0"
   title="ekklesia.gr — Νομοσχέδιο GR-5293"&gt;
 &lt;/iframe&gt;</div>
-  <button onclick="navigator.clipboard.writeText(document.getElementById('embed-single').innerText)" style="background:var(--blue);color:white;border:none;padding:0.4rem 1rem;border-radius:0.4rem;font-size:0.82rem;font-weight:700;cursor:pointer;margin-bottom:1.5rem" data-el="Αντιγραφή" data-en="Copy">Αντιγραφή</button>
+  <button data-csp-click="action-026b9b59be" style="background:var(--blue);color:white;border:none;padding:0.4rem 1rem;border-radius:0.4rem;font-size:0.82rem;font-weight:700;cursor:pointer;margin-bottom:1.5rem" data-el="Αντιγραφή" data-en="Copy">Αντιγραφή</button>
 
   <div class="info-box">
     <p data-el="Αντικαταστήστε <code>GR-5293</code> με το ID του νομοσχεδίου που θέλετε. Μπορείτε να αλλάξετε <code>/el/</code> σε <code>/en/</code> για αγγλικά." data-en="Replace <code>GR-5293</code> with the bill ID you want. Change <code>/el/</code> to <code>/en/</code> for English.">Αντικαταστήστε <code>GR-5293</code> με το ID του νομοσχεδίου. Αλλάξτε <code>/el/</code> σε <code>/en/</code> για αγγλικά.</p>
@@ -258,27 +259,19 @@ POST /agent/ask               — AI Q&A (5 req/min)</div>
     <a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a>
   </div>
   <div class="footer-links" style="margin-top:0.5rem;font-size:0.75rem">
-    <a href="#" onclick="openLegalModal('privacy');return false" data-el="Πολιτική Απορρήτου" data-en="Privacy Policy">Πολιτική Απορρήτου</a>
-    <a href="#" onclick="openLegalModal('delete');return false" data-el="Διαγραφή Λογαριασμού" data-en="Delete Account">Διαγραφή Λογαριασμού</a>
+    <a href="#" data-csp-click="open-legal-modal-privacy-link" data-el="Πολιτική Απορρήτου" data-en="Privacy Policy">Πολιτική Απορρήτου</a>
+    <a href="#" data-csp-click="open-legal-modal-delete-link" data-el="Διαγραφή Λογαριασμού" data-en="Delete Account">Διαγραφή Λογαριασμού</a>
   </div>
   <p>εκκλησία &middot; &copy; 2026 V-Labs Development &middot; MIT License</p>
 </footer>
 
-<div id="legalModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:center;justify-content:center" onclick="if(event.target===this)closeLegalModal()">
+<div id="legalModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:center;justify-content:center" data-csp-click="legal-backdrop">
   <div style="background:#fff;border-radius:1rem;max-width:700px;width:92%;max-height:85vh;overflow-y:auto;padding:2rem;position:relative;box-shadow:0 8px 40px rgba(0,0,0,0.2)">
-    <button onclick="closeLegalModal()" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.5rem;cursor:pointer;color:#64748b;line-height:1">&times;</button>
+    <button data-csp-click="close-legal-modal" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.5rem;cursor:pointer;color:#64748b;line-height:1">&times;</button>
     <div id="legalContent"></div>
   </div>
 </div>
-<script>
-var _privacyHtml='<h2 style="margin-top:0">Πολιτική Απορρήτου</h2><p><strong>Τι ΔΕΝ αποθηκεύουμε:</strong> Αριθμό κινητού, Private Key, IP συνδεδεμένη με ψήφο ή ταυτότητα.</p><p><strong>Τι αποθηκεύουμε:</strong> Nullifier Hash, Public Key, Ψήφοι (ψευδώνυμα).</p><p><strong>GDPR:</strong> Servers στην Ευρώπη. Privacy by design.</p><p><a href="privacy.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#2563eb;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Πλήρης Πολιτική Απορρήτου →</a></p>';
-var _deleteHtml='<h2 style="margin-top:0">Διαγραφή Λογαριασμού</h2><p>Απεγκαταστήστε την εφαρμογή — Private Key και Nullifier διαγράφονται αμέσως.</p><p><a href="delete-account.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#ef4444;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Αναλυτικές Οδηγίες Διαγραφής →</a></p>';
-function openLegalModal(t){document.getElementById("legalContent").innerHTML=t==="privacy"?_privacyHtml:_deleteHtml;document.getElementById("legalModal").style.display="flex"}
-function closeLegalModal(){document.getElementById("legalModal").style.display="none"}
-document.addEventListener("keydown",function(e){if(e.key==="Escape")closeLegalModal()});
-</script>
-<script>
-var currentLang="el";function toggleLang(){currentLang=currentLang==="el"?"en":"el";document.getElementById("langBtn").textContent=currentLang==="el"?"EN":"ΕΛ";document.querySelectorAll("[data-el]").forEach(function(el){var t=el.getAttribute("data-"+currentLang);if(t)el.innerHTML=t;})}
-</script>
+<script src="../assets/js/wiki-legal.js"></script>
+<script src="../assets/js/wiki-broadcasting-2.js"></script>
 </body>
 </html>

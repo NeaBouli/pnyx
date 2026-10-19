@@ -7,8 +7,8 @@
       "source": "docs/index.html",
       "changefreq": "weekly",
       "priority": "1.0",
-      "lastmod": "2026-10-18",
-      "sha256": "755e2587e253ab284b7ed358418ef82ee4a1975a49b5659fd42ecb068ca81651"
+      "lastmod": "2026-10-19",
+      "sha256": "f30cb4d89bd525dcc805864a0f0ce86960bf226438a256a8fe5f58e65aef0593"
     },
     {
       "loc": "/el/bills",
@@ -33,16 +33,16 @@
       "source": "docs/community.html",
       "changefreq": "monthly",
       "priority": "0.8",
-      "lastmod": "2026-10-18",
-      "sha256": "4cd345cf77dd65b0d3de56b3ce8ed87af7d53a4ce9bcc95b0875512e10acd035"
+      "lastmod": "2026-10-19",
+      "sha256": "cf93ce19df9bf13b9a7de2002f70e4b1592079b5de4c6d663053d7b984f18cc1"
     },
     {
       "loc": "/legal.html",
       "source": "docs/legal.html",
       "changefreq": "yearly",
       "priority": "0.7",
-      "lastmod": "2026-10-18",
-      "sha256": "4c7983111e2119c10e894c9dc383008cece88451e836059154ea97fe78608adf"
+      "lastmod": "2026-10-19",
+      "sha256": "c15652ae4d9ab89d66461c340c038059a8e2dcf8ee271765080fd0e380e93661"
     },
     {
       "loc": "/bot.html",
@@ -57,160 +57,160 @@
       "source": "docs/govgr-dimos.html",
       "changefreq": "monthly",
       "priority": "0.8",
-      "lastmod": "2026-10-16",
-      "sha256": "2a688aeda5af19061db9d64e2a7180fa4a292511fdc201712e8f243d2616a176"
+      "lastmod": "2026-10-19",
+      "sha256": "09faf9059c49f81491a17023e5b1de374db232629cd631f08f535486f39f80b2"
     },
     {
       "loc": "/representative.html",
       "source": "docs/representative.html",
       "changefreq": "monthly",
       "priority": "0.7",
-      "lastmod": "2026-10-11",
-      "sha256": "e1dec23dae5d973c144fa945d4cf94fe9615bb1e57fb8a3d2f4a76769aa574b2"
+      "lastmod": "2026-10-19",
+      "sha256": "ce10fa6eded8d8bcabc7ad7db0d79b5f92fd56f79f02ba8c5a3777420189e2de"
     },
     {
       "loc": "/wiki/index.html",
       "source": "docs/wiki/index.html",
       "changefreq": "weekly",
       "priority": "0.9",
-      "lastmod": "2026-10-11",
-      "sha256": "fd62ba936b5929be1ef125dc8b157b5e05be5d84c3a69f990bf8e7339aff4441"
+      "lastmod": "2026-10-19",
+      "sha256": "873045b4f0f5c7a365fe4c97e655204d70caa2329d131b8674e185f86b318e91"
     },
     {
       "loc": "/wiki/faq.html",
       "source": "docs/wiki/faq.html",
       "changefreq": "monthly",
       "priority": "0.9",
-      "lastmod": "2026-10-18",
-      "sha256": "ea81f8a33a9fcf7e8f849d455c7dd26f3c49ba16f84736d2494eadee4043a01e"
+      "lastmod": "2026-10-19",
+      "sha256": "19c846506d504012fc88045c12d0c2420f23bb998eb98360e5b6c7854f09d0f9"
     },
     {
       "loc": "/wiki/whitepaper.html",
       "source": "docs/wiki/whitepaper.html",
       "changefreq": "monthly",
       "priority": "0.8",
-      "lastmod": "2026-10-16",
-      "sha256": "a67a042e58596b88863b30d95f0125b201d39714662abda1d89418b4263384b0"
+      "lastmod": "2026-10-19",
+      "sha256": "233e286468aa9a33f4d38dd8003d54ec1a883340a6c71873773eb5512ed4d5f4"
     },
     {
       "loc": "/wiki/privacy.html",
       "source": "docs/wiki/privacy.html",
       "changefreq": "monthly",
       "priority": "0.8",
-      "lastmod": "2026-10-16",
-      "sha256": "1174ad39dbbbf486600d162c4362573fa1863f1bf2a34d8b2300430fa97a407a"
+      "lastmod": "2026-10-19",
+      "sha256": "57d2e7dd655f224fdf8842666440d44c7900d1e106a1799f22f7a1ee2af43f6f"
     },
     {
       "loc": "/wiki/security.html",
       "source": "docs/wiki/security.html",
       "changefreq": "monthly",
       "priority": "0.7",
-      "lastmod": "2026-10-16",
-      "sha256": "0418aed3dba6a0819ec1c05db9fecba155e4dad959942f39b271a89defc10c81"
+      "lastmod": "2026-10-19",
+      "sha256": "3ce832b6edb4acd20af2c151ce9ba5f8ee6254bf636b8298a74c64ed36b1ff5a"
     },
     {
       "loc": "/wiki/api.html",
       "source": "docs/wiki/api.html",
       "changefreq": "monthly",
       "priority": "0.7",
-      "lastmod": "2026-10-18",
-      "sha256": "beda2e1642b17570131d31022bd8bd0b155c1afbd98159ad55fc7f4c1d0a340c"
+      "lastmod": "2026-10-19",
+      "sha256": "678ffd29c236f94e12277a947ca99dd1d100832dc1e5440cd957f697257da8d6"
     },
     {
       "loc": "/wiki/architecture.html",
       "source": "docs/wiki/architecture.html",
       "changefreq": "monthly",
       "priority": "0.7",
-      "lastmod": "2026-10-11",
-      "sha256": "a10853f57f12ae2d7fc3ece63699aebc8805538ddaf407d1f6b1a561cec05881"
+      "lastmod": "2026-10-19",
+      "sha256": "603a7bce31c43d53b748fb7746c3e54df4e4dff2ab2091892f1f3eba56be8d84"
     },
     {
       "loc": "/wiki/modules.html",
       "source": "docs/wiki/modules.html",
       "changefreq": "monthly",
       "priority": "0.7",
-      "lastmod": "2026-10-18",
-      "sha256": "f80f1da8db807398bc2b997b5e8364916f37ed4a87e74a21c001dd13d148b539"
+      "lastmod": "2026-10-19",
+      "sha256": "88934306cabedec1386c74294868cdb39de6676143b92a4f7494a14e04c68bd8"
     },
     {
       "loc": "/wiki/roadmap.html",
       "source": "docs/wiki/roadmap.html",
       "changefreq": "monthly",
       "priority": "0.7",
-      "lastmod": "2026-10-16",
-      "sha256": "5b36f4030bef48fbccbd85b83b3b0b6d4afdf5267aca9eb064a8c1a4ea093d5c"
+      "lastmod": "2026-10-19",
+      "sha256": "c80062de2c0b2311ff308a480f2de88fea7bb067dc42c2e88fb9cadbd6948ab7"
     },
     {
       "loc": "/wiki/database.html",
       "source": "docs/wiki/database.html",
       "changefreq": "monthly",
       "priority": "0.6",
-      "lastmod": "2026-10-11",
-      "sha256": "7dd5db2da690f728ef62e6e9da51bf3af942b3a5a55da8778c6a7e582f6967ee"
+      "lastmod": "2026-10-19",
+      "sha256": "0a6159cb7a3960859ed81dd30ea3f73977c7f5db4a897ad175ef1977ca486990"
     },
     {
       "loc": "/wiki/broadcasting.html",
       "source": "docs/wiki/broadcasting.html",
       "changefreq": "monthly",
       "priority": "0.6",
-      "lastmod": "2026-10-11",
-      "sha256": "4279a9e19bac08e6418f42ab80f902a3ac12d08e5f1dcf188441db80246ad9d0"
+      "lastmod": "2026-10-19",
+      "sha256": "b7523938011272862348f5b66b085ad06a7597fcb271665ddd5f875056563267"
     },
     {
       "loc": "/wiki/contributing.html",
       "source": "docs/wiki/contributing.html",
       "changefreq": "monthly",
       "priority": "0.6",
-      "lastmod": "2026-10-11",
-      "sha256": "c32082321b1181696158a7ea58e6e5a572169bd74ee3c30c8b058e4dc9d3e28a"
+      "lastmod": "2026-10-19",
+      "sha256": "9f40c4498a259aa10bfbe9e7bd16f6a071049812a1747de136087463ae65cd8c"
     },
     {
       "loc": "/wiki/delete-account.html",
       "source": "docs/wiki/delete-account.html",
       "changefreq": "monthly",
       "priority": "0.5",
-      "lastmod": "2026-10-15",
-      "sha256": "0c55386704985c832581bed5353facf47c2c01ad9a5dd015f611d785670517d3"
+      "lastmod": "2026-10-19",
+      "sha256": "de4d13caa6f120f23d018c9896b43992ec45c3f287387a773a58b94fddaf1a43"
     },
     {
       "loc": "/wiki/zk-voting.html",
       "source": "docs/wiki/zk-voting.html",
       "changefreq": "monthly",
       "priority": "0.7",
-      "lastmod": "2026-10-11",
-      "sha256": "2506107c777651642a476ba220f1b5870aa4f2720e3a167b3d5a6af3d15bdd54"
+      "lastmod": "2026-10-19",
+      "sha256": "18663057223dc4b2d58a9442599a181bd7eef5e68ae61aeae7fe6402ea9f9ffe"
     },
     {
       "loc": "/wiki/audit.html",
       "source": "docs/wiki/audit.html",
       "changefreq": "monthly",
       "priority": "0.6",
-      "lastmod": "2026-09-27",
-      "sha256": "da5941f263ad117d68f41cd93d919b45ac6b8d894410255b89b5d43a1ff077e7"
+      "lastmod": "2026-10-19",
+      "sha256": "4f6db0cbd17dc6928bff56364cf52aabffaa6931d7fba82b29e8ef9f5798095f"
     },
     {
       "loc": "/tickets/index.html",
       "source": "docs/tickets/index.html",
       "changefreq": "daily",
       "priority": "0.7",
-      "lastmod": "2026-09-27",
-      "sha256": "e7ac386295ade2c52c6d3826c89ade8ffc140f290dbc78ac8487d32394f2b225"
+      "lastmod": "2026-10-19",
+      "sha256": "23ad29cb02df116f5aec52b45d7c026ab0857cd6fc14889013364bd51a84383f"
     },
     {
       "loc": "/municipality/index.html",
       "source": "docs/municipality/index.html",
       "changefreq": "monthly",
       "priority": "0.8",
-      "lastmod": "2026-09-27",
-      "sha256": "b553913780f18868fc49157f303379cbf630b12651ad1877b31a09b3483f5f84"
+      "lastmod": "2026-10-19",
+      "sha256": "4c4bed7281ac29db322dbe338f8b9bb46d9e76880f27d5d019618b33c006679d"
     },
     {
       "loc": "/municipality/article.html",
       "source": "docs/municipality/article.html",
       "changefreq": "monthly",
       "priority": "0.7",
-      "lastmod": "2026-09-27",
-      "sha256": "aebe3b819ec76fc9c3769ad38a847246657bd5d85b70c914cb84528d4b658123"
+      "lastmod": "2026-10-19",
+      "sha256": "b192c264c15a1414771eff6a602d9aa0b101b8ca1e72e4382302e21ca100cff5"
     }
   ]
 }

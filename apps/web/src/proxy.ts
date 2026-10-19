@@ -1,6 +1,7 @@
 import createMiddleware from "next-intl/middleware";
 import { routing } from "./i18n/routing";
 import { NextRequest, NextResponse } from "next/server";
+import { createNonce, LEGACY_CSP, noncePolicy } from "./lib/csp";
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -62,10 +63,23 @@ export default function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/wiki/index.html", request.url), 301);
   }
 
-  return intlMiddleware(request);
+  // Next 16 reads CSP from the forwarded request to nonce bootstrap, Flight,
+  // streaming metadata and framework scripts. Never trust a client nonce/CSP.
+  const nonce = createNonce();
+  const policy = noncePolicy(nonce);
+  const headers = new Headers(request.headers);
+  headers.set("x-nonce", nonce);
+  headers.set("Content-Security-Policy", policy);
+  headers.delete("Content-Security-Policy-Report-Only");
+  const response = intlMiddleware(new NextRequest(request, { headers }));
+  response.headers.set("Content-Security-Policy-Report-Only", policy);
+  response.headers.set("Content-Security-Policy", process.env.CSP_ENFORCE === "true" ? policy : LEGACY_CSP);
+  // Nonce-bearing HTML/RSC must never be replayed with a new response header.
+  response.headers.set("Cache-Control", "private, no-store, max-age=0");
+  return response;
 }
 
 export const config = {
-  // Match all paths except static files (.*\\..*), api, _next, _vercel
-  matcher: ["/((?!api|_next|_vercel|.*\\..*).*)"],
+  // Static assets bypass the proxy; public bill identifiers may contain dots.
+  matcher: ["/((?!api|_next|_vercel|.*\\..*).*)", "/(el|en)/bills/:path*"],
 };

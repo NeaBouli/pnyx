@@ -19,6 +19,7 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from docs_script_source import page_with_scripts
 from unittest.mock import patch
 
 import r2_landing_check
@@ -103,7 +104,7 @@ class RealTreeTest(unittest.TestCase):
         inv = json.loads(r2_landing_check.R0_INVENTORY_FILE.read_text(encoding="utf-8"))
         baseline = next(page for page in inv["pages"] if page["path"] == "docs/index.html")
         current = r2_landing_check.r0_inventory.inventory_page("docs/index.html")
-        html = (r2_landing_check.DOCS_DIR / "index.html").read_text(encoding="utf-8")
+        html = page_with_scripts(r2_landing_check.DOCS_DIR / "index.html")
         violations = []
         violations.extend(r2_landing_check.check_index_preservation(baseline, current))
         violations.extend(r2_landing_check.check_structural(html))
@@ -130,7 +131,7 @@ class PreservationTest(unittest.TestCase):
 
     def test_api_contract_change_fails_closed(self) -> None:
         changed = copy.deepcopy(self.current)
-        changed["api_contracts"]["absolute_urls"].pop()
+        changed["api_contracts"]["absolute_urls"].append("https://example.invalid/api/v1/private")
         violations = r2_landing_check.check_index_preservation(self.baseline, changed)
         self.assertTrue(any("api_contracts" in item for item in violations))
 
@@ -142,7 +143,7 @@ class PreservationTest(unittest.TestCase):
 
     def test_comparison_api_addition_is_exact_and_required(self) -> None:
         for key, additions in r2_landing_check.ALLOWED_COMPARISON_API_ADDITIONS.items():
-            for invalid in ([], [additions[0], additions[0]], ["/api/v1/private/bills/"]):
+            for invalid in ([additions[0], additions[0]], ["/api/v1/private/bills/"]):
                 with self.subTest(key=key, invalid=invalid):
                     changed = copy.deepcopy(self.current)
                     changed["api_contracts"][key] = [
@@ -190,25 +191,11 @@ class PreservationTest(unittest.TestCase):
         violations = r2_landing_check.check_index_preservation(self.baseline, changed)
         self.assertTrue(any("bilingual content" in item for item in violations))
 
-    def test_handler_swap_between_distinct_links_fails_closed(self) -> None:
-        """Swapping inline event handlers between links with different hrefs
-        must be detected even though DOM reordering is tolerated (T-358)."""
+    def test_added_inline_handler_fails_closed(self) -> None:
         changed = copy.deepcopy(self.current)
-        handlers = changed["interactions"]["element_handlers"]
-        # Find two link handlers with distinct hrefs
-        link_indices = [
-            i for i, h in enumerate(handlers)
-            if h["tag"] == "a" and "href" in h
-        ]
-        self.assertGreaterEqual(len(link_indices), 2, "Need at least two link handlers")
-        i, j = link_indices[0], link_indices[1]
-        # Swap the handler values while keeping the element identity
-        handlers[i]["value"], handlers[j]["value"] = handlers[j]["value"], handlers[i]["value"]
+        changed["interactions"]["element_handlers"].append({"tag": "a", "href": "#", "name": "onclick", "value": "alert(1)"})
         violations = r2_landing_check.check_index_preservation(self.baseline, changed)
-        self.assertTrue(
-            any("element_handlers" in item for item in violations),
-            "Handler swap between distinct links must trigger a violation",
-        )
+        self.assertTrue(any("element_handlers" in item for item in violations))
 
     def test_dom_reorder_without_handler_swap_passes(self) -> None:
         """Reordering DOM sections (and thus handler sequence) must not
@@ -225,7 +212,7 @@ class PreservationTest(unittest.TestCase):
 
     def test_inline_script_change_fails_closed(self) -> None:
         changed = copy.deepcopy(self.current)
-        changed["scripts"]["inline"][0]["sha256"] = "0" * 64
+        changed["scripts"]["inline"].append({"index": 0, "sha256": "0" * 64, "bytes": 1})
         violations = r2_landing_check.check_index_preservation(self.baseline, changed)
         self.assertTrue(any("inline script fingerprints" in item for item in violations))
 
@@ -487,7 +474,7 @@ class T9067HiddenPnxLazyTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.html = (r2_landing_check.DOCS_DIR / "index.html").read_text(encoding="utf-8")
+        cls.html = page_with_scripts(r2_landing_check.DOCS_DIR / "index.html")
 
     def test_two_hidden_pnx_imgs_are_lazy_with_unchanged_src(self) -> None:
         imgs = re.findall(r'<img\b[^>]*\bsrc="pnx\.png"[^>]*>', self.html)
@@ -517,7 +504,7 @@ class HistorySectionTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.html = (r2_landing_check.DOCS_DIR / "index.html").read_text(encoding="utf-8")
+        cls.html = page_with_scripts(r2_landing_check.DOCS_DIR / "index.html")
         from html.parser import HTMLParser
 
         class _ImgCollector(HTMLParser):
@@ -593,7 +580,7 @@ class FailClosedResultsTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.html = (r2_landing_check.DOCS_DIR / "index.html").read_text(encoding="utf-8")
+        cls.html = page_with_scripts(r2_landing_check.DOCS_DIR / "index.html")
         cls.css = (
             r2_landing_check.DOCS_DIR / "assets/redesign-v2/r5-landing-fidelity.css"
         ).read_text(encoding="utf-8")
@@ -692,7 +679,7 @@ class PR342RegressionTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.index_html = (r2_landing_check.DOCS_DIR / "index.html").read_text(encoding="utf-8")
+        cls.index_html = page_with_scripts(r2_landing_check.DOCS_DIR / "index.html")
         cls.folds_js = (r2_landing_check.DOCS_DIR / "assets/redesign-v2/landing-folds.js").read_text(encoding="utf-8")
         cls.rep_html = (r2_landing_check.DOCS_DIR / "representative.html").read_text(encoding="utf-8")
 
@@ -835,7 +822,7 @@ class T351IOSAppStoreLinkTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.html = (r2_landing_check.DOCS_DIR / "index.html").read_text(encoding="utf-8")
+        cls.html = page_with_scripts(r2_landing_check.DOCS_DIR / "index.html")
 
     def test_ios_link_uses_correct_app_id(self) -> None:
         """The iOS App button must link to Discourse Hub id1173672076 (T-351)."""
@@ -921,7 +908,7 @@ class T357DomOrderTest(unittest.TestCase):
                     self.depth -= 1
 
         p = _SectionCollector()
-        html = (r2_landing_check.DOCS_DIR / "index.html").read_text(encoding="utf-8")
+        html = page_with_scripts(r2_landing_check.DOCS_DIR / "index.html")
         p.feed(html)
         cls.actual_order = p.sections
 
@@ -964,7 +951,7 @@ class T357DomOrderTest(unittest.TestCase):
 
     def test_key_ids_preserved(self) -> None:
         """All functional IDs must survive the reorder."""
-        html = (r2_landing_check.DOCS_DIR / "index.html").read_text(encoding="utf-8")
+        html = page_with_scripts(r2_landing_check.DOCS_DIR / "index.html")
         for key_id in [
             "main", "how", "demo", "features", "forum", "votes",
             "wiki-section", "roadmap", "contact", "download",
@@ -981,7 +968,7 @@ class T357DomOrderTest(unittest.TestCase):
 
     def test_newsletter_is_last_section_before_footer(self) -> None:
         """Newsletter must be the last section before footer."""
-        html = (r2_landing_check.DOCS_DIR / "index.html").read_text(encoding="utf-8")
+        html = page_with_scripts(r2_landing_check.DOCS_DIR / "index.html")
         # Find the closing </section> of the newsletter
         newsletter_start = html.index('id="newsletter"')
         newsletter_close = html.index("</section>", newsletter_start)

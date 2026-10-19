@@ -1,0 +1,437 @@
+{
+  "pages": {
+    "docs/community.html": {
+      "scripts": [
+        {
+          "src": "assets/js/community-tabs.js",
+          "originalBodySha256": "013f961f7ca551fbdbc2df2ea5181903d7f44f6bc4e7acd40494b210f01c3749"
+        },
+        {
+          "src": "assets/js/community-stats.js",
+          "originalBodySha256": "9b7057c32f64757235ac2d6e97db6e0f71ce41040544b85e5fd2ff136068a294"
+        },
+        {
+          "src": "assets/js/community-legal.js",
+          "originalBodySha256": "ecd486c44686216d91a6b47869852d83b6290a9ff9619d53888efd6817790354"
+        },
+        {
+          "src": "assets/js/community-language.js",
+          "originalBodySha256": "3b1f76f5f01ef707204fd5144081a3ae917672eccb0a32fd4a38e408cf5f277c"
+        },
+        {
+          "removed": "empty"
+        },
+        {
+          "src": "assets/js/community-finance.js",
+          "originalBodySha256": "743184a207cf296ffd1080000d0be9b29dcea519ab856ec2385118bfb6737503"
+        },
+        {
+          "src": "assets/js/community-modals.js",
+          "originalBodySha256": "7041ed54facdff87d5d2579bab28dec42faea28412642db811e41337da698f4d"
+        }
+      ]
+    },
+    "docs/demo/admin.html": {
+      "scripts": [
+        {
+          "src": "../assets/js/demo-admin.js",
+          "originalBodySha256": "c4ded5696a3d18f16fe290a3edb7b78b2fa2f674a1630a6992f464aedf116a2a"
+        }
+      ]
+    },
+    "docs/demo/bills.html": {
+      "scripts": [
+        {
+          "src": "../assets/js/demo-bills.js",
+          "originalBodySha256": "4de3634d4663d58785773311e917d938bc15da1359cab491b9aeaaa289b43b32"
+        }
+      ]
+    },
+    "docs/embed/qr-login.html": {
+      "scripts": [
+        {
+          "src": "../assets/js/qrcode-vendor.js",
+          "originalBodySha256": "c541ef06327885a8415bca8df6071e14189b4855336def4f36db54bde8484f36"
+        },
+        {
+          "src": "../assets/js/qr-login.js",
+          "originalBodySha256": "ce47bea344cb453cab3f19e07be0dc0b08d0fbc64940e3e8efef58736676c291"
+        }
+      ]
+    },
+    "docs/embed/results.html": {
+      "scripts": [
+        {
+          "src": "../assets/js/embed-results.js",
+          "originalBodySha256": "193aa472a02e3492a447b62596d7e3011eb631ce7d5ad5fa2103a09b383ebb7e"
+        }
+      ]
+    },
+    "docs/embed/vote.html": {
+      "scripts": [
+        {
+          "src": "../assets/js/embed-vote.js",
+          "originalBodySha256": "441bef6f16b4e2379be678115dd030707a70787771ec058ffd42181ff73828f7"
+        }
+      ]
+    },
+    "docs/govgr-dimos.html": {
+      "scripts": [
+        {
+          "src": "assets/js/govgr-dimos.js",
+          "originalBodySha256": "403a38d3152a14fea1aa1e53c0c674273b61c73e1174c432870cdb198cbf7e04"
+        }
+      ]
+    },
+    "docs/index.html": {
+      "scripts": [
+        {
+          "src": "assets/js/landing-comparison.js",
+          "originalBodySha256": "2d2fbe06400ef46b59e5044c0c1faeac986710cf04f7f27fbcda06d41826247f"
+        },
+        {
+          "src": "assets/js/landing-cplm.js",
+          "originalBodySha256": "3b3cc40c0cad6c65fabb6d655dbb3ec1199d8478c39b7eff4d4a1a5913484b4e"
+        },
+        {
+          "src": "assets/js/landing-newsletter.js",
+          "originalBodySha256": "b3952f0d61caf8dc2f703132221c5526bc9ea7e09176d5598c15c838ec857110"
+        },
+        {
+          "src": "assets/js/landing-legal.js",
+          "originalBodySha256": "d5dc177aa0f9ca9460ba46af7048c880db44ca97d75f9d28e2c57789caf8fc01"
+        },
+        {
+          "src": "assets/js/landing-language.js",
+          "originalBodySha256": "eb7fa7f5de3c172fd478774f0a567c40a6a8250a60db2562f4023aac7a16617d"
+        },
+        {
+          "src": "assets/js/landing-cycle.js",
+          "originalBodySha256": "f0758af21846772ff7a7512a8f70c115aa862b92b90d187ffa2cb901dc36d353"
+        },
+        {
+          "src": "assets/js/landing-chat.js",
+          "originalBodySha256": "213091827168f7076f0d0bfa29a1f009d18ff2ae3ea88ad8742198d45fa7ffee"
+        }
+      ]
+    },
+    "docs/legal.html": {
+      "scripts": [
+        {
+          "src": "assets/js/legal-language.js",
+          "originalBodySha256": "0e3f24977977c513d8f82b0fda40b71ac3c6535b8755ff03a62022b6909f01e4"
+        }
+      ]
+    },
+    "docs/mirror-setup.html": {
+      "scripts": [
+        {
+          "src": "assets/js/mirror-setup-language.js",
+          "originalBodySha256": "fd14cda09238a0f075916da340dd827d40de84b3f195a9dc08b781f6c2485f99"
+        }
+      ]
+    },
+    "docs/municipality/article.html": {
+      "scripts": [
+        {
+          "src": "../assets/js/municipality-article.js",
+          "originalBodySha256": "54ea7fcd43ed49c0aa04748ef6bf456ec243164d9190058d285ce7b3bb03093e"
+        }
+      ]
+    },
+    "docs/municipality/index.html": {
+      "scripts": []
+    },
+    "docs/representative.html": {
+      "scripts": [
+        {
+          "src": "assets/js/representative-language.js",
+          "originalBodySha256": "1a7ad510edb7e5fba7071329db5c143d3e5b0cc8c7cdbfc1b286319a2dc6ed64"
+        }
+      ]
+    },
+    "docs/sso-verify.html": {
+      "scripts": [
+        {
+          "src": "assets/js/sso-verify.js",
+          "originalBodySha256": "f2551e8442de7ae06a22d327998dddb27db1c99163d2c6a100475aa7c816f306"
+        }
+      ]
+    },
+    "docs/tickets/index.html": {
+      "scripts": [
+        {
+          "src": "../assets/js/tickets-auth-guard.js",
+          "originalBodySha256": "642219a6375c725b7633add57a4fc517109314d67b400ce6bd6136dfd62f61db"
+        },
+        {
+          "src": "../assets/js/tickets-board.js",
+          "originalBodySha256": "cb885f42572bbd4e426a6d4aedc1317e8ce9173d627723608c48164b9b6404f1"
+        }
+      ]
+    },
+    "docs/wiki/api.html": {
+      "scripts": [
+        {
+          "src": "../assets/js/wiki-legal.js",
+          "originalBodySha256": "99989df4947964c296d147bfb3b8cdd7eef3ba5f0ba4113f6a62b3590aba6fed"
+        },
+        {
+          "src": "../assets/js/wiki-language.js",
+          "originalBodySha256": "217f0cc023029244017434da203029292dad9d8af7bd6b2e8936759149d06579"
+        }
+      ]
+    },
+    "docs/wiki/architecture.html": {
+      "scripts": [
+        {
+          "src": "../assets/js/wiki-legal.js",
+          "originalBodySha256": "99989df4947964c296d147bfb3b8cdd7eef3ba5f0ba4113f6a62b3590aba6fed"
+        },
+        {
+          "src": "../assets/js/wiki-language.js",
+          "originalBodySha256": "217f0cc023029244017434da203029292dad9d8af7bd6b2e8936759149d06579"
+        }
+      ]
+    },
+    "docs/wiki/audit.html": {
+      "scripts": [
+        {
+          "src": "../assets/js/wiki-audit-1.js",
+          "originalBodySha256": "287b412bb9d45a6895479f9d2aa03a3635fb65dca96721594627709587a24752"
+        },
+        {
+          "src": "../assets/js/wiki-audit-2.js",
+          "originalBodySha256": "6407ecd6e9b9a07083807057012f54e7035ab9b84703887b2c9c8c7886e2a284"
+        }
+      ]
+    },
+    "docs/wiki/broadcasting.html": {
+      "scripts": [
+        {
+          "src": "../assets/js/wiki-legal.js",
+          "originalBodySha256": "99989df4947964c296d147bfb3b8cdd7eef3ba5f0ba4113f6a62b3590aba6fed"
+        },
+        {
+          "src": "../assets/js/wiki-broadcasting-2.js",
+          "originalBodySha256": "c589b3f7e6f9290aeb7d510ee8916beef9137190523a5228918cca91001f6ce1"
+        }
+      ]
+    },
+    "docs/wiki/contributing.html": {
+      "scripts": [
+        {
+          "src": "../assets/js/wiki-legal.js",
+          "originalBodySha256": "99989df4947964c296d147bfb3b8cdd7eef3ba5f0ba4113f6a62b3590aba6fed"
+        },
+        {
+          "src": "../assets/js/wiki-language.js",
+          "originalBodySha256": "217f0cc023029244017434da203029292dad9d8af7bd6b2e8936759149d06579"
+        }
+      ]
+    },
+    "docs/wiki/database.html": {
+      "scripts": [
+        {
+          "src": "../assets/js/wiki-legal.js",
+          "originalBodySha256": "99989df4947964c296d147bfb3b8cdd7eef3ba5f0ba4113f6a62b3590aba6fed"
+        },
+        {
+          "src": "../assets/js/wiki-language.js",
+          "originalBodySha256": "217f0cc023029244017434da203029292dad9d8af7bd6b2e8936759149d06579"
+        }
+      ]
+    },
+    "docs/wiki/delete-account.html": {
+      "scripts": [
+        {
+          "src": "../assets/js/wiki-legal.js",
+          "originalBodySha256": "99989df4947964c296d147bfb3b8cdd7eef3ba5f0ba4113f6a62b3590aba6fed"
+        },
+        {
+          "src": "../assets/js/wiki-language.js",
+          "originalBodySha256": "217f0cc023029244017434da203029292dad9d8af7bd6b2e8936759149d06579"
+        }
+      ]
+    },
+    "docs/wiki/faq.html": {
+      "scripts": [
+        {
+          "src": "../assets/js/wiki-legal.js",
+          "originalBodySha256": "99989df4947964c296d147bfb3b8cdd7eef3ba5f0ba4113f6a62b3590aba6fed"
+        },
+        {
+          "src": "../assets/js/wiki-faq-2.js",
+          "originalBodySha256": "d78f285885464f5b4707ca87e1c622c60193bc6c73d23f2d86570168d1ae52cf"
+        }
+      ]
+    },
+    "docs/wiki/index.html": {
+      "scripts": [
+        {
+          "src": "../assets/js/wiki-legal.js",
+          "originalBodySha256": "99989df4947964c296d147bfb3b8cdd7eef3ba5f0ba4113f6a62b3590aba6fed"
+        },
+        {
+          "src": "../assets/js/wiki-index-2.js",
+          "originalBodySha256": "ada406adfd100c5d16a05f2036debfce00a5ae8e8e6b51bbc20089cf39ac1ed5"
+        }
+      ]
+    },
+    "docs/wiki/modules.html": {
+      "scripts": [
+        {
+          "src": "../assets/js/wiki-legal.js",
+          "originalBodySha256": "99989df4947964c296d147bfb3b8cdd7eef3ba5f0ba4113f6a62b3590aba6fed"
+        },
+        {
+          "src": "../assets/js/wiki-modules-2.js",
+          "originalBodySha256": "79a9c78f7289d16102131968e93c5b0a7394e960a2eed25f3d864492d79b86e1"
+        }
+      ]
+    },
+    "docs/wiki/privacy.html": {
+      "scripts": [
+        {
+          "src": "../assets/js/wiki-privacy-1.js",
+          "originalBodySha256": "433c5e952b6fc31975af5804d7c2b5feb6366541305ca7f1de0b88ba9ea8bdf2"
+        },
+        {
+          "src": "../assets/js/wiki-language.js",
+          "originalBodySha256": "217f0cc023029244017434da203029292dad9d8af7bd6b2e8936759149d06579"
+        }
+      ]
+    },
+    "docs/wiki/roadmap.html": {
+      "scripts": [
+        {
+          "src": "../assets/js/wiki-legal.js",
+          "originalBodySha256": "99989df4947964c296d147bfb3b8cdd7eef3ba5f0ba4113f6a62b3590aba6fed"
+        },
+        {
+          "src": "../assets/js/wiki-roadmap-2.js",
+          "originalBodySha256": "ff1fafeb2c3a0ce5e06c685708a8909764fac9ec252d95883f9d892f55f174e6"
+        }
+      ]
+    },
+    "docs/wiki/security.html": {
+      "scripts": [
+        {
+          "src": "../assets/js/wiki-legal.js",
+          "originalBodySha256": "99989df4947964c296d147bfb3b8cdd7eef3ba5f0ba4113f6a62b3590aba6fed"
+        },
+        {
+          "src": "../assets/js/wiki-language.js",
+          "originalBodySha256": "217f0cc023029244017434da203029292dad9d8af7bd6b2e8936759149d06579"
+        }
+      ]
+    },
+    "docs/wiki/whitepaper.html": {
+      "scripts": [
+        {
+          "src": "../assets/js/wiki-legal.js",
+          "originalBodySha256": "99989df4947964c296d147bfb3b8cdd7eef3ba5f0ba4113f6a62b3590aba6fed"
+        },
+        {
+          "src": "../assets/js/wiki-language.js",
+          "originalBodySha256": "217f0cc023029244017434da203029292dad9d8af7bd6b2e8936759149d06579"
+        }
+      ]
+    },
+    "docs/wiki/zk-voting.html": {
+      "scripts": [
+        {
+          "src": "../assets/js/wiki-zk-voting-1.js",
+          "originalBodySha256": "99a710f14f56afdc9cc4f8255c20c984244285598f8966074fa670e00db27c03"
+        }
+      ]
+    },
+    "apps/representative/web/index.html": {
+      "scripts": [
+        {
+          "src": "../assets/js/representative-app.js",
+          "originalBodySha256": "07b4db483122510cd480151e5d4961a669ef5bef368b4273b72cd69ca8904b42"
+        }
+      ]
+    },
+    "docs/tickets/auth/callback.html": {
+      "scripts": [
+        {
+          "src": "../../assets/js/tickets-callback.js",
+          "originalBodySha256": "283c66e31dfc034130bb09523e8a33979ac19e8cf4ddfdeae2d5ae5308325a82"
+        }
+      ]
+    }
+  },
+  "actions": {
+    "toggle-language": "toggleLang()",
+    "switch-hlr-tab-primary": "switchHlrTab('primary')",
+    "switch-hlr-tab-fallback": "switchHlrTab('fallback')",
+    "open-share-popup-link": "openSharePopup();return false;",
+    "open-ngo-modal-link": "openNgoModal();return false;",
+    "scroll-finance": "document.getElementById('finance').scrollIntoView({behavior:'smooth'});return false;",
+    "open-legal-modal-privacy-link": "openLegalModal('privacy');return false",
+    "open-legal-modal-delete-link": "openLegalModal('delete');return false",
+    "legal-backdrop": "if(event.target===this)closeLegalModal()",
+    "close-legal-modal": "closeLegalModal()",
+    "close-ngo-modal": "closeNgoModal()",
+    "submit-ngo-form-event": "submitNgoForm(event)",
+    "close-share-popup": "closeSharePopup()",
+    "copy-share-link": "copyShareLink()",
+    "create-bill": "createBill()",
+    "start-session": "startSession()",
+    "open-ngo-modal": "openNgoModal()",
+    "style-702518e1a0": "this.style.background='#1d4ed8'",
+    "style-6859f3b26b": "this.style.background='#2563eb'",
+    "style-baa92d39b2": "this.style.background='#eff6ff'",
+    "style-80ec2adaee": "this.style.background='transparent'",
+    "style-bc80a8e99e": "this.style.borderColor='#2563eb';this.style.transform='translateY(-2px)'",
+    "style-eecca39034": "this.style.borderColor='#22c55e';this.style.transform='none'",
+    "style-013d9e1cb7": "this.style.borderColor='#3b82f6';this.style.opacity='1'",
+    "style-7145038575": "this.style.borderColor='#334155';this.style.opacity='0.8'",
+    "style-6d4f2e8a0d": "this.style.borderColor='#3b82f6'",
+    "style-4d3ef53da6": "this.style.borderColor='#22c55e'",
+    "style-ab0b586fec": "this.style.transform='translateY(-2px)'",
+    "style-902225600f": "this.style.transform='none'",
+    "submit-newsletter-event": "submitNewsletter(event)",
+    "hide-backdrop": "if(event.target===this)this.style.display='none'",
+    "action-8b034e181d": "document.getElementById('pwaModal').style.display='none'",
+    "toggle-chat": "toggleChat()",
+    "style-fa19897072": "this.style.transform='scale(1.1)'",
+    "style-c7711d8057": "this.style.transform='scale(1)'",
+    "chat-enter": "if(event.key==='Enter')sendChat()",
+    "send-chat": "sendChat()",
+    "copy-mirror-command": "navigator.clipboard.writeText('curl -fsSL https://ekklesia.gr/mirror-setup.sh | sudo bash')",
+    "retry-auth": "retryAuth()",
+    "action-b11ca2513e": "document.getElementById('phaseBModal').style.display='none'",
+    "toggle-polis-language": "setPolisLang(polisLang==='el'?'en':'el');document.getElementById('langBtn').textContent=polisLang==='el'?'EN':'ΕΛ'",
+    "open-new-ticket-modal": "openNewTicketModal()",
+    "open-qrlogin": "openQRLogin()",
+    "filter-by-status-this": "filterByStatus(this,'')",
+    "filter-by-status-this-status-pending": "filterByStatus(this,'status:pending')",
+    "filter-by-status-this-status-open": "filterByStatus(this,'status:open')",
+    "filter-by-status-this-status-claimed": "filterByStatus(this,'status:claimed')",
+    "filter-by-status-this-status-resolved": "filterByStatus(this,'status:resolved')",
+    "filter-by-cat-this": "filterByCat(this,'')",
+    "sort-by-this-newest": "sortBy(this,'newest')",
+    "sort-by-this-votes": "sortBy(this,'votes')",
+    "sort-by-this-oldest": "sortBy(this,'oldest')",
+    "load-more-tickets": "loadMoreTickets()",
+    "close-ticket-modal": "closeTicketModal()",
+    "submit-ticket-form-event": "submitTicketForm(event)",
+    "detail-backdrop": "if(event.target===this)closeMobileDetail()",
+    "close-mobile-detail": "closeMobileDetail()",
+    "style-d0bd26b364": "this.style.opacity='0.85'",
+    "style-b248670bf6": "this.style.opacity='1'",
+    "action-9c7de49086": "navigator.clipboard.writeText(document.getElementById('embed-all').innerText)",
+    "action-026b9b59be": "navigator.clipboard.writeText(document.getElementById('embed-single').innerText)",
+    "toggle-parent": "this.parentElement.classList.toggle('open')",
+    "toggle-section": "toggleSection(this)",
+    "close-logout-modal": "closeLogoutModal()",
+    "do-logout": "doLogout()",
+    "do-login": "doLogin()",
+    "show-bills": "showBills()",
+    "show-eval": "showEval()",
+    "confirm-logout": "confirmLogout()"
+  }
+}

@@ -4,6 +4,7 @@ import re
 import unittest
 from html.parser import HTMLParser
 from pathlib import Path
+from docs_script_source import page_with_scripts
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -67,7 +68,7 @@ class HeadingParser(HTMLParser):
 
 
 def source(page: str) -> str:
-    return (ROOT / page).read_text(encoding="utf-8")
+    return page_with_scripts(ROOT / page)
 
 
 def selector_key(selector: str) -> str:

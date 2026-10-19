@@ -19,8 +19,8 @@ csp = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(csp)
 COMPOSE = "infra/docker/docker-compose.prod.yml"
 LAYOUT = "apps/web/src/app/[locale]/layout.tsx"
-REPORT = "customResponseHeaders.Content-Security-Policy-Report-Only="
-BINDING = "traefik.http.routers.ekklesia-web.middlewares=ekklesia-headers"
+REPORT = "customResponseHeaders.Content-Security-Policy-Report-Only:"
+BINDING = 'traefik.http.routers.ekklesia-web.middlewares: "ekklesia-headers"'
 
 
 class InventoryGateTests(unittest.TestCase):
@@ -28,7 +28,7 @@ class InventoryGateTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)
-        for relative in (*sorted(csp.HASHED), COMPOSE, LAYOUT, "apps/web/next.config.mjs"):
+        for relative in (COMPOSE, LAYOUT, "apps/web/next.config.mjs", "infra/docker/docker-compose.csp-enforce.yml", "apps/web/src/lib/csp.ts"):
             path = self.root / relative
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes((ROOT / relative).read_bytes())
@@ -55,12 +55,12 @@ class InventoryGateTests(unittest.TestCase):
             csp.main(["--check"])
 
     def test_removed_router_binding_fails_check(self):
-        self.mutate_compose(lambda text: text.replace("      - " + BINDING + "\n", ""))
+        self.mutate_compose(lambda text: text.replace("      " + BINDING + "\n", ""))
         with self.assertRaisesRegex(SystemExit, "ekklesia-web must bind"):
             csp.main(["--check"])
 
     def test_commented_router_binding_fails_check(self):
-        self.mutate_compose(lambda text: text.replace("- " + BINDING, "# - " + BINDING))
+        self.mutate_compose(lambda text: text.replace(BINDING, "# " + BINDING))
         with self.assertRaisesRegex(SystemExit, "ekklesia-web must bind"):
             csp.main(["--check"])
 
@@ -70,13 +70,23 @@ class InventoryGateTests(unittest.TestCase):
             csp.main(["--check"])
 
     def test_disabled_web_service_fails_check(self):
-        self.mutate_compose(lambda text: text.replace("traefik.enable=true", "traefik.enable=false"))
+        self.mutate_compose(lambda text: text.replace('traefik.enable: "true"', 'traefik.enable: "false"'))
         with self.assertRaisesRegex(SystemExit, "enabled in Traefik"):
             csp.main(["--check"])
 
     def test_policy_hash_drift_fails_check(self):
-        self.mutate_compose(lambda text: text.replace("sha256-Dj8kl", "sha256-wrong"))
+        self.mutate_compose(lambda text: text.replace("object-src 'none'", "object-src *"))
         with self.assertRaisesRegex(SystemExit, "policy/hash drift"):
+            csp.main(["--check"])
+
+    def test_fixed_static_target_cannot_bind_the_dynamic_router(self):
+        self.mutate_compose(lambda source: source.replace(BINDING, BINDING.replace('"ekklesia-headers"', '"ekklesia-headers,ekklesia-static-csp"')))
+        with self.assertRaisesRegex(SystemExit, "general web router must preserve"):
+            csp.main(["--check"])
+
+    def test_traefik_v3_matcher_arguments_are_single_paths(self):
+        self.mutate_compose(lambda source: source.replace("PathPrefix(`/wiki/`)", "PathPrefix(`/wiki/`, `/tickets/`)"))
+        with self.assertRaisesRegex(SystemExit, "single-argument"):
             csp.main(["--check"])
 
     def test_mapping_labels_and_explicit_docker_binding_pass(self):
@@ -90,12 +100,48 @@ class InventoryGateTests(unittest.TestCase):
         with redirect_stdout(io.StringIO()):
             csp.main(["--check"])
 
+    def test_reintroduced_static_inline_code_and_handlers_are_forbidden(self):
+        path = self.root / "docs/example.html"
+        for source in ('<script>run()</script>', '<button onclick="run()">Run</button>',
+                       '<a href="javascript:run()">Run</a>'):
+            with self.subTest(source=source):
+                path.write_text(source)
+                with self.assertRaisesRegex(SystemExit, "executable inline scripts/handlers are forbidden"):
+                    csp.main(["--check"])
+
+    def test_external_script_drift_and_missing_source_fail_closed(self):
+        path = self.root / "docs/example.html"
+        path.write_text('<script src="assets/js/example.js"></script>')
+        with self.assertRaisesRegex(SystemExit, "missing public script"):
+            csp.main(["--check"])
+        script = self.root / "docs/assets/js/example.js"
+        script.parent.mkdir(parents=True)
+        script.write_text('window.example = 1;')
+        self.output.write_text(csp.render())
+        script.write_text('window.example = 2;')
+        with self.assertRaisesRegex(SystemExit, "CSP inventory drift"):
+            csp.main(["--check"])
+        script.write_text('var template = \'<button onclick="run()">Run</button>\';')
+        with self.assertRaisesRegex(SystemExit, "executable inline scripts/handlers are forbidden"):
+            csp.main(["--check"])
+
+    def test_json_ld_is_retained_as_valid_inert_data(self):
+        (self.root / "docs/example.html").write_text('<script type="application/ld+json">{"@type":"Thing"}</script>')
+        self.assertIn("**1 JSON-LD blocks**", csp.render())
+
+    def test_promotion_cannot_leave_shared_static_policy_on_next(self):
+        path = self.root / "infra/docker/docker-compose.csp-enforce.yml"
+        source = path.read_text().replace("contentSecurityPolicy: ''", "contentSecurityPolicy: broken")
+        path.write_text(source)
+        with self.assertRaisesRegex(SystemExit, "promotion must preserve the dynamic nonce"):
+            csp.main(["--check"])
+
     def test_inline_script_changes_inventory_and_fails_check(self):
         path = self.root / LAYOUT
         source = path.read_text(encoding="utf-8")
         path.write_text(source.replace("</head>", "<script>{`window.added = true;`}</script></head>"), encoding="utf-8")
         self.assertNotEqual(self.original, csp.render())
-        self.assertIn(f"| `{LAYOUT}` | 1 |", csp.render())
+        self.assertIn("**1 Inline scripts**", csp.render())
         with self.assertRaisesRegex(SystemExit, "CSP inventory drift"):
             csp.main(["--check"])
 
@@ -132,7 +178,7 @@ class InventoryGateTests(unittest.TestCase):
         source = path.read_text(encoding="utf-8")
         addition = '<script data-src="/deferred.js">{"window.added = true"}</script>'
         path.write_text(source.replace("</head>", addition + "</head>"), encoding="utf-8")
-        self.assertIn(f"| `{LAYOUT}` | 1 |", csp.render())
+        self.assertIn("**1 Inline scripts**", csp.render())
         with self.assertRaisesRegex(SystemExit, "CSP inventory drift"):
             csp.main(["--check"])
 
@@ -148,7 +194,7 @@ class InventoryGateTests(unittest.TestCase):
             with self.subTest(declaration=declaration):
                 addition = f'<{alias}>{{"window.added = true"}}</{alias}>'
                 path.write_text(declaration + "\n" + source.replace("</head>", addition + "</head>"), encoding="utf-8")
-                self.assertIn(f"| `{LAYOUT}` | 1 | 1 |", csp.render())
+                self.assertIn("**1 next/script elements**", csp.render())
                 with self.assertRaisesRegex(SystemExit, "CSP inventory drift"):
                     csp.main(["--check"])
 
@@ -232,6 +278,12 @@ import type TypeOnly from "next/script";
 
 
 class CallbackReferrerTests(unittest.TestCase):
+    def test_sso_asset_requests_do_not_include_the_nonce_query_in_referrer(self):
+        source = (ROOT / "docs/sso-verify.html").read_text()
+        scripts = [attrs for _, tag, attrs in csp.source_tags(source) if tag == "script"]
+        self.assertEqual(len(scripts), 2)
+        self.assertTrue(all('referrerpolicy="no-referrer"' in attrs for attrs in scripts))
+
     def test_no_referrer_is_first_head_element_and_script_order_is_preserved(self):
         class Tags(HTMLParser):
             def __init__(self):
@@ -245,7 +297,7 @@ class CallbackReferrerTests(unittest.TestCase):
         parser.feed((ROOT / "docs/tickets/auth/callback.html").read_text(encoding="utf-8"))
         head = parser.tags.index(("head", {}))
         self.assertEqual(("meta", {"name": "referrer", "content": "no-referrer"}), parser.tags[head + 1])
-        self.assertEqual(["../config.js", "callback.js"], [attrs["src"] for tag, attrs in parser.tags if tag == "script"])
+        self.assertEqual(["../config.js", "../../assets/js/tickets-callback.js"], [attrs["src"] for tag, attrs in parser.tags if tag == "script"])
         self.assertFalse(any("referrerpolicy" in attrs for _, attrs in parser.tags))
 
 

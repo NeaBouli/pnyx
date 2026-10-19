@@ -181,7 +181,7 @@ jobs:
           python ../csp-inventory.py --check
 
       - name: Run Node documentation gates
-        run: node --test scripts/public-seo.check.mjs scripts/static-docs-remote-sinks.check.mjs scripts/redesign/community_payment_status.check.mjs
+        run: node --test scripts/public-seo.check.mjs scripts/static-docs-remote-sinks.check.mjs scripts/redesign/community_payment_status.check.mjs scripts/csp-observe.check.mjs scripts/csp-docs.check.mjs
 
   test-clients:
     name: Client ${{ matrix.name }}

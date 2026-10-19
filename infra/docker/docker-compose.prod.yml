@@ -109,32 +109,35 @@ services:
       NODE_ENV: production
     networks:
       - ekklesia
+    # T-9149: static HTML uses an edge target; dynamic Next responses own their nonce CSP.
     labels:
-      - traefik.enable=true
-      - traefik.http.routers.ekklesia-web.rule=Host(`ekklesia.gr`)
-      # www → 301 redirect to non-www (GSC canonical fix)
-      - traefik.http.routers.ekklesia-www.rule=Host(`www.ekklesia.gr`)
-      - traefik.http.routers.ekklesia-www.entrypoints=websecure
-      - traefik.http.routers.ekklesia-www.tls.certresolver=letsencrypt
-      - traefik.http.routers.ekklesia-www.middlewares=www-redirect
-      - traefik.http.middlewares.www-redirect.redirectregex.regex=^https://www\.ekklesia\.gr/(.*)
-      - traefik.http.middlewares.www-redirect.redirectregex.replacement=https://ekklesia.gr/$${1}
-      - traefik.http.middlewares.www-redirect.redirectregex.permanent=true
-      - traefik.http.routers.ekklesia-web.entrypoints=websecure
-      - traefik.http.routers.ekklesia-web.tls.certresolver=letsencrypt
-      - traefik.http.services.ekklesia-web.loadbalancer.server.port=3000
-      - traefik.http.middlewares.ekklesia-headers.headers.stsSeconds=31536000
-      - traefik.http.middlewares.ekklesia-headers.headers.stsIncludeSubdomains=true
-      - traefik.http.middlewares.ekklesia-headers.headers.stsPreload=true
-      - traefik.http.middlewares.ekklesia-headers.headers.contentTypeNosniff=true
-      - traefik.http.middlewares.ekklesia-headers.headers.frameDeny=true
-      - traefik.http.middlewares.ekklesia-headers.headers.browserXssFilter=true
-      - "traefik.http.middlewares.ekklesia-headers.headers.contentSecurityPolicy=default-src 'self' https://api.ekklesia.gr; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api.qrserver.com https://avatars.githubusercontent.com; connect-src 'self' https://api.ekklesia.gr https://api.coingecko.com https://arweave.net https://api.github.com https://polis-oauth-proxy.bergamolia.workers.dev; frame-ancestors 'none'"
-      # T-9138 / EVA-023: strict script target, observation only; hashes pin the
-      # legal language toggle and municipality article reveal script. Next.js
-      # bootstrap needs per-response nonces before enforcement (see CSP inventory).
-      - "traefik.http.middlewares.ekklesia-headers.headers.customResponseHeaders.Content-Security-Policy-Report-Only=default-src 'self' https://api.ekklesia.gr; script-src 'self' 'sha256-Dj8kl3l3xRPY+CsP2kC3GsPGU1uHVf8DpiAitpCfAeQ=' 'sha256-VOp/zUPtScCqBHSO9r9FbsJDFk2RkAWNKFzns7sDCT4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api.qrserver.com https://avatars.githubusercontent.com; connect-src 'self' https://api.ekklesia.gr https://api.coingecko.com https://arweave.net https://api.github.com https://polis-oauth-proxy.bergamolia.workers.dev; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
-      - traefik.http.routers.ekklesia-web.middlewares=ekklesia-headers
+      traefik.enable: "true"
+      traefik.http.routers.ekklesia-web.rule: "Host(`ekklesia.gr`)"
+      traefik.http.routers.ekklesia-www.rule: "Host(`www.ekklesia.gr`)"
+      traefik.http.routers.ekklesia-www.entrypoints: "websecure"
+      traefik.http.routers.ekklesia-www.tls.certresolver: "letsencrypt"
+      traefik.http.routers.ekklesia-www.middlewares: "www-redirect"
+      traefik.http.middlewares.www-redirect.redirectregex.regex: "^https://www\\.ekklesia\\.gr/(.*)"
+      traefik.http.middlewares.www-redirect.redirectregex.replacement: "https://ekklesia.gr/$${1}"
+      traefik.http.middlewares.www-redirect.redirectregex.permanent: "true"
+      traefik.http.routers.ekklesia-web.entrypoints: "websecure"
+      traefik.http.routers.ekklesia-web.tls.certresolver: "letsencrypt"
+      traefik.http.services.ekklesia-web.loadbalancer.server.port: "3000"
+      traefik.http.middlewares.ekklesia-headers.headers.stsSeconds: "31536000"
+      traefik.http.middlewares.ekklesia-headers.headers.stsIncludeSubdomains: "true"
+      traefik.http.middlewares.ekklesia-headers.headers.stsPreload: "true"
+      traefik.http.middlewares.ekklesia-headers.headers.contentTypeNosniff: "true"
+      traefik.http.middlewares.ekklesia-headers.headers.frameDeny: "true"
+      traefik.http.middlewares.ekklesia-headers.headers.browserXssFilter: "true"
+      traefik.http.middlewares.ekklesia-headers.headers.contentSecurityPolicy: "default-src 'self' https://api.ekklesia.gr; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api.qrserver.com https://avatars.githubusercontent.com; connect-src 'self' https://api.ekklesia.gr https://api.coingecko.com https://arweave.net https://api.github.com https://polis-oauth-proxy.bergamolia.workers.dev; frame-ancestors 'none'"
+      traefik.http.routers.ekklesia-web.middlewares: "ekklesia-headers"
+      traefik.http.routers.ekklesia-static.rule: "Host(`ekklesia.gr`) && (Path(`/`) || Path(`/index.html`) || Path(`/community.html`) || Path(`/legal.html`) || Path(`/bot.html`) || Path(`/govgr-dimos.html`) || Path(`/representative.html`) || Path(`/mirror-setup.html`) || Path(`/sso-verify.html`) || PathPrefix(`/wiki/`) || PathPrefix(`/tickets/`) || PathPrefix(`/votes/`) || PathPrefix(`/embed/`) || PathPrefix(`/municipality/`) || PathPrefix(`/demo/`) || PathPrefix(`/representative/`))"
+      traefik.http.routers.ekklesia-static.priority: "100"
+      traefik.http.routers.ekklesia-static.entrypoints: "websecure"
+      traefik.http.routers.ekklesia-static.tls.certresolver: "letsencrypt"
+      traefik.http.routers.ekklesia-static.service: "ekklesia-web"
+      traefik.http.routers.ekklesia-static.middlewares: "ekklesia-headers,ekklesia-static-csp"
+      traefik.http.middlewares.ekklesia-static-csp.headers.customResponseHeaders.Content-Security-Policy-Report-Only: "default-src 'self' https://api.ekklesia.gr; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api.qrserver.com https://avatars.githubusercontent.com; connect-src 'self' https://api.ekklesia.gr https://api.coingecko.com https://arweave.net https://api.github.com https://polis-oauth-proxy.bergamolia.workers.dev; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
 
   ollama:
     image: ollama/ollama:latest
