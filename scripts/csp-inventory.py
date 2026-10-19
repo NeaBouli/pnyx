@@ -151,7 +151,7 @@ def validate_policy(compose, hashes=None):
     check_writers(promoted, "ekklesia-web")
     check_writers(promoted, "ekklesia-static", "ekklesia-static-csp")
     check_writers(promoted, "ekklesia-embed", "ekklesia-embed-csp", frameable=True)
-    source = (ROOT / "apps/web/src/lib/csp.ts").read_text()
+    source = (ROOT / "apps/web/csp.mjs").read_text()
     if json.dumps(LEGACY_CSP) not in source:
         raise ValueError("application/edge CSP drift")
 

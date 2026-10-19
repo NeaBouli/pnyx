@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { NextRequest } from "next/server";
 import proxy, { config } from "./proxy";
-import { LEGACY_CSP, STATIC_CSP } from "./lib/csp";
+import { STATIC_CSP } from "./lib/csp";
 
 const require = createRequire(import.meta.url);
 const { getScriptNonceFromHeader } = require("next/dist/server/app-render/get-script-nonce-from-header");
@@ -39,7 +39,9 @@ describe("Next 16 nonce policy through real next-intl middleware", () => {
     expect(response.headers.get("x-middleware-request-x-next-intl-locale")).toBe(path.split("/")[1]);
     expect(policy).toBe(STATIC_CSP.replace("script-src 'self'", `script-src 'self' 'nonce-${nonce}'`));
     expect(policy?.split(";").find(directive => directive.trim().startsWith("script-src"))).not.toMatch(/unsafe-inline|unsafe-eval|strict-dynamic|sha256-|attacker/);
-    expect(response.headers.get("Content-Security-Policy")).toBe(LEGACY_CSP);
+    // Legacy enforcement is a config response header; emitting it here would
+    // overwrite the request nonce when Next processes middleware headers.
+    expect(response.headers.get("Content-Security-Policy")).toBeNull();
     expect(response.headers.get("cache-control")).toContain("no-store");
     expect(response.headers.get("x-middleware-request-content-security-policy-report-only")).toBeNull();
   });
@@ -113,6 +115,8 @@ it("every nonce-bearing page inherits request rendering with no child ISR/static
   const app = fileURLToPath(new URL("./app", import.meta.url));
   const layout = readFileSync(resolve(app, "[locale]/layout.tsx"), "utf8");
   expect(layout).toContain('export const dynamic = "force-dynamic"');
+  expect(layout).toContain('import { headers } from "next/headers"');
+  expect(layout).toContain("await headers()");
   function children(dir: string): string[] {
     return readdirSync(dir, { withFileTypes: true }).flatMap(entry => entry.isDirectory() ? children(resolve(dir, entry.name)) : entry.name.endsWith(".tsx") && !entry.name.includes(".test.") ? [resolve(dir, entry.name)] : []);
   }

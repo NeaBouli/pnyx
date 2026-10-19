@@ -1,7 +1,7 @@
 import createMiddleware from "next-intl/middleware";
 import { routing } from "./i18n/routing";
 import { NextRequest, NextResponse } from "next/server";
-import { createNonce, LEGACY_CSP, noncePolicy } from "./lib/csp";
+import { createNonce, noncePolicy } from "./lib/csp";
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -73,7 +73,11 @@ export default function proxy(request: NextRequest) {
   headers.delete("Content-Security-Policy-Report-Only");
   const response = intlMiddleware(new NextRequest(request, { headers }));
   response.headers.set("Content-Security-Policy-Report-Only", policy);
-  response.headers.set("Content-Security-Policy", process.env.CSP_ENFORCE === "true" ? policy : LEGACY_CSP);
+  // Next's router copies middleware response headers over request overrides.
+  // next.config supplies legacy enforcement without replacing the render CSP.
+  if (process.env.CSP_ENFORCE === "true") {
+    response.headers.set("Content-Security-Policy", policy);
+  }
   // Nonce-bearing HTML/RSC must never be replayed with a new response header.
   response.headers.set("Cache-Control", "private, no-store, max-age=0");
   return response;
