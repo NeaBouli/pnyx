@@ -228,6 +228,10 @@ jobs:
         working-directory: ${{ matrix.path }}
         run: npm ci
 
+      - name: Check web types with Docker's source layout
+        if: matrix.name == 'Web'
+        run: node scripts/check-web-docker-types.mjs
+
       - name: Verify ${{ matrix.name }}
         working-directory: ${{ matrix.path }}
         run: ${{ matrix.verify }}
