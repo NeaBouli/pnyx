@@ -1,0 +1,2 @@
+Last update date and time for Parliament data in the bills and trending lists.
+Notice when the data may be outdated.
