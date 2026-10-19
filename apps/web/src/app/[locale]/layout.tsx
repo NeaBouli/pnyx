@@ -6,6 +6,7 @@ import { getMessages } from "next-intl/server";
 import NavHeader from "@/components/NavHeader";
 import LiveNotifications from "@/components/LiveNotifications";
 import KeyCustodyMigration from "@/components/KeyCustodyMigration";
+import BrowserKeyNotice from "@/components/BrowserKeyNotice";
 import "../globals.css";
 
 const inter = Inter({ subsets: ["latin", "greek"] });
@@ -62,6 +63,7 @@ export default async function LocaleLayout({
       <body className={inter.className}>
         <NextIntlClientProvider messages={messages}>
           <NavHeader />
+          <BrowserKeyNotice enabled={process.env.WEB_QR_LOGIN_NOTICE_ENABLED === "true"} />
           {children}
           <LiveNotifications />
           <KeyCustodyMigration />

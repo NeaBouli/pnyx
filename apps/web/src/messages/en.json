@@ -45,6 +45,7 @@
     "disclaimer": "This vote is not legally binding."
   },
   "identity": {
+    "key_not_on_browser": "Your key is not on this browser — sign in with the app (QR)",
     "title": "Identity Verification",
     "subtitle": "Once — Pseudonymous — Secure",
     "phone_label": "Greek mobile number",
