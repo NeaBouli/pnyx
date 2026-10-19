@@ -8,6 +8,7 @@ from httpx import ASGITransport, AsyncClient
 
 from main import app
 from routers import public_api
+from tests.repo_paths import read_page_with_scripts
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -124,6 +125,10 @@ async def test_old_anonymous_admin_deepl_usage_path_is_gone(monkeypatch):
 
 def test_first_party_consumers_use_public_deepl_usage_path():
     for rel in FIRST_PARTY_CONSUMERS:
-        text = (REPO_ROOT / rel).read_text(encoding="utf-8")
+        text = (
+            read_page_with_scripts(rel)
+            if rel.endswith(".html")
+            else (REPO_ROOT / rel).read_text(encoding="utf-8")
+        )
         assert "admin/deepl/usage" not in text, rel
         assert "public/deepl/usage" in text, rel

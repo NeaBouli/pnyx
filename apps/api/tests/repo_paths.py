@@ -8,7 +8,9 @@ The lookup is anchored to exactly these two bases (no open-ended walk up the
 tree), required files fail loudly when missing, and only explicitly optional
 files may be skipped, and only inside the API image.
 """
+from html.parser import HTMLParser
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import pytest
 
@@ -47,3 +49,27 @@ def repo_path_or_skip_in_image(relative: str, api_root: Path = API_ROOT) -> Path
     if in_api_image(api_root):
         pytest.skip(f"{relative} is not part of the API image")
     raise FileNotFoundError(f"required repository file missing: {relative}")
+
+
+def read_page_with_scripts(relative: str) -> str:
+    """Read HTML plus its referenced local scripts; missing assets fail loudly."""
+    path = repo_path_or_skip_in_image(relative)
+    sources = [path.read_text(encoding="utf-8")]
+
+    class Scripts(HTMLParser):
+        def handle_starttag(self, tag, attrs):
+            src = dict(attrs).get("src")
+            if tag != "script" or src is None:
+                return
+            url = urlsplit(src)
+            if url.scheme or url.netloc:
+                raise ValueError(f"page tests only read local scripts: {src}")
+            asset = (
+                require_repo_path("docs") / url.path.lstrip("/")
+                if url.path.startswith("/")
+                else path.parent / url.path
+            )
+            sources.append(asset.read_text(encoding="utf-8"))
+
+    Scripts().feed(sources[0])
+    return "\n".join(sources)
