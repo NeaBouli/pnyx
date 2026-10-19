@@ -1,5 +1,6 @@
 import withPWAInit from "@ducanh2912/next-pwa";
 import createNextIntlPlugin from "next-intl/plugin";
+import { LEGACY_CSP } from "./csp.mjs";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
@@ -61,6 +62,12 @@ const nextConfig = {
       {
         source: "/:path*",
         headers: [
+          {
+            // Config headers affect only the response. A legacy CSP emitted by
+            // proxy would overwrite its nonce-bearing request CSP in Next's router.
+            key: "Content-Security-Policy",
+            value: LEGACY_CSP,
+          },
           {
             key: "Referrer-Policy",
             value: "strict-origin-when-cross-origin",

@@ -16,7 +16,16 @@ vi.mock("@ducanh2912/next-pwa", () => ({ default: (options: PwaOptions) => {
   return (config: object) => config;
 } }));
 vi.mock("next-intl/plugin", () => ({ default: () => (config: object) => config }));
-import "../next.config.mjs";
+import nextConfig from "../next.config.mjs";
+import { LEGACY_CSP } from "./lib/csp";
+
+it("keeps legacy enforcement in config response headers, separate from the proxy request CSP", async () => {
+  const rules = await nextConfig.headers!();
+  const rule = rules.find(rule => rule.source === "/:path*")!;
+  expect(rule.headers.filter(header => header.key.toLowerCase() === "content-security-policy"))
+    .toEqual([{ key: "Content-Security-Policy", value: LEGACY_CSP }]);
+  expect(rule.headers.some(header => header.key.toLowerCase() === "content-security-policy-report-only")).toBe(false);
+});
 
 it("PWA caches static file paths and excludes navigation/Flight URLs", () => {
   const options = captured.options!;

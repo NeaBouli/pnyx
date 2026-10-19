@@ -28,7 +28,7 @@ class InventoryGateTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)
-        for relative in (COMPOSE, LAYOUT, "apps/web/next.config.mjs", "infra/docker/docker-compose.csp-enforce.yml", "apps/web/src/lib/csp.ts"):
+        for relative in (COMPOSE, LAYOUT, "apps/web/next.config.mjs", "infra/docker/docker-compose.csp-enforce.yml", "apps/web/csp.mjs"):
             path = self.root / relative
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes((ROOT / relative).read_bytes())

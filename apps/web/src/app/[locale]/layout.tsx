@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { headers } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import NavHeader from "@/components/NavHeader";
@@ -45,6 +46,8 @@ export default async function LocaleLayout({
   children: React.ReactNode;
   params: Promise<{ locale: string }>;
 }) {
+  // Bind the root layout to the incoming nonce-bearing request as well.
+  await headers();
   const { locale } = await params;
   const messages = await getMessages();
 
