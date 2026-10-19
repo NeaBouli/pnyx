@@ -48,6 +48,11 @@ test('console diagnostics have sanitized fields and stay separate from DOM event
   assert.doesNotMatch(JSON.stringify(row), /private|unsafe-inline/);
 });
 
+test('missing Report-Only receiver diagnostic is not an execution violation', () => {
+  assert.equal(consoleViolation("The Content Security Policy 'default-src self' was delivered in report-only mode, but does not specify a 'report-uri'; the policy will have no effect."), null);
+  assert.ok(consoleViolation("[Report Only] Refused to execute inline script because it violates Content Security Policy 'script-src self'."));
+});
+
 test('page list includes alternates and wiki files; rejects unsafe paths and requests', () => {
   const paths = collectPagePaths(`<urlset><loc>${ORIGIN}/?drop=yes</loc><xhtml:link href="${ORIGIN}/en/results"/></urlset>`,
     ['faq.html', 'extra.html', 'image.png'], '/el/bills/GR-123');

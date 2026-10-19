@@ -1,12 +1,12 @@
+import { readFileSync } from 'node:fs';
+import { scriptBodies } from '../docs-scripts.mjs';
 // Same-bill comparison behavior: actual Landing IIFE, memory-only DOM/fetch/timers.
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 
 const html = readFileSync(new URL('../../docs/index.html', import.meta.url), 'utf8');
-const script = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)]
-  .map((match) => match[1]).find((source) => source.includes('function fetchRepresentation()'));
+const script = scriptBodies(new URL('../../docs/index.html', import.meta.url)).find((source) => source.includes('function fetchRepresentation()'));
 assert.ok(script, 'Real Representation IIFE must exist');
 const REP = 'https://api.ekklesia.gr/api/v1/analytics/representation';
 const resultsURL = (id) => `https://api.ekklesia.gr/api/v1/public/bills/${encodeURIComponent(id)}/results`;

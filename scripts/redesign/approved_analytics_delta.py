@@ -24,19 +24,20 @@ RESOURCE = {
     "url": "https://analytics.ekklesia.gr/js/script.js",
 }
 
+# T-9149: pins cover deferred script/listener migration, safe embed DOM, and local fonts.
 # Generated from the reviewed single-line removal, pinned to prevent any other
 # change to public pages outside the R2-R4 redesign gates.
 # T-9138 (EVA-023): exact script-only externalization on mirror-setup and
 # tickets/auth/callback; source bodies are unchanged, execution order preserved.
 # Callback also sets no-referrer first in head to protect OAuth asset referrers.
 POST_REMOVAL_SHA256 = {
-    "docs/govgr-dimos.html": "8fd6a06f5bbff423264fc64cb056cc48714825df8d8de7f26a1484aba7006444",
-    "docs/mirror-setup.html": "5936e707c4c27d129add16e2cbc24f08b64eb462570b57bb7f8a8545cd6adfa5",
-    "docs/municipality/article.html": "70b9fa2dea161c0efb1db00b0e7cc5a48f4b123aa08d448b50713623c2306090",
-    "docs/municipality/index.html": "7b18713d511375a834bb1747856ba4303ac7f57ff8148b3636dcb659878956c2",
-    "docs/sso-verify.html": "4c2f138fb4971fec0a25169f8a9701f6af31d9f1b062984dc32df3d4fccb5976",  # T-614: APK v1.0.33/vC62, Play vC62 closed testing
-    "docs/tickets/auth/callback.html": "453482e7283f1b3d5c6c5bdf7be0322131fb4347ba98490fbcc12bdb316b6a61",
-    "docs/tickets/index.html": "a39a982850a6c951cef2615694408c04b5570e50fee28fa1491a8bcab45ba9ab",
+    "docs/govgr-dimos.html": "01b0565a81c035df4ae426fce7184828d025aed826d186b4a8b121e110c928a9",
+    "docs/mirror-setup.html": "155a289804224367d2470478e6bfbe2e3dd509203f24c0b3d1a460aca0dc932c",
+    "docs/municipality/article.html": "b99329c1090137cef98943defa903aadbb69990d12e9e120eaa4dc601f034d3e",
+    "docs/municipality/index.html": "4c4bed7281ac29db322dbe338f8b9bb46d9e76880f27d5d019618b33c006679d",
+    "docs/sso-verify.html": "4b1db11d51d41e22568d56e721c5eddcbc3a70c713e6365f25415405300760ee",  # T-614: APK v1.0.33/vC62, Play vC62 closed testing
+    "docs/tickets/auth/callback.html": "a11ccd12e9c35e51582f6d7c0e07a7c98159d9a3cc7a551cc32cd6fe9a28266a",
+    "docs/tickets/index.html": "f5939db716a2e6e9a13c3cda202da6ef3d24fda3477a7b553fd1cf4e4d8480ee",
     "docs/votes/active.html": "3f0f66f9b994de76c70392eb04cf15f405f7892c731ae9230aec2937c343125a",
     "docs/votes/recent.html": "fc8beb7d125cc0d93824053c4759128391671a9bc59ce3d24a189f5b66109ab8",
     "docs/votes/results.html": "7e7686b50d4d9ed60d9ac4fd1790093ec4145bb7862aa162e837ce12d0b5230a",
@@ -45,7 +46,7 @@ POST_REMOVAL_SHA256 = {
 # T-394 (EKA-14): reviewed security remediation on a non-gated page (API error
 # detail rendered via textContent), pinned to its exact post-fix bytes.
 SECURITY_REMEDIATION_SHA256 = {
-    "docs/embed/qr-login.html": "342b71087a9b370ec4c27d8771d693efbe532c57231c521717108e7ecb1c2882",
+    "docs/embed/qr-login.html": "b4350dffb479679a4db917471283889e522013584d68e9d4942263c068b68173",
 }
 
 
@@ -60,16 +61,16 @@ SECURITY_REMEDIATION_SHA256 = {
 # T-9132 review: demo discloses possible linkage through verification; demo and
 # govgr-dimos separate expiring daily HMAC counters from size-rotated IP logs.
 CONTENT_REMEDIATION_SHA256 = {
-    "docs/demo/admin.html": "935fdabc0792278216386b5bbb26b2735bbc5ad5f4d1d52609069070c141d52d",  # T-9148: neutral AI label without a zero-cost claim.
-    "docs/embed/results.html": "63689f8561e348cb00fa600f4170f3b42cebe2cbf72218b1b4b8f0359cde1cfd",  # T-9128: nullable public result cells
+    "docs/demo/admin.html": "10ab247905f2399cf93e2d733e83e33c4a8319553f9cf653326689a1c1e1f867",  # T-9148: neutral AI label without a zero-cost claim.
+    "docs/embed/results.html": "aecebcb2965f4443fc29f486706a9364e1e052af99c97825788737c37ffe5699",  # T-9128: nullable public result cells
     "docs/demo/index.html": "0b5b6325ca36af9f8ffa056b171f197fc4daef520c17238923dfd1825779439e",  # T-9132: approved pseudonymous vote wording
-    "docs/demo/bills.html": "bcc57f45c9e25c3ac3a6eb0fe9b17b29a2908c5863ad744407dc2cd56215dee8",  # T-9127: OPEN_END voting closed
-    "docs/embed/vote.html": "79694a0db62fa63f93a8e0f0115ceed0db6ed65579695a54948f53db979c203f",  # T-9127: OPEN_END voting closed
-    "docs/govgr-dimos.html": "2a688aeda5af19061db9d64e2a7180fa4a292511fdc201712e8f243d2616a176",
-    "docs/legal.html": "4c7983111e2119c10e894c9dc383008cece88451e836059154ea97fe78608adf",  # T-9147: bilingual bot footer link.
-    "docs/municipality/article.html": "aebe3b819ec76fc9c3769ad38a847246657bd5d85b70c914cb84528d4b658123",
-    "docs/municipality/index.html": "b553913780f18868fc49157f303379cbf630b12651ad1877b31a09b3483f5f84",
-    "docs/tickets/index.html": "e7ac386295ade2c52c6d3826c89ade8ffc140f290dbc78ac8487d32394f2b225",
+    "docs/demo/bills.html": "ee790f059aa59e053532da15516c464851ea5c0ebb228e9fcfbc27986d690301",  # T-9127: OPEN_END voting closed
+    "docs/embed/vote.html": "2c065daa0cc82b22c695b2634f7738b3cc6766233db2541965f56e982aaab98b",  # T-9127: OPEN_END voting closed
+    "docs/govgr-dimos.html": "01b0565a81c035df4ae426fce7184828d025aed826d186b4a8b121e110c928a9",
+    "docs/legal.html": "b444bf53ec77adbb783100d9d1f03c083e33864906b3562fb46f245bb00b165c",  # T-9147: bilingual bot footer link.
+    "docs/municipality/article.html": "b99329c1090137cef98943defa903aadbb69990d12e9e120eaa4dc601f034d3e",
+    "docs/municipality/index.html": "4c4bed7281ac29db322dbe338f8b9bb46d9e76880f27d5d019618b33c006679d",
+    "docs/tickets/index.html": "f5939db716a2e6e9a13c3cda202da6ef3d24fda3477a7b553fd1cf4e4d8480ee",
 }
 
 # T-9148 (#636, owner-requested): replace only the two vendor-naming landing
@@ -113,5 +114,5 @@ def baseline_without_analytics(page: dict) -> dict:
 
 # T-9147 (Gio, 2026-10-18): bilingual bot policy, exact new-page bytes.
 ADDITIONAL_PAGE_SHA256 = {
-    "docs/bot.html": "b8b19fb58ca2320030fc7df67e0734a8bd5c901f7a5ecea60fc36a15320e005f",  # T-9148: neutral EL/EN bot-policy text.
+    "docs/bot.html": "21092ed849430fe1e2b78472c7a3f99f18b8cb8793bdc1ae262a7477a0b101f9",  # T-9148: neutral EL/EN bot-policy text.
 }

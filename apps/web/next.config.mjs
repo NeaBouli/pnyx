@@ -6,26 +6,33 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const withPWA = withPWAInit({
   dest: "public",
   register: true,
-  skipWaiting: true,
   disable: process.env.NODE_ENV === "development",
-  runtimeCaching: [
-    {
-      urlPattern: /^https:\/\/api\.ekklesia\.gr\/.*/i,
-      handler: "NetworkFirst",
-      options: {
-        cacheName: "api-cache",
-        expiration: { maxEntries: 50, maxAgeSeconds: 300 },
+  cacheStartUrl: false,
+  dynamicStartUrl: false,
+  cacheOnFrontEndNav: false,
+  publicExcludes: ["!noprecache/**/*", "!**/*.html"],
+  workboxOptions: {
+    skipWaiting: true,
+    runtimeCaching: [
+      {
+        urlPattern: /^https:\/\/api\.ekklesia\.gr\/.*/i,
+        handler: "NetworkFirst",
+        options: {
+          cacheName: "api-cache",
+          expiration: { maxEntries: 50, maxAgeSeconds: 300 },
+        },
       },
-    },
-    {
-      urlPattern: /^https:\/\/ekklesia\.gr\/.*/i,
-      handler: "StaleWhileRevalidate",
-      options: {
-        cacheName: "static-cache",
-        expiration: { maxEntries: 100, maxAgeSeconds: 86400 },
+      {
+        // Only canonical static file paths; exclude every HTML/Flight route.
+        urlPattern: /^https:\/\/ekklesia\.gr\/(?:_next\/static|assets)\/[^?]*\.(?:js|css|png|jpe?g|gif|webp|svg|ico|woff2?|ttf|otf)(?:\?[^#]*)?$/i,
+        handler: "StaleWhileRevalidate",
+        options: {
+          cacheName: "static-cache",
+          expiration: { maxEntries: 100, maxAgeSeconds: 86400 },
+        },
       },
-    },
-  ],
+    ],
+  },
 });
 
 /** @type {import('next').NextConfig} */

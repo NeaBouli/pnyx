@@ -21,6 +21,7 @@ from starlette.requests import Request
 
 from main import app
 from routers import identity
+from tests.repo_paths import read_page_with_scripts
 
 
 VALID_FORMATS = ["6912345678", "06912345678", "306912345678", "+306912345678"]
@@ -526,9 +527,7 @@ async def test_public_credits_failover_reason_not_exposed(monkeypatch):
 
 
 def test_community_tile_matches_coarse_schema():
-    community = os.path.join(os.path.dirname(__file__), "..", "..", "..", "docs", "community.html")
-    with open(community, encoding="utf-8") as fh:
-        html = fh.read()
+    html = read_page_with_scripts("docs/community.html")
 
     # Kein Bezug mehr auf exakte/gelöschte API-Felder.
     assert "failover_reason" not in html

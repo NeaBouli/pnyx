@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="el" data-lang="el">
 <head>
+<script defer src="../assets/js/events.js"></script>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Modules — εκκλησία Wiki — εκκλησία</title>
@@ -212,7 +213,7 @@
     <a href="whitepaper.html">Whitepaper</a>
     <a href="faq.html">FAQ</a>
     <a href="broadcasting.html">Broadcasting</a>
-    <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
+    <button class="lang-btn" data-csp-click="toggle-language" id="langBtn">EN</button>
   </div>
 </nav>
 <main id="main">
@@ -267,121 +268,21 @@
     <a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a>
   </div>
   <div class="footer-links" style="margin-top:0.5rem;font-size:0.75rem">
-    <a href="#" onclick="openLegalModal('privacy');return false" data-el="Πολιτική Απορρήτου" data-en="Privacy Policy">Πολιτική Απορρήτου</a>
-    <a href="#" onclick="openLegalModal('delete');return false" data-el="Διαγραφή Λογαριασμού" data-en="Delete Account">Διαγραφή Λογαριασμού</a>
+    <a href="#" data-csp-click="open-legal-modal-privacy-link" data-el="Πολιτική Απορρήτου" data-en="Privacy Policy">Πολιτική Απορρήτου</a>
+    <a href="#" data-csp-click="open-legal-modal-delete-link" data-el="Διαγραφή Λογαριασμού" data-en="Delete Account">Διαγραφή Λογαριασμού</a>
   </div>
   <p>εκκλησία &middot; &copy; 2026 V-Labs Development &middot; MIT License</p>
 </footer>
 
-<div id="legalModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:center;justify-content:center" onclick="if(event.target===this)closeLegalModal()">
+<div id="legalModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:center;justify-content:center" data-csp-click="legal-backdrop">
   <div style="background:#fff;border-radius:1rem;max-width:700px;width:92%;max-height:85vh;overflow-y:auto;padding:2rem;position:relative;box-shadow:0 8px 40px rgba(0,0,0,0.2)">
-    <button onclick="closeLegalModal()" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.5rem;cursor:pointer;color:#64748b;line-height:1">&times;</button>
+    <button data-csp-click="close-legal-modal" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.5rem;cursor:pointer;color:#64748b;line-height:1">&times;</button>
     <div id="legalContent"></div>
   </div>
 </div>
-<script>
-var _privacyHtml='<h2 style="margin-top:0">Πολιτική Απορρήτου</h2><p><strong>Τι ΔΕΝ αποθηκεύουμε:</strong> Αριθμό κινητού, Private Key, IP συνδεδεμένη με ψήφο ή ταυτότητα.</p><p><strong>Τι αποθηκεύουμε:</strong> Nullifier Hash, Public Key, Ψήφοι (ψευδώνυμα).</p><p><strong>GDPR:</strong> Servers στην Ευρώπη. Privacy by design.</p><p><a href="privacy.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#2563eb;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Πλήρης Πολιτική Απορρήτου →</a></p>';
-var _deleteHtml='<h2 style="margin-top:0">Διαγραφή Λογαριασμού</h2><p>Απεγκαταστήστε την εφαρμογή — Private Key και Nullifier διαγράφονται αμέσως.</p><p><a href="delete-account.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#ef4444;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Αναλυτικές Οδηγίες Διαγραφής →</a></p>';
-function openLegalModal(t){document.getElementById("legalContent").innerHTML=t==="privacy"?_privacyHtml:_deleteHtml;document.getElementById("legalModal").style.display="flex"}
-function closeLegalModal(){document.getElementById("legalModal").style.display="none"}
-document.addEventListener("keydown",function(e){if(e.key==="Escape")closeLegalModal()});
-</script>
+<script defer src="../assets/js/wiki-legal.js"></script>
 
-<script>
-var currentLang = "el";
-function toggleLang() {
-  currentLang = currentLang === "el" ? "en" : "el";
-  document.getElementById("langBtn").textContent = currentLang === "el" ? "EN" : "ΕΛ";
-  document.querySelectorAll("[data-el]").forEach(function(el) {
-    var t = el.getAttribute("data-" + currentLang);
-    if (t) el.innerHTML = t;
-  });
-  if (typeof refreshHealthLabels === "function") refreshHealthLabels();
-}
-var obs = new IntersectionObserver(function(entries) {
-  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add("visible"); });
-}, { threshold: 0.1 });
-document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); });
-
-// Live module health status polling (every 30s)
-// MOD-24 (CPLM) and MOD-02b have no matching health scope: they stay neutral.
-var refreshHealthLabels;
-(function() {
-  var MOD_DOT_MAP = {
-    "MOD-01":"dot-mod01","MOD-02":"dot-mod02","MOD-03":"dot-mod03",
-    "MOD-04":"dot-mod04","MOD-05":"dot-mod05","MOD-06":"dot-mod06",
-    "MOD-07":"dot-mod07","MOD-08":"dot-mod08","MOD-09":"dot-mod09",
-    "MOD-10":"dot-mod10","MOD-11":"dot-mod11","MOD-12":"dot-mod12",
-    "MOD-14":"dot-mod14","MOD-15":"dot-mod15","MOD-16":"dot-mod16",
-    "MOD-19":"dot-mod19","MOD-20":"dot-mod20",
-    "MOD-21":"dot-mod21","MOD-22":"dot-mod22","MOD-23":"dot-mod23",
-    "MOD-25":"dot-mod25"
-  };
-  var UNMAPPED_DOTS = ["dot-mod02b","dot-mod24"];
-  var STATUS_CLASS = {ok:"dot-active",degraded:"dot-degraded",error:"dot-error",deferred:"dot-planned",disabled:"dot-planned",unknown:"dot-unknown"};
-  var STATUS_LABEL = {
-    ok:{el:"Κατάσταση: λειτουργεί",en:"Status: operational"},
-    degraded:{el:"Κατάσταση: μειωμένη λειτουργία",en:"Status: degraded"},
-    error:{el:"Κατάσταση: σφάλμα",en:"Status: error"},
-    deferred:{el:"Κατάσταση: σε αναμονή",en:"Status: deferred"},
-    disabled:{el:"Κατάσταση: απενεργοποιημένο",en:"Status: disabled"},
-    unknown:{el:"Κατάσταση: άγνωστη",en:"Status: unknown"}
-  };
-  var ALL_CLASSES = ["dot-active","dot-inactive","dot-planned","dot-error","dot-degraded","dot-unknown"];
-  function label(el) {
-    var st = el.getAttribute("data-health") || "unknown";
-    var t = STATUS_LABEL[st][currentLang] || STATUS_LABEL[st].el;
-    el.setAttribute("role","img");
-    el.setAttribute("title",t);
-    el.setAttribute("aria-label",t);
-  }
-  function setStatus(el, st) {
-    if (!STATUS_CLASS.hasOwnProperty(st)) st = "unknown";
-    ALL_CLASSES.forEach(function(c){ el.classList.remove(c); });
-    el.classList.add(STATUS_CLASS[st]);
-    el.setAttribute("data-health", st);
-    label(el);
-    var row=el.closest("tr");
-    if(row){
-      row.style.background=(st==="error")?"#fff1f2":(st==="degraded")?"#fffbeb":"";
-      row.style.borderLeft=(st==="error")?"3px solid #ef4444":(st==="degraded")?"3px solid #f59e0b":"";
-    }
-  }
-  function eachDot(fn) {
-    Object.keys(MOD_DOT_MAP).forEach(function(modId){
-      var el=document.getElementById(MOD_DOT_MAP[modId]);
-      if(el) fn(modId, el);
-    });
-  }
-  // Failed refresh: never keep green as current health; planned (deferred/disabled) stays planned.
-  function markUnknown() {
-    eachDot(function(modId, el){
-      if(el.getAttribute("data-health")!=="deferred" && el.getAttribute("data-health")!=="disabled") setStatus(el,"unknown");
-    });
-  }
-  refreshHealthLabels = function() {
-    eachDot(function(modId, el){ if(el.hasAttribute("data-health")) label(el); });
-    UNMAPPED_DOTS.forEach(function(id){ var el=document.getElementById(id); if(el) label(el); });
-  };
-  UNMAPPED_DOTS.forEach(function(id){ var el=document.getElementById(id); if(el) setStatus(el,"unknown"); });
-  eachDot(function(modId, el){ setStatus(el, el.classList.contains("dot-planned") ? "deferred" : "unknown"); });
-  function pollHealth() {
-    fetch("https://api.ekklesia.gr/api/v1/health/modules")
-      .then(function(r){ if(!r.ok) throw new Error("http"); return r.json(); })
-      .then(function(d){
-        var mods = d && d.modules;
-        if(!mods || typeof mods!=="object" || Array.isArray(mods)) { markUnknown(); return; }
-        eachDot(function(modId, el){
-          var info = mods[modId];
-          var st = (info && typeof info==="object" && typeof info.status==="string") ? info.status : "unknown";
-          setStatus(el, st);
-        });
-      }).catch(markUnknown);
-  }
-  pollHealth();
-  setInterval(pollHealth, 30000);
-})();
-</script>
+<script defer src="../assets/js/wiki-modules-2.js"></script>
 
 
 </body>

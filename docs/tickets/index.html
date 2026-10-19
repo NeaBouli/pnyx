@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="el" data-lang="el">
 <head>
+<script defer src="../assets/js/events.js"></script>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>POLIS — εκκλησία</title>
@@ -55,42 +56,12 @@
     <h3 style="font-weight:900;margin-bottom:0.5rem" data-polis-el="Απαιτείται Επαλήθευση Smartphone" data-polis-en="Smartphone Verification Required">Απαιτείται Επαλήθευση Smartphone</h3>
     <p style="color:#64748b;font-size:0.85rem;line-height:1.6;margin-bottom:1rem" data-polis-el="Στη Φάση Β, οι ενέργειες στο POLIS απαιτούν επαλήθευση ελληνικής SIM. Ανοίξτε το ekklesia.gr στο smartphone σας και εγκαταστήστε την εφαρμογή." data-polis-en="In Phase B, POLIS actions require Greek SIM verification. Open ekklesia.gr on your smartphone and install the app.">Στη Φάση Β, οι ενέργειες στο POLIS απαιτούν επαλήθευση ελληνικής SIM. Ανοίξτε το ekklesia.gr στο smartphone σας και εγκαταστήστε την εφαρμογή.</p>
     <a href="../#download" style="display:inline-block;padding:0.5rem 1.5rem;background:#2563eb;color:#fff;border-radius:0.5rem;font-weight:700;text-decoration:none;margin-bottom:0.5rem" data-polis-el="Οδηγίες Εγκατάστασης →" data-polis-en="Installation Guide →">Οδηγίες Εγκατάστασης →</a>
-    <br/><button onclick="document.getElementById('phaseBModal').style.display='none'" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:0.8rem;margin-top:0.5rem" data-polis-el="Κλείσιμο" data-polis-en="Close">Κλείσιμο</button>
+    <br/><button data-csp-click="action-b11ca2513e" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:0.8rem;margin-top:0.5rem" data-polis-el="Κλείσιμο" data-polis-en="Close">Κλείσιμο</button>
   </div>
 </div>
 <!-- PHASE A: When gov.gr OAuth is available, enable browser-based verification
      Remove smartphone-only restrictions and enable full desktop functionality -->
-<script>
-// Phase B: auth-state-aware ticket guard (replaces old desktop blanket block)
-function showPhaseBModal() {
-  document.getElementById("phaseBModal").style.display = "flex";
-  return false;
-}
-// Auth-aware new ticket guard: check real auth state, not user-agent
-document.addEventListener("DOMContentLoaded", function() {
-  var newBtn = document.querySelector(".btn-new-ticket");
-  if (newBtn) {
-    var origHandler = newBtn.onclick;
-    newBtn.onclick = function(e) {
-      var hasGitHub = !!sessionStorage.getItem("polis_token");
-      var hasQR = !!sessionStorage.getItem("polis_nullifier");
-      if (!hasGitHub) {
-        e.preventDefault();
-        if (typeof login === "function") login();
-        return false;
-      }
-      if (!hasQR) {
-        e.preventDefault();
-        sessionStorage.setItem("polis_pending_action", "new-ticket");
-        if (typeof openQRLogin === "function") openQRLogin();
-        return false;
-      }
-      // Both auth paths OK — let original handler (openNewTicketModal) run
-      if (origHandler) return origHandler.call(this, e);
-    };
-  }
-});
-</script>
+<script defer src="../assets/js/tickets-auth-guard.js"></script>
 
 <nav>
   <a href="../" class="nav-logo"><img src="../pnx.png" alt="logo"/>εκκλησία</a>
@@ -100,7 +71,7 @@ document.addEventListener("DOMContentLoaded", function() {
     <a href="../wiki/" data-polis-el="Wiki" data-polis-en="Wiki">Wiki</a>
     <a href="../community.html" data-polis-el="Community" data-polis-en="Community">Community</a>
     <a href="./" class="active" data-polis-el="Tickets" data-polis-en="Tickets">Tickets</a>
-    <button class="lang-btn" onclick="setPolisLang(polisLang==='el'?'en':'el');document.getElementById('langBtn').textContent=polisLang==='el'?'EN':'ΕΛ'" id="langBtn">EN</button>
+    <button class="lang-btn" data-csp-click="toggle-polis-language" id="langBtn">EN</button>
   </div>
 </nav>
 
@@ -112,10 +83,10 @@ document.addEventListener("DOMContentLoaded", function() {
     <span>Claimed <strong>—</strong></span>
   </div>
   <div class="polis-actions">
-    <button class="btn-new-ticket" onclick="openNewTicketModal()" data-polis-el="+ Νέο Ticket" data-polis-en="+ New Ticket">+ Νέο Ticket</button>
+    <button class="btn-new-ticket" data-csp-click="open-new-ticket-modal" data-polis-el="+ Νέο Ticket" data-polis-en="+ New Ticket">+ Νέο Ticket</button>
     <div id="authStatus"></div>
     <span id="qrVerifiedBadge" style="display:none;font-size:11px;font-weight:700;color:#22c55e;margin-left:8px" data-polis-el="✓ Επαληθεύτηκε" data-polis-en="✓ Verified">✓ Επαληθεύτηκε</span>
-    <button class="btn-qr-login" id="qrLoginBtn" onclick="openQRLogin()" style="padding:6px 14px;background:#eff6ff;color:#2563eb;border:2px solid #2563eb;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;margin-left:8px" data-polis-el="Σύνδεση με εφαρμογή" data-polis-en="Login with App">Σύνδεση με εφαρμογή</button>
+    <button class="btn-qr-login" id="qrLoginBtn" data-csp-click="open-qrlogin" style="padding:6px 14px;background:#eff6ff;color:#2563eb;border:2px solid #2563eb;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;margin-left:8px" data-polis-el="Σύνδεση με εφαρμογή" data-polis-en="Login with App">Σύνδεση με εφαρμογή</button>
   </div>
 </div>
 
@@ -126,22 +97,22 @@ document.addEventListener("DOMContentLoaded", function() {
   <aside class="polis-sidebar">
     <div class="sidebar-section">
       <div class="sidebar-title" data-polis-el="Κατάσταση" data-polis-en="Status">Κατάσταση</div>
-      <div class="sidebar-option active" onclick="filterByStatus(this,'')" data-polis-el="Όλα" data-polis-en="All">Όλα</div>
-      <div class="sidebar-option" onclick="filterByStatus(this,'status:pending')" data-polis-el="Εκκρεμή" data-polis-en="Pending">Εκκρεμή</div>
-      <div class="sidebar-option" onclick="filterByStatus(this,'status:open')" data-polis-el="Ανοιχτά" data-polis-en="Open">Ανοιχτά</div>
-      <div class="sidebar-option" onclick="filterByStatus(this,'status:claimed')" data-polis-el="Αναλαμβάνονται" data-polis-en="Claimed">Αναλαμβάνονται</div>
-      <div class="sidebar-option" onclick="filterByStatus(this,'status:resolved')" data-polis-el="Επιλύθηκαν" data-polis-en="Resolved">Επιλύθηκαν</div>
+      <div class="sidebar-option active" data-csp-click="filter-by-status-this" data-polis-el="Όλα" data-polis-en="All">Όλα</div>
+      <div class="sidebar-option" data-csp-click="filter-by-status-this-status-pending" data-polis-el="Εκκρεμή" data-polis-en="Pending">Εκκρεμή</div>
+      <div class="sidebar-option" data-csp-click="filter-by-status-this-status-open" data-polis-el="Ανοιχτά" data-polis-en="Open">Ανοιχτά</div>
+      <div class="sidebar-option" data-csp-click="filter-by-status-this-status-claimed" data-polis-el="Αναλαμβάνονται" data-polis-en="Claimed">Αναλαμβάνονται</div>
+      <div class="sidebar-option" data-csp-click="filter-by-status-this-status-resolved" data-polis-el="Επιλύθηκαν" data-polis-en="Resolved">Επιλύθηκαν</div>
     </div>
     <div class="sidebar-section">
       <div class="sidebar-title" data-polis-el="Κατηγορία" data-polis-en="Category">Κατηγορία</div>
-      <div class="sidebar-option active" onclick="filterByCat(this,'')" data-polis-el="Όλες" data-polis-en="All">Όλες</div>
+      <div class="sidebar-option active" data-csp-click="filter-by-cat-this" data-polis-el="Όλες" data-polis-en="All">Όλες</div>
       <div id="categorySidebar"></div>
     </div>
     <div class="sidebar-section">
       <div class="sidebar-title" data-polis-el="Ταξινόμηση" data-polis-en="Sort">Ταξινόμηση</div>
-      <div class="sidebar-option active" onclick="sortBy(this,'newest')" data-polis-el="Νεότερα" data-polis-en="Newest">Νεότερα</div>
-      <div class="sidebar-option" onclick="sortBy(this,'votes')" data-polis-el="Ψήφοι" data-polis-en="Votes">Ψήφοι</div>
-      <div class="sidebar-option" onclick="sortBy(this,'oldest')" data-polis-el="Παλαιότερα" data-polis-en="Oldest">Παλαιότερα</div>
+      <div class="sidebar-option active" data-csp-click="sort-by-this-newest" data-polis-el="Νεότερα" data-polis-en="Newest">Νεότερα</div>
+      <div class="sidebar-option" data-csp-click="sort-by-this-votes" data-polis-el="Ψήφοι" data-polis-en="Votes">Ψήφοι</div>
+      <div class="sidebar-option" data-csp-click="sort-by-this-oldest" data-polis-el="Παλαιότερα" data-polis-en="Oldest">Παλαιότερα</div>
     </div>
   </aside>
 
@@ -153,7 +124,7 @@ document.addEventListener("DOMContentLoaded", function() {
       <div class="skeleton skeleton-card"></div>
     </div>
     <div class="load-more-bar">
-      <button class="btn-load-more" onclick="loadMoreTickets()" data-polis-el="Φόρτωση περισσότερων" data-polis-en="Load more">Φόρτωση περισσότερων</button>
+      <button class="btn-load-more" data-csp-click="load-more-tickets" data-polis-el="Φόρτωση περισσότερων" data-polis-en="Load more">Φόρτωση περισσότερων</button>
     </div>
   </main>
 
@@ -170,10 +141,10 @@ document.addEventListener("DOMContentLoaded", function() {
 <!-- NEW TICKET MODAL -->
 <div class="modal-overlay" id="ticketModal">
   <div class="modal" style="position:relative">
-    <button class="btn-close-modal" onclick="closeTicketModal()">×</button>
+    <button class="btn-close-modal" data-csp-click="close-ticket-modal">×</button>
     <h3 data-polis-el="Νέο Ticket" data-polis-en="New Ticket">Νέο Ticket</h3>
     <div id="ticketFormFields">
-      <form id="ticketForm" onsubmit="submitTicketForm(event)">
+      <form id="ticketForm" data-csp-submit="submit-ticket-form-event">
         <div class="form-group">
           <label data-polis-el="Τίτλος" data-polis-en="Title">Τίτλος</label>
           <input id="ticketTitle" type="text" required maxlength="120" placeholder="..."/>
@@ -196,10 +167,10 @@ document.addEventListener("DOMContentLoaded", function() {
 </div>
 
 <!-- MOBILE DETAIL MODAL -->
-<div class="polis-mobile-modal" id="polisMobileModal" onclick="if(event.target===this)closeMobileDetail()">
+<div class="polis-mobile-modal" id="polisMobileModal" data-csp-click="detail-backdrop">
   <div class="polis-mobile-modal-content" style="position:relative">
     <div class="polis-mobile-modal-handle"></div>
-    <button class="polis-mobile-modal-close" onclick="closeMobileDetail()">✕</button>
+    <button class="polis-mobile-modal-close" data-csp-click="close-mobile-detail">✕</button>
     <div id="mobileDetailBody"></div>
   </div>
 </div>
@@ -216,165 +187,8 @@ document.addEventListener("DOMContentLoaded", function() {
   <p>εκκλησία · © 2026 V-Labs Development · MIT</p>
 </footer>
 
-<script src="config.js"></script>
-<script src="polis.js"></script>
-<script>
-// Populate category sidebar + select
-var catSidebar = document.getElementById("categorySidebar");
-var catSelect = document.getElementById("ticketCategory");
-POLIS_CONFIG.categories.forEach(function(cat) {
-  catSidebar.innerHTML += '<div class="sidebar-option" onclick="filterByCat(this,\'category:' + cat.id + '\')">' + (polisLang === "el" ? cat.el : cat.en) + '</div>';
-  var opt = document.createElement("option");
-  opt.value = cat.id;
-  opt.textContent = polisLang === "el" ? cat.el : cat.en;
-  catSelect.appendChild(opt);
-});
-
-// Filter state
-var currentFilters = { labels: "", sort: "newest" };
-
-function filterByStatus(el, label) {
-  el.parentElement.querySelectorAll(".sidebar-option").forEach(function(o) { o.classList.remove("active"); });
-  el.classList.add("active");
-  // Combine with category filter
-  var parts = [];
-  if (label) parts.push(label);
-  if (currentFilters._cat) parts.push(currentFilters._cat);
-  currentFilters.labels = parts.join(",");
-  polisPage = 1;
-  loadAndRender(currentFilters);
-}
-
-function filterByCat(el, label) {
-  el.parentElement.querySelectorAll(".sidebar-option").forEach(function(o) { o.classList.remove("active"); });
-  el.classList.add("active");
-  currentFilters._cat = label;
-  // Combine with status filter
-  var parts = [];
-  if (currentFilters._status) parts.push(currentFilters._status);
-  if (label) parts.push(label);
-  currentFilters.labels = parts.join(",");
-  polisPage = 1;
-  loadAndRender(currentFilters);
-}
-
-function sortBy(el, sort) {
-  el.parentElement.querySelectorAll(".sidebar-option").forEach(function(o) { o.classList.remove("active"); });
-  el.classList.add("active");
-  currentFilters.sort = sort;
-  polisPage = 1;
-  loadAndRender(currentFilters);
-}
-
-async function loadMoreTickets() {
-  polisPage++;
-  var more = await loadTickets(polisPage, currentFilters);
-  polisTickets = polisTickets.concat(more);
-  renderTicketList();
-}
-
-// Init
-initPolis();
-
-// ── QR-Code Browser Login ────────────────────────────────────────────────
-var qrSessionId = null;
-var qrPollTimer = null;
-
-var _qrStrings = {
-  el: { title: "Σύνδεση με εφαρμογή εκκλησία", scan: "Σαρώστε τον κωδικό QR με την εφαρμογή", loading: "Φόρτωση...", waiting: "Αναμονή σάρωσης...", cancel: "Ακύρωση", error: "Σφάλμα φόρτωσης", success: "✓ Επαληθεύτηκε!", expired: "Η σύνδεση έληξε" },
-  en: { title: "Login with ekklesia App", scan: "Scan the QR code with the app", loading: "Loading...", waiting: "Waiting for app scan...", cancel: "Cancel", error: "Loading error", success: "✓ Authenticated!", expired: "Session expired" }
-};
-function _qr(key) { return (_qrStrings[polisLang] || _qrStrings.el)[key] || key; }
-
-function openQRLogin() {
-  // Create modal
-  var overlay = document.createElement("div");
-  overlay.id = "qrOverlay";
-  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center";
-  overlay.innerHTML = '<div style="background:#fff;border-radius:16px;padding:24px;max-width:340px;text-align:center">' +
-    '<h3 style="margin:0 0 8px;font-size:16px;color:#1e293b">' + _qr("title") + '</h3>' +
-    '<p style="font-size:12px;color:#64748b;margin:0 0 16px">' + _qr("scan") + '</p>' +
-    '<div id="qrCodeBox" style="background:#f8fafc;border:2px dashed #e2e8f0;border-radius:12px;padding:24px;margin-bottom:12px;min-height:200px;display:flex;align-items:center;justify-content:center">' +
-    '<span style="color:#94a3b8">' + _qr("loading") + '</span></div>' +
-    '<p id="qrStatus" style="font-size:12px;color:#64748b;margin:0 0 12px">' + _qr("waiting") + '</p>' +
-    '<button onclick="closeQRLogin()" style="padding:8px 20px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;cursor:pointer">' + _qr("cancel") + '</button>' +
-    '</div>';
-  document.body.appendChild(overlay);
-
-  // Fetch session
-  fetch("https://api.ekklesia.gr/api/v1/polis/qr-session")
-    .then(function(r){return r.json()})
-    .then(function(d){
-      qrSessionId = d.session_id;
-      var box = document.getElementById("qrCodeBox");
-      if (box) {
-        // Generate QR using simple SVG (no library needed)
-        box.innerHTML = '<div style="padding:16px;background:#fff;border-radius:8px;border:1px solid #e2e8f0">' +
-          '<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(d.qr_data) + '" width="200" height="200" alt="QR"/>' +
-          '</div><p style="font-size:10px;color:#94a3b8;margin:8px 0 0">TTL: 5 min</p>';
-      }
-      // Start polling
-      qrPollTimer = setInterval(pollQRSession, 2000);
-    })
-    .catch(function(){
-      var box = document.getElementById("qrCodeBox");
-      if (box) box.innerHTML = '<span style="color:#ef4444">' + _qr("error") + '</span>';
-    });
-}
-
-function pollQRSession() {
-  if (!qrSessionId) return;
-  fetch("https://api.ekklesia.gr/api/v1/polis/qr-session/" + qrSessionId)
-    .then(function(r){return r.json()})
-    .then(function(d){
-      var st = document.getElementById("qrStatus");
-      if (d.status === "authenticated") {
-        if (st) st.innerHTML = '<span style="color:#22c55e;font-weight:700">' + _qr("success") + '</span>';
-        clearInterval(qrPollTimer);
-        // Store auth in session
-        sessionStorage.setItem("polis_nullifier", d.nullifier_hash || "");
-        sessionStorage.setItem("polis_pubkey", d.public_key_hex || "");
-        setTimeout(function(){
-          closeQRLogin();
-          // Check pending action
-          var pending = sessionStorage.getItem("polis_pending_action");
-          sessionStorage.removeItem("polis_pending_action");
-          if (pending === "new-ticket" && typeof openNewTicketModal === "function") {
-            updateQRVerifiedStatus();
-            openNewTicketModal();
-          } else {
-            location.reload();
-          }
-        }, 1500);
-      } else if (d.status === "expired") {
-        if (st) st.innerHTML = '<span style="color:#ef4444">' + _qr("expired") + '</span>';
-        clearInterval(qrPollTimer);
-      }
-    }).catch(function(){});
-}
-
-function updateQRVerifiedStatus() {
-  var badge = document.getElementById("qrVerifiedBadge");
-  var btn = document.getElementById("qrLoginBtn");
-  var verified = !!sessionStorage.getItem("polis_nullifier");
-  if (badge) badge.style.display = verified ? "inline" : "none";
-  if (btn) btn.style.display = verified ? "none" : "inline-block";
-}
-document.addEventListener("DOMContentLoaded", updateQRVerifiedStatus);
-
-function closeQRLogin() {
-  clearInterval(qrPollTimer);
-  qrSessionId = null;
-  var ov = document.getElementById("qrOverlay");
-  if (ov) ov.remove();
-}
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') {
-    closeQRLogin();
-    var pb = document.getElementById('phaseBModal');
-    if (pb) pb.style.display = 'none';
-  }
-});
-</script>
+<script defer src="config.js"></script>
+<script defer src="polis.js"></script>
+<script defer src="../assets/js/tickets-board.js"></script>
 </body>
 </html>

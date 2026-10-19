@@ -354,7 +354,7 @@ function renderAuthStatus() {
     wrap.appendChild(logoutBtn);
     container.replaceChildren(wrap);
   } else {
-    container.innerHTML = '<button class="btn-login" onclick="login()">' + t("loginGitHub") + '</button>';
+    container.innerHTML = '<button class="btn-login" data-csp-click="login">' + t("loginGitHub") + '</button>';
   }
 }
 
@@ -369,9 +369,9 @@ function renderTicketCard(issue) {
   var statusClass = "status-" + status;
   var statusText = t("status" + status.charAt(0).toUpperCase() + status.slice(1));
 
-  return '<div class="ticket-card' + (selected ? ' selected' : '') + '" onclick="selectTicket(' + issue.number + ')">'
+  return '<div class="ticket-card' + (selected ? ' selected' : '') + '" data-csp-click="select-ticket" data-number="' + issue.number + '">'
     + '<div class="ticket-vote">'
-    + '<button class="vote-btn' + (voted ? ' voted' : '') + '" onclick="event.stopPropagation();toggleVote(' + issue.number + ')" title="' + t("vote") + '">▲</button>'
+    + '<button class="vote-btn' + (voted ? ' voted' : '') + '" data-csp-click="toggle-vote-stop" data-number="' + issue.number + '" title="' + t("vote") + '">▲</button>'
     + '<span class="vote-count">' + votes + '</span>'
     + '</div>'
     + '<div class="ticket-body">'
@@ -428,10 +428,10 @@ async function renderDetail(issue) {
     + '<div class="heat-bar-wrap"><div class="heat-bar-label">' + t("communityHeat") + ' (' + votes + ')</div>'
     + '<div class="heat-bar"><div class="heat-fill" style="width:' + heatPct + '%"></div></div></div>'
     + '<div class="detail-actions">'
-    + '<button class="btn-vote-large' + (voted ? ' voted' : '') + '" onclick="toggleVote(' + issue.number + ')">'
+    + '<button class="btn-vote-large' + (voted ? ' voted' : '') + '" data-csp-click="toggle-vote" data-number="' + issue.number + '">'
     + (voted ? '✓ ' + t("voted") : '▲ ' + t("vote"))
     + '</button>'
-    + (status === "open" ? '<button class="btn-claim" onclick="doClaim(' + issue.number + ')">🙋 ' + t("claim") + '</button>' : '')
+    + (status === "open" ? '<button class="btn-claim" data-csp-click="claim-ticket" data-number="' + issue.number + '">🙋 ' + t("claim") + '</button>' : '')
     + '</div>'
     + '<a href="' + issue.html_url + '" target="_blank" class="github-link">' + t("viewOnGitHub") + ' ↗</a>';
 
@@ -542,7 +542,7 @@ async function loadAndRender(filters) {
     var container = document.getElementById("ticketList");
     if (container) {
       container.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>' + escapeHtml(e && e.message) + '</p>'
-        + '<button class="btn-load-more" onclick="loadAndRender()" style="margin-top:1rem">' + t("loadMore") + '</button></div>';
+        + '<button class="btn-load-more" data-csp-click="load-and-render" style="margin-top:1rem">' + t("loadMore") + '</button></div>';
     }
   }
 }

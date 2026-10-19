@@ -1,6 +1,6 @@
 """T-473 (#365): the FAQ language toggle must keep ``<html lang>`` in sync.
 
-Runs the page's own inline ``toggleLang`` in Node against a minimal DOM stub:
+Runs the page's own external ``toggleLang`` in Node against a minimal DOM stub:
 first toggle -> English copy and ``lang="en"``, second toggle -> Greek and
 ``lang="el"``.
 """
@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import unittest
 from pathlib import Path
+from docs_script_source import page_with_scripts
 
 REPO = Path(__file__).resolve().parents[2]
 FAQ = REPO / "docs/wiki/faq.html"
@@ -43,7 +44,7 @@ process.stdout.write(JSON.stringify(out));
 
 
 def toggle_script() -> str:
-    html = FAQ.read_text(encoding="utf-8")
+    html = page_with_scripts(FAQ)
     blocks = re.findall(r"<script>(.*?)</script>", html, re.S)
     matches = [b for b in blocks if "function toggleLang" in b]
     if len(matches) != 1:

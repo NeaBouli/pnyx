@@ -1,550 +1,155 @@
-# CSP inventory — T-9138 / EVA-023
+# CSP inventory — T-9149 / EVA-023 step 2
 
-Snapshot: 2026-10-17. Regenerate with `python3 scripts/csp-inventory.py`; verify with `--check`.
+Snapshot: 2026-10-19. Regenerate with `python3 scripts/csp-inventory.py`; verify with `--check`.
 
-The 36 live `docs/**/*.html` pages contain **55 executable inline blocks**, **26 JSON-LD blocks**, **1 empty block**, **231 literal event-handler attributes**, and **0 javascript: URLs** after this change. There are also **12 handler template sites** inside HTML script blocks and **6** in external docs JavaScript; runtime instances depend on data.
+The 36 live docs pages and representative web page contain **0 executable inline blocks**, **26 JSON-LD blocks**, **0 empty blocks**, **0 literal event-handler attributes**, **0 generated handlers**, and **0 javascript: URLs**.
 
-Scope includes redirects, embeds, demos, and the live `wiki/audit.html` disclosure. Historical planning/community audit reports and `animation-spec/LANDING_SNIPPETS.html` (a design snippet, zero inline scripts/handlers) are excluded. The frozen `docs/planning/r0` inventory is unchanged. Production copies only the docs paths listed in `apps/web/Dockerfile.prod`; demos, mirror-setup and the legacy static sso-verify page are also inventoried because they are live docs pages on the static host.
+Historical planning/community audit reports and animation-spec snippets are excluded. The frozen R0 inventory is unchanged. All production public HTML from docs and the separately copied representative app is checked. JSON-LD stays inline: application/ld+json is a non-executable data block, valid JSON, and needs neither a nonce nor a script hash. Observation run 2 reported no JSON-LD violations in Chromium/WebKit; the added offline browser regression is available for a browser-enabled environment (local launch is sandbox-blocked).
 
-## Policy and migration strategy
+## Policy and promotion
 
-The existing enforced CSP remains byte-identical in `infra/docker/docker-compose.prod.yml`. The same Traefik `ekklesia-headers` middleware adds `Content-Security-Policy-Report-Only` using `customResponseHeaders` (the existing compose mechanism also used for API response headers). The gate parses active Compose YAML with PyYAML, requires both policies on the enabled `web` service, and verifies the `ekklesia-web` router binds `ekklesia-headers`. The `ekklesia-www` router only redirects to the canonical host. The policies apply to the shared production origin, including static HTML paths that bypass the Next proxy matcher. Static hosting outside this Traefik deployment requires its own HTTP header configuration; an HTML meta tag cannot deliver Report-Only.
+The non-embed legacy CSP value is byte-identical to the previous deployment. Static HTML receives a Report-Only policy with script-src 'self', font-src 'self', object-src 'none', base-uri 'self' and the existing frame-ancestors 'none'. All other directives remain unchanged, including style-src 'unsafe-inline'. No script unsafe-inline, unsafe-eval, unsafe-hashes, strict-dynamic, build-dependent hash, or fixed nonce is added to the target.
 
-The target changes `script-src 'self' 'unsafe-inline'` to `script-src 'self'` plus the two real SHA-256 sources below, and adds `object-src 'none'; base-uri 'self'`. `frame-ancestors 'none'` and all other existing directives are retained, including `style-src 'self' 'unsafe-inline'`. There is no `unsafe-hashes`, `unsafe-eval`, fixed nonce, or `strict-dynamic` escape hatch. The script hashes allow whole script blocks, never event attributes.
+The priority-100 ekklesia-static router covers /, top-level docs HTML and the wiki/tickets/votes/municipality/demo/representative directories. The priority-110 embed router uses its own CSP middleware with frame-ancestors * and no frame-deny header in both phases. It uses the shared headers middleware plus ekklesia-static-csp. The general web router has no edge CSP writer; Next supplies a response-specific Report-Only policy. Applying the static candidate to dynamic HTML would block bootstrap even when the app supplies a valid nonce. The gate checks both routers, both policies, the promotion override and app/edge legacy policy parity.
 
-| Allowed inline script | SHA-256 source (exact UTF-8 body, including whitespace) |
-| --- | --- |
-| `docs/legal.html:227` — language toggle | `'sha256-Dj8kl3l3xRPY+CsP2kC3GsPGU1uHVf8DpiAitpCfAeQ='` |
-| `docs/municipality/article.html:561` — scroll reveals | `'sha256-VOp/zUPtScCqBHSO9r9FbsJDFk2RkAWNKFzns7sDCT4='` |
+Promote only in a separate deployment after a new observation has zero violations and interaction/hydration checks pass. Add `-f infra/docker/docker-compose.csp-enforce.yml` after the normal production Compose file. The override enables CSP_ENFORCE=true in Next, replaces each static/embed legacy CSP with its target in the same middleware. No empty-value or duplicate CSP labels are used. Both surfaces retain the target Report-Only header. Omit the override and recreate web to roll back. See CSP_OBSERVATION.md for commands and prerequisites. Static hosting outside Traefik needs equivalent HTTP headers.
 
-No CSP report receiver, `report-uri`, `report-to`, or Reporting-Endpoints configuration exists in the inspected API/web/infra sources. No receiver or third party is added: violations are browser-console-only. Remaining inline scripts and handlers, including Next bootstrap, intentionally produce Report-Only violations; their execution still follows the unchanged enforced policy.
+## What moved
 
-**Externalize** means move the exact body into a same-origin classic script at the same document position and preserve dependencies, then replace inline attributes/generated attributes with `addEventListener` (or CSS for hover decoration). A nonce or script hash does not authorize an `onclick` attribute. **Hash** means retain stable inline bytes and update the allowlist when they change. JSON-LD is inert structured data, listed separately from executable code: preserve it inline for SEO; hash it if the supported browser/consumer requires CSP authorization. **Nonce** is reserved for response-specific Next bootstrap/Flight scripts, not static files.
+All executable blocks now load deferred classic scripts in dependency order at their original document positions under docs/assets/js/. Twelve wiki legal-modal bodies share wiki-legal.js; eight wiki language bodies share wiki-language.js. Page-specific language/modal/nav logic retains its globals, with null guards. Language defaults and landing textContent match local origin/main; those old toggles never persisted language. events.js contains a closed allowlist of listener functions for data-csp-* controls; delegated listeners support generated cards, translated markup, nearest matching ancestor dispatch, return-false cancellation and vote stopPropagation. Parameters in generated controls use data-number/data-bill/data-choice/data-value, never evaluated strings. The prior mirror and OAuth callback assets moved here too; callback keeps no-referrer first in head and config-before-callback ordering. SSO verification script requests use no-referrer so the nonce query cannot leak into asset referrers. The minified QR vendor body is unchanged. Municipality Google Fonts links were removed: their existing serif/sans-serif fallbacks already render under the enforced policy, and no external font origins are authorized.
 
-This change moves `docs/mirror-setup.html`'s 292-character language toggle to `docs/assets/csp/mirror-setup.js` and the 2,264-character OAuth callback from `docs/tickets/auth/callback.html` to adjacent `callback.js`. Bodies are byte-identical, with no defer/module/async change; callback remains after `../config.js`. The callback's first head element sets `no-referrer` before any resources, preventing OAuth query parameters from reaching same-origin asset-request referrers. Mirror's existing inline click handler remains callable through its global `toggleLang`. Both asset locations are copied by the existing Dockerfile rules where their HTML is served. Only the two exact HTML hashes in `approved_analytics_delta.py` change; no frozen baseline or wiki/audit approvals change. These pages are absent from sitemap sources, so no sitemap/hash change is needed.
+scripts/csp-migration.json records each source page, externalized assets and original body digests for review. The table below pins current assets, including the few template bodies changed to remove generated handlers. The new-ticket auth guard now runs in the same listener path before opening the modal; it no longer wraps a removed onclick property. Redesign approvals pin the new HTML/inventory bytes without changing frozen R0 data. Sitemap source hashes and lastmod dates reflect this migration; SEO content and JSON-LD stay unchanged.
 
 ## Counts by file
 
 | File | Executable blocks | JSON-LD | Empty | Literal handlers | Generated handler sites | javascript: URLs |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | `docs/bot.html` | 0 | 1 | 0 | 0 | 0 | 0 |
-| `docs/community.html` | 6 | 1 | 1 | 14 | 0 | 0 |
-| `docs/demo/admin.html` | 1 | 0 | 0 | 1 | 1 | 0 |
-| `docs/demo/bills.html` | 1 | 0 | 0 | 0 | 6 | 0 |
+| `docs/community.html` | 0 | 1 | 0 | 0 | 0 | 0 |
+| `docs/demo/admin.html` | 0 | 0 | 0 | 0 | 0 | 0 |
+| `docs/demo/bills.html` | 0 | 0 | 0 | 0 | 0 | 0 |
 | `docs/demo/index.html` | 0 | 0 | 0 | 0 | 0 | 0 |
-| `docs/embed/qr-login.html` | 2 | 0 | 0 | 1 | 0 | 0 |
-| `docs/embed/results.html` | 1 | 0 | 0 | 0 | 0 | 0 |
-| `docs/embed/vote.html` | 1 | 0 | 0 | 0 | 3 | 0 |
-| `docs/govgr-dimos.html` | 1 | 1 | 0 | 10 | 0 | 0 |
-| `docs/index.html` | 7 | 3 | 0 | 26 | 0 | 0 |
-| `docs/legal.html` | 1 | 1 | 0 | 0 | 0 | 0 |
-| `docs/mirror-setup.html` | 0 | 0 | 0 | 1 | 0 | 0 |
-| `docs/municipality/article.html` | 1 | 1 | 0 | 0 | 0 | 0 |
+| `docs/embed/qr-login.html` | 0 | 0 | 0 | 0 | 0 | 0 |
+| `docs/embed/results.html` | 0 | 0 | 0 | 0 | 0 | 0 |
+| `docs/embed/vote.html` | 0 | 0 | 0 | 0 | 0 | 0 |
+| `docs/govgr-dimos.html` | 0 | 1 | 0 | 0 | 0 | 0 |
+| `docs/index.html` | 0 | 3 | 0 | 0 | 0 | 0 |
+| `docs/legal.html` | 0 | 1 | 0 | 0 | 0 | 0 |
+| `docs/mirror-setup.html` | 0 | 0 | 0 | 0 | 0 | 0 |
+| `docs/municipality/article.html` | 0 | 1 | 0 | 0 | 0 | 0 |
 | `docs/municipality/index.html` | 0 | 1 | 0 | 0 | 0 | 0 |
-| `docs/representative.html` | 1 | 1 | 0 | 1 | 0 | 0 |
-| `docs/sso-verify.html` | 1 | 0 | 0 | 1 | 0 | 0 |
+| `docs/representative.html` | 0 | 1 | 0 | 0 | 0 | 0 |
+| `docs/sso-verify.html` | 0 | 0 | 0 | 0 | 0 | 0 |
 | `docs/tickets/auth/callback.html` | 0 | 0 | 0 | 0 | 0 | 0 |
-| `docs/tickets/index.html` | 2 | 1 | 0 | 18 | 2 | 0 |
+| `docs/tickets/index.html` | 0 | 1 | 0 | 0 | 0 | 0 |
 | `docs/votes/active.html` | 0 | 0 | 0 | 0 | 0 | 0 |
 | `docs/votes/recent.html` | 0 | 0 | 0 | 0 | 0 | 0 |
 | `docs/votes/results.html` | 0 | 0 | 0 | 0 | 0 | 0 |
-| `docs/wiki/api.html` | 2 | 1 | 0 | 5 | 0 | 0 |
-| `docs/wiki/architecture.html` | 2 | 1 | 0 | 5 | 0 | 0 |
-| `docs/wiki/audit.html` | 2 | 1 | 0 | 5 | 0 | 0 |
-| `docs/wiki/broadcasting.html` | 2 | 1 | 0 | 23 | 0 | 0 |
-| `docs/wiki/contributing.html` | 2 | 1 | 0 | 5 | 0 | 0 |
-| `docs/wiki/database.html` | 2 | 1 | 0 | 5 | 0 | 0 |
-| `docs/wiki/delete-account.html` | 2 | 1 | 0 | 5 | 0 | 0 |
-| `docs/wiki/faq.html` | 2 | 1 | 0 | 63 | 0 | 0 |
-| `docs/wiki/index.html` | 2 | 1 | 0 | 5 | 0 | 0 |
-| `docs/wiki/modules.html` | 2 | 1 | 0 | 5 | 0 | 0 |
-| `docs/wiki/privacy.html` | 2 | 1 | 0 | 5 | 0 | 0 |
-| `docs/wiki/roadmap.html` | 2 | 1 | 0 | 16 | 0 | 0 |
-| `docs/wiki/security.html` | 2 | 1 | 0 | 5 | 0 | 0 |
-| `docs/wiki/whitepaper.html` | 2 | 1 | 0 | 5 | 0 | 0 |
-| `docs/wiki/zk-voting.html` | 1 | 1 | 0 | 1 | 0 | 0 |
+| `docs/wiki/api.html` | 0 | 1 | 0 | 0 | 0 | 0 |
+| `docs/wiki/architecture.html` | 0 | 1 | 0 | 0 | 0 | 0 |
+| `docs/wiki/audit.html` | 0 | 1 | 0 | 0 | 0 | 0 |
+| `docs/wiki/broadcasting.html` | 0 | 1 | 0 | 0 | 0 | 0 |
+| `docs/wiki/contributing.html` | 0 | 1 | 0 | 0 | 0 | 0 |
+| `docs/wiki/database.html` | 0 | 1 | 0 | 0 | 0 | 0 |
+| `docs/wiki/delete-account.html` | 0 | 1 | 0 | 0 | 0 | 0 |
+| `docs/wiki/faq.html` | 0 | 1 | 0 | 0 | 0 | 0 |
+| `docs/wiki/index.html` | 0 | 1 | 0 | 0 | 0 | 0 |
+| `docs/wiki/modules.html` | 0 | 1 | 0 | 0 | 0 | 0 |
+| `docs/wiki/privacy.html` | 0 | 1 | 0 | 0 | 0 | 0 |
+| `docs/wiki/roadmap.html` | 0 | 1 | 0 | 0 | 0 | 0 |
+| `docs/wiki/security.html` | 0 | 1 | 0 | 0 | 0 | 0 |
+| `docs/wiki/whitepaper.html` | 0 | 1 | 0 | 0 | 0 | 0 |
+| `docs/wiki/zk-voting.html` | 0 | 1 | 0 | 0 | 0 | 0 |
+| `apps/representative/web/index.html` | 0 | 0 | 0 | 0 | 0 | 0 |
 
 ## Every remaining block and handler
 
-Locations refer to this tree. Identical handler bodies are grouped with every source line listed; counts are attribute occurrences, not distinct code strings. Template rows count creation sites, not runtime elements.
+Only inert JSON-LD remains. No executable inline items, empty placeholders, string handlers or generated handler sites remain.
 
-### `docs/bot.html`
-
-| Location(s) | Category / item | Plan |
+| File:line | Category | Reason |
 | --- | --- | --- |
-| 26 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-
-### `docs/community.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 39 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-| 521 | Executable: <code>function switchHlrTab(tab) {</code> | Externalize; preserve globals and execution order. |
-| 929 | Executable: <code>(function(){</code> | Externalize; preserve globals and execution order. |
-| 997 | Executable: <code>var _privacyHtml='&lt;h2 style="margin-top:0"&gt;Πολιτική Απορρήτου&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;Τι ΔΕΝ αποθηκεύουμ</code> | Externalize; preserve globals and execution order. |
-| 1005 | Executable: <code>var currentLang = "el";</code> | Externalize; preserve globals and execution order. |
-| 1023 | Empty script block | Externalize: remove the empty placeholder with the surrounding script migration. |
-| 1026 | Executable: <code>// @ai-anchor INVOICE_AMPEL_TIMER</code> | Externalize; preserve globals and execution order. |
-| 1766 | Executable: <code>// NGO Contact Modal</code> | Externalize; preserve globals and execution order. |
-| 317 | <code>onclick=toggleLang()</code> | Externalize to listeners. |
-| 541 | <code>onclick=switchHlrTab('primary')</code> | Externalize to listeners. |
-| 542 | <code>onclick=switchHlrTab('fallback')</code> | Externalize to listeners. |
-| 797 | <code>onclick=openSharePopup();return false;</code> | Externalize to listeners. |
-| 812 | <code>onclick=openNgoModal();return false;</code> | Externalize to listeners. |
-| 818 | <code>onclick=document.getElementById('finance').scrollIntoView({behavior:'smooth'});return false;</code> | Externalize to listeners. |
-| 985 | <code>onclick=openLegalModal('privacy');return false</code> | Externalize to listeners. |
-| 986 | <code>onclick=openLegalModal('delete');return false</code> | Externalize to listeners. |
-| 991 | <code>onclick=if(event.target===this)closeLegalModal()</code> | Externalize to listeners. |
-| 993 | <code>onclick=closeLegalModal()</code> | Externalize to listeners. |
-| 1720 | <code>onclick=closeNgoModal()</code> | Externalize to listeners. |
-| 1723 | <code>onsubmit=submitNgoForm(event)</code> | Externalize to listeners. |
-| 1741 | <code>onclick=closeSharePopup()</code> | Externalize to listeners. |
-| 1744 | <code>onclick=copyShareLink()</code> | Externalize to listeners. |
-
-### `docs/demo/admin.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 95 | Executable: <code>var html = "";</code> | Externalize; preserve globals and execution order. |
-| 75 | <code>onclick=createBill()</code> | Externalize to listeners. |
-| 99 | Generated handler: <code>onclick="alert(\'Demo: Bill würde auf ACTIVE gesetzt\')"&gt;→ ACTIVE&lt;/button&gt;' : '';</code> | Externalize to listeners after element creation / delegation. |
-
-### `docs/demo/bills.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 76 | Executable: <code>var currentFilter = "ALL";</code> | Externalize; preserve globals and execution order. |
-| 89 | Generated handler: <code>onclick="setFilter(\'' + f.key + '\')"&gt;' + f.label + ' (' + (f.key === "ALL" ? DEMO_BILLS.length : DEMO_BILLS.filter(function(b){return b.status===f.key}).length) + ')&lt;/button&gt;';</code> | Externalize to listeners after element creation / delegation. |
-| 123 | Generated handler: <code>onclick="castVote(\'' + b.id + '\',\'YES\')"&gt;ΝΑΙ&lt;/button&gt;';</code> | Externalize to listeners after element creation / delegation. |
-| 124 | Generated handler: <code>onclick="castVote(\'' + b.id + '\',\'NO\')"&gt;ΟΧΙ&lt;/button&gt;';</code> | Externalize to listeners after element creation / delegation. |
-| 125 | Generated handler: <code>onclick="castVote(\'' + b.id + '\',\'ABSTAIN\')"&gt;ΑΠΟΧΗ&lt;/button&gt;';</code> | Externalize to listeners after element creation / delegation. |
-| 141 | Generated handler: <code>oninput="document.getElementById(\'sv_' + b.id + '\').textContent=this.value&gt;0?\'+\'+this.value:this.value"&gt;';</code> | Externalize to listeners after element creation / delegation. |
-| 143 | Generated handler: <code>onclick="castConsensus(\'' + b.id + '\')"&gt;Υποβολή Βαθμολογίας&lt;/button&gt;';</code> | Externalize to listeners after element creation / delegation. |
-
-### `docs/demo/index.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| — | None | No inline migration needed. |
-
-### `docs/embed/qr-login.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 8 | Executable: <code>var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this.parsedData=[];</code> | Externalize; preserve globals and execution order. |
-| 56 | Executable: <code>var API='https://api.ekklesia.gr';</code> | Externalize; preserve globals and execution order. |
-| 53 | <code>onclick=startSession()</code> | Externalize to listeners. |
-
-### `docs/embed/results.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 40 | Executable: <code>var API='https://api.ekklesia.gr';</code> | Externalize; preserve globals and execution order. |
-
-### `docs/embed/vote.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 47 | Executable: <code>var API='https://api.ekklesia.gr';</code> | Externalize; preserve globals and execution order. |
-| 180 | Generated handler: <code>onclick="castVote(\'YES\')"&gt;'+(el?'ΝΑΙ':'YES')+'&lt;/button&gt;';</code> | Externalize to listeners after element creation / delegation. |
-| 181 | Generated handler: <code>onclick="castVote(\'NO\')"&gt;'+(el?'ΟΧΙ':'NO')+'&lt;/button&gt;';</code> | Externalize to listeners after element creation / delegation. |
-| 182 | Generated handler: <code>onclick="castVote(\'ABSTAIN\')"&gt;'+(el?'ΑΠΟΧΗ':'ABSTAIN')+'&lt;/button&gt;';</code> | Externalize to listeners after element creation / delegation. |
-
-### `docs/govgr-dimos.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 31 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-| 843 | Executable: <code>var currentLang = "el";</code> | Externalize; preserve globals and execution order. |
-| 214 | <code>onclick=toggleLang()</code> | Externalize to listeners. |
-| 337, 348 | <code>onclick=openNgoModal()</code> | Externalize to listeners. |
-| 752 | <code>onclick=openNgoModal();return false;</code> | Externalize to listeners. |
-| 752 | <code>onmouseenter=this.style.background='#1d4ed8'</code> | Externalize to listeners / CSS hover rules. |
-| 752 | <code>onmouseleave=this.style.background='#2563eb'</code> | Externalize to listeners / CSS hover rules. |
-| 753 | <code>onmouseenter=this.style.background='#eff6ff'</code> | Externalize to listeners / CSS hover rules. |
-| 753 | <code>onmouseleave=this.style.background='transparent'</code> | Externalize to listeners / CSS hover rules. |
-| 775 | <code>onclick=closeNgoModal()</code> | Externalize to listeners. |
-| 778 | <code>onsubmit=submitNgoForm(event)</code> | Externalize to listeners. |
-
-### `docs/index.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 413 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-| 447 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-| 457 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-| 951 | Executable: <code>(function(){</code> | Externalize; preserve globals and execution order. |
-| 1188 | Executable: <code>(function(){</code> | Externalize; preserve globals and execution order. |
-| 1683 | Executable: <code>async function submitNewsletter(e) {</code> | Externalize; preserve globals and execution order. |
-| 1749 | Executable: <code>var _privacyHtml='&lt;h2 style="margin-top:0"&gt;Πολιτική Απορρήτου / Privacy Policy&lt;/h2&gt;'</code> | Externalize; preserve globals and execution order. |
-| 1776 | Executable: <code>var currentLang = "el";</code> | Externalize; preserve globals and execution order. |
-| 1793 | Executable: <code>// Democracy Cycle Animation — 6 Phasen (#356)</code> | Externalize; preserve globals and execution order. |
-| 2254 | Executable: <code>// EKA-62: every chat string reaches the DOM via textContent on created nodes;</code> | Externalize; preserve globals and execution order. |
-| 505 | <code>onclick=toggleLang()</code> | Externalize to listeners. |
-| 663 | <code>onmouseover=this.style.borderColor='#2563eb';this.style.transform='translateY(-2px)'</code> | Externalize to listeners / CSS hover rules. |
-| 663 | <code>onmouseout=this.style.borderColor='#22c55e';this.style.transform='none'</code> | Externalize to listeners / CSS hover rules. |
-| 672 | <code>onmouseenter=this.style.borderColor='#3b82f6';this.style.opacity='1'</code> | Externalize to listeners / CSS hover rules. |
-| 672 | <code>onmouseleave=this.style.borderColor='#334155';this.style.opacity='0.8'</code> | Externalize to listeners / CSS hover rules. |
-| 683 | <code>onmouseenter=this.style.borderColor='#3b82f6'</code> | Externalize to listeners / CSS hover rules. |
-| 683 | <code>onmouseleave=this.style.borderColor='#22c55e'</code> | Externalize to listeners / CSS hover rules. |
-| 1406 | <code>onmouseenter=this.style.background='#1d4ed8'</code> | Externalize to listeners / CSS hover rules. |
-| 1406 | <code>onmouseleave=this.style.background='#2563eb'</code> | Externalize to listeners / CSS hover rules. |
-| 1565, 1571 | <code>onmouseover=this.style.transform='translateY(-2px)'</code> | Externalize to listeners / CSS hover rules. |
-| 1565, 1571 | <code>onmouseout=this.style.transform='none'</code> | Externalize to listeners / CSS hover rules. |
-| 1651 | <code>onsubmit=submitNewsletter(event)</code> | Externalize to listeners. |
-| 1736 | <code>onclick=openLegalModal('privacy');return false</code> | Externalize to listeners. |
-| 1737 | <code>onclick=openLegalModal('delete');return false</code> | Externalize to listeners. |
-| 1743 | <code>onclick=if(event.target===this)closeLegalModal()</code> | Externalize to listeners. |
-| 1745 | <code>onclick=closeLegalModal()</code> | Externalize to listeners. |
-| 2200 | <code>onclick=if(event.target===this)this.style.display='none'</code> | Externalize to listeners. |
-| 2202 | <code>onclick=document.getElementById('pwaModal').style.display='none'</code> | Externalize to listeners. |
-| 2236, 2240 | <code>onclick=toggleChat()</code> | Externalize to listeners. |
-| 2236 | <code>onmouseenter=this.style.transform='scale(1.1)'</code> | Externalize to listeners / CSS hover rules. |
-| 2236 | <code>onmouseleave=this.style.transform='scale(1)'</code> | Externalize to listeners / CSS hover rules. |
-| 2247 | <code>onkeydown=if(event.key==='Enter')sendChat()</code> | Externalize to listeners. |
-| 2248 | <code>onclick=sendChat()</code> | Externalize to listeners. |
-
-### `docs/legal.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 26 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-| 227 | Executable: <code>(function () {</code> | Hash: exact digest already in Report-Only. |
-
-### `docs/mirror-setup.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 65 | <code>onclick=navigator.clipboard.writeText('curl -fsSL https://ekklesia.gr/mirror-setup.sh &#124; sudo bash')</code> | Externalize to listeners. |
-
-### `docs/municipality/article.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 24 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-| 561 | Executable: <code>// Scroll-triggered section reveals</code> | Hash: exact digest already in Report-Only. |
-
-### `docs/municipality/index.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 26 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-
-### `docs/representative.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 25 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-| 202 | Executable: <code>var currentLang="el";</code> | Externalize; preserve globals and execution order. |
-| 92 | <code>onclick=toggleLang()</code> | Externalize to listeners. |
-
-### `docs/sso-verify.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 306 | Executable: <code>(function () {</code> | Externalize; preserve globals and execution order. |
-| 289 | <code>onclick=retryAuth()</code> | Externalize to listeners. |
-
-### `docs/tickets/auth/callback.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| — | None | No inline migration needed. |
-
-### `docs/tickets/index.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 25 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-| 63 | Executable: <code>// Phase B: auth-state-aware ticket guard (replaces old desktop blanket block)</code> | Externalize; preserve globals and execution order. |
-| 221 | Executable: <code>// Populate category sidebar + select</code> | Externalize; preserve globals and execution order. |
-| 58 | <code>onclick=document.getElementById('phaseBModal').style.display='none'</code> | Externalize to listeners. |
-| 103 | <code>onclick=setPolisLang(polisLang==='el'?'en':'el');document.getElementById('langBtn').textContent=polisLang==='el'?'EN':'ΕΛ'</code> | Externalize to listeners. |
-| 115 | <code>onclick=openNewTicketModal()</code> | Externalize to listeners. |
-| 118 | <code>onclick=openQRLogin()</code> | Externalize to listeners. |
-| 129 | <code>onclick=filterByStatus(this,'')</code> | Externalize to listeners. |
-| 130 | <code>onclick=filterByStatus(this,'status:pending')</code> | Externalize to listeners. |
-| 131 | <code>onclick=filterByStatus(this,'status:open')</code> | Externalize to listeners. |
-| 132 | <code>onclick=filterByStatus(this,'status:claimed')</code> | Externalize to listeners. |
-| 133 | <code>onclick=filterByStatus(this,'status:resolved')</code> | Externalize to listeners. |
-| 137 | <code>onclick=filterByCat(this,'')</code> | Externalize to listeners. |
-| 142 | <code>onclick=sortBy(this,'newest')</code> | Externalize to listeners. |
-| 143 | <code>onclick=sortBy(this,'votes')</code> | Externalize to listeners. |
-| 144 | <code>onclick=sortBy(this,'oldest')</code> | Externalize to listeners. |
-| 156 | <code>onclick=loadMoreTickets()</code> | Externalize to listeners. |
-| 173 | <code>onclick=closeTicketModal()</code> | Externalize to listeners. |
-| 176 | <code>onsubmit=submitTicketForm(event)</code> | Externalize to listeners. |
-| 199 | <code>onclick=if(event.target===this)closeMobileDetail()</code> | Externalize to listeners. |
-| 202 | <code>onclick=closeMobileDetail()</code> | Externalize to listeners. |
-| 226 | Generated handler: <code>onclick="filterByCat(this,\'category:' + cat.id + '\')"&gt;' + (polisLang === "el" ? cat.el : cat.en) + '&lt;/div&gt;';</code> | Externalize to listeners after element creation / delegation. |
-| 300 | Generated handler: <code>onclick="closeQRLogin()" style="padding:8px 20px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;cursor:pointer"&gt;' + _qr("cancel") + '&lt;/button&gt;' +</code> | Externalize to listeners after element creation / delegation. |
-
-### `docs/votes/active.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| — | None | No inline migration needed. |
-
-### `docs/votes/recent.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| — | None | No inline migration needed. |
-
-### `docs/votes/results.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| — | None | No inline migration needed. |
-
-### `docs/wiki/api.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 174 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-| 375 | Executable: <code>var _privacyHtml='&lt;h2 style="margin-top:0"&gt;Πολιτική Απορρήτου&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;Τι ΔΕΝ αποθηκεύουμ</code> | Externalize; preserve globals and execution order. |
-| 383 | Executable: <code>var currentLang = "el";</code> | Externalize; preserve globals and execution order. |
-| 209 | <code>onclick=toggleLang()</code> | Externalize to listeners. |
-| 363 | <code>onclick=openLegalModal('privacy');return false</code> | Externalize to listeners. |
-| 364 | <code>onclick=openLegalModal('delete');return false</code> | Externalize to listeners. |
-| 369 | <code>onclick=if(event.target===this)closeLegalModal()</code> | Externalize to listeners. |
-| 371 | <code>onclick=closeLegalModal()</code> | Externalize to listeners. |
-
-### `docs/wiki/architecture.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 172 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-| 387 | Executable: <code>var _privacyHtml='&lt;h2 style="margin-top:0"&gt;Πολιτική Απορρήτου&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;Τι ΔΕΝ αποθηκεύουμ</code> | Externalize; preserve globals and execution order. |
-| 395 | Executable: <code>var currentLang = "el";</code> | Externalize; preserve globals and execution order. |
-| 207 | <code>onclick=toggleLang()</code> | Externalize to listeners. |
-| 375 | <code>onclick=openLegalModal('privacy');return false</code> | Externalize to listeners. |
-| 376 | <code>onclick=openLegalModal('delete');return false</code> | Externalize to listeners. |
-| 381 | <code>onclick=if(event.target===this)closeLegalModal()</code> | Externalize to listeners. |
-| 383 | <code>onclick=closeLegalModal()</code> | Externalize to listeners. |
-
-### `docs/wiki/audit.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 181 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-| 461 | Executable: <code>var _privacyHtml='&lt;h2 style="margin-top:0"&gt;Πολιτική Απορρήτου&lt;/h2&gt;&lt;p&gt;&lt;a href="privacy.html" sty</code> | Externalize; preserve globals and execution order. |
-| 469 | Executable: <code>var currentLang = "el";</code> | Externalize; preserve globals and execution order. |
-| 216 | <code>onclick=toggleLang()</code> | Externalize to listeners. |
-| 449 | <code>onclick=openLegalModal('privacy');return false</code> | Externalize to listeners. |
-| 450 | <code>onclick=openLegalModal('delete');return false</code> | Externalize to listeners. |
-| 455 | <code>onclick=if(event.target===this)closeLegalModal()</code> | Externalize to listeners. |
-| 457 | <code>onclick=closeLegalModal()</code> | Externalize to listeners. |
-
-### `docs/wiki/broadcasting.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 61 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-| 273 | Executable: <code>var _privacyHtml='&lt;h2 style="margin-top:0"&gt;Πολιτική Απορρήτου&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;Τι ΔΕΝ αποθηκεύουμ</code> | Externalize; preserve globals and execution order. |
-| 280 | Executable: <code>var currentLang="el";function toggleLang(){currentLang=currentLang==="el"?"en":"el";document.ge</code> | Externalize; preserve globals and execution order. |
-| 96 | <code>onclick=toggleLang()</code> | Externalize to listeners. |
-| 157, 161, 165, 169, 173, 182, 186, 190 | <code>onmouseover=this.style.opacity='0.85'</code> | Externalize to listeners / CSS hover rules. |
-| 157, 161, 165, 169, 173, 182, 186, 190 | <code>onmouseout=this.style.opacity='1'</code> | Externalize to listeners / CSS hover rules. |
-| 207 | <code>onclick=navigator.clipboard.writeText(document.getElementById('embed-all').innerText)</code> | Externalize to listeners. |
-| 217 | <code>onclick=navigator.clipboard.writeText(document.getElementById('embed-single').innerText)</code> | Externalize to listeners. |
-| 261 | <code>onclick=openLegalModal('privacy');return false</code> | Externalize to listeners. |
-| 262 | <code>onclick=openLegalModal('delete');return false</code> | Externalize to listeners. |
-| 267 | <code>onclick=if(event.target===this)closeLegalModal()</code> | Externalize to listeners. |
-| 269 | <code>onclick=closeLegalModal()</code> | Externalize to listeners. |
-
-### `docs/wiki/contributing.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 171 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-| 279 | Executable: <code>var _privacyHtml='&lt;h2 style="margin-top:0"&gt;Πολιτική Απορρήτου&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;Τι ΔΕΝ αποθηκεύουμ</code> | Externalize; preserve globals and execution order. |
-| 287 | Executable: <code>var currentLang = "el";</code> | Externalize; preserve globals and execution order. |
-| 206 | <code>onclick=toggleLang()</code> | Externalize to listeners. |
-| 267 | <code>onclick=openLegalModal('privacy');return false</code> | Externalize to listeners. |
-| 268 | <code>onclick=openLegalModal('delete');return false</code> | Externalize to listeners. |
-| 273 | <code>onclick=if(event.target===this)closeLegalModal()</code> | Externalize to listeners. |
-| 275 | <code>onclick=closeLegalModal()</code> | Externalize to listeners. |
-
-### `docs/wiki/database.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 171 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-| 302 | Executable: <code>var _privacyHtml='&lt;h2 style="margin-top:0"&gt;Πολιτική Απορρήτου&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;Τι ΔΕΝ αποθηκεύουμ</code> | Externalize; preserve globals and execution order. |
-| 310 | Executable: <code>var currentLang = "el";</code> | Externalize; preserve globals and execution order. |
-| 206 | <code>onclick=toggleLang()</code> | Externalize to listeners. |
-| 290 | <code>onclick=openLegalModal('privacy');return false</code> | Externalize to listeners. |
-| 291 | <code>onclick=openLegalModal('delete');return false</code> | Externalize to listeners. |
-| 296 | <code>onclick=if(event.target===this)closeLegalModal()</code> | Externalize to listeners. |
-| 298 | <code>onclick=closeLegalModal()</code> | Externalize to listeners. |
-
-### `docs/wiki/delete-account.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 138 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-| 324 | Executable: <code>var _privacyHtml='&lt;h2 style="margin-top:0"&gt;Πολιτική Απορρήτου&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;Τι ΔΕΝ αποθηκεύουμ</code> | Externalize; preserve globals and execution order. |
-| 332 | Executable: <code>var currentLang = "el";</code> | Externalize; preserve globals and execution order. |
-| 173 | <code>onclick=toggleLang()</code> | Externalize to listeners. |
-| 312 | <code>onclick=openLegalModal('privacy');return false</code> | Externalize to listeners. |
-| 313 | <code>onclick=openLegalModal('delete');return false</code> | Externalize to listeners. |
-| 318 | <code>onclick=if(event.target===this)closeLegalModal()</code> | Externalize to listeners. |
-| 320 | <code>onclick=closeLegalModal()</code> | Externalize to listeners. |
-
-### `docs/wiki/faq.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 538 | Executable: <code>var _privacyHtml='&lt;h2 style="margin-top:0"&gt;Πολιτική Απορρήτου&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;Τι ΔΕΝ αποθηκεύουμ</code> | Externalize; preserve globals and execution order. |
-| 546 | Executable: <code>var currentLang = "el";</code> | Externalize; preserve globals and execution order. |
-| 563 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-| 188 | <code>onclick=toggleLang()</code> | Externalize to listeners. |
-| 203, 208, 213, 218, 223, 231, 236, 241, 246, 251, 256, 261, 266, 271, 279, 283, 287, 291, 295, 300, 308, 313, 318, 323, 328, 333, 338, 343, 351, 356, 361, 366, 371, 376, 384, 389, 394, 399, 404, 409, 417, 422, 427, 432, 437, 445, 450, 455, 463, 468, 473, 478, 483, 488, 493, 498, 503, 508 | <code>onclick=this.parentElement.classList.toggle('open')</code> | Externalize to listeners. |
-| 526 | <code>onclick=openLegalModal('privacy');return false</code> | Externalize to listeners. |
-| 527 | <code>onclick=openLegalModal('delete');return false</code> | Externalize to listeners. |
-| 532 | <code>onclick=if(event.target===this)closeLegalModal()</code> | Externalize to listeners. |
-| 534 | <code>onclick=closeLegalModal()</code> | Externalize to listeners. |
-
-### `docs/wiki/index.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 33 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-| 313 | Executable: <code>var _privacyHtml='&lt;h2 style="margin-top:0"&gt;Πολιτική Απορρήτου&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;Τι ΔΕΝ αποθηκεύουμ</code> | Externalize; preserve globals and execution order. |
-| 321 | Executable: <code>var currentLang = "el";</code> | Externalize; preserve globals and execution order. |
-| 223 | <code>onclick=toggleLang()</code> | Externalize to listeners. |
-| 301 | <code>onclick=openLegalModal('privacy');return false</code> | Externalize to listeners. |
-| 302 | <code>onclick=openLegalModal('delete');return false</code> | Externalize to listeners. |
-| 307 | <code>onclick=if(event.target===this)closeLegalModal()</code> | Externalize to listeners. |
-| 309 | <code>onclick=closeLegalModal()</code> | Externalize to listeners. |
-
-### `docs/wiki/modules.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 180 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-| 282 | Executable: <code>var _privacyHtml='&lt;h2 style="margin-top:0"&gt;Πολιτική Απορρήτου&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;Τι ΔΕΝ αποθηκεύουμ</code> | Externalize; preserve globals and execution order. |
-| 290 | Executable: <code>var currentLang = "el";</code> | Externalize; preserve globals and execution order. |
-| 215 | <code>onclick=toggleLang()</code> | Externalize to listeners. |
-| 270 | <code>onclick=openLegalModal('privacy');return false</code> | Externalize to listeners. |
-| 271 | <code>onclick=openLegalModal('delete');return false</code> | Externalize to listeners. |
-| 276 | <code>onclick=if(event.target===this)closeLegalModal()</code> | Externalize to listeners. |
-| 278 | <code>onclick=closeLegalModal()</code> | Externalize to listeners. |
-
-### `docs/wiki/privacy.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 183 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-| 349 | Executable: <code>var _privacyHtml='&lt;h2 style="margin-top:0"&gt;Πολιτική Απορρήτου&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;Τι ΔΕΝ αποθηκεύουμ</code> | Externalize; preserve globals and execution order. |
-| 357 | Executable: <code>var currentLang = "el";</code> | Externalize; preserve globals and execution order. |
-| 218 | <code>onclick=toggleLang()</code> | Externalize to listeners. |
-| 337 | <code>onclick=openLegalModal('privacy');return false</code> | Externalize to listeners. |
-| 338 | <code>onclick=openLegalModal('delete');return false</code> | Externalize to listeners. |
-| 343 | <code>onclick=if(event.target===this)closeLegalModal()</code> | Externalize to listeners. |
-| 345 | <code>onclick=closeLegalModal()</code> | Externalize to listeners. |
-
-### `docs/wiki/roadmap.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 24 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-| 589 | Executable: <code>var _privacyHtml='&lt;h2 style="margin-top:0"&gt;Πολιτική Απορρήτου&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;Τι ΔΕΝ αποθηκεύουμ</code> | Externalize; preserve globals and execution order. |
-| 597 | Executable: <code>var currentLang = "el";</code> | Externalize; preserve globals and execution order. |
-| 255 | <code>onclick=toggleLang()</code> | Externalize to listeners. |
-| 267, 280, 306, 328, 349, 390, 409, 429, 450, 478, 504 | <code>onclick=toggleSection(this)</code> | Externalize to listeners. |
-| 577 | <code>onclick=openLegalModal('privacy');return false</code> | Externalize to listeners. |
-| 578 | <code>onclick=openLegalModal('delete');return false</code> | Externalize to listeners. |
-| 583 | <code>onclick=if(event.target===this)closeLegalModal()</code> | Externalize to listeners. |
-| 585 | <code>onclick=closeLegalModal()</code> | Externalize to listeners. |
-
-### `docs/wiki/security.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 184 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-| 490 | Executable: <code>var _privacyHtml='&lt;h2 style="margin-top:0"&gt;Πολιτική Απορρήτου&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;Τι ΔΕΝ αποθηκεύουμ</code> | Externalize; preserve globals and execution order. |
-| 498 | Executable: <code>var currentLang = "el";</code> | Externalize; preserve globals and execution order. |
-| 219 | <code>onclick=toggleLang()</code> | Externalize to listeners. |
-| 478 | <code>onclick=openLegalModal('privacy');return false</code> | Externalize to listeners. |
-| 479 | <code>onclick=openLegalModal('delete');return false</code> | Externalize to listeners. |
-| 484 | <code>onclick=if(event.target===this)closeLegalModal()</code> | Externalize to listeners. |
-| 486 | <code>onclick=closeLegalModal()</code> | Externalize to listeners. |
-
-### `docs/wiki/whitepaper.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 183 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-| 361 | Executable: <code>var _privacyHtml='&lt;h2 style="margin-top:0"&gt;Πολιτική Απορρήτου&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;Τι ΔΕΝ αποθηκεύουμ</code> | Externalize; preserve globals and execution order. |
-| 369 | Executable: <code>var currentLang = "el";</code> | Externalize; preserve globals and execution order. |
-| 218 | <code>onclick=toggleLang()</code> | Externalize to listeners. |
-| 349 | <code>onclick=openLegalModal('privacy');return false</code> | Externalize to listeners. |
-| 350 | <code>onclick=openLegalModal('delete');return false</code> | Externalize to listeners. |
-| 355 | <code>onclick=if(event.target===this)closeLegalModal()</code> | Externalize to listeners. |
-| 357 | <code>onclick=closeLegalModal()</code> | Externalize to listeners. |
-
-### `docs/wiki/zk-voting.html`
-
-| Location(s) | Category / item | Plan |
-| --- | --- | --- |
-| 25 | JSON-LD data | Hash if CSP authorization is needed; retain inline for SEO. |
-| 145 | Executable: <code>var currentLang = "el";</code> | Externalize; preserve globals and execution order. |
-| 71 | <code>onclick=toggleLang()</code> | Externalize to listeners. |
-
-## Generated handlers in external docs scripts
-
-Externalizing a script alone does not remove the handlers it creates. These sites are loaded by `docs/tickets/index.html`.
-
-| File:line | Item | Plan |
-| --- | --- | --- |
-| `docs/tickets/polis.js:357` | <code>onclick="login()"&gt;' + t("loginGitHub") + '&lt;/button&gt;';</code> | Externalize to listeners / delegated events. |
-| `docs/tickets/polis.js:372` | <code>onclick="selectTicket(' + issue.number + ')"&gt;'</code> | Externalize to listeners / delegated events. |
-| `docs/tickets/polis.js:374` | <code>onclick="event.stopPropagation();toggleVote(' + issue.number + ')" title="' + t("vote") + '"&gt;▲&lt;/button&gt;'</code> | Externalize to listeners / delegated events. |
-| `docs/tickets/polis.js:431` | <code>onclick="toggleVote(' + issue.number + ')"&gt;'</code> | Externalize to listeners / delegated events. |
-| `docs/tickets/polis.js:434` | <code>onclick="doClaim(' + issue.number + ')"&gt;🙋 ' + t("claim") + '&lt;/button&gt;' : '')</code> | Externalize to listeners / delegated events. |
-| `docs/tickets/polis.js:545` | <code>onclick="loadAndRender()" style="margin-top:1rem"&gt;' + t("loadMore") + '&lt;/button&gt;&lt;/div&gt;';</code> | Externalize to listeners / delegated events. |
-
-## Next.js app inventory and nonce prerequisite
-
-Source scan of 43 production JS/TS/JSX/TSX/MJS files in `apps/web/src` plus `apps/web/next.config.mjs` (tests excluded): **0 Inline scripts**, **0 next/script elements**, **0 beforeInteractive**, **1 dangerouslySetInnerHTML**, **0 String handlers**, **0 javascript: URLs**.
-
-Counts are generated from source sites, including literal HTML strings; comments are ignored. Inline script elements include data blocks and `next/script` elements without an actual `src` attribute; `data-src` and mentions inside attribute values do not make a script external. Default imports of `next/script` are tracked by their local name, including combined default/named imports and `default as` aliases within named imports; `beforeInteractive` is counted even for external scripts. All `dangerouslySetInnerHTML` sites are listed for review, including styles and non-script HTML. Categories can overlap. This conservative scan does not evaluate spreads, computed props or dynamically assembled HTML; inspect production output before enforcement. React callback props are counted separately and do not require `unsafe-inline`.
-
-| File | Inline scripts | next/script elements | beforeInteractive | dangerouslySetInnerHTML | String handlers | javascript: URLs |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `apps/web/next.config.mjs` | 0 | 0 | 0 | 0 | 0 | 0 |
-| `apps/web/src/app/[locale]/layout.tsx` | 0 | 0 | 0 | 0 | 0 | 0 |
-| `apps/web/src/app/[locale]/sso-verify/page.tsx` | 0 | 0 | 0 | 1 | 0 | 0 |
-| `apps/web/src/proxy.ts` | 0 | 0 | 0 | 0 | 0 | 0 |
-
-| File:line | Source site | Plan |
-| --- | --- | --- |
-| `apps/web/src/app/[locale]/sso-verify/page.tsx:222` | dangerouslySetInnerHTML on <code>&lt;style&gt;</code> | Style injection; outside this script hardening step. |
-
-Next-emitted bootstrap / hydration / Flight (`self.__next_f.push(...)`, etc.) remains response-dependent and unmeasured without a production build/render. Use a nonce for each response, since contents vary with route, build and payload. Generate a fresh cryptographically random nonce in `src/proxy.ts`, pass it with the matching CSP to the Next renderer, and apply the policy to the response. Ensure `src/app/[locale]/layout.tsx` and any authored scripts receive it. Preserve next-intl, redirects and rewrites; evaluate dynamic rendering, prefetches, streaming, error routes and caching. PWA auto-registration is enabled in `next.config.mjs`; inspect its built output for inline script and nonce compatibility.
-
-Current nonce plumbing is absent. A static Traefik label cannot create a per-request nonce or stamp it on Next scripts. Before enforcement, retain the static-docs policy at the edge and route dynamic HTML through a matching nonce-aware application policy; avoid a second static strict enforced policy that would still block Next even if its application policy allows the nonce. Never reuse a constant nonce, echo a client-supplied nonce, or cache nonce-bearing HTML independently of its header. Current PWA `StaleWhileRevalidate` document caching also needs review before serving per-response nonces. No Next code is changed in this PR; an offline production render was unavailable because this worktree has no installed web dependencies.
-
-React callback occurrences (source JSX expressions; separate from string handlers):
-
-| File | Callback props |
-| --- | ---: |
-| `apps/web/src/app/[locale]/analytics/page.tsx` | 1 |
-| `apps/web/src/app/[locale]/bills/BillsClient.tsx` | 10 |
-| `apps/web/src/app/[locale]/bills/[id]/page.tsx` | 6 |
-| `apps/web/src/app/[locale]/mp/page.tsx` | 1 |
-| `apps/web/src/app/[locale]/municipal/page.tsx` | 3 |
-| `apps/web/src/app/[locale]/results/ResultsClient.tsx` | 2 |
-| `apps/web/src/app/[locale]/sso-verify/page.tsx` | 4 |
-| `apps/web/src/components/QRCodeVoteStub.tsx` | 2 |
-| `apps/web/src/components/RelevanceButtons.tsx` | 2 |
-| `apps/web/src/components/VoteButton.tsx` | 1 |
-
-## Work remaining before enforcement
-
-1. Externalize the remaining executable blocks and all literal/generated handlers listed above, including language controls, FAQ/roadmap toggles, modals, newsletter/chat, demos, embeds and ticket rendering. Keep inert JSON-LD and approved stable hashes synchronized.
-2. Implement and verify the Next nonce path, rendering/cache/PWA behavior, and edge/application policy composition; exercise all locale routes, errors, hydration, navigation and offline/service-worker updates with the unchanged enforced policy plus the nonce-aware Report-Only candidate.
-3. Inspect console violations on deployed static and dynamic routes, including templates populated from API data and translated DOM, and verify both HTTP headers at the edge. The current local checks validate configuration, not a deployed Traefik response.
-4. Review other HTML served on this origin (notably `apps/representative/web`, copied separately by the Dockerfile) before changing a shared enforced header. Confirm existing `frame-ancestors 'none'` remains intentional for embeds. Remove script `unsafe-inline` from enforcement only in a later reviewed rollout after violations are resolved.
+| `docs/bot.html:26` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/community.html:40` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/govgr-dimos.html:32` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/index.html:414` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/index.html:448` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/index.html:458` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/legal.html:26` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/municipality/article.html:24` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/municipality/index.html:24` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/representative.html:26` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/tickets/index.html:26` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/wiki/api.html:175` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/wiki/architecture.html:173` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/wiki/audit.html:182` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/wiki/broadcasting.html:62` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/wiki/contributing.html:172` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/wiki/database.html:172` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/wiki/delete-account.html:139` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/wiki/faq.html:543` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/wiki/index.html:34` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/wiki/modules.html:181` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/wiki/privacy.html:184` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/wiki/roadmap.html:25` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/wiki/security.html:185` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/wiki/whitepaper.html:184` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/wiki/zk-voting.html:26` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+
+## External script digests
+
+| Asset | SHA-256 (hex) |
+| --- | --- |
+| `docs/assets/js/community-finance.js` | `44a03dfc4c42d27e6cd053e08865685594ef80a3bcc51a64c764d4cad182fe41` |
+| `docs/assets/js/community-language.js` | `efcdadc65102400c45e0ae063bffafc08d9658b5aed3664ad9aaa7a650011458` |
+| `docs/assets/js/community-legal.js` | `ecd486c44686216d91a6b47869852d83b6290a9ff9619d53888efd6817790354` |
+| `docs/assets/js/community-modals.js` | `50b7e26ae7934646376cbc788bade42d74f2555e91714abdac02525f52bae067` |
+| `docs/assets/js/community-stats.js` | `9b7057c32f64757235ac2d6e97db6e0f71ce41040544b85e5fd2ff136068a294` |
+| `docs/assets/js/community-tabs.js` | `a1020a98520fad523cdfaa00a63933cf173eb401f98a3222d0d9b8e0ade71f7f` |
+| `docs/assets/js/demo-admin.js` | `1e2db56d71adaa48de5ba3972b2ae72184ba7c1633ca76a8d0d179374ce75364` |
+| `docs/assets/js/demo-bills.js` | `ebaf37f97ca68bd1a0ba9484dc1f064aed295972e1023f49b16c38db691e469a` |
+| `docs/assets/js/embed-results.js` | `2df21f116ee751f5a6101910187902df374901bae5de1d53ae525834d43fc2a1` |
+| `docs/assets/js/embed-ui.js` | `00dd264e3d4e22b1ff0269f1d607193751720b318027fd20f0e60969f0a98bc3` |
+| `docs/assets/js/embed-vote.js` | `d082b97ec07b61d22d4c1aa66e2b907808fdc2e376bc9f463eb1da2c6b3af5d7` |
+| `docs/assets/js/events.js` | `ebcc4436e5b94be0263719f3c110d344aecbf8ecb168ea2564758743f7b6b97a` |
+| `docs/assets/js/govgr-dimos.js` | `b3797f416e307b94fa946ad7910cb0a2a7faa9419500b5abf7dad91e350b6cd9` |
+| `docs/assets/js/landing-chat.js` | `213091827168f7076f0d0bfa29a1f009d18ff2ae3ea88ad8742198d45fa7ffee` |
+| `docs/assets/js/landing-comparison.js` | `2d2fbe06400ef46b59e5044c0c1faeac986710cf04f7f27fbcda06d41826247f` |
+| `docs/assets/js/landing-cplm.js` | `3b3cc40c0cad6c65fabb6d655dbb3ec1199d8478c39b7eff4d4a1a5913484b4e` |
+| `docs/assets/js/landing-cycle.js` | `f0758af21846772ff7a7512a8f70c115aa862b92b90d187ffa2cb901dc36d353` |
+| `docs/assets/js/landing-language.js` | `fc576345c5a0bea6943933e5fa885fac906450d6ded5256f78e8d827f7131779` |
+| `docs/assets/js/landing-legal.js` | `d5dc177aa0f9ca9460ba46af7048c880db44ca97d75f9d28e2c57789caf8fc01` |
+| `docs/assets/js/landing-newsletter.js` | `b3952f0d61caf8dc2f703132221c5526bc9ea7e09176d5598c15c838ec857110` |
+| `docs/assets/js/legal-language.js` | `a5b51c7f2191dd05377f265a8405ea45e64a9735a39d4bcce66e16ce72943cbb` |
+| `docs/assets/js/mirror-setup-language.js` | `fd14cda09238a0f075916da340dd827d40de84b3f195a9dc08b781f6c2485f99` |
+| `docs/assets/js/municipality-article.js` | `54ea7fcd43ed49c0aa04748ef6bf456ec243164d9190058d285ce7b3bb03093e` |
+| `docs/assets/js/qr-login.js` | `8ac64095c45eac5455ceecde1b02169578c0d16f0a6f0b6befa8fd3958fa987e` |
+| `docs/assets/js/qrcode-vendor.js` | `c541ef06327885a8415bca8df6071e14189b4855336def4f36db54bde8484f36` |
+| `docs/assets/js/representative-app.js` | `93285d84949fca2edb2e74f7ccf4283a40a4281ac65e80ad46d2d63cbe2d59a4` |
+| `docs/assets/js/representative-language.js` | `9e276d68e552e0abe8f39144f0ab4f18d7d44fe068ddd014c134ca990987fe86` |
+| `docs/assets/js/sso-verify.js` | `f2551e8442de7ae06a22d327998dddb27db1c99163d2c6a100475aa7c816f306` |
+| `docs/assets/js/tickets-auth-guard.js` | `5c734d80fc69928afe9022fa59883f236e1c6a2c8dad7783a743f822c5d5683e` |
+| `docs/assets/js/tickets-board.js` | `47495b3920a4d635a8f14f59ab236907b13854470cb5f7ca699634f8dbc390c4` |
+| `docs/assets/js/tickets-callback.js` | `c0b997148b6e5c1430ecaa6a1022d6d090cdde6382190ac4de51eca6cbd7b771` |
+| `docs/assets/js/wiki-audit-1.js` | `287b412bb9d45a6895479f9d2aa03a3635fb65dca96721594627709587a24752` |
+| `docs/assets/js/wiki-audit-2.js` | `96bb335d590a6ecdb4cbd084ab6a2e2364b8db97c2fc9f06c0a4ddfaae899364` |
+| `docs/assets/js/wiki-broadcasting-2.js` | `d2c2f13a273eea52ac6d1011f58d4ea2b20588870bb427d6ef75033640fbd2aa` |
+| `docs/assets/js/wiki-faq-2.js` | `417b4905c67943cbe6d580fa652445d0bad0ebd68acd1c00967ac2355c7d679c` |
+| `docs/assets/js/wiki-index-2.js` | `ed80408e7514afa30e0dfab25decde1d965ae0d39495fc8011e239aa687c89c5` |
+| `docs/assets/js/wiki-language.js` | `357101cfb25d4d756f4242be55347c69c9365b2ea0d1d7c3993b6e042f0d0d26` |
+| `docs/assets/js/wiki-legal.js` | `99989df4947964c296d147bfb3b8cdd7eef3ba5f0ba4113f6a62b3590aba6fed` |
+| `docs/assets/js/wiki-modules-2.js` | `c1631e014d00757ebf2884947da14b4d15441ec3348796bb398e21ac864ed33e` |
+| `docs/assets/js/wiki-privacy-1.js` | `433c5e952b6fc31975af5804d7c2b5feb6366541305ca7f1de0b88ba9ea8bdf2` |
+| `docs/assets/js/wiki-roadmap-2.js` | `8070253e7067aca9bca10ebf719a56dd382c0e1b5a386d1cc763e4e3c7da3798` |
+| `docs/assets/js/wiki-zk-voting-1.js` | `bc1b1e922136bc07de623050ce65270e178bb4520042e65a624fddc50680a67e` |
+
+## Next.js nonce and rendering
+
+Source scan of 45 production files: **0 Inline scripts**, **0 next/script elements**, **0 beforeInteractive**, **1 dangerouslySetInnerHTML**, **0 String handlers**, **0 javascript: URLs**.
+
+Next 16 uses src/proxy.ts. A fresh 256-bit Web Crypto nonce replaces untrusted request nonce/CSP values. The request Content-Security-Policy and x-nonce reach Next through next-intl's request-header overrides. Next automatically nonces bootstrap, Flight and streaming scripts from that request policy (verified against the locally installed Next renderer). No authored Script/inline script components exist. Future authored Script components must read x-nonce with await headers() and pass nonce explicitly.
+
+The locale layout is force-dynamic, including formerly static client pages: nonce-bearing HTML cannot use prerender/ISR document caching. Existing SSR data fetches already use no-store; static docs stay fully static and need no nonce. Responses are private/no-store. PWA start-URL and navigation caching is disabled; public HTML is excluded from precache, and runtime same-origin caching is restricted to script/style/image/font destinations. A new worker must replace old document caches before promotion. No strict-dynamic exception is needed.
+
+## Evidence and rollout gate
+
+Observation run 2 (132 visits, Chromium/WebKit at 390/1280) diagnosed static inline code, ticket handlers, Next bootstrap and municipality external font styles. It predates this migration and is not zero-violation evidence for this tree. No network, deployment or new production observation is performed by this task. There is no report receiver; violations are captured locally by the observation tool. See CSP_OBSERVATION.md for coverage limitations and required follow-up. A production build/render with the pinned Next version and deployed Traefik verification remain prerequisites to enforcement.

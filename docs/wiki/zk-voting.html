@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="el" data-lang="el">
 <head>
+<script defer src="../assets/js/events.js"></script>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>ZK Voting — Semaphore | εκκλησία Wiki</title>
@@ -68,7 +69,7 @@
     <a href="security.html" data-el="Ασφάλεια" data-en="Security">Ασφάλεια</a>
     <a href="zk-voting.html" class="active">ZK Voting</a>
     <a href="roadmap.html">Roadmap</a>
-    <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
+    <button class="lang-btn" data-csp-click="toggle-language" id="langBtn">EN</button>
   </div>
 </nav>
 <main id="main">
@@ -142,17 +143,6 @@
   <a href="../">εκκλησία</a> · <a href="index.html">Wiki</a> · <a href="security.html">Ασφάλεια</a> · <a href="roadmap.html">Roadmap</a>
   <p>εκκλησία &middot; &copy; 2026 V-Labs Development &middot; MIT License</p>
 </footer>
-<script>
-var currentLang = "el";
-function toggleLang() {
-  currentLang = currentLang === "el" ? "en" : "el";
-  document.documentElement.lang = currentLang;
-  document.getElementById("langBtn").textContent = currentLang === "el" ? "EN" : "ΕΛ";
-  document.querySelectorAll("[data-el]").forEach(function(el) {
-    var t = el.getAttribute("data-" + currentLang);
-    if (t) el.innerHTML = t;
-  });
-}
-</script>
+<script defer src="../assets/js/wiki-zk-voting-1.js"></script>
 </body>
 </html>

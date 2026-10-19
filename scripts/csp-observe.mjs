@@ -82,6 +82,11 @@ export function aggregateViolation(groups, event, pagePath, run, evidence = 'eve
 
 export function consoleViolation(message, location = {}) {
   if (!/content[- ]security[- ]policy/i.test(message)) return null;
+  // Chromium warns about Report-Only policies without a reporting endpoint.
+  // That configuration diagnostic is not a resource/execution violation. The
+  // observer deliberately collects events locally and has no report receiver.
+  if (/report[- ]only/i.test(message) && /does not specify[^;]*report-(?:uri|to)/i.test(message)
+      && /(?:no effect|no reports)/i.test(message)) return null;
   // Console wording differs by engine. Keep only recognizable fields, never
   // the raw message, policy, nonce, hash or console arguments.
   const name = message.match(/\b(?:default-src|[a-z]+-src(?:-elem|-attr)?|base-uri|frame-ancestors|form-action|sandbox)\b/i)?.[0].toLowerCase();

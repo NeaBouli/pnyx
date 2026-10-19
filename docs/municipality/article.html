@@ -31,8 +31,6 @@
   "inLanguage": "el"
 }
 </script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --ink:      #1B2A4A;
@@ -558,19 +556,7 @@
 
 </main>
 
-<script>
-  // Scroll-triggered section reveals
-  const sections = document.querySelectorAll('.article-section');
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        e.target.classList.add('visible');
-        observer.unobserve(e.target);
-      }
-    });
-  }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
-  sections.forEach(s => observer.observe(s));
-</script>
+<script defer src="../assets/js/municipality-article.js"></script>
 
 </body>
 </html>

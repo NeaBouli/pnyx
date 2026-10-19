@@ -1,0 +1,8 @@
+# Apply only after zero-violation observation; see docs/security/CSP_OBSERVATION.md.
+services:
+  web:
+    environment:
+      CSP_ENFORCE: 'true'
+    labels:
+      traefik.http.middlewares.ekklesia-static-csp.headers.contentSecurityPolicy: "default-src 'self' https://api.ekklesia.gr; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api.qrserver.com https://avatars.githubusercontent.com; connect-src 'self' https://api.ekklesia.gr https://api.coingecko.com https://arweave.net https://api.github.com https://polis-oauth-proxy.bergamolia.workers.dev; frame-ancestors 'none'; font-src 'self'; object-src 'none'; base-uri 'self'"
+      traefik.http.middlewares.ekklesia-embed-csp.headers.contentSecurityPolicy: "default-src 'self' https://api.ekklesia.gr; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api.qrserver.com https://avatars.githubusercontent.com; connect-src 'self' https://api.ekklesia.gr https://api.coingecko.com https://arweave.net https://api.github.com https://polis-oauth-proxy.bergamolia.workers.dev; frame-ancestors *; font-src 'self'; object-src 'none'; base-uri 'self'"

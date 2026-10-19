@@ -9,6 +9,10 @@ import "../globals.css";
 
 const inter = Inter({ subsets: ["latin", "greek"] });
 
+// A per-response nonce requires request rendering, including formerly static
+// client pages. Existing SSR data fetches already use cache: "no-store".
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "εκκλησία — Ekklesia.gr",
   description: "Ψηφιακή Πλατφόρμα Αμέσης Δημοκρατίας για τον Έλληνα Πολίτη",

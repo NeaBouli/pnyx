@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="el" data-lang="el">
 <head>
+<script defer src="assets/js/events.js"></script>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>εκκλησία — Ψηφιακή Άμεση Δημοκρατία | ekklesia.gr</title>
@@ -502,7 +503,7 @@
       <a href="wiki/" data-el="Wiki" data-en="Wiki">Wiki</a>
       <a href="community.html">Community</a>
       <span class="pnx2-nav-divider" aria-hidden="true"></span>
-      <button class="lang-btn" onclick="toggleLang()" aria-label="Change language">
+      <button class="lang-btn" data-csp-click="toggle-language" aria-label="Change language">
         <span id="langFlag">EN</span>
       </button>
       <a class="pnx2-nav-cta" href="#download" data-el="ΛΗΨΗ APP" data-en="DOWNLOAD APP">ΛΗΨΗ APP</a>
@@ -660,7 +661,7 @@
         </div>
       </div>
       <!-- Android APK — ACTIVE -->
-      <a class="download-channel-card" href="https://github.com/NeaBouli/pnyx/releases/download/v1.0.33/ekklesia-v1.0.33-vC62-DIRECT.apk" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:0.6rem;padding:0.75rem 1.75rem;background:white;border:2px solid #22c55e;border-radius:0.75rem;cursor:pointer;text-decoration:none;color:#0f172a;transition:all 0.2s" onmouseover="this.style.borderColor='#2563eb';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='#22c55e';this.style.transform='none'">
+      <a class="download-channel-card" href="https://github.com/NeaBouli/pnyx/releases/download/v1.0.33/ekklesia-v1.0.33-vC62-DIRECT.apk" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:0.6rem;padding:0.75rem 1.75rem;background:white;border:2px solid #22c55e;border-radius:0.75rem;cursor:pointer;text-decoration:none;color:#0f172a;transition:all 0.2s" data-csp-mouseover="style-bc80a8e99e" data-csp-mouseout="style-eecca39034">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="#22c55e" style="flex:none"><path d="M17.523 2.149a.7.7 0 0 0-.904.378L15.108 6.21c-1.02-.442-2.15-.688-3.358-.688-1.209 0-2.338.246-3.358.688L6.881 2.527a.7.7 0 1 0-1.282.556l1.47 3.586A8.263 8.263 0 0 0 3.5 12.998h17c0-2.486-1.09-4.715-2.819-6.237l1.52-3.734a.7.7 0 0 0-.378-.878zM8.5 10.75a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm7 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2zM3.5 13.998v5.25a1.75 1.75 0 0 0 1.75 1.75h1v2.25a1.25 1.25 0 1 0 2.5 0v-2.25h6.5v2.25a1.25 1.25 0 1 0 2.5 0v-2.25h1a1.75 1.75 0 0 0 1.75-1.75v-5.25h-17z"/></svg>
         <div style="text-align:left">
           <div style="font-size:0.6rem;color:#22c55e" data-el="Λήψη APK" data-en="Download APK">Λήψη APK</div>
@@ -669,7 +670,7 @@
         </div>
       </a>
       <!-- Google Play (Closed Testing) -->
-      <a class="download-channel-card" href="https://play.google.com/apps/testing/ekklesia.gr" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.6rem;padding:0.75rem 1.75rem;background:white;border:2px solid #e2e8f0;border-radius:0.75rem;text-decoration:none;color:#334155;transition:all 0.2s;opacity:0.8" onmouseenter="this.style.borderColor='#3b82f6';this.style.opacity='1'" onmouseleave="this.style.borderColor='#334155';this.style.opacity='0.8'">
+      <a class="download-channel-card" href="https://play.google.com/apps/testing/ekklesia.gr" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.6rem;padding:0.75rem 1.75rem;background:white;border:2px solid #e2e8f0;border-radius:0.75rem;text-decoration:none;color:#334155;transition:all 0.2s;opacity:0.8" data-csp-mouseenter="style-013d9e1cb7" data-csp-mouseleave="style-7145038575">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="#334155" style="flex:none" aria-hidden="true"><path d="M3.18 23.08L14.44 12 3.18.92a2.01 2.01 0 0 0-.18.83v20.5c0 .29.06.56.18.83zm1.06 1.06l12.5-7.25L5.5 12l11.24-4.89L4.24 1.86 15.5 12 4.24 22.14zM20.5 12L16.83 9.8l-1.56 1.56L16.83 12l-1.56 1.64 1.56 1.56L20.5 12z"/></svg>
         <div style="text-align:left">
           <div style="font-size:0.6rem;color:#fbbf24" data-el="Υπό έλεγχο" data-en="Under review">Υπό έλεγχο</div>
@@ -680,7 +681,7 @@
         </div>
       </a>
       <!-- F-Droid -->
-      <a class="download-channel-card" href="https://f-droid.org/packages/ekklesia.gr/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.6rem;padding:0.75rem 1.75rem;background:white;border:2px solid #22c55e;border-radius:0.75rem;text-decoration:none;color:#334155;transition:all 0.2s" onmouseenter="this.style.borderColor='#3b82f6'" onmouseleave="this.style.borderColor='#22c55e'">
+      <a class="download-channel-card" href="https://f-droid.org/packages/ekklesia.gr/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.6rem;padding:0.75rem 1.75rem;background:white;border:2px solid #22c55e;border-radius:0.75rem;text-decoration:none;color:#334155;transition:all 0.2s" data-csp-mouseenter="style-6d4f2e8a0d" data-csp-mouseleave="style-4d3ef53da6">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="#16a34a" style="flex:none"><path d="M12 1C5.925 1 1 5.925 1 12s4.925 11 11 11 11-4.925 11-11S18.075 1 12 1zm0 2.2c4.856 0 8.8 3.944 8.8 8.8s-3.944 8.8-8.8 8.8S3.2 16.856 3.2 12 7.144 3.2 12 3.2zm-.55 3.3v2.75H8.7v5.5h2.75V17.5h1.1v-2.75h2.75v-5.5h-2.75V6.5h-1.1z"/></svg>
         <div style="text-align:left">
           <div style="font-size:0.6rem;color:#16a34a" data-el="Διαθέσιμο" data-en="Available">Διαθέσιμο</div>
@@ -948,184 +949,7 @@
     </div>
   </div>
 </div>
-<script>
-(function(){
-  var ELECTORATE = 9810040; // Εκλογικό Σώμα Ελλάδας 2023 (ΥΠΕΣ)
-  var representationRequestId = 0;
-
-  function renderBillComparison(parliamentPct, citizenPct, billId) {
-    var available = Number.isFinite(parliamentPct) && Number.isFinite(citizenPct) && parliamentPct >= 0 && parliamentPct <= 100 && citizenPct >= 0 && citizenPct <= 100;
-    var lang = typeof currentLang !== "undefined" ? currentLang : "el";
-    function text(id, el, en) {
-      var node = document.getElementById(id);
-      if (!node) return;
-      node.setAttribute("data-el", el);
-      node.setAttribute("data-en", en);
-      node.textContent = lang === "en" ? en : el;
-    }
-    [["repParliament", parliamentPct], ["repCitizen", citizenPct]].forEach(function(item) {
-      var fill = document.getElementById(item[0] + "Fill");
-      if (fill) fill.style.width = (available ? item[1] : 0) + "%";
-      text(item[0] + "Value", available ? item[1].toFixed(2).replace(".", ",") + "% Υπέρ" : "—", available ? item[1].toFixed(2) + "% YES" : "—");
-    });
-    text("repComparisonNote",
-      (available ? "Ίδιο νομοσχέδιο: " + billId + ". " : "Δεν υπάρχουν διαθέσιμα έγκυρα συγκρίσιμα δεδομένα για το ίδιο νομοσχέδιο. ") + "Ποσοστό Υπέρ των καταγεγραμμένων κομματικών θέσεων έναντι όλων των ψήφων της πλατφόρμας. Όχι ποσοστό βουλευτών ή επίσημα επιβεβαιωμένη απόφαση.",
-      (available ? "Same bill: " + billId + ". " : "Valid comparable data for the same bill is unavailable. ") + "YES share of reported party positions versus all platform votes. Not MP percentages or an officially confirmed decision.");
-  }
-
-  function fetchBillComparison(billId, requestId) {
-    if (typeof billId !== "string" || !billId.trim() || billId.length > 50) return;
-    fetch("https://api.ekklesia.gr/api/v1/public/bills/" + encodeURIComponent(billId) + "/results")
-      .then(function(r){ if (!r.ok) throw new Error("Bill results unavailable"); return r.json(); })
-      .then(function(d){
-        if (requestId !== representationRequestId) return;
-        if (!d || d.bill_id !== billId || (d.status !== "PARLIAMENT_VOTED" && d.status !== "OPEN_END") || d.results_hidden !== false) throw new Error("Bill results are not public and closed");
-        var counts = d.citizen_votes;
-        var parties = d.parliament_votes;
-        if (!counts || typeof counts !== "object" || Array.isArray(counts) || !parties || typeof parties !== "object" || Array.isArray(parties)) throw new Error("Comparison data missing");
-        var fields = ["yes", "no", "abstain", "unknown", "total"];
-        if (!fields.every(function(key){ return Number.isSafeInteger(counts[key]) && counts[key] >= 0; }) || counts.total === 0) throw new Error("Invalid vote counts");
-        var sum = counts.yes + counts.no + counts.abstain + counts.unknown;
-        if (!Number.isSafeInteger(sum) || sum !== counts.total) throw new Error("Vote totals disagree");
-        var keys = Object.keys(parties);
-        var positions = Object.values(parties);
-        var known = ["YES", "ΝΑΙ", "NO", "ΟΧΙ", "ABSTAIN", "ΠΑΡΩΝ", "ΑΠΟΧΗ"];
-        if (!keys.length || !keys.every(function(key){ return !!key.trim(); }) || !positions.every(function(position){ return typeof position === "string" && known.indexOf(position) !== -1; })) throw new Error("Party positions unavailable");
-        var yes = positions.filter(function(position){ return position === "YES" || position === "ΝΑΙ"; }).length;
-        renderBillComparison(yes / positions.length * 100, counts.yes / counts.total * 100, billId);
-      })
-      .catch(function(){ if (requestId === representationRequestId) renderBillComparison(null, null); });
-  }
-
-  function repColor(pct) {
-    // Text-safe shades: the score is also rendered as coloured text.
-    if (pct < 25) return "#dc2626";
-    if (pct < 50) return "#c2410c";
-    if (pct < 75) return "#a16207";
-    if (pct < 90) return "#15803d";
-    return "#1d4ed8";
-  }
-
-  function setMood(score) {
-    var mouth = document.getElementById("moodMouth");
-    var status = document.getElementById("moodStatus");
-    if (!mouth || !status) return;
-    var el = "Αναμονή πραγματικών δεδομένων. Ο δείκτης ενεργοποιείται μόλις υπάρξουν αρκετά συγκρίσιμα δεδομένα.";
-    var en = "Waiting for real data. The indicator activates once sufficient comparable data is available.";
-    var path = "M36 80 L84 80";
-    if (Number.isFinite(score)) {
-      if (score >= 50) {
-        path = "M36 74 Q60 96 84 74";
-        el = "Η Βουλή αντιπροσωπεύει τη γνώμη των πολιτών στο " + score + "%.";
-        en = "Parliament represents citizen opinion at " + score + "%.";
-      } else if (score < 45) {
-        path = "M36 88 Q60 66 84 88";
-        el = "Αντιπροσωπευτικότητα " + score + "%: απόκλιση από τη γνώμη των πολιτών.";
-        en = "Representativeness " + score + "%: divergence from citizen opinion.";
-      } else {
-        el = "Οριακή αντιπροσωπευτικότητα: " + score + "%.";
-        en = "Marginal representativeness: " + score + "%.";
-      }
-    }
-    mouth.setAttribute("d", path);
-    status.setAttribute("data-el", el);
-    status.setAttribute("data-en", en);
-    var lang = typeof currentLang !== "undefined" ? currentLang : "el";
-    var newText = lang === "en" ? en : el;
-    if (status.textContent !== newText) status.textContent = newText;
-  }
-
-  function fetchRepresentation() {
-    var requestId = ++representationRequestId;
-    renderBillComparison(null, null);
-    fetch("https://api.ekklesia.gr/api/v1/analytics/representation")
-      .then(function(r){ if (!r.ok) throw new Error("Representation unavailable"); return r.json(); })
-      .then(function(d){
-        if (requestId !== representationRequestId) return;
-        fetchBillComparison(d && d.last_bill && d.last_bill.bill_id, requestId);
-        var score = d.cumulative_representation;
-        var scoreEl = document.getElementById("repScore");
-        var divEl = document.getElementById("repDivergence");
-        var billsEl = document.getElementById("repBills");
-        var votesEl = document.getElementById("repVotes");
-        var lastBill = document.getElementById("repLastBill");
-        var lastTitle = document.getElementById("repLastTitle");
-        var lastStats = document.getElementById("repLastStats");
-        var noData = document.getElementById("repNoData");
-        var t1 = document.getElementById("tier1Score");
-        var t2 = document.getElementById("tier2Score");
-        var t3 = document.getElementById("tier3Score");
-        var heroT1 = document.getElementById("heroTier1");
-        var heroT2 = document.getElementById("heroTier2");
-        var heroT3 = document.getElementById("heroTier3");
-
-        var totalVotes = d.total_citizen_votes || 0;
-        var avgDiv = d.cumulative_divergence || 0;
-        var bills = d.bills_analyzed || 0;
-
-        // These fields compare Parliament with citizens. Fail closed until
-        // the API has at least one analyzed bill and a cumulative score.
-        if (bills < 1 || score === null || score === undefined || !Number.isFinite(Number(score))) {
-          setMood(null);
-          if (scoreEl) scoreEl.textContent = "—";
-          if (divEl) divEl.textContent = "—";
-          if (billsEl) billsEl.textContent = "—";
-          if (votesEl) votesEl.textContent = "—";
-          if (t1) t1.textContent = "—";
-          if (t2) t2.textContent = "—";
-          if (t3) { t3.textContent = "—"; t3.style.color = ""; }
-          if (heroT1) heroT1.textContent = "—";
-          if (heroT2) heroT2.textContent = "—";
-          if (heroT3) heroT3.textContent = "—";
-          if (lastBill) lastBill.style.display = "none";
-          if (noData) noData.style.display = "inline";
-          return;
-        }
-
-        // Tier 1: Raw platform
-        var rawPct = (totalVotes / ELECTORATE) * 100;
-        var rawLabel = rawPct < 0.001 ? "0%" : rawPct.toFixed(rawPct < 1 ? 3 : 1) + "%";
-        if (t1) t1.textContent = rawLabel;
-        if (heroT1) heroT1.textContent = rawLabel;
-
-        // Tier 2: Weighted (Jackman MRP correction)
-        var corrected = rawPct / 0.65; // voluntary participation bias
-        var avgBillsPerVoter = bills > 0 ? Math.min(totalVotes / Math.max(1, bills), 5) / 5 : 0;
-        var weighted = corrected * (1 + avgBillsPerVoter * 0.3);
-        weighted = Math.min(100, weighted);
-        var weightedLabel = weighted < 0.001 ? "0%" : weighted.toFixed(weighted < 1 ? 3 : 1) + "%";
-        if (t2) t2.textContent = weightedLabel;
-        if (heroT2) heroT2.textContent = weightedLabel;
-
-        // Tier 3: CRI composite is meaningful only with real representation data.
-        var quantityScore = Math.min(1, rawPct / 1); // normalize: 1% = max
-        var qualityScore = score / 100; // representation = 1-divergence
-        var diversityScore = 0.5; // neutral until demographic data available
-        var cri = Math.round((0.4 * quantityScore + 0.3 * qualityScore + 0.3 * diversityScore) * 100);
-        if (t3) { t3.textContent = cri + "/100"; t3.style.color = repColor(cri); }
-        if (heroT3) heroT3.textContent = cri + "/100";
-
-        if (noData) noData.style.display = "none";
-        var pct = Math.min(100, Math.max(0, score));
-        setMood(pct);
-        var col = repColor(pct);
-        if (scoreEl) { scoreEl.textContent = pct + "%"; scoreEl.style.color = col; }
-        if (divEl) divEl.textContent = avgDiv + "%";
-        if (billsEl) billsEl.textContent = bills;
-        if (votesEl) votesEl.textContent = totalVotes.toLocaleString();
-
-        if (d.last_bill && lastBill) {
-          lastBill.style.display = "block";
-          if (lastTitle) lastTitle.textContent = d.last_bill.title_el;
-          if (lastStats) lastStats.textContent = d.last_bill.citizen_votes + " ψήφοι · Απόκλιση " + d.last_bill.divergence + "% · Αντιπρ. " + d.last_bill.representation + "%";
-        }
-      })
-      .catch(function(){ if (requestId === representationRequestId) { setMood(null); renderBillComparison(null, null); } });
-  }
-  fetchRepresentation();
-  setInterval(fetchRepresentation, 60000);
-})();
-</script>
+<script defer src="assets/js/landing-comparison.js"></script>
 
 <!-- CPLM — Citizens Political Liquid Mirror -->
 <div style="max-width:800px;margin:0 auto;padding:0 2rem 1.5rem" class="fade-in" id="cplmSection">
@@ -1185,74 +1009,7 @@
     <p style="font-size:0.65rem;color:#64748b;margin-top:0.5rem;text-align:center" data-el="Ανανεώνεται αυτόματα κάθε 6 ώρες. Περιλαμβάνει όλες τις ψήφους (και Open End)." data-en="Updated automatically every 6 hours. Includes all votes (including Open End).">Ανανεώνεται αυτόματα κάθε 6 ώρες. Περιλαμβάνει όλες τις ψήφους (και Open End).</p>
   </div>
 </div>
-<script>
-(function(){
-  var QUAD_EL = {
-    center: "Κέντρο", libertarian_left: "Ελευθ. Αριστερά",
-    libertarian_right: "Ελευθ. Δεξιά", authoritarian_left: "Αυτ. Αριστερά",
-    authoritarian_right: "Αυτ. Δεξιά"
-  };
-  var QUAD_EN = {
-    center: "Center", libertarian_left: "Lib. Left",
-    libertarian_right: "Lib. Right", authoritarian_left: "Auth. Left",
-    authoritarian_right: "Auth. Right"
-  };
-  function fetchCPLM() {
-    fetch("https://api.ekklesia.gr/api/v1/cplm/aggregate")
-      .then(function(r){return r.json()})
-      .then(function(d){
-        var dot = document.getElementById("cplmDot");
-        var arrow = document.getElementById("cplmArrow");
-        var xEl = document.getElementById("cplmX");
-        var yEl = document.getElementById("cplmY");
-        var vEl = document.getElementById("cplmVoters");
-        var qEl = document.getElementById("cplmQuadrant");
-        if (arrow) arrow.setAttribute("opacity", "0");
-        var fallback = document.getElementById("cplmFallback");
-        if (fallback) fallback.style.opacity = "0";
-        if (d.suppressed || !Number.isFinite(d.x) || !Number.isFinite(d.y)) {
-          if (dot) dot.setAttribute("visibility", "hidden");
-          [xEl, yEl, vEl, qEl].forEach(function(el) {
-            if (el) el.textContent = "—";
-          });
-          if (qEl) {
-            qEl.setAttribute("data-el", "—");
-            qEl.setAttribute("data-en", "—");
-          }
-          return;
-        }
-        if (dot) dot.setAttribute("visibility", "visible");
-        // Map X/Y from [-10,+10] to [0,280]
-        var px = 140 + (d.x / 10) * 140;
-        var py = 140 - (d.y / 10) * 140;
-        if (dot) { dot.setAttribute("cx", px); dot.setAttribute("cy", py); }
-        if (xEl) xEl.textContent = d.x.toFixed(2);
-        if (yEl) yEl.textContent = d.y.toFixed(2);
-        if (vEl) vEl.textContent = Number.isFinite(d.total_voters) ? d.total_voters.toLocaleString() : "—";
-        var lang = typeof currentLang !== "undefined" ? currentLang : "el";
-        if (qEl) {
-          var quadEl = QUAD_EL[d.quadrant] || d.quadrant || "";
-          var quadEn = QUAD_EN[d.quadrant] || d.quadrant || "";
-          qEl.setAttribute("data-el", quadEl);
-          qEl.setAttribute("data-en", quadEn);
-          qEl.textContent = lang === "en" ? quadEn : quadEl;
-        }
-        // Trend arrow
-        if (arrow && d.trend && (Math.abs(d.trend.x_delta) > 0.001 || Math.abs(d.trend.y_delta) > 0.001)) {
-          var ax = px + (d.trend.x_delta / 10) * 280;
-          var ay = py - (d.trend.y_delta / 10) * 280;
-          arrow.setAttribute("x1", px); arrow.setAttribute("y1", py);
-          arrow.setAttribute("x2", ax); arrow.setAttribute("y2", ay);
-          arrow.setAttribute("opacity", "0.6");
-        }
-
-      })
-      .catch(function(){});
-  }
-  fetchCPLM();
-  setInterval(fetchCPLM, 60000);
-})();
-</script>
+<script defer src="assets/js/landing-cplm.js"></script>
 
 </div>
 </section>
@@ -1403,7 +1160,7 @@
         <p style="font-size:0.78rem;color:var(--gray-400);margin:0" data-el="Κατηγορίες ανά επίπεδο διακυβέρνησης" data-en="Categories per governance level">Κατηγορίες ανά επίπεδο</p>
       </div>
     </div>
-    <a href="https://pnyx.ekklesia.gr" target="_blank" style="display:inline-block;padding:0.75rem 2rem;background:#2563eb;color:white;border-radius:0.75rem;font-weight:800;font-size:1rem;text-decoration:none;transition:all 0.2s" onmouseenter="this.style.background='#1d4ed8'" onmouseleave="this.style.background='#2563eb'" data-el="Επισκεφτείτε το Forum →" data-en="Visit the Forum →">Επισκεφτείτε το Forum →</a>
+    <a href="https://pnyx.ekklesia.gr" target="_blank" style="display:inline-block;padding:0.75rem 2rem;background:#2563eb;color:white;border-radius:0.75rem;font-weight:800;font-size:1rem;text-decoration:none;transition:all 0.2s" data-csp-mouseenter="style-702518e1a0" data-csp-mouseleave="style-6859f3b26b" data-el="Επισκεφτείτε το Forum →" data-en="Visit the Forum →">Επισκεφτείτε το Forum →</a>
     <div style="margin-top:1rem;display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;align-items:center">
       <a href="https://play.google.com/store/apps/details?id=com.discourse" target="_blank" style="display:inline-flex;align-items:center;gap:0.4rem;padding:0.5rem 1rem;background:#22c55e;color:white;border-radius:0.5rem;font-size:0.75rem;font-weight:700;text-decoration:none">Android App</a>
       <a href="https://apps.apple.com/app/discourse-hub/id1173672076" target="_blank" style="display:inline-flex;align-items:center;gap:0.4rem;padding:0.5rem 1rem;background:#0f172a;color:white;border-radius:0.5rem;font-size:0.75rem;font-weight:700;text-decoration:none">iOS App</a>
@@ -1562,13 +1319,13 @@
 
     <!-- 2 Wege: Verifiziert / GitHub -->
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;max-width:800px;margin:0 auto" class="fade-in">
-      <a href="tickets/index.html" style="display:block;text-decoration:none;color:inherit;padding:1.5rem;background:var(--blue-l);border:2px solid var(--blue);border-radius:1rem;transition:transform 0.2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+      <a href="tickets/index.html" style="display:block;text-decoration:none;color:inherit;padding:1.5rem;background:var(--blue-l);border:2px solid var(--blue);border-radius:1rem;transition:transform 0.2s" data-csp-mouseover="style-ab0b586fec" data-csp-mouseout="style-902225600f">
         <div style="font-size:1.5rem;margin-bottom:0.5rem">🔐</div>
         <h4 style="font-weight:800;margin-bottom:0.3rem;color:var(--blue-d)" data-el="Επαληθευμένος Χρήστης" data-en="Verified User">Επαληθευμένος Χρήστης</h4>
         <p style="font-size:0.82rem;color:var(--gray-500);margin:0 0 0.75rem" data-el="Ed25519 υπογραφή — ψευδώνυμα" data-en="Ed25519 signature — pseudonymous">Ed25519 υπογραφή — ψευδώνυμα</p>
         <span style="display:inline-block;padding:0.4rem 1rem;background:var(--blue);color:white;border-radius:0.5rem;font-weight:700;font-size:0.82rem">POLIS Ticket Board →</span>
       </a>
-      <a href="https://github.com/NeaBouli/pnyx-community/issues/new" target="_blank" style="display:block;text-decoration:none;color:inherit;padding:1.5rem;background:white;border:2px solid #e2e8f0;border-radius:1rem;transition:transform 0.2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+      <a href="https://github.com/NeaBouli/pnyx-community/issues/new" target="_blank" style="display:block;text-decoration:none;color:inherit;padding:1.5rem;background:white;border:2px solid #e2e8f0;border-radius:1rem;transition:transform 0.2s" data-csp-mouseover="style-ab0b586fec" data-csp-mouseout="style-902225600f">
         <div style="font-size:1.5rem;margin-bottom:0.5rem">🐙</div>
         <h4 style="font-weight:800;margin-bottom:0.3rem" data-el="Χωρίς Εγγραφή" data-en="No Registration">Χωρίς Εγγραφή</h4>
         <p style="font-size:0.82rem;color:var(--gray-500);margin:0 0 0.75rem" data-el="Απευθείας στο GitHub Issues" data-en="Directly on GitHub Issues">Απευθείας στο GitHub Issues</p>
@@ -1648,7 +1405,7 @@
   <div style="max-width:520px;margin:0 auto;text-align:center">
     <h2 style="color:#0f172a;font-size:1.5rem;font-weight:900;margin-bottom:0.5rem" data-el="📬 Ενημέρωση" data-en="📬 Stay Informed">📬 Ενημέρωση</h2>
     <p style="color:#64748b;font-size:0.88rem;margin-bottom:1.5rem" data-el="Λάβετε ενημερώσεις για νέες ψηφοφορίες και αποτελέσματα." data-en="Get updates on new votes and results.">Λάβετε ενημερώσεις για νέες ψηφοφορίες και αποτελέσματα.</p>
-    <form id="nlForm" onsubmit="submitNewsletter(event)" style="text-align:left">
+    <form id="nlForm" data-csp-submit="submit-newsletter-event" style="text-align:left">
       <input type="email" id="nlEmail" required placeholder="email@example.com" style="width:100%;padding:0.65rem 1rem;background:white;border:2px solid #e2e8f0;border-radius:0.5rem;color:#0f172a;font-size:0.9rem;margin-bottom:0.75rem;outline:none" />
       <div style="display:flex;gap:1rem;margin-bottom:0.75rem">
         <label style="color:#64748b;font-size:0.8rem;display:flex;align-items:center;gap:0.3rem"><input type="radio" name="freq" value="weekly" checked style="accent-color:#2563eb"> <span data-el="Εβδομαδιαίο" data-en="Weekly">Εβδομαδιαίο</span></label>
@@ -1680,44 +1437,7 @@
     </form>
   </div>
 </section>
-<script>
-async function submitNewsletter(e) {
-  e.preventDefault();
-  var btn = document.getElementById("nlBtn");
-  var msg = document.getElementById("nlMsg");
-  btn.disabled = true; btn.textContent = "...";
-  try {
-    var r = await fetch("https://api.ekklesia.gr/api/v1/newsletter/subscribe", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        email: document.getElementById("nlEmail").value,
-        subscriber_type: document.getElementById("nlType").value,
-        frequency: document.querySelector('input[name="freq"]:checked').value,
-        language: document.querySelector('input[name="lang"]:checked').value,
-        topic_active_votes: document.getElementById("nlVotes").checked,
-        topic_vote_results: document.getElementById("nlResults").checked,
-        topic_new_proposals: document.getElementById("nlProposals").checked,
-        topic_system_news: document.getElementById("nlSystem").checked,
-        topic_breaking_news: document.getElementById("nlBreaking").checked,
-      })
-    });
-    var d = await r.json();
-    msg.style.display = "block";
-    if (d.success) {
-      msg.style.background = "#052e16"; msg.style.color = "#22c55e";
-      msg.textContent = d.message;
-    } else {
-      msg.style.background = "#450a0a"; msg.style.color = "#ef4444";
-      msg.textContent = d.detail || d.message || "Error";
-    }
-  } catch(err) {
-    msg.style.display = "block"; msg.style.background = "#450a0a"; msg.style.color = "#ef4444";
-    msg.textContent = "Network error";
-  }
-  btn.disabled = false; btn.textContent = "📬 Εγγραφή";
-}
-</script>
+<script defer src="assets/js/landing-newsletter.js"></script>
 
 </main>
 
@@ -1733,473 +1453,29 @@ async function submitNewsletter(e) {
   </div>
   <div class="footer-links" style="margin-top:0.5rem;font-size:0.75rem">
     <a href="legal.html" data-el="Στοιχεία Φορέα" data-en="Operator Information">Στοιχεία Φορέα</a>
-    <a href="#" onclick="openLegalModal('privacy');return false" data-el="Πολιτική Απορρήτου" data-en="Privacy Policy">Πολιτική Απορρήτου</a>
-    <a href="#" onclick="openLegalModal('delete');return false" data-el="Διαγραφή Λογαριασμού" data-en="Delete Account">Διαγραφή Λογαριασμού</a>
+    <a href="#" data-csp-click="open-legal-modal-privacy-link" data-el="Πολιτική Απορρήτου" data-en="Privacy Policy">Πολιτική Απορρήτου</a>
+    <a href="#" data-csp-click="open-legal-modal-delete-link" data-el="Διαγραφή Λογαριασμού" data-en="Delete Account">Διαγραφή Λογαριασμού</a>
   </div>
   <p>εκκλησία &middot; &copy; 2026 V-Labs IT Solutions &amp; Development &middot; MIT License</p>
 </footer>
 
 <!-- Legal Modal -->
-<div id="legalModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:center;justify-content:center" onclick="if(event.target===this)closeLegalModal()">
+<div id="legalModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:center;justify-content:center" data-csp-click="legal-backdrop">
   <div style="background:#fff;border-radius:1rem;max-width:700px;width:92%;max-height:85vh;overflow-y:auto;padding:2rem;position:relative;box-shadow:0 8px 40px rgba(0,0,0,0.2)">
-    <button onclick="closeLegalModal()" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.5rem;cursor:pointer;color:#64748b;line-height:1">&times;</button>
+    <button data-csp-click="close-legal-modal" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.5rem;cursor:pointer;color:#64748b;line-height:1">&times;</button>
     <div id="legalContent"></div>
   </div>
 </div>
-<script>
-var _privacyHtml='<h2 style="margin-top:0">Πολιτική Απορρήτου / Privacy Policy</h2>'
-+'<p><strong>Τι ΔΕΝ αποθηκεύουμε:</strong> Αριθμό κινητού, Private Key, IP μαζί με την ψήφο, Ηλικία, Φύλο.</p>'
-+'<p>Οι μετρητές ορίων αιτημάτων χρησιμοποιούν ημερήσια HMAC αναγνωριστικά IP και λήγουν. Τα access logs μπορεί να περιέχουν την IP και εναλλάσσονται βάσει μεγέθους, χωρίς σταθερό όριο χρόνου διατήρησης.</p>'
-+'<p><strong>Τι αποθηκεύουμε:</strong> Argon2id v2 identity hash και SHA256 compatibility anchor, Public Key (Ed25519), Ψήφοι (ψευδώνυμα YES/NO/ABSTAIN, συνδεδεμένες με nullifier — όχι με όνομα ή αριθμό τηλεφώνου).</p>'
-+'<p><strong>k-Anonymity:</strong> Δημογραφικά μόνο όταν k ≥ 10 ψήφοι.</p>'
-+'<p><strong>GDPR:</strong> Servers στην Ευρώπη (Hetzner). Ελαχιστοποίηση δεδομένων· τα ψευδώνυμα δεδομένα παραμένουν προσωπικά δεδομένα. Δεν αποτελεί βεβαίωση νομικής συμμόρφωσης.</p>'
-+'<p><strong>Arweave:</strong> Κανονικές ψήφοι: μόνο συγκεντρωτικά αποτελέσματα, χωρίς ατομικές ψήφους ή Public Keys. ZK ψήφοι (σε παύση): ατομικές επιλογές με ZK απόδειξη, χωρίς ταυτότητα.</p>'
-+'<hr style="border:none;border-top:1px solid #e2e8f0;margin:1.5rem 0">'
-+'<h3>Όροι Χρήσης / Terms of Use</h3>'
-+'<p>Η πλατφόρμα ekklesia.gr είναι ένα ανοιχτού κώδικα, κοινοτικό έργο (MIT License). Η πλατφόρμα δεν αποτελεί κρατική υπηρεσία και οι ψηφοφορίες δεν έχουν νομική δεσμευτικότητα.</p>'
-+'<p>Πηγαίος κώδικας: <a href="https://github.com/NeaBouli/pnyx" target="_blank" style="color:#2563eb">github.com/NeaBouli/pnyx</a></p>'
-+'<p style="margin-top:1.5rem"><a href="wiki/privacy.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#2563eb;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Πλήρης Πολιτική Απορρήτου →</a></p>';
-var _deleteHtml='<h2 style="margin-top:0">Διαγραφή Λογαριασμού / Delete Account</h2>'
-+'<p>Το ekklesia.gr δεν δημιουργεί παραδοσιακό λογαριασμό. Δεν υπάρχει email, κωδικός ή username.</p>'
-+'<h3>Βήμα 1 — Απεγκατάσταση</h3>'
-+'<p>Απεγκαταστήστε την εφαρμογή. Διαγράφονται αμέσως: Private Key, Nullifier Root, όλα τα τοπικά δεδομένα.</p>'
-+'<h3>Βήμα 2 — Server</h3>'
-+'<p>Ο server διατηρεί τον ψευδώνυμο κωδικό (nullifier), το δημόσιο κλειδί και τις ψήφους. Η απεγκατάσταση δεν διαγράφει αυτά τα δεδομένα.</p>'
-+'<h3>Βήμα 3 — Επανεγγραφή</h3>'
-+'<p>Η ανάκληση απενεργοποιεί το παλιό κλειδί. Με νέα επαλήθευση το κλειδί αντικαθίσταται· ο nullifier και οι προηγούμενες ψήφοι παραμένουν.</p>'
-+'<p style="margin-top:1.5rem"><a href="wiki/delete-account.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#ef4444;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Αναλυτικές Οδηγίες Διαγραφής →</a></p>';
-function openLegalModal(type){var m=document.getElementById("legalModal");document.getElementById("legalContent").innerHTML=type==="privacy"?_privacyHtml:_deleteHtml;m.style.display="flex"}
-function closeLegalModal(){document.getElementById("legalModal").style.display="none"}
-document.addEventListener("keydown",function(e){if(e.key==="Escape")closeLegalModal()});
-</script>
+<script defer src="assets/js/landing-legal.js"></script>
 
-<script>
-var currentLang = "el";
-function toggleLang() {
-  currentLang = currentLang === "el" ? "en" : "el";
-  document.documentElement.lang = currentLang;
-  document.getElementById("langFlag").textContent = currentLang === "el" ? "EN" : "ΕΛ";
-  document.querySelectorAll("[data-el]").forEach(function(el) {
-    var t = el.getAttribute("data-" + currentLang);
-    if (t) el.textContent = t;
-  });
-}
-var obs = new IntersectionObserver(function(entries) {
-  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add("visible"); });
-}, { threshold: 0.1 });
-document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); });
-</script>
+<script defer src="assets/js/landing-language.js"></script>
 
-<script>
-// Democracy Cycle Animation — 6 Phasen (#356)
-// Runs only while the #demo fold is open: closing stops it, reopening restarts at
-// phase 01. Pause/play is user-controlled; reduced motion starts paused (static).
-(function() {
-  var PHASE_MS = 2000, HOLD_MS = 3000;
-  var section = document.getElementById("demo");
-  var reduceQuery = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
-  var timer = null, step = -1, paused = reducedMotion();
-
-  function reducedMotion() { return !!(reduceQuery && reduceQuery.matches); }
-  function setLiveText(id, elText, enText) {
-    var node=document.getElementById(id);
-    if(!node) return;
-    node.setAttribute("data-el", elText);
-    node.setAttribute("data-en", enText);
-    node.textContent=currentLang==="en"?enText:elText;
-  }
-  function clearResultData() {
-    var ry=document.getElementById("resultYes"); if(ry) ry.style.width="0";
-    var rn=document.getElementById("resultNo"); if(rn) rn.style.width="0";
-    var yb=document.getElementById("yesBar"); if(yb) yb.style.width="0";
-    var nb=document.getElementById("noBar"); if(nb) nb.style.width="0";
-    setLiveText("resultParticipation","Συμμετοχή στην πλατφόρμα: —","Platform participation: —");
-  }
-  function renderLiveResult(data) {
-    var total=data.total_votes == null ? null : Number(data.total_votes);
-    var STATUS={
-      ANNOUNCED:["Ανακοίνωση","Announced"],
-      ACTIVE:["Ενεργό · ψηφοφορία ανοιχτή","Active · voting open"],
-      WINDOW_24H:["Παράθυρο 24 ωρών","24-hour window"],
-      PARLIAMENT_VOTED:["Ψηφίστηκε στη Βουλή","Voted in Parliament"],
-      OPEN_END:["Αρχείο · Open End","Archive · Open End"]
-    };
-    var status=STATUS[data.status]||["Άγνωστη","Unknown"];
-    var statusEl="Κατάσταση νομοσχεδίου · "+status[0];
-    var statusEn="Bill status · "+status[1];
-    var totalEl=total == null ? "—" : total.toLocaleString("el-GR")+(total===1?" ψήφος":" ψήφοι");
-    var totalEn=total == null ? "—" : total.toLocaleString("en-US")+(total===1?" vote":" votes");
-    var yes=data.yes_pct == null ? null : Math.max(0,Math.min(100,Number(data.yes_pct)));
-    var no=data.no_pct == null ? null : Math.max(0,Math.min(100,Number(data.no_pct)));
-    var abstain=data.abstain_pct == null ? null : Math.max(0,Math.min(100,Number(data.abstain_pct)));
-    var titleEl=data.title_el||data.bill_id;
-    var titleEn=data.title_en||titleEl;
-    var majorityEl="Πλειοψηφία: ΑΠΟΧΗ";
-    var majorityEn="Majority: ABSTAIN";
-    if(yes==null||no==null||abstain==null) { majorityEl="Πλειοψηφία: —"; majorityEn="Majority: —"; }
-    else if(yes>=no&&yes>=abstain) { majorityEl="Πλειοψηφία: ΥΠΕΡ"; majorityEn="Majority: YES"; }
-    else if(no>=yes&&no>=abstain) { majorityEl="Πλειοψηφία: ΚΑΤΑ"; majorityEn="Majority: NO"; }
-    var electorate=9810040;
-    var participation=total/electorate*100;
-    setLiveText("latestBillTitle",titleEl,titleEn);
-    setLiveText("latestBillStatus",statusEl,statusEn);
-    setLiveText("demoYesLabel",(yes==null?"—":yes+"%")+" Υπέρ",(yes==null?"—":yes+"%")+" Yes");
-    setLiveText("demoNoLabel",(no==null?"—":no+"%")+" Κατά",(no==null?"—":no+"%")+" No");
-    setLiveText("resultTotal",totalEl,totalEn);
-    setLiveText("resultParticipation",total==null?"Συμμετοχή στην πλατφόρμα: —":"Συμμετοχή στην πλατφόρμα: "+participation.toFixed(4)+"% ("+total.toLocaleString("el-GR")+" / 9.810.040)",total==null?"Platform participation: —":"Platform participation: "+participation.toFixed(4)+"% ("+total.toLocaleString("en-US")+" / 9,810,040)");
-    setLiveText("resultYesLabel",(yes==null?"—":yes+"%")+" Υπέρ",(yes==null?"—":yes+"%")+" Yes");
-    setLiveText("resultNoLabel",(no==null?"—":no+"%")+" Κατά",(no==null?"—":no+"%")+" No");
-    setLiveText("resultMajority",majorityEl,majorityEn);
-  }
-  function fillResultData() {
-    var live=window._liveResult;
-    if(!live||!live.bill_id||live.yes_pct==null||live.no_pct==null||Number(live.total_votes)<1) {
-      clearResultData();
-      return;
-    }
-    var ry=document.getElementById("resultYes"); if(ry) ry.style.width=live.yes_pct+"%";
-    var rn=document.getElementById("resultNo"); if(rn) rn.style.width=live.no_pct+"%";
-    var yb=document.getElementById("yesBar"); if(yb) yb.style.width=live.yes_pct+"%";
-    var nb=document.getElementById("noBar"); if(nb) nb.style.width=live.no_pct+"%";
-  }
-
-  function phases() {
-    return section ? Array.prototype.slice.call(section.querySelectorAll("#cyclePhases > .demo-box")) : [];
-  }
-  function foldOpen() {
-    var fold = section && section.querySelector("details.pnx2-fold");
-    return fold ? fold.open : true;
-  }
-  function showPhase(index) {
-    phases().forEach(function(el, i) {
-      el.classList.toggle("active", i === index);
-      if (i === index) el.setAttribute("aria-current", "step"); else el.removeAttribute("aria-current");
-    });
-    step = index;
-  }
-  function stopCycle() { if (timer) { clearTimeout(timer); timer = null; } }
-  function runCycle() {
-    stopCycle();
-    if (step < 0) showPhase(0);
-    var last = phases().length - 1;
-    timer = setTimeout(function() {
-      timer = null;
-      showPhase(step >= last ? 0 : step + 1);
-      runCycle();
-    }, step >= last ? HOLD_MS : PHASE_MS);
-  }
-  function sync() {
-    var open = foldOpen();
-    if (!open) showPhase(-1);
-    if (open && !paused) runCycle(); else stopCycle();
-    var btn = document.getElementById("cycleToggle");
-    if (btn) btn.setAttribute("data-state", paused ? "paused" : "playing");
-    setLiveText("cycleToggleText", paused ? "Αναπαραγωγή" : "Παύση", paused ? "Play" : "Pause");
-  }
-  function initCycle() {
-    var fold = section && section.querySelector("details.pnx2-fold");
-    if (fold) fold.addEventListener("toggle", function() {
-      // Reopening restarts at phase 01 unless the visitor prefers reduced motion.
-      if (fold.open) { paused = reducedMotion(); showPhase(-1); }
-      sync();
-    });
-    var btn = document.getElementById("cycleToggle");
-    if (btn) btn.addEventListener("click", function() { paused = !paused; sync(); });
-    if (reduceQuery) {
-      var onReduce = function() { if (reducedMotion()) paused = true; sync(); };
-      if (reduceQuery.addEventListener) reduceQuery.addEventListener("change", onReduce);
-      else if (reduceQuery.addListener) reduceQuery.addListener(onReduce);
-    }
-    sync();
-  }
-  // landing-folds.js (deferred) builds the <details> before DOMContentLoaded.
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initCycle);
-  else initCycle();
-
-  // Load the real latest result; empty and unavailable states never show numbers.
-  fetch("https://api.ekklesia.gr/api/v1/vote/results/latest")
-    .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
-    .then(function(data){
-      if(!data||!data.bill_id||(data.total_votes!=null&&data.total_votes<1)) return;
-      window._liveResult=data;
-      renderLiveResult(data);
-      fillResultData();
-    }).catch(function(){
-      setLiveText("latestBillStatus","Τα ζωντανά δεδομένα δεν είναι διαθέσιμα αυτή τη στιγμή.","Live data is currently unavailable.");
-    });
-})();
-
-// Ticker — live bills from API, fallback to static HTML
-(function() {
-  var lang = document.documentElement.lang || "el";
-  var STATUS_BADGE = {
-    ACTIVE:    { el: "Βουλή · Ανοιχτή", en: "Parliament · Active", cls: "badge-green" },
-    ANNOUNCED: { el: "Βουλή · Ανακοινώθηκε", en: "Parliament · Announced", cls: "badge-yellow" },
-    WINDOW_24H:{ el: "Βουλή · 24ω", en: "Parliament · 24h", cls: "badge-yellow" },
-    OPEN_END:  { el: "Αποτέλεσμα", en: "Result", cls: "badge-blue" },
-    PARLIAMENT_VOTED: { el: "Ψηφίστηκε", en: "Voted", cls: "badge-blue" }
-  };
-
-  function billCard(b, cssClass) {
-    var s = STATUS_BADGE[b.status] || STATUS_BADGE.ACTIVE;
-    var title = (lang === "en" && b.title_en) ? b.title_en : b.title_el;
-    var badge = lang === "en" ? s.en : s.el;
-    var a = document.createElement("a");
-    a.href = "https://ekklesia.gr/" + lang + "/bills/" + (b.bill_id || b.id);
-    a.className = "t-card " + cssClass;
-    var hasAggregates = b.total_votes !== null && b.total_votes !== undefined && Number.isFinite(Number(b.total_votes));
-    var total = hasAggregates ? Number(b.total_votes).toLocaleString(lang === "en" ? "en-US" : "el-GR") : null;
-    var hasShares = hasAggregates && b.yes_pct != null;
-    var yesPct = hasShares ? Number(b.yes_pct) : null;
-    var meta = hasAggregates
-      ? total + " " + (lang === "en" ? "votes" : "ψήφοι")
-      : (b.suppressed ? "—" : (lang === "en" ? "Open for voting" : "Ανοιχτή για ψήφο"));
-    var result = hasShares
-      ? yesPct + "% " + (lang === "en" ? "Yes" : "Υπέρ")
-      : (b.suppressed ? "—" : (lang === "en" ? "View bill details" : "Προβολή νομοσχεδίου"));
-    a.innerHTML =
-      '<span class="t-badge ' + s.cls + '">' + escapeHtml(badge) + '</span>' +
-      '<span class="t-title">' + escapeHtml(title || "") + '</span>' +
-      '<span class="t-meta">' + escapeHtml(meta) + '</span>' +
-      (hasShares ? '<div class="t-bar"><div class="t-fill" style="width:' + Math.max(0, Math.min(100, yesPct)) + '%"></div></div>' : '') +
-      '<div class="t-converge">' + escapeHtml(result) + '</div>';
-    return a;
-  }
-
-  function escapeHtml(value) {
-    return String(value).replace(/[&<>"']/g, function(ch) {
-      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch];
-    });
-  }
-
-  function emptyCard(cssClass, titleEl, titleEn, textEl, textEn) {
-    var card = document.createElement("div");
-    card.className = "t-card " + cssClass + " t-empty visible";
-    card.innerHTML = '<strong>' + escapeHtml(lang === "en" ? titleEn : titleEl) + '</strong>' +
-      '<span>' + escapeHtml(lang === "en" ? textEn : textEl) + '</span>';
-    return card;
-  }
-
-  function startCycle(trackId, interval) {
-    var track = document.getElementById(trackId);
-    if (!track) return;
-    var cards = track.querySelectorAll(".t-card");
-    if (!cards.length) return;
-    var cur = 0;
-    function show(i) {
-      cards.forEach(function(c) { c.classList.remove("visible"); });
-      cur = i % cards.length;
-      cards[cur].classList.add("visible");
-    }
-    show(0);
-    if (cards.length > 1) setInterval(function() { show(cur + 1); }, interval);
-  }
-
-  function populateTrack(trackId, bills, cssClass) {
-    var track = document.getElementById(trackId);
-    if (!track || !bills.length) return;
-    track.innerHTML = "";
-    bills.forEach(function(b) { track.appendChild(billCard(b, cssClass)); });
-  }
-
-  function populateEmpty(trackId, cssClass, titleEl, titleEn, textEl, textEn) {
-    var track = document.getElementById(trackId);
-    if (!track) return;
-    track.innerHTML = "";
-    track.appendChild(emptyCard(cssClass, titleEl, titleEn, textEl, textEn));
-  }
-
-  function shuffle(arr) {
-    for (var i = arr.length - 1; i > 0; i--) {
-      var j = Math.floor(Math.random() * (i + 1));
-      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
-    }
-    return arr;
-  }
-
-  function fetchJson(url, fallback) {
-    return fetch(url)
-      .then(function(r) {
-        if (!r.ok) throw new Error("request failed");
-        return r.json();
-      })
-      .catch(function() { return fallback; });
-  }
-
-  Promise.all([
-    fetchJson("https://api.ekklesia.gr/api/v1/vote/results/in-progress", { bills: [] }),
-    fetchJson("https://api.ekklesia.gr/api/v1/bills?status=WINDOW_24H&limit=10", [])
-  ])
-    .then(function(payloads) {
-      var resultData = payloads[0];
-      var publicWindowBills = Array.isArray(payloads[1]) ? payloads[1] : [];
-      var bills = resultData && Array.isArray(resultData.bills) ? resultData.bills.slice() : [];
-      var knownBillIds = {};
-      bills.forEach(function(b) { knownBillIds[b.bill_id || b.id] = true; });
-      publicWindowBills.forEach(function(b) {
-        var billId = b.bill_id || b.id;
-        var hasOfficialSource = Boolean(b.parliament_url || b.diavgeia_ada);
-        if (!billId || !hasOfficialSource || knownBillIds[billId]) return;
-        knownBillIds[billId] = true;
-        bills.push({
-          bill_id: billId,
-          title_el: b.title_el,
-          title_en: b.title_en,
-          status: "WINDOW_24H",
-          governance_level: b.governance_level,
-          total_votes: null
-        });
-      });
-      if (!bills.length) throw new Error("empty");
-      var active = bills.filter(function(b) { return b.status === "ACTIVE" || b.status === "WINDOW_24H"; });
-      var window24 = bills.filter(function(b) { return b.status === "WINDOW_24H"; });
-      var finished = bills.filter(function(b) { return b.status === "OPEN_END" || b.status === "PARLIAMENT_VOTED"; });
-      var t1Bills = shuffle(active).slice(0, 5);
-      var t2Bills = shuffle(window24).slice(0, 5);
-      var t3Bills = shuffle(finished).slice(0, 5);
-      if (t1Bills.length) populateTrack("t1", t1Bills, "al");
-      else populateEmpty("t1", "al", "Σύντομα πραγματικά δεδομένα", "Real data soon", "Καμία τρέχουσα ψηφοφορία δεν έχει περάσει ακόμη το όριο συμμετοχής.", "No current vote has passed the participation threshold yet.");
-      if (t2Bills.length) populateTrack("t2", t2Bills, "rc");
-      else populateEmpty("t2", "rc", "Καμία ψηφοφορία 24ω πάνω από το όριο", "No 24h vote above threshold", "Θα εμφανιστεί αυτόματα όταν υπάρξουν αρκετές πραγματικές ψήφοι.", "It will appear automatically after enough real votes.");
-      if (t3Bills.length) populateTrack("t3", t3Bills, "rs");
-      else populateEmpty("t3", "rs", "Αποτελέσματα όταν υπάρχουν αρκετές ψήφοι", "Results after enough votes", "Δεν προβάλλονται δοκιμαστικοί αριθμοί.", "No demo numbers are shown.");
-      startCycle("t1", 3000);
-      startCycle("t2", 3500);
-      startCycle("t3", 4000);
-    })
-    .catch(function() {
-      populateEmpty("t1", "al", "Σύντομα πραγματικά δεδομένα", "Real data soon", "Θα εμφανιστούν ψηφοφορίες όταν περάσουν το όριο συμμετοχής.", "Votes appear after they pass the participation threshold.");
-      populateEmpty("t2", "rc", "Καμία ψηφοφορία πάνω από το όριο", "No vote above threshold", "Μόνο πραγματικές, συγκεντρωτικές ψήφοι εμφανίζονται εδώ.", "Only real aggregated votes appear here.");
-      populateEmpty("t3", "rs", "Αποτελέσματα όταν υπάρχουν αρκετές ψήφοι", "Results after enough votes", "Δεν προβάλλονται δοκιμαστικοί αριθμοί.", "No demo numbers are shown.");
-      startCycle("t1", 3000);
-      startCycle("t2", 3500);
-      startCycle("t3", 4000);
-    });
-})();
-
-// Contact form
-document.addEventListener("DOMContentLoaded", function() {
-  var form = document.getElementById("contactForm");
-  if (!form) return;
-  form.addEventListener("submit", function(e) {
-    e.preventDefault();
-    var name = document.getElementById("cName").value;
-    var email = document.getElementById("cEmail").value;
-    var msg = document.getElementById("cMsg").value;
-    var subject = encodeURIComponent("Ekklesia.gr — " + name);
-    var body = encodeURIComponent(msg + "\n\nFrom: " + name + " (" + email + ")");
-    window.location.href = "mailto:kaspartisan@proton.me?subject=" + subject + "&body=" + body;
-  });
-});
-
-// Landing Ticket Tab Switcher
-function switchContactTab(mode) {
-  document.getElementById("contactMode").style.display = mode === "contact" ? "block" : "none";
-  document.getElementById("ticketMode").style.display = mode === "ticket" ? "block" : "none";
-  document.getElementById("tabContact").style.background = mode === "contact" ? "#2563eb" : "white";
-  document.getElementById("tabContact").style.color = mode === "contact" ? "white" : "#334155";
-  document.getElementById("tabContact").style.borderColor = mode === "contact" ? "#2563eb" : "#e2e8f0";
-  document.getElementById("tabTicket").style.background = mode === "ticket" ? "#2563eb" : "white";
-  document.getElementById("tabTicket").style.color = mode === "ticket" ? "white" : "#334155";
-  document.getElementById("tabTicket").style.borderColor = mode === "ticket" ? "#2563eb" : "#e2e8f0";
-  if (mode === "ticket") checkTicketAuth();
-}
-
-function polisLogin() {
-  var state = crypto.randomUUID();
-  sessionStorage.setItem("polis_oauth_state", state);
-  sessionStorage.setItem("polis_return_to", window.location.href + "#contact");
-  // Use config if available, fallback to placeholder
-  var clientId = "Ov23lifSswjpPlnYF6UK";
-  var callbackPath = "/tickets/auth/callback.html";
-  var params = new URLSearchParams({ client_id: clientId, redirect_uri: window.location.origin + callbackPath, scope: "public_repo", state: state });
-  window.location.href = "https://github.com/login/oauth/authorize?" + params.toString();
-}
-
-// Only accept https GitHub avatar URLs; returns "" for anything else.
-function ticketAvatarUrl(raw, size) {
-  try {
-    var url = new URL(String(raw || ""));
-    if (url.protocol !== "https:" || url.hostname !== "avatars.githubusercontent.com") return "";
-    url.searchParams.set("s", String(size));
-    return url.toString();
-  } catch (e) {
-    return "";
-  }
-}
-
-function checkTicketAuth() {
-  var token = sessionStorage.getItem("polis_token");
-  if (token) {
-    document.getElementById("ticketLoginPrompt").style.display = "none";
-    document.getElementById("ticketFormLanding").style.display = "block";
-    // Fetch user info
-    fetch("https://api.github.com/user", { headers: { Authorization: "Bearer " + token } })
-      .then(function(r) { return r.json(); })
-      .then(function(u) {
-        // Remote GitHub fields go through DOM properties, never through HTML parsing.
-        var info = document.getElementById("ticketUserInfo");
-        var nodes = [];
-        var avatarUrl = ticketAvatarUrl(u && u.avatar_url, 40);
-        if (avatarUrl) {
-          var img = document.createElement("img");
-          img.src = avatarUrl;
-          img.style.cssText = "width:28px;height:28px;border-radius:50%";
-          nodes.push(img);
-        }
-        var name = document.createElement("span");
-        name.style.cssText = "font-weight:700;font-size:0.85rem";
-        name.textContent = (u && u.login) || "";
-        nodes.push(name);
-        var logoutBtn = document.createElement("button");
-        logoutBtn.type = "button";
-        logoutBtn.textContent = "Logout";
-        logoutBtn.style.cssText = "margin-left:auto;background:none;border:1px solid #e2e8f0;border-radius:0.3rem;padding:0.15rem 0.5rem;font-size:0.7rem;cursor:pointer";
-        logoutBtn.onclick = function() { sessionStorage.removeItem("polis_token"); checkTicketAuth(); };
-        nodes.push(logoutBtn);
-        info.replaceChildren.apply(info, nodes);
-      });
-  } else {
-    document.getElementById("ticketLoginPrompt").style.display = "block";
-    document.getElementById("ticketFormLanding").style.display = "none";
-  }
-}
-
-async function submitLandingTicket(e) {
-  e.preventDefault();
-  var btn = document.getElementById("ltSubmitBtn");
-  btn.disabled = true; btn.textContent = "...";
-  var token = sessionStorage.getItem("polis_token");
-  var title = document.getElementById("ltTitle").value;
-  var cat = document.getElementById("ltCategory").value;
-  var desc = document.getElementById("ltDesc").value;
-  var meta = { polis_version: "1.0", category: cat, submitted_at: Date.now(), submitter_pubkey: null, pow_nonce: null, pow_difficulty: null, nullifier: null, client_lang: currentLang || "el" };
-  var body = "<!-- POLIS_META\n" + JSON.stringify(meta, null, 2) + "\n-->\n\n## Περιγραφή\n\n" + desc + "\n\n---\n*Submitted via POLIS*";
-  try {
-    var res = await fetch("https://api.github.com/repos/NeaBouli/pnyx-community/issues", {
-      method: "POST",
-      headers: { Authorization: "Bearer " + token, "Content-Type": "application/json", Accept: "application/vnd.github.v3+json" },
-      body: JSON.stringify({ title: "[POLIS] " + title, body: body, labels: ["status:pending", "category:" + cat] })
-    });
-    var issue = await res.json();
-    document.getElementById("ticketFormLanding").style.display = "none";
-    document.getElementById("ltSuccess").style.display = "block";
-    document.getElementById("ltSuccess").innerHTML = '<div style="background:#f0fdf4;border:2px solid #86efac;border-radius:0.75rem;padding:1.5rem;text-align:center"><h4 style="color:#166534;font-weight:900">✅ Ticket υποβλήθηκε!</h4><a href="' + issue.html_url + '" target="_blank" style="color:#2563eb;font-weight:700">Δείτε στο GitHub ↗</a></div>';
-  } catch (err) { alert(err.message); }
-  btn.disabled = false; btn.textContent = "Υποβολή Ticket";
-}
-
-// Auto-check auth on load (if returning from OAuth)
-if (window.location.hash === "#contact" && sessionStorage.getItem("polis_token")) {
-  setTimeout(function() { switchContactTab("ticket"); }, 500);
-}
-
-</script>
+<script defer src="assets/js/landing-cycle.js"></script>
 
 <!-- PWA iOS Install Modal -->
-<div id="pwaModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;padding:1rem" onclick="if(event.target===this)this.style.display='none'">
+<div id="pwaModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;padding:1rem" data-csp-click="hide-backdrop">
   <div style="background:white;border-radius:1.25rem;max-width:400px;width:100%;padding:2rem;color:#0f172a;border:1px solid #e2e8f0;box-shadow:0 20px 60px rgba(0,0,0,0.15);position:relative">
-    <button onclick="document.getElementById('pwaModal').style.display='none'" style="position:absolute;top:1rem;right:1rem;background:none;border:none;color:#94a3b8;font-size:1.5rem;cursor:pointer">&times;</button>
+    <button data-csp-click="action-8b034e181d" style="position:absolute;top:1rem;right:1rem;background:none;border:none;color:#94a3b8;font-size:1.5rem;cursor:pointer">&times;</button>
     <div style="text-align:center;margin-bottom:1.5rem">
       <img src="pnx.png" alt="ekklesia" loading="lazy" style="width:64px;height:64px;margin:0 auto 0.75rem"/>
       <h3 style="font-size:1.2rem;font-weight:800" data-el="Εγκατάσταση στο iPhone" data-en="Install on iPhone">Εγκατάσταση στο iPhone</h3>
@@ -2233,144 +1509,25 @@ if (window.location.hash === "#contact" && sessionStorage.getItem("polis_token")
 
 <!-- Chat Widget — RAG Agent -->
 <div id="chatWidget" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999">
-  <button id="chatToggle" onclick="toggleChat()" aria-controls="chatPanel" aria-expanded="false" style="width:56px;height:56px;border-radius:50%;background:#2563eb;color:white;border:none;cursor:pointer;font-size:1.5rem;box-shadow:0 4px 16px rgba(37,99,235,0.3);transition:all 0.2s" onmouseenter="this.style.transform='scale(1.1)'" onmouseleave="this.style.transform='scale(1)'"><span data-el="ΡΩΤΗΣΤΕ" data-en="ASK">ΡΩΤΗΣΤΕ</span></button>
+  <button id="chatToggle" data-csp-click="toggle-chat" aria-controls="chatPanel" aria-expanded="false" style="width:56px;height:56px;border-radius:50%;background:#2563eb;color:white;border:none;cursor:pointer;font-size:1.5rem;box-shadow:0 4px 16px rgba(37,99,235,0.3);transition:all 0.2s" data-csp-mouseenter="style-fa19897072" data-csp-mouseleave="style-c7711d8057"><span data-el="ΡΩΤΗΣΤΕ" data-en="ASK">ΡΩΤΗΣΤΕ</span></button>
   <div id="chatPanel" role="dialog" aria-labelledby="chatTitle" style="display:none;position:absolute;bottom:70px;right:0;width:min(360px,calc(100vw - 2rem));max-height:min(480px,calc(100vh - 7rem));background:white;border-radius:1rem;box-shadow:0 8px 32px rgba(0,0,0,0.15);border:1px solid #e2e8f0;overflow:hidden;flex-direction:column">
     <div style="background:#2563eb;color:white;padding:0.75rem 1rem;display:flex;justify-content:space-between;align-items:center">
       <span id="chatTitle" style="font-weight:700;font-size:0.9rem" data-el="Ρωτήστε την εκκλησία" data-en="Ask ekklesia">Ρωτήστε την εκκλησία</span>
-      <button onclick="toggleChat()" aria-label="Κλείσιμο / Close" style="background:none;border:none;color:white;font-size:1.2rem;cursor:pointer">✕</button>
+      <button data-csp-click="toggle-chat" aria-label="Κλείσιμο / Close" style="background:none;border:none;color:white;font-size:1.2rem;cursor:pointer">✕</button>
     </div>
     <div id="chatMessages" role="log" aria-live="polite" style="flex:1;overflow-y:auto;padding:0.75rem;min-height:200px;max-height:320px;font-size:0.85rem;line-height:1.6">
       <div style="background:#eff6ff;border-radius:0.75rem;padding:0.6rem 0.8rem;margin-bottom:0.5rem;color:#1e40af;font-size:0.8rem" data-el="Γεια σας! Ρωτήστε με οτιδήποτε σχετικά με τα νομοσχέδια, τις ψηφοφορίες ή την πλατφόρμα." data-en="Hello! Ask me anything about bills, votes, or the platform.">Γεια σας! Ρωτήστε με οτιδήποτε σχετικά με τα νομοσχέδια, τις ψηφοφορίες ή την πλατφόρμα.</div>
     </div>
     <div style="padding:0.5rem;border-top:1px solid #e2e8f0">
       <div style="display:flex;gap:0.5rem">
-        <input id="chatInput" type="text" aria-labelledby="chatTitle" style="flex:1;min-width:0;padding:0.5rem 0.75rem;border:2px solid #e2e8f0;border-radius:0.5rem;font-size:0.85rem;outline:none;font-family:inherit" onkeydown="if(event.key==='Enter')sendChat()" data-el-placeholder="Γράψτε την ερώτησή σας..." data-en-placeholder="Type your question...">
-        <button onclick="sendChat()" style="padding:0.5rem 1rem;background:#2563eb;color:white;border:none;border-radius:0.5rem;font-weight:700;font-size:0.85rem;cursor:pointer" data-el="Αποστολή" data-en="Send">Αποστολή</button>
+        <input id="chatInput" type="text" aria-labelledby="chatTitle" style="flex:1;min-width:0;padding:0.5rem 0.75rem;border:2px solid #e2e8f0;border-radius:0.5rem;font-size:0.85rem;outline:none;font-family:inherit" data-csp-keydown="chat-enter" data-el-placeholder="Γράψτε την ερώτησή σας..." data-en-placeholder="Type your question...">
+        <button data-csp-click="send-chat" style="padding:0.5rem 1rem;background:#2563eb;color:white;border:none;border-radius:0.5rem;font-weight:700;font-size:0.85rem;cursor:pointer" data-el="Αποστολή" data-en="Send">Αποστολή</button>
       </div>
       <p style="font-size:0.6rem;color:#94a3b8;margin:0.4rem 0 0;line-height:1.3" data-el="⚠️ Μη κρατική πλατφόρμα · Ψηφοφορίες χωρίς νομική δέσμευση · Πρωτοβουλία πολιτών" data-en="⚠️ Not a government platform · No legal binding · Citizen initiative">⚠️ Μη κρατική πλατφόρμα · Ψηφοφορίες χωρίς νομική δέσμευση · Πρωτοβουλία πολιτών</p>
     </div>
   </div>
 </div>
-<script>
-// EKA-62: every chat string reaches the DOM via textContent on created nodes;
-// no HTML string sink is used here. 429 has its own bilingual state and a retry.
-var CHAT_TEXT={
-  el:{empty:"Δεν μπόρεσα να απαντήσω.",error:"Ο βοηθός δεν μπόρεσε να απαντήσει. Δοκιμάστε ξανά σε λίγο.",offline:"Σφάλμα σύνδεσης.",rate:"Πάρα πολλές ερωτήσεις σε σύντομο χρόνο (όριο: 5 ανά λεπτό). Περιμένετε ένα λεπτό και δοκιμάστε ξανά.",retry:"Δοκιμάστε ξανά",sources:"Πηγές:",loading:"Αναζήτηση απάντησης…"},
-  en:{empty:"I couldn't answer that.",error:"The assistant could not answer. Please try again shortly.",offline:"Connection error.",rate:"Too many questions in a short time (limit: 5 per minute). Please wait a minute and try again.",retry:"Try again",sources:"Sources:",loading:"Looking for an answer…"}
-};
-var CHAT_STYLE={
-  user:"background:#f1f5f9;border-radius:0.75rem;padding:0.6rem 0.8rem;margin-bottom:0.5rem;text-align:right;color:#334155",
-  bot:"background:#eff6ff;border-radius:0.75rem;padding:0.6rem 0.8rem;margin-bottom:0.5rem;color:#1e40af;font-size:0.8rem",
-  loading:"color:#94a3b8;font-size:0.8rem;padding:0.3rem 0.8rem",
-  error:"background:#fef2f2;border-radius:0.75rem;padding:0.6rem 0.8rem;margin-bottom:0.5rem;color:#991b1b;font-size:0.8rem",
-  "rate-limited":"background:#fffbeb;border:1px solid #fcd34d;border-radius:0.75rem;padding:0.6rem 0.8rem;margin-bottom:0.5rem;color:#92400e;font-size:0.8rem"
-};
-var chatBusy=false;
-function chatLang(){return (typeof currentLang!=="undefined"&&currentLang==="en")?"en":"el"}
-function chatNode(kind,text){
-  var d=document.createElement("div");
-  d.className="chat-msg";
-  d.setAttribute("data-chat-kind",kind);
-  d.style.cssText=CHAT_STYLE[kind]+";white-space:pre-wrap;overflow-wrap:anywhere";
-  d.textContent=text;
-  return d;
-}
-function chatAppend(node){
-  var msgs=document.getElementById("chatMessages");
-  msgs.appendChild(node);
-  msgs.scrollTop=msgs.scrollHeight;
-  return node;
-}
-function chatSources(list,lang){
-  if(!Array.isArray(list)||!list.length)return null;
-  var box=document.createElement("div");
-  box.setAttribute("data-chat-sources","");
-  box.style.cssText="margin-top:0.4rem;font-size:0.7rem;color:#475569";
-  var head=document.createElement("div");
-  head.textContent=CHAT_TEXT[lang].sources;
-  box.appendChild(head);
-  var ul=document.createElement("ul");
-  ul.style.cssText="margin:0;padding-left:1rem";
-  list.forEach(function(s){
-    if(!s||typeof s!=="object")return;
-    var title=typeof s.title==="string"?s.title:"";
-    var label=s.type==="parliament_bill"&&typeof s.bill_id==="string"?s.bill_id+(title?" — "+title:""):title;
-    if(!label)return;
-    var li=document.createElement("li");
-    li.textContent=label;
-    ul.appendChild(li);
-  });
-  if(!ul.children.length)return null;
-  box.appendChild(ul);
-  return box;
-}
-function chatFailure(kind,text,q,lang){
-  var n=chatNode(kind,"⚠️ "+text);
-  n.setAttribute("role",kind==="rate-limited"?"alert":"status");
-  var b=document.createElement("button");
-  b.textContent=CHAT_TEXT[lang].retry;
-  b.setAttribute("data-chat-retry","");
-  b.style.cssText="display:block;margin-top:0.4rem;padding:0.25rem 0.6rem;background:white;border:1px solid currentColor;border-radius:0.4rem;color:inherit;font-weight:700;font-size:0.75rem;cursor:pointer";
-  b.onclick=function(){if(chatBusy)return;n.remove();askChat(q,lang)};
-  n.appendChild(b);
-  chatAppend(n);
-}
-function toggleChat(){
-  var p=document.getElementById("chatPanel");
-  var open=p.style.display==="none";
-  p.style.display=open?"flex":"none";
-  document.getElementById("chatToggle").setAttribute("aria-expanded",open?"true":"false");
-  if(open){
-    var inp=document.getElementById("chatInput");
-    inp.placeholder=inp.getAttribute("data-"+chatLang()+"-placeholder")||"...";
-    inp.focus();
-  }else{
-    document.getElementById("chatToggle").focus();
-  }
-}
-document.getElementById("chatPanel").onkeydown=function(e){
-  if(e.key==="Escape")toggleChat();
-};
-function sendChat(){
-  if(chatBusy)return;
-  var inp=document.getElementById("chatInput");
-  var q=inp.value.trim();
-  if(!q)return;
-  inp.value="";
-  var lang=chatLang();
-  chatAppend(chatNode("user",q));
-  askChat(q,lang);
-}
-function askChat(q,lang){
-  chatBusy=true;
-  var msgs=document.getElementById("chatMessages");
-  msgs.setAttribute("aria-busy","true");
-  var loading=chatAppend(chatNode("loading","⏳ "+CHAT_TEXT[lang].loading));
-  var done=function(){loading.remove();chatBusy=false;msgs.removeAttribute("aria-busy")};
-  fetch("https://api.ekklesia.gr/api/v1/agent/ask",{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({question:q,lang:lang})
-  }).then(function(r){
-    if(r.status===429)return {state:"rate-limited"};
-    if(!r.ok)return {state:"error"};
-    return r.json().then(function(d){return {state:"ok",data:d}},function(){return {state:"error"}});
-  }).then(function(res){
-    done();
-    if(res.state!=="ok"){
-      chatFailure(res.state,CHAT_TEXT[lang][res.state==="rate-limited"?"rate":"error"],q,lang);
-      return;
-    }
-    var d=res.data||{};
-    var n=chatNode("bot",typeof d.answer==="string"&&d.answer?d.answer:CHAT_TEXT[lang].empty);
-    var src=chatSources(d.sources,lang);
-    if(src)n.appendChild(src);
-    chatAppend(n);
-  }).catch(function(){
-    done();
-    chatFailure("error",CHAT_TEXT[lang].offline,q,lang);
-  });
-}
-</script>
+<script defer src="assets/js/landing-chat.js"></script>
 <script src="animations/js/motion-observer.js" defer></script>
 </body>
 </html>

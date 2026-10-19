@@ -1,3 +1,4 @@
+import { pageWithScripts, scriptBodies } from './docs-scripts.mjs';
 // EKA-14 / EKA-15 regressions. Dependency-free: node --test scripts/static-docs-remote-sinks.check.mjs
 // Executes the real patched functions against a minimal fake DOM that records every
 // innerHTML write, so hostile remote strings can be traced to text vs. HTML sinks.
@@ -164,7 +165,7 @@ test('polis.js: comment author login is escaped', () => {
 // ─── docs/index.html (ticket landing) ───────────────────────────────────────
 
 async function runCheckTicketAuth(user) {
-  const html = read('docs/index.html');
+  const html = pageWithScripts(join(root, 'docs/index.html'));
   const document = fakeDocument();
   const ctx = vm.createContext({
     document,
@@ -197,7 +198,7 @@ test('index.html: non-GitHub or non-https avatar URLs are dropped', async () => 
 });
 
 test('index.html: no raw GitHub user interpolation remains', () => {
-  const html = read('docs/index.html');
+  const html = pageWithScripts(join(root, 'docs/index.html'));
   assert.ok(!/\+\s*u\.(login|avatar_url)\s*\+/.test(html), 'raw GitHub user interpolation remains');
 });
 
@@ -212,10 +213,10 @@ class ChatElement extends FakeElement {
 }
 
 function chatScript() {
-  const html = read('docs/index.html');
+  const html = pageWithScripts(join(root, 'docs/index.html'));
   const start = html.indexOf('// EKA-62: every chat string');
   assert.ok(start > 0, 'chat widget script not found');
-  return html.slice(start, html.indexOf('</script>', start));
+  return scriptBodies(join(root, 'docs/index.html')).find(source => source.includes('// EKA-62: every chat string'));
 }
 
 async function runChat({ question, response, lang = 'el' }) {
@@ -297,7 +298,7 @@ test('index.html chat: widget script has no HTML string sinks', () => {
 // ─── docs/embed/qr-login.html ───────────────────────────────────────────────
 
 async function runStartSessionError(status, body) {
-  const html = read('docs/embed/qr-login.html');
+  const html = pageWithScripts(join(root, 'docs/embed/qr-login.html'));
   const document = fakeDocument();
   const ctx = vm.createContext({
     document,
@@ -356,9 +357,8 @@ const CPLM_LIVE = {
 };
 
 function loadCplmLanguage() {
-  const html = read('docs/index.html');
-  const script = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)]
-    .map((match) => match[1]).find((source) => source.includes('var QUAD_EL ='));
+  const html = pageWithScripts(join(root, 'docs/index.html'));
+  const script = scriptBodies(join(root, 'docs/index.html')).find((source) => source.includes('var QUAD_EL ='));
   assert.ok(script, 'real CPLM inline script not found');
   const document = fakeDocument();
   document.documentElement = { lang: 'el' };

@@ -224,22 +224,6 @@
   <p>ekklesia.gr &middot; &copy; 2026 V-Labs IT Solutions &amp; Development</p>
 </footer>
 
-<script>
-(function () {
-  var lang = "el";
-  var button = document.getElementById("langBtn");
-  button.addEventListener("click", function () {
-    lang = lang === "el" ? "en" : "el";
-    document.documentElement.lang = lang;
-    document.documentElement.dataset.lang = lang;
-    document.getElementById("elContent").hidden = lang !== "el";
-    document.getElementById("enContent").hidden = lang !== "en";
-    document.querySelectorAll("[data-el]").forEach(function (element) {
-      element.textContent = element.getAttribute("data-" + lang);
-    });
-    button.textContent = lang === "el" ? "EN" : "ΕΛ";
-  });
-}());
-</script>
+<script defer src="assets/js/legal-language.js"></script>
 </body>
 </html>

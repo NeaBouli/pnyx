@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="el" data-lang="el">
 <head>
+<script defer src="assets/js/events.js"></script>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>gov.gr Επαλήθευση — Σχεδιασμός Alpha 0.1 | εκκλησία</title>
@@ -211,7 +212,7 @@
     <a href="representative.html" data-el="Εκπρόσωπος" data-en="Representative">Εκπρόσωπος</a>
     <a href="wiki/security.html" data-el="Ασφάλεια" data-en="Security">Ασφάλεια</a>
     <a href="wiki/faq.html">FAQ</a>
-    <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
+    <button class="lang-btn" data-csp-click="toggle-language" id="langBtn">EN</button>
   </div>
 </nav>
 
@@ -334,7 +335,7 @@
   <div class="cta-section fade-in">
     <h3 data-el="Είστε εκπρόσωπος Δήμου;" data-en="Are you a Municipality representative?">Είστε εκπρόσωπος Δήμου;</h3>
     <p data-el="Επικοινωνήστε μαζί μας μόνο για ερευνητική συνεργασία ή επίσημη αξιολόγηση του Alpha σχεδιασμού. Δεν παρέχεται ακόμη παραγωγική ενεργοποίηση gov.gr." data-en="Contact us only for research collaboration or official evaluation of the Alpha design. Production gov.gr activation is not yet available.">Επικοινωνήστε μαζί μας για ερευνητική συνεργασία ή επίσημη αξιολόγηση του Alpha σχεδιασμού.</p>
-    <button class="cta-btn" onclick="openNgoModal()" data-el="Επικοινωνία" data-en="Contact Us">Επικοινωνία</button>
+    <button class="cta-btn" data-csp-click="open-ngo-modal" data-el="Επικοινωνία" data-en="Contact Us">Επικοινωνία</button>
   </div>
 
   <!-- SECTION 7: Contact / Technical Support -->
@@ -345,7 +346,7 @@
     </p>
   </div>
   <div class="card-grid fade-in">
-    <div class="card" style="border-color:#93c5fd;cursor:pointer" onclick="openNgoModal()">
+    <div class="card" style="border-color:#93c5fd;cursor:pointer" data-csp-click="open-ngo-modal">
       <div class="card-icon">📧</div>
       <h4 data-el="Φόρμα Επικοινωνίας" data-en="Contact Form">Φόρμα Επικοινωνίας</h4>
       <p style="color:var(--blue);font-weight:600" data-el="Στείλτε μήνυμα →" data-en="Send a message →">Στείλτε μήνυμα →</p>
@@ -749,8 +750,8 @@
     <h2 style="font-size:1.3rem;font-weight:900;margin-bottom:0.5rem" data-el="Ενδιαφέρεστε για έρευνα ή επίσημη αξιολόγηση;" data-en="Interested in research or official evaluation?">Ενδιαφέρεστε για έρευνα ή επίσημη αξιολόγηση;</h2>
     <p style="color:var(--gray-500);font-size:0.88rem;margin-bottom:1.5rem" data-el="Μπορείτε να επικοινωνήσετε για συνεργασία στον σχεδιασμό Alpha. Δεν προσφέρεται ενεργοποίηση gov.gr στη Beta." data-en="You can contact us about Alpha design collaboration. gov.gr activation is not offered in Beta.">Συνεργασία στον σχεδιασμό Alpha — όχι ενεργοποίηση Beta.</p>
     <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-bottom:1rem">
-      <a href="#" onclick="openNgoModal();return false;" style="display:inline-block;padding:0.75rem 2rem;background:var(--blue);color:white;border-radius:0.75rem;font-weight:800;font-size:0.95rem;text-decoration:none;transition:all 0.2s;cursor:pointer" onmouseenter="this.style.background='#1d4ed8'" onmouseleave="this.style.background='#2563eb'" data-el="Επικοινωνία για Alpha →" data-en="Alpha research contact →">Επικοινωνία για Alpha →</a>
-      <a href="wiki/api.html" style="display:inline-block;padding:0.75rem 2rem;background:transparent;color:var(--blue);border:2px solid var(--blue);border-radius:0.75rem;font-weight:800;font-size:0.95rem;text-decoration:none;transition:all 0.2s" onmouseenter="this.style.background='#eff6ff'" onmouseleave="this.style.background='transparent'" data-el="Τεχνική Τεκμηρίωση →" data-en="Technical Documentation →">Τεχνική Τεκμηρίωση →</a>
+      <a href="#" data-csp-click="open-ngo-modal-link" style="display:inline-block;padding:0.75rem 2rem;background:var(--blue);color:white;border-radius:0.75rem;font-weight:800;font-size:0.95rem;text-decoration:none;transition:all 0.2s;cursor:pointer" data-csp-mouseenter="style-702518e1a0" data-csp-mouseleave="style-6859f3b26b" data-el="Επικοινωνία για Alpha →" data-en="Alpha research contact →">Επικοινωνία για Alpha →</a>
+      <a href="wiki/api.html" style="display:inline-block;padding:0.75rem 2rem;background:transparent;color:var(--blue);border:2px solid var(--blue);border-radius:0.75rem;font-weight:800;font-size:0.95rem;text-decoration:none;transition:all 0.2s" data-csp-mouseenter="style-baa92d39b2" data-csp-mouseleave="style-80ec2adaee" data-el="Τεχνική Τεκμηρίωση →" data-en="Technical Documentation →">Τεχνική Τεκμηρίωση →</a>
     </div>
     <p style="font-size:0.72rem;color:var(--gray-400)" data-el="Η επικοινωνία δεν αποτελεί έγκριση, κρατική διασύνδεση ή παραγωγική ενεργοποίηση." data-en="Contact does not constitute approval, government integration, or production activation.">Η επικοινωνία δεν αποτελεί παραγωγική ενεργοποίηση.</p>
   </div>
@@ -772,10 +773,10 @@
 <!-- Contact Modal -->
 <div id="ngoModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;overflow-y:auto">
   <div style="background:white;border-radius:1rem;padding:2rem;max-width:520px;width:90%;position:relative;box-shadow:0 8px 32px rgba(0,0,0,0.2);margin:2rem auto">
-    <button onclick="closeNgoModal()" style="position:absolute;top:0.75rem;right:0.75rem;background:none;border:none;font-size:1.4rem;cursor:pointer;color:#64748b;line-height:1">&times;</button>
+    <button data-csp-click="close-ngo-modal" style="position:absolute;top:0.75rem;right:0.75rem;background:none;border:none;font-size:1.4rem;cursor:pointer;color:#64748b;line-height:1">&times;</button>
     <h3 style="margin:0 0 0.25rem;font-size:1.1rem;font-weight:900" data-el="Φόρμα Επικοινωνίας" data-en="Contact Form">Φόρμα Επικοινωνίας</h3>
     <p style="color:#64748b;font-size:0.78rem;margin:0 0 1rem" data-el="Συμπληρώστε τα στοιχεία σας. Κάποιος από την ομάδα ανάπτυξης θα επικοινωνήσει μαζί σας." data-en="Fill in your details. Someone from the development team will contact you.">Συμπληρώστε τα στοιχεία σας. Κάποιος από την ομάδα ανάπτυξης θα επικοινωνήσει μαζί σας.</p>
-    <form id="ngoForm" onsubmit="submitNgoForm(event)">
+    <form id="ngoForm" data-csp-submit="submit-ngo-form-event">
       <div style="margin-bottom:0.6rem">
         <label style="display:block;font-size:0.75rem;font-weight:700;margin-bottom:0.2rem" data-el="Θέμα" data-en="Subject">Θέμα</label>
         <select name="subject" style="width:100%;padding:0.45rem;border:2px solid #e2e8f0;border-radius:0.4rem;font-size:0.82rem;background:white">
@@ -840,99 +841,7 @@
   </div>
 </div>
 
-<script>
-var currentLang = "el";
-function toggleLang() {
-  currentLang = currentLang === "el" ? "en" : "el";
-  document.getElementById("langBtn").textContent = currentLang === "el" ? "EN" : "ΕΛ";
-  document.querySelectorAll("[data-el]").forEach(function(el) {
-    var t = el.getAttribute("data-" + currentLang);
-    if (t) el.innerHTML = t;
-  });
-}
-
-// NGO Contact Modal
-function openNgoModal() {
-  var m = document.getElementById("ngoModal");
-  m.style.display = "flex";
-  document.getElementById("ngoForm").reset();
-  document.getElementById("ngoStatus").style.display = "none";
-}
-function closeNgoModal() { document.getElementById("ngoModal").style.display = "none"; }
-document.getElementById("ngoModal").addEventListener("click", function(e) { if (e.target === this) closeNgoModal(); });
-
-function submitNgoForm(e) {
-  e.preventDefault();
-  var fd = new FormData(e.target);
-  var status = document.getElementById("ngoStatus");
-  var btn = document.getElementById("ngoBtn");
-  var fileInput = e.target.querySelector('input[type="file"]');
-
-  // Validate file size (max 5MB) and type
-  if (fileInput && fileInput.files.length > 0) {
-    var file = fileInput.files[0];
-    var allowedTypes = ['application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.oasis.opendocument.text','text/plain','image/png','image/jpeg'];
-    if (file.size > 5 * 1024 * 1024) {
-      status.style.display = "block";
-      status.style.background = "#fee2e2";
-      status.style.color = "#991b1b";
-      status.innerHTML = currentLang === "el" ? "Το αρχείο υπερβαίνει τα 5MB." : "File exceeds 5MB limit.";
-      return;
-    }
-    if (!allowedTypes.includes(file.type)) {
-      status.style.display = "block";
-      status.style.background = "#fee2e2";
-      status.style.color = "#991b1b";
-      status.innerHTML = currentLang === "el" ? "Μη αποδεκτός τύπος αρχείου." : "Invalid file type.";
-      return;
-    }
-  }
-
-  btn.disabled = true;
-  btn.textContent = "...";
-
-  fetch("https://api.ekklesia.gr/api/v1/contact/ngo", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      subject: fd.get("subject"),
-      first_name: fd.get("first_name"),
-      last_name: fd.get("last_name"),
-      email: fd.get("email"),
-      phone: fd.get("phone") || "",
-      org: fd.get("org") || "",
-      position: fd.get("position") || "",
-      region: fd.get("region") || "",
-      message: fd.get("message") || "",
-      consent: e.target.querySelector('input[name="consent"]').checked
-    })
-  }).then(function(r) {
-    if (r.ok) {
-      status.style.display = "block";
-      status.style.background = "#dcfce7";
-      status.style.color = "#166534";
-      status.innerHTML = currentLang === "el"
-        ? "<div style='font-size:1.5rem;margin-bottom:0.5rem'>✅</div><strong>Το μήνυμά σας εστάλη επιτυχώς!</strong><br/><span style='font-size:0.82rem;color:#22863a'>Κάποιος από την ομάδα ανάπτυξης θα επικοινωνήσει μαζί σας.</span>"
-        : "<div style='font-size:1.5rem;margin-bottom:0.5rem'>✅</div><strong>Your message was sent successfully!</strong><br/><span style='font-size:0.82rem;color:#22863a'>Someone from the development team will contact you.</span>";
-      e.target.style.display = "none";
-    } else { throw new Error(); }
-  }).catch(function() {
-    status.style.display = "block";
-    status.style.background = "#fee2e2";
-    status.style.color = "#991b1b";
-    status.innerHTML = currentLang === "el" ? "Σφάλμα. Δοκιμάστε ξανά." : "Error. Please try again.";
-  }).finally(function() {
-    btn.disabled = false;
-    btn.textContent = currentLang === "el" ? "Αποστολή" : "Send";
-  });
-}
-
-// Fade-in observer
-var obs = new IntersectionObserver(function(entries) {
-  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add("visible"); });
-}, { threshold: 0.1 });
-document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); });
-</script>
+<script defer src="assets/js/govgr-dimos.js"></script>
 
 </body>
 </html>

@@ -1,14 +1,14 @@
+import { scriptBodies } from '../docs-scripts.mjs';
 // Copyright (c) 2026 Vendetta Labs — MIT License
 // Run with: node --test scripts/redesign/community_payment_status.check.mjs
-// Real inline page behavior; all DOM, network and timers are memory-only fakes.
+// Real external page script behavior; all DOM, network and timers are memory-only fakes.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 
 const html = readFileSync(new URL('../../docs/community.html', import.meta.url), 'utf8');
-const inline = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)]
-  .map((match) => match[1])
+const inline = scriptBodies(new URL('../../docs/community.html', import.meta.url))
   .find((source) => source.includes('@ai-anchor INVOICE_AMPEL_TIMER'));
 assert.ok(inline, 'Community financial-status script must exist');
 

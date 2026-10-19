@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="el">
 <head>
+<script defer src="../assets/js/events.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Node Admin — Demo</title>
@@ -72,7 +73,7 @@ footer{background:var(--dark);color:var(--gray-400);padding:20px;text-align:cent
     <div class="form-row"><label>Περιγραφή</label><textarea placeholder="Σύντομη περιγραφή..." id="newDesc"></textarea></div>
     <div class="form-row"><label>Κατηγορία</label><select id="newCat"><option>Υποδομές</option><option>Περιβάλλον</option><option>Οικονομικά</option><option>Παιδεία</option><option>Υγεία</option></select></div>
     <div class="form-row"><label>Ημερομηνία Λήξης</label><input type="date" id="newDate"></div>
-    <button class="btn btn-blue" onclick="createBill()">Δημιουργία Ψηφοφορίας</button>
+    <button class="btn btn-blue" data-csp-click="create-bill">Δημιουργία Ψηφοφορίας</button>
     <div class="info-hint">ℹ️ Σε πραγματική node, η δημιουργία ψηφοφορίας αποστέλλεται στο API (POST /api/v1/admin/bills) και δημιουργεί αυτόματα Forum topic + Telegram ειδοποίηση.</div>
   </div>
 
@@ -91,23 +92,7 @@ footer{background:var(--dark);color:var(--gray-400);padding:20px;text-align:cent
 
 <footer>εκκλησία — Demo Node Admin · © 2026 V-Labs Development · MIT License</footer>
 
-<script src="demo-data.js"></script>
-<script>
-var html = "";
-DEMO_BILLS.forEach(function(b) {
-  var s = DEMO_STATUS[b.status] || DEMO_STATUS.ACTIVE;
-  var actions = b.status === "ANNOUNCED" ? '<button class="btn btn-blue" style="font-size:11px;padding:4px 10px" onclick="alert(\'Demo: Bill würde auf ACTIVE gesetzt\')">→ ACTIVE</button>' : '';
-  html += '<div class="bill-row"><span class="status-dot" style="background:' + s.color + '"></span><span class="title">' + b.id + ' — ' + b.title_el.substring(0,40) + '</span><span style="font-size:11px;font-weight:700;color:' + s.color + '">' + s.el + '</span>' + actions + '</div>';
-});
-document.getElementById("adminBills").innerHTML = html;
-
-function createBill() {
-  var title = document.getElementById("newTitle").value;
-  if (!title) { alert("Τίτλος απαιτείται"); return; }
-  alert("Demo: Ψηφοφορία '" + title + "' θα δημιουργηθεί.\n\nΣε πραγματική node:\n→ POST /api/v1/admin/bills\n→ Αυτόματο Forum topic\n→ Telegram ειδοποίηση\n→ Status: ANNOUNCED");
-  document.getElementById("newTitle").value = "";
-  document.getElementById("newDesc").value = "";
-}
-</script>
+<script defer src="demo-data.js"></script>
+<script defer src="../assets/js/demo-admin.js"></script>
 </body>
 </html>
