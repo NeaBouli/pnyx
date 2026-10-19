@@ -91,7 +91,10 @@ test('production router and renders retain fresh nonces and preserve observation
     const fsChecker = await setupFsCheck({ dir: app, dev: false, config: conf });
     // Run Next's real router header processing. Reconstructing only the request
     // overrides misses middleware response headers overwriting those overrides.
-    const resolveRoutes = getResolveRoutes(fsChecker, conf, { dir: app, dev: false, hostname: 'ekklesia.gr', port: 443 }, {
+    // Next >=16.4 inserts getAssetPrefix as the third positional parameter of getResolveRoutes.
+    const leading = /^function getResolveRoutes\(fsChecker, config, getAssetPrefix\b/.test(getResolveRoutes.toString())
+      ? [fsChecker, conf, () => conf.assetPrefix ?? ''] : [fsChecker, conf];
+    const resolveRoutes = getResolveRoutes(...leading, { dir: app, dev: false, hostname: 'ekklesia.gr', port: 443 }, {
       async initialize() {
         return { async requestHandler(req) {
           const response = await proxy(new Request('https://ekklesia.gr' + req.url, { headers: req.headers }));
