@@ -2,10 +2,22 @@ import { pageWithScripts, scriptBodies } from "../../../../scripts/docs-scripts.
 import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
 
+class TestElement {
+  children: TestElement[] = [];
+  style: Record<string, string> = {};
+  private text = "";
+
+  get textContent(): string { return this.text + this.children.map(child => child.textContent).join(""); }
+  set textContent(value: string) { this.text = String(value ?? ""); this.children = []; }
+  appendChild(child: TestElement) { this.children.push(child); return child; }
+  replaceChildren(...children: TestElement[]) { this.text = ""; this.children = children; }
+  setAttribute() {}
+}
+
 function testDocument() {
-  const nodes = new Map<string, { textContent: string; innerHTML: string; style: Record<string, string>; setAttribute: () => void }>();
-  return { getElementById(id: string) {
-    if (!nodes.has(id)) nodes.set(id, { textContent: "", innerHTML: "", style: {}, setAttribute() {} });
+  const nodes = new Map<string, TestElement>();
+  return { createElement: () => new TestElement(), getElementById(id: string) {
+    if (!nodes.has(id)) nodes.set(id, new TestElement());
     return nodes.get(id)!;
   }, nodes };
 }
@@ -25,7 +37,7 @@ describe("public results consumers", () => {
     const end = html.indexOf("    }).catch", start);
     const document = testDocument();
     runInNewContext(html.slice(start, end), { document, d: { stats: { total_votes: total } } });
-    expect(document.getElementById("ss-votes").textContent).toBe(total == null ? "—" : total);
+    expect(document.getElementById("ss-votes").textContent).toBe(total == null ? "—" : String(total));
   });
 
   it.each([["el", 41], ["en", 41], ["el", null], ["en", null]] as const)("landing labels preserve null choices in %s (total %s)", (lang, total) => {
@@ -48,20 +60,24 @@ describe("public results consumers", () => {
     for (const lang of ["el", "en"]) {
       const document = testDocument();
       const window = { location: { search: `?bill_id=TEST&lang=${lang}` }, addEventListener() {} };
-      const script = scriptBodies(new URL(`embed/${embed}.html`, docs)).find((body: string) => body.includes("var API="))!;
+      const script = scriptBodies(new URL(`embed/${embed}.html`, docs))
+        .filter((body: string) => body.includes("var EmbedUI =") || body.includes("var API="))
+        .join("\n");
       const context = { window, document, URLSearchParams,
         fetch: () => new Promise(() => {}), setInterval: () => 0, data: withheld };
       runInNewContext(`${script};render({title_el:"Test",status:"PARLIAMENT_VOTED",party_votes_parliament:{A:"YES"}},data);`, context);
-      let text = document.getElementById("widget").innerHTML;
+      let text = document.getElementById("widget").textContent;
       expect(text).toContain("—");
       expect(text).toContain("41");
       expect(text).not.toMatch(/0%|No votes yet|Δεν υπάρχουν ψήφοι ακόμα|Divergence Score|Δείκτης Απόκλισης/);
       context.data = { ...withheld, total_votes: 40, yes_count: 10, no_count: 10, abstain_count: 10,
         yes_percent: 25, no_percent: 25, abstain_percent: 25 };
       runInNewContext('render({title_el:"Test",status:"PARLIAMENT_VOTED"},data);', context);
-      text = document.getElementById("widget").innerHTML;
+      text = document.getElementById("widget").textContent;
       expect(text).toContain("25%");
       expect(text).toContain("40");
+      expect(text).not.toContain("41");
+      expect(text).not.toContain("—");
     }
   });
 });
