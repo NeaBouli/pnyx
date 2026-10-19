@@ -38,6 +38,8 @@ const withPWA = withPWAInit({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  // CI's default tsconfig still checks tests and their repo-only helpers.
+  typescript: { tsconfigPath: "tsconfig.build.json" },
   poweredByHeader: false,
   reactStrictMode: true,
   env: {
