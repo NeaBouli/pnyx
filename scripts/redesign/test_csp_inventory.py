@@ -20,7 +20,7 @@ spec.loader.exec_module(csp)
 COMPOSE = "infra/docker/docker-compose.prod.yml"
 LAYOUT = "apps/web/src/app/[locale]/layout.tsx"
 REPORT = "customResponseHeaders.Content-Security-Policy-Report-Only:"
-BINDING = 'traefik.http.routers.ekklesia-web.middlewares: "ekklesia-headers"'
+BINDING = 'traefik.http.routers.ekklesia-web.middlewares: "ekklesia-headers,ekklesia-no-frame"'
 
 
 class InventoryGateTests(unittest.TestCase):
@@ -80,7 +80,7 @@ class InventoryGateTests(unittest.TestCase):
             csp.main(["--check"])
 
     def test_fixed_static_target_cannot_bind_the_dynamic_router(self):
-        self.mutate_compose(lambda source: source.replace(BINDING, BINDING.replace('"ekklesia-headers"', '"ekklesia-headers,ekklesia-static-csp"')))
+        self.mutate_compose(lambda source: source.replace(BINDING, BINDING.replace('ekklesia-no-frame', 'ekklesia-no-frame,ekklesia-static-csp')))
         with self.assertRaisesRegex(SystemExit, "general web router must preserve"):
             csp.main(["--check"])
 
@@ -131,9 +131,19 @@ class InventoryGateTests(unittest.TestCase):
 
     def test_promotion_cannot_leave_shared_static_policy_on_next(self):
         path = self.root / "infra/docker/docker-compose.csp-enforce.yml"
-        source = path.read_text().replace("contentSecurityPolicy: ''", "contentSecurityPolicy: broken")
+        source = path.read_text().replace('    labels:', "    labels:\n      traefik.http.middlewares.ekklesia-headers.headers.contentSecurityPolicy: broken")
         path.write_text(source)
         with self.assertRaisesRegex(SystemExit, "promotion must preserve the dynamic nonce"):
+            csp.main(["--check"])
+
+    def test_embed_cannot_inherit_frame_deny(self):
+        self.mutate_compose(lambda text: text.replace('middlewares: "ekklesia-headers,ekklesia-embed-csp"', 'middlewares: "ekklesia-headers,ekklesia-no-frame,ekklesia-embed-csp"'))
+        with self.assertRaisesRegex(SystemExit, "embed router must stay frameable"):
+            csp.main(["--check"])
+
+    def test_embed_legacy_and_target_must_both_allow_framing(self):
+        self.mutate_compose(lambda text: text.replace('frame-ancestors *', "frame-ancestors 'none'", 1))
+        with self.assertRaisesRegex(SystemExit, "embed router must stay frameable"):
             csp.main(["--check"])
 
     def test_inline_script_changes_inventory_and_fails_check(self):

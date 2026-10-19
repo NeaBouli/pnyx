@@ -1,4 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { readFileSync, readdirSync } from "node:fs";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { NextRequest } from "next/server";
 import proxy, { config } from "./proxy";
@@ -80,4 +83,18 @@ describe("Next 16 nonce policy through real next-intl middleware", () => {
       expect(response.headers.get("x-middleware-request-x-nonce")).toBeNull();
     }
   });
+});
+
+it("every nonce-bearing page inherits request rendering with no child ISR/static override", () => {
+  const app = fileURLToPath(new URL("./app", import.meta.url));
+  const layout = readFileSync(resolve(app, "[locale]/layout.tsx"), "utf8");
+  expect(layout).toContain('export const dynamic = "force-dynamic"');
+  function children(dir: string): string[] {
+    return readdirSync(dir, { withFileTypes: true }).flatMap(entry => entry.isDirectory() ? children(resolve(dir, entry.name)) : entry.name.endsWith(".tsx") && !entry.name.includes(".test.") ? [resolve(dir, entry.name)] : []);
+  }
+  const routes = children(app);
+  expect(routes.filter(path => path.endsWith("page.tsx")).length).toBeGreaterThanOrEqual(9);
+  for (const path of routes) {
+    expect(readFileSync(path, "utf8"), path).not.toMatch(/export const (?:dynamic\s*=\s*["']force-static|revalidate\s*=\s*[1-9]|fetchCache\s*=\s*["']force-cache)/);
+  }
 });

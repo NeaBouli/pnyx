@@ -6,12 +6,12 @@ var adaNumber=localStorage.getItem('rep_ada')||'';
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function num(v,d){var n=Number(v);return isFinite(n)?n:(d||0)}
 
-document.getElementById('billsList').addEventListener('click',function(e){
+document.getElementById('billsList')?.addEventListener('click',function(e){
   var card=e.target.closest('.bill-card[data-billid]');
   if(card)loadResults(card.getAttribute('data-billid'));
 });
 
-if(token)showBillsScreen();
+if(token && ['billsList','loginScreen','billsScreen','navBar','repBadge'].every(function(id){return document.getElementById(id)}))showBillsScreen();
 
 async function doLogin(){
   var ada=document.getElementById('adaInput').value.trim();

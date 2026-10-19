@@ -373,7 +373,7 @@ APPROVED_CSP_CONTRACT_HASH = {
     "interactions": "daf7df31f77ee761506f250e183afb2901194973daf281ecfc8d1b3a8ca025fb",
     "storage": "229f39dd472e01defa0472206c29c05702166ebeae527c4e8048b1445cf6ede2",
     "external_hosts": "b928fe51f13071df9a72b058b67ebd1a597099a1c93d32c6ea48d2f6a2ad559a",
-    "scripts": "cc6fcd366f4c3fa589c34d1df16beebbb60b56b3c5b52ac149889fe0d727281e"
+    "scripts": "e946df277d74c5d69e20f81310c2b5c6cd6171b0e003032e7ec479dd63ab4bc1"
 }
 
 

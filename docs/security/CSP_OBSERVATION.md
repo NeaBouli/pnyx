@@ -147,15 +147,27 @@ The target header now has these differences from the original enforced policy:
 
 | Surface | `script-src` | Additional directives |
 | --- | --- | --- |
-| Static HTML, Traefik `ekklesia-static-csp` | `'self'` | `object-src 'none'; base-uri 'self'` |
-| Next HTML, `src/proxy.ts` | `'self' 'nonce-<fresh 256-bit value>'` | `object-src 'none'; base-uri 'self'` |
+| Static HTML, Traefik `ekklesia-static-csp` | `'self'` | `font-src 'self'; object-src 'none'; base-uri 'self'` |
+| Next HTML, `src/proxy.ts` | `'self' 'nonce-<fresh 256-bit value>'` | `font-src 'self'; object-src 'none'; base-uri 'self'` |
 
-The two old static script hashes are gone. Every other directive is preserved,
-including `frame-ancestors 'none'` and inline **styles**. Scripts have no
-`unsafe-inline`, `unsafe-eval`, `unsafe-hashes` or `strict-dynamic` allowance.
-The existing enforced header remains unchanged in the default production Compose
-configuration. Dynamic responses carry their own nonce Report-Only header; a
-shared fixed target at Traefik would overwrite it and block Next bootstrap.
+The two old static script hashes are gone. Static and dynamic non-embed pages
+retain `frame-ancestors 'none'` and frame-deny. The priority-110 `/embed/` router
+uses only common transport headers and its own CSP writer: both its legacy and
+target policies use `frame-ancestors *`, without X-Frame-Options. This includes
+`vote.html`, `results.html` and the nested `qr-login.html`; third-party parents
+and the QR child's entire ancestor chain remain allowed in both phases.
+
+The general Next router has **no Traefik CSP writer** in either phase. Next owns
+its enforcing and Report-Only policies. Static and embed routers each attach
+exactly one CSP writer; the overlay replaces its nonempty legacy value with its
+nonempty target. It never relies on Traefik treating an empty label as deletion,
+and cannot overwrite a Next nonce policy with a fixed edge policy.
+
+`font-src 'self'` explicitly covers locally served Next fonts. All docs HTML/CSS
+was checked: there are no external font/style hosts or `@font-face` declarations;
+municipality uses system fallbacks. No Google Fonts origin needs permission.
+Scripts have no `unsafe-inline`, `unsafe-eval`, `unsafe-hashes` or `strict-dynamic`
+allowance; inline styles remain allowed.
 
 Next 16's proxy forwards the nonce and CSP through next-intl's request-header
 updates. The renderer reads the request CSP and stamps bootstrap/Flight scripts.
@@ -168,7 +180,8 @@ Bill detail identifiers containing dots also pass through the proxy matcher.
 
 PWA configuration now uses the plugin's supported `workboxOptions` nesting.
 Start-URL and navigation caching are disabled, HTML is excluded from precaching,
-and the same-origin runtime rule accepts only script/style/image/font requests.
+and the schema-valid RegExp runtime rule accepts only canonical `/_next/static/`
+and `/assets/` JS/CSS/image/font file paths.
 It never reads cached document or Flight responses. Before promotion, confirm
 the new service worker has activated and repeat checks with a clean browser and
 an existing profile upgraded from the previous worker. Avoid caching dynamic
@@ -203,8 +216,9 @@ The local macOS sandbox denied Chromium's Mach port during launch, so this brows
 regression could not run here. Dependency-free listener tests and Next middleware /
 actual Flight-stream emission tests ran offline. The available dependency tree
 uses Next 16.3.8 and Vitest 5.0.2; the repository pins Next 16.4.1 and Vitest 5.0.4.
-No package installation or production build was attempted. Run the browser checks
-and a production render with pinned dependencies before approving enforcement.
+No packages were installed. Run the browser checks and a production render with
+pinned dependencies before approving enforcement; local build evidence below
+uses the existing dependency tree and mocked Google Font responses, entirely offline.
 
 For **gio-dd**, after deploying the default Report-Only revision, rerun the
 observation command above. Require complete coverage, matching target headers,
@@ -226,9 +240,61 @@ docker compose --env-file infra/docker/.env \
 ```
 
 Use the deployment's usual env-file path if different. The override merges
-mapping labels: it disables the shared legacy CSP writer, enables the static
-strict enforced header and sets `CSP_ENFORCE=true` for Next's nonce-aware enforced
+mapping labels: it replaces the static/embed legacy values with their respective
+strict headers and sets `CSP_ENFORCE=true` for Next's nonce-aware enforced
 header. Both surfaces keep their Report-Only target. Confirm both final HTTP
 headers; Next's nonce must match its bootstrap/Flight script attributes and change
 on repeated responses. Roll back by recreating `web` with only the base production
 file. Nothing in T-9149 promotes enforcement or deploys these changes.
+
+## Second-review checks (#638)
+
+Compared `git show origin/main:<page>` at local `4ff02f8c` for all 13 extracted
+language scripts (including the prior external mirror script). The old toggles
+initialize Greek and never read/write localStorage. No persistence regression
+occurred; adding persistence would change the old behavior. Landing also used
+`textContent` before extraction, deliberately keeping attribute text literal.
+The language regression tests pin those defaults and both toggle directions.
+
+Every external classic script now uses `defer`, including config/vendor scripts,
+in its original dependency order. Optional initialization nodes have null guards.
+The dispatcher runs only the nearest matching action. Embed API titles, pills,
+statuses and result fields use text nodes; numeric widths are finite and clamped.
+QR credentials target the same-origin parent explicitly; the receiving widget
+requires both that origin and its actual QR child window. Vote notifications use
+the embedding page's referrer origin and are omitted when that origin is absent.
+
+`createNonce()` uses Web Crypto `getRandomValues` on 32 bytes (256 bits, exceeding
+the 128-bit minimum), once per matched request. No report endpoint exists;
+observation still records browser violation events instead of sending reports.
+All Next pages inherit `force-dynamic` from `[locale]/layout.tsx`, with no child
+static/ISR override: `/el` and `/en`, and both locales' `bills`, `bills/[id]`,
+`results`, `analytics`, `municipal`, `mp`, `admin`, and `sso-verify` pages. Unknown
+localized routes render dynamic errors. Static docs and their redirects have no
+nonce. `private, no-store` on dynamic HTML/Flight is intentional: this gives up
+full-page and downstream document caching; static assets retain their caching.
+
+Targeted regressions are `apps/web/src/{proxy.nonce,lib/csp,next-config.csp}.test.ts`,
+`apps/web/src/static-docs.csp.test.mjs`, `scripts/csp-docs.check.mjs` and
+`scripts/redesign/test_csp_inventory.py`.
+The Workbox test runs real `generateSW` and checks the generated route registrations,
+rather than only mocking its schema. The Compose gate checks base and merged
+overlay bindings, policies and embed framing, and rejects shared CSP writers.
+
+The offline production build passed with the installed Next 16.3.8 dependency
+tree and mocked font bytes (the repo pins 16.4.1). Its build table marks all locale
+pages dynamic. The production renderer check uses Next request/response mocks
+and the compiled proxy, without listening on a socket or making HTTP requests:
+
+```sh
+NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 node --test scripts/csp-render.check.mjs
+```
+
+Run this after the web production build. It checks two sequential renders each
+for SSO, analytics and an unknown localized URL: fresh proxy nonces on every
+HTML/Flight script, private/no-store and no `x-nextjs-cache` HIT/STALE. Unknown
+localized paths have a catch-all under the dynamic locale layout; otherwise
+Next's global static 404 lacks the response nonce. The local check passed all six
+renders with matching distinct nonces and `x-nextjs-cache` absent. The build manifest must not
+prerender any locale route. Pinned-dependency and browser deployment checks
+remain prerequisites for promotion.

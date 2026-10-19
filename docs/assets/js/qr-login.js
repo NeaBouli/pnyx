@@ -11,10 +11,11 @@ function getParams(){
   return{purpose:p.get('purpose')||'ticket',bill_id:p.get('bill_id')||null};
 }
 
-function show(id){document.getElementById(id).classList.remove('hidden')}
-function hide(id){document.getElementById(id).classList.add('hidden')}
+function show(id){document.getElementById(id)?.classList.remove('hidden')}
+function hide(id){document.getElementById(id)?.classList.add('hidden')}
 
 async function startSession(){
+  if (!document.getElementById('qr-container') || !document.getElementById('timer')) return;
   // Reset UI
   hide('status-success');hide('status-expired');hide('btn-refresh');
   show('status-pending');
@@ -80,7 +81,7 @@ async function pollSession(){
         window.parent.postMessage({type:'ekklesia-qr-auth',status:'authenticated',
           session_id:sessionId,
           nullifier_hash:d.nullifier_hash,public_key_hex:d.public_key_hex,
-          purpose:d.purpose,bill_id:d.bill_id},'*');
+          purpose:d.purpose,bill_id:d.bill_id},window.location.origin);
       }
     }else if(d.status==='expired'){
       onExpired();

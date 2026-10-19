@@ -23,9 +23,8 @@ const withPWA = withPWAInit({
         },
       },
       {
-        // Cache only static resources; never nonce-bearing HTML or Flight data.
-        urlPattern: ({ url, request }) => url.origin === self.location.origin &&
-          ["script", "style", "image", "font"].includes(request.destination),
+        // Only canonical static file paths; exclude every HTML/Flight route.
+        urlPattern: /^https:\/\/ekklesia\.gr\/(?:_next\/static|assets)\/[^?]*\.(?:js|css|png|jpe?g|gif|webp|svg|ico|woff2?|ttf|otf)(?:\?[^#]*)?$/i,
         handler: "StaleWhileRevalidate",
         options: {
           cacheName: "static-cache",

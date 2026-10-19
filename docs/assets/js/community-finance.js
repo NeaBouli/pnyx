@@ -129,7 +129,8 @@
     }
 
     text.textContent = label;
-    document.getElementById("m1").style.color = color;
+    var mirrorLabel = document.getElementById("m1");
+    if (mirrorLabel) mirrorLabel.style.color = color;
   }
 
   function fetchMirrorStatus() {
@@ -400,26 +401,6 @@
   // HLR LIVE STATUS (TABBED PRIMARY/FALLBACK) — grobes, datensparsames Schema
   // ═══════════════════════════════════════════════════════════
   var HLR_LEVEL_PCT = { high: 100, medium: 60, low: 25, empty: 0 };
-  var hlrActiveTab = "primary";
-
-  function switchHlrTab(tab) {
-    hlrActiveTab = tab;
-    var pp = document.getElementById("hlrPanelPrimary");
-    var pf = document.getElementById("hlrPanelFallback");
-    var bp = document.getElementById("hlrTabPrimary");
-    var bf = document.getElementById("hlrTabFallback");
-    if (tab === "primary") {
-      if (pp) pp.style.display = "";
-      if (pf) pf.style.display = "none";
-      if (bp) { bp.style.border = "2px solid #3b82f6"; bp.style.background = "#eff6ff"; bp.style.color = "#1d4ed8"; }
-      if (bf) { bf.style.border = "2px solid #e2e8f0"; bf.style.background = "white"; bf.style.color = "var(--gray-500)"; }
-    } else {
-      if (pp) pp.style.display = "none";
-      if (pf) pf.style.display = "";
-      if (bf) { bf.style.border = "2px solid #3b82f6"; bf.style.background = "#eff6ff"; bf.style.color = "#1d4ed8"; }
-      if (bp) { bp.style.border = "2px solid #e2e8f0"; bp.style.background = "white"; bp.style.color = "var(--gray-500)"; }
-    }
-  }
 
   function fetchHlrCredits() {
     fetch("https://api.ekklesia.gr/api/v1/identity/hlr/credits")

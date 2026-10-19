@@ -2,7 +2,7 @@
 // Populate category sidebar + select
 var catSidebar = document.getElementById("categorySidebar");
 var catSelect = document.getElementById("ticketCategory");
-POLIS_CONFIG.categories.forEach(function(cat) {
+if (catSidebar && catSelect && typeof POLIS_CONFIG !== "undefined") POLIS_CONFIG.categories.forEach(function(cat) {
   catSidebar.innerHTML += '<div class="sidebar-option" data-csp-click="filter-category" data-value="category:' + cat.id + '">' + (polisLang === "el" ? cat.el : cat.en) + '</div>';
   var opt = document.createElement("option");
   opt.value = cat.id;
@@ -54,7 +54,7 @@ async function loadMoreTickets() {
 }
 
 // Init
-initPolis();
+if (catSidebar && catSelect && typeof initPolis === "function") initPolis();
 
 // ── QR-Code Browser Login ────────────────────────────────────────────────
 var qrSessionId = null;

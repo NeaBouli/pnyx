@@ -11,9 +11,10 @@ const code = scripts.join('\n');
 const source = html + '\n' + code;
 
 test('esc() and num() helpers are defined before first use', () => {
-  // Classic blocking scripts execute in tag order; async/defer would change it.
+  // Deferred classic scripts execute in tag order after parsing.
   for (const [, attrs] of html.matchAll(/<script\b([^>]*)>/gi)) {
-    assert.doesNotMatch(attrs, /\b(?:async|defer)\b|\btype\s*=\s*["']module["']/i);
+    assert.match(attrs, /\bdefer\b/);
+    assert.doesNotMatch(attrs, /\basync\b|\btype\s*=\s*["']module["']/i);
   }
   const escAt = code.indexOf('function esc(');
   const numAt = code.indexOf('function num(');

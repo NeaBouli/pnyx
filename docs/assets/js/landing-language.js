@@ -3,7 +3,7 @@ var currentLang = "el";
 function toggleLang() {
   currentLang = currentLang === "el" ? "en" : "el";
   document.documentElement.lang = currentLang;
-  document.getElementById("langFlag").textContent = currentLang === "el" ? "EN" : "ΕΛ";
+  if (document.getElementById("langFlag")) document.getElementById("langFlag").textContent = currentLang === "el" ? "EN" : "ΕΛ";
   document.querySelectorAll("[data-el]").forEach(function(el) {
     var t = el.getAttribute("data-" + currentLang);
     if (t) el.textContent = t;

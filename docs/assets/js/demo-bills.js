@@ -95,5 +95,7 @@ function castConsensus(billId) {
   renderBills();
 }
 
-renderFilters();
-renderBills();
+if (document.getElementById("filters") && document.getElementById("billsList") && typeof DEMO_BILLS !== "undefined") {
+  renderFilters();
+  renderBills();
+}

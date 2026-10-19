@@ -2,18 +2,20 @@
 // NGO Contact Modal
 function openNgoModal() {
   var m = document.getElementById("ngoModal");
+  if (!m) return;
   m.style.display = "flex";
   document.getElementById("ngoForm").reset();
   document.getElementById("ngoStatus").style.display = "none";
 }
 function closeNgoModal() { document.getElementById("ngoModal").style.display = "none"; }
-document.getElementById("ngoModal").addEventListener("click", function(e) { if (e.target === this) closeNgoModal(); });
+document.getElementById("ngoModal")?.addEventListener("click", function(e) { if (e.target === this) closeNgoModal(); });
 
 function submitNgoForm(e) {
   e.preventDefault();
   var form = document.getElementById("ngoForm");
   var btn = document.getElementById("ngoSubmitBtn");
   var status = document.getElementById("ngoStatus");
+  if (!form || !btn || !status) return;
   var data = { org: form.org.value, name: form.name.value, email: form.email.value, message: form.message.value };
   btn.disabled = true;
   btn.textContent = (typeof currentLang !== "undefined" && currentLang === "en") ? "Sending..." : "Αποστολή...";
@@ -56,7 +58,7 @@ function openSharePopup() {
   document.getElementById("sharePopup").style.display = "flex";
 }
 function closeSharePopup() { document.getElementById("sharePopup").style.display = "none"; }
-document.getElementById("sharePopup").addEventListener("click", function(e) { if (e.target === this) closeSharePopup(); });
+document.getElementById("sharePopup")?.addEventListener("click", function(e) { if (e.target === this) closeSharePopup(); });
 
 function copyShareLink() {
   navigator.clipboard.writeText(shareUrl).then(function() {

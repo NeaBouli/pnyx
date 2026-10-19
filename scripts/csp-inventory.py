@@ -99,32 +99,58 @@ def validate_policy(compose, hashes=None):
         bindings = {value.strip() for value in labels.get(prefix + "middlewares", "").split(",")}
         if not labels.get(prefix + "rule") or not bindings.intersection({"ekklesia-headers", "ekklesia-headers@docker"}):
             raise ValueError(f"{router} must bind the active ekklesia-headers middleware")
-    prefix = "traefik.http.middlewares.ekklesia-headers.headers."
-    enforced = labels.get(prefix + "contentSecurityPolicy")
+    shared = "traefik.http.middlewares.ekklesia-headers.headers."
     static = "traefik.http.middlewares.ekklesia-static-csp.headers."
-    report_only = labels.get(static + "customResponseHeaders.Content-Security-Policy-Report-Only")
-    if not enforced or not report_only:
+    embed = "traefik.http.middlewares.ekklesia-embed-csp.headers."
+    expected = LEGACY_CSP.replace("script-src 'self' 'unsafe-inline'", "script-src 'self'") + "; font-src 'self'; object-src 'none'; base-uri 'self'"
+    if not labels.get(static + "contentSecurityPolicy") or not labels.get(static + "customResponseHeaders.Content-Security-Policy-Report-Only"):
         raise ValueError("expected active enforced and Report-Only policy labels on web")
-    expected = LEGACY_CSP.replace("script-src 'self' 'unsafe-inline'", "script-src 'self'") + "; object-src 'none'; base-uri 'self'"
-    if enforced != LEGACY_CSP or report_only != expected:
+    if (labels[static + "contentSecurityPolicy"] != LEGACY_CSP or
+            labels[static + "customResponseHeaders.Content-Security-Policy-Report-Only"] != expected):
         raise ValueError("Report-Only policy/hash drift: review the compose label and inventory")
-    if any("Content-Security-Policy-Report-Only" in key for key in labels if key.startswith(prefix)):
-        raise ValueError("a shared fixed Report-Only policy would overwrite the Next nonce")
-    general = labels["traefik.http.routers.ekklesia-web.middlewares"].split(",")
-    if any(value.strip().split("@")[0] == "ekklesia-static-csp" for value in general):
-        raise ValueError("general web router must preserve the Next nonce policy")
+    def check_writers(active, router, csp_writer=None, frameable=False):
+        bindings = [value.strip().split("@")[0] for value in active.get("traefik.http.routers." + router + ".middlewares", "").split(",")]
+        writers = []
+        for binding in bindings:
+            prefix = "traefik.http.middlewares." + binding + ".headers."
+            if any(key.startswith(prefix) and ("contentsecuritypolicy" in key.lower() or "content-security-policy" in key.lower()) for key in active):
+                writers.append(binding)
+            if frameable and (str(active.get(prefix + "frameDeny", "false")).lower() == "true" or
+                              active.get(prefix + "customFrameOptionsValue") or
+                              any(key.lower() == (prefix + "customResponseHeaders.X-Frame-Options").lower() for key in active)):
+                raise ValueError("embed router must stay frameable")
+        if writers != ([csp_writer] if csp_writer else []):
+            raise ValueError("general web router must preserve the Next nonce policy; each static router needs one CSP writer")
+        if "ekklesia-headers" not in bindings:
+            raise ValueError(router + " must bind the active ekklesia-headers middleware")
+        return bindings
+    check_writers(labels, "ekklesia-web")
     rule = labels["traefik.http.routers.ekklesia-static.rule"]
     if re.search(r"\bPath(?:Prefix)?\([^)]*,", rule):
         raise ValueError("static router must use single-argument Path/PathPrefix matchers")
-    bindings = labels["traefik.http.routers.ekklesia-static.middlewares"].split(",")
-    if "ekklesia-static-csp" not in bindings or int(labels.get("traefik.http.routers.ekklesia-static.priority", 0)) < 100:
+    if "`/embed/`" in rule:
+        raise ValueError("embed router must stay frameable: exclude it from the static router")
+    check_writers(labels, "ekklesia-static", "ekklesia-static-csp")
+    if int(labels.get("traefik.http.routers.ekklesia-static.priority", 0)) < 100:
         raise ValueError("static router must bind its strict CSP at explicit priority")
+    if (labels.get("traefik.http.routers.ekklesia-embed.rule") != "Host(`ekklesia.gr`) && PathPrefix(`/embed/`)" or
+            int(labels.get("traefik.http.routers.ekklesia-embed.priority", 0)) <= int(labels["traefik.http.routers.ekklesia-static.priority"])):
+        raise ValueError("embed router must stay frameable at a higher priority")
+    check_writers(labels, "ekklesia-embed", "ekklesia-embed-csp", frameable=True)
+    embed_target = expected.replace("frame-ancestors 'none'", "frame-ancestors *")
+    if (labels.get(embed + "contentSecurityPolicy") != LEGACY_CSP.replace("frame-ancestors 'none'", "frame-ancestors *") or
+            labels.get(embed + "customResponseHeaders.Content-Security-Policy-Report-Only") != embed_target):
+        raise ValueError("embed router must stay frameable in legacy and target policies")
     override = yaml.safe_load((ROOT / "infra/docker/docker-compose.csp-enforce.yml").read_text())["services"]["web"]
     promoted = {**labels, **compose_labels(override["labels"])}
     if (override["environment"].get("CSP_ENFORCE") != "true" or
-            promoted.get(prefix + "contentSecurityPolicy") != "" or
-            promoted.get(static + "contentSecurityPolicy") != expected):
-        raise ValueError("promotion must preserve the dynamic nonce and enforce the static target")
+            any(key.startswith(shared) and ("contentsecuritypolicy" in key.lower() or "content-security-policy" in key.lower()) for key in promoted) or
+            promoted.get(static + "contentSecurityPolicy") != expected or
+            promoted.get(embed + "contentSecurityPolicy") != embed_target):
+        raise ValueError("promotion must preserve the dynamic nonce and enforce the static/embed targets")
+    check_writers(promoted, "ekklesia-web")
+    check_writers(promoted, "ekklesia-static", "ekklesia-static-csp")
+    check_writers(promoted, "ekklesia-embed", "ekklesia-embed-csp", frameable=True)
     source = (ROOT / "apps/web/src/lib/csp.ts").read_text()
     if json.dumps(LEGACY_CSP) not in source:
         raise ValueError("application/edge CSP drift")
@@ -276,11 +302,11 @@ def render():
              f"The {sum(path.startswith('docs/') for path in pages)} live docs pages and representative web page contain **{totals['js']} executable inline blocks**, **{totals['data']} JSON-LD blocks**, **{totals['empty']} empty blocks**, **{totals['handlers']} literal event-handler attributes**, **0 generated handlers**, and **{totals['urls']} javascript: URLs**.", "",
              "Historical planning/community audit reports and animation-spec snippets are excluded. The frozen R0 inventory is unchanged. All production public HTML from docs and the separately copied representative app is checked. JSON-LD stays inline: application/ld+json is a non-executable data block, valid JSON, and needs neither a nonce nor a script hash. Observation run 2 reported no JSON-LD violations in Chromium/WebKit; the added offline browser regression is available for a browser-enabled environment (local launch is sandbox-blocked).", "",
              "## Policy and promotion", "",
-             "The default enforced Traefik header is byte-identical to the previous deployment. Static HTML receives a Report-Only policy with script-src 'self', object-src 'none', base-uri 'self' and the existing frame-ancestors 'none'. All other directives remain unchanged, including style-src 'unsafe-inline'. No script unsafe-inline, unsafe-eval, unsafe-hashes, strict-dynamic, build-dependent hash, or fixed nonce is added to the target.", "",
-             "The priority-100 ekklesia-static router covers /, top-level docs HTML and the wiki/tickets/votes/embed/municipality/demo/representative directories. It uses the shared headers middleware plus ekklesia-static-csp. The general web router uses only shared headers; Next supplies a response-specific Report-Only policy. Applying the static candidate to dynamic HTML would block bootstrap even when the app supplies a valid nonce. The gate checks both routers, both policies, the promotion override and app/edge legacy policy parity.", "",
-             "Promote only in a separate deployment after a new observation has zero violations and interaction/hydration checks pass. Add `-f infra/docker/docker-compose.csp-enforce.yml` after the normal production Compose file. The override enables CSP_ENFORCE=true in Next, removes the shared legacy CSP writer, and enforces the static target in the static middleware. Both surfaces retain the target Report-Only header. Omit the override and recreate web to roll back. See CSP_OBSERVATION.md for commands and prerequisites. Static hosting outside Traefik needs equivalent HTTP headers.", "",
+             "The non-embed legacy CSP value is byte-identical to the previous deployment. Static HTML receives a Report-Only policy with script-src 'self', font-src 'self', object-src 'none', base-uri 'self' and the existing frame-ancestors 'none'. All other directives remain unchanged, including style-src 'unsafe-inline'. No script unsafe-inline, unsafe-eval, unsafe-hashes, strict-dynamic, build-dependent hash, or fixed nonce is added to the target.", "",
+             "The priority-100 ekklesia-static router covers /, top-level docs HTML and the wiki/tickets/votes/municipality/demo/representative directories. The priority-110 embed router uses its own CSP middleware with frame-ancestors * and no frame-deny header in both phases. It uses the shared headers middleware plus ekklesia-static-csp. The general web router has no edge CSP writer; Next supplies a response-specific Report-Only policy. Applying the static candidate to dynamic HTML would block bootstrap even when the app supplies a valid nonce. The gate checks both routers, both policies, the promotion override and app/edge legacy policy parity.", "",
+             "Promote only in a separate deployment after a new observation has zero violations and interaction/hydration checks pass. Add `-f infra/docker/docker-compose.csp-enforce.yml` after the normal production Compose file. The override enables CSP_ENFORCE=true in Next, replaces each static/embed legacy CSP with its target in the same middleware. No empty-value or duplicate CSP labels are used. Both surfaces retain the target Report-Only header. Omit the override and recreate web to roll back. See CSP_OBSERVATION.md for commands and prerequisites. Static hosting outside Traefik needs equivalent HTTP headers.", "",
              "## What moved", "",
-             "All executable blocks now load classic scripts at their original document positions under docs/assets/js/. Twelve wiki legal-modal bodies share wiki-legal.js; eight wiki language bodies share wiki-language.js. Page-specific language/modal/nav logic retains its original body and globals. events.js contains a closed allowlist of listener functions for data-csp-* controls; delegated listeners support generated cards, translated markup, bubbling, return-false cancellation and vote stopPropagation. Parameters in generated controls use data-number/data-bill/data-choice/data-value, never evaluated strings. The prior mirror and OAuth callback assets moved here too; callback keeps no-referrer first in head and config-before-callback ordering. SSO verification script requests use no-referrer so the nonce query cannot leak into asset referrers. The minified QR vendor body is unchanged. Municipality Google Fonts links were removed: their existing serif/sans-serif fallbacks already render under the enforced policy, and no external font origins are authorized.", "",
+             "All executable blocks now load deferred classic scripts in dependency order at their original document positions under docs/assets/js/. Twelve wiki legal-modal bodies share wiki-legal.js; eight wiki language bodies share wiki-language.js. Page-specific language/modal/nav logic retains its globals, with null guards. Language defaults and landing textContent match local origin/main; those old toggles never persisted language. events.js contains a closed allowlist of listener functions for data-csp-* controls; delegated listeners support generated cards, translated markup, nearest matching ancestor dispatch, return-false cancellation and vote stopPropagation. Parameters in generated controls use data-number/data-bill/data-choice/data-value, never evaluated strings. The prior mirror and OAuth callback assets moved here too; callback keeps no-referrer first in head and config-before-callback ordering. SSO verification script requests use no-referrer so the nonce query cannot leak into asset referrers. The minified QR vendor body is unchanged. Municipality Google Fonts links were removed: their existing serif/sans-serif fallbacks already render under the enforced policy, and no external font origins are authorized.", "",
              "scripts/csp-migration.json records each source page, externalized assets and original body digests for review. The table below pins current assets, including the few template bodies changed to remove generated handlers. The new-ticket auth guard now runs in the same listener path before opening the modal; it no longer wraps a removed onclick property. Redesign approvals pin the new HTML/inventory bytes without changing frozen R0 data. Sitemap source hashes and lastmod dates reflect this migration; SEO content and JSON-LD stay unchanged.", "",
              "## Counts by file", "", "| File | Executable blocks | JSON-LD | Empty | Literal handlers | Generated handler sites | javascript: URLs |",
              "| --- | ---: | ---: | ---: | ---: | ---: | ---: |"]

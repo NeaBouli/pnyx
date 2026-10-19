@@ -1,8 +1,10 @@
-import { afterEach, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { generateSW } from "workbox-build";
 
-type RuntimeRule = {
-  urlPattern: RegExp | ((args: { url: URL; request: { destination: string } }) => boolean);
-};
+type RuntimeRule = { urlPattern: RegExp; handler: "NetworkFirst" | "StaleWhileRevalidate" };
 type PwaOptions = {
   cacheStartUrl: boolean; dynamicStartUrl: boolean; cacheOnFrontEndNav: boolean;
   publicExcludes: string[];
@@ -16,24 +18,34 @@ vi.mock("@ducanh2912/next-pwa", () => ({ default: (options: PwaOptions) => {
 vi.mock("next-intl/plugin", () => ({ default: () => (config: object) => config }));
 import "../next.config.mjs";
 
-afterEach(() => vi.unstubAllGlobals());
-
-it("PWA never caches nonce-bearing navigation or Flight responses", () => {
+it("PWA caches static file paths and excludes navigation/Flight URLs", () => {
   const options = captured.options!;
   expect(options.cacheStartUrl).toBe(false);
   expect(options.dynamicStartUrl).toBe(false);
   expect(options.cacheOnFrontEndNav).toBe(false);
   expect(options.publicExcludes).toContain("!**/*.html");
-  // The plugin reads runtimeCaching only inside workboxOptions.
   expect(options).not.toHaveProperty("runtimeCaching");
-  const rule = options.workboxOptions.runtimeCaching.find(rule => typeof rule.urlPattern === "function")!;
-  const matches = rule.urlPattern as Exclude<RuntimeRule["urlPattern"], RegExp>;
-  vi.stubGlobal("self", { location: { origin: "https://ekklesia.gr" } });
-  for (const destination of ["document", "", "iframe"]) {
-    expect(matches({ url: new URL("https://ekklesia.gr/en/bills"), request: { destination } })).toBe(false);
+  const pattern = options.workboxOptions.runtimeCaching[1].urlPattern;
+  expect(pattern).toBeInstanceOf(RegExp);
+  for (const path of ["/en/bills", "/el/bills/public.js", "/en/bills?_rsc=a", "/index.html", "/assets/page.html", "/_next/data/id.json", "/assets/file.js/extra"]) {
+    expect(pattern.test("https://ekklesia.gr" + path)).toBe(false);
   }
-  for (const destination of ["script", "style", "image", "font"]) {
-    expect(matches({ url: new URL("https://ekklesia.gr/assets/file"), request: { destination } })).toBe(true);
-    expect(matches({ url: new URL("https://elsewhere.invalid/file"), request: { destination } })).toBe(false);
+  for (const path of ["/assets/js/events.js", "/assets/site.css", "/assets/font.woff2", "/_next/static/chunks/app.js?v=1"]) {
+    expect(pattern.test("https://ekklesia.gr" + path)).toBe(true);
+    expect(pattern.test("https://elsewhere.invalid" + path)).toBe(false);
   }
+});
+
+it("the actual Workbox generateSW schema compiles every runtime caching rule", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "t9149-workbox-"));
+  try {
+    await writeFile(join(dir, "fixture.js"), "/* fixture */");
+    const result = await generateSW({ ...captured.options!.workboxOptions,
+      mode: "development", globDirectory: dir, globPatterns: ["fixture.js"], swDest: join(dir, "sw.js") });
+    expect(result.warnings).toEqual([]);
+    const sw = await readFile(join(dir, "sw.js"), "utf8");
+    expect(sw).toContain("api-cache");
+    expect(sw).toContain("static-cache");
+    expect(sw).toContain("registerRoute");
+  } finally { await rm(dir, { recursive: true, force: true }); }
 });

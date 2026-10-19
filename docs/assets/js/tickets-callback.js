@@ -58,6 +58,7 @@
     }
 
     function showError(msg) {
+      if (!["spinner", "title", "message", "error", "retryLink"].every(function(id) { return document.getElementById(id); })) return;
       document.getElementById("spinner").style.display = "none";
       document.getElementById("title").textContent = "Σφάλμα";
       document.getElementById("message").style.display = "none";

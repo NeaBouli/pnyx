@@ -198,7 +198,7 @@ jobs:
         include:
           - name: Web
             path: apps/web
-            verify: node --test ../../scripts/client-yaml-security.check.cjs image-codec.check.mjs ../../scripts/static-docs-remote-sinks.check.mjs ../../scripts/public-seo.check.mjs && npm run lint && npm run typecheck && npm test && npm run build
+            verify: node --test ../../scripts/client-yaml-security.check.cjs image-codec.check.mjs ../../scripts/static-docs-remote-sinks.check.mjs ../../scripts/public-seo.check.mjs && npm run lint && npm run typecheck && npm test && npm run build && NODE_ENV=production node --test ../../scripts/csp-render.check.mjs
           - name: Dashboard
             path: apps/dashboard
             verify: node --test ../../scripts/client-yaml-security.check.cjs image-codec.check.mjs health-shapes.test.mjs overview.test.mjs && npm run lint && npm run typecheck && npm run build

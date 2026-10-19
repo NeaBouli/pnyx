@@ -120,3 +120,14 @@ test('new-ticket listener preserves GitHub/QR guards and opens only after both c
     if (state === 'github') assert.equal(storage.get('polis_pending_action'), 'new-ticket');
   }
 });
+
+test('nested controls dispatch only the nearest matching action for every delegated event', () => {
+  for (const type of ['click', 'submit', 'keydown', 'input', 'mouseover', 'mouseout']) {
+    let calls = 0;
+    const { node, emit } = harness({ toggleLang: () => calls++ });
+    const parent = node({ ['data-csp-' + type]: 'toggle-language' });
+    const child = node({ ['data-csp-' + type]: 'toggle-language' }, parent);
+    emit(type, node({}, child));
+    assert.equal(calls, 1, type);
+  }
+});

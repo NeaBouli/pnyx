@@ -127,17 +127,27 @@ services:
       traefik.http.middlewares.ekklesia-headers.headers.stsIncludeSubdomains: "true"
       traefik.http.middlewares.ekklesia-headers.headers.stsPreload: "true"
       traefik.http.middlewares.ekklesia-headers.headers.contentTypeNosniff: "true"
-      traefik.http.middlewares.ekklesia-headers.headers.frameDeny: "true"
+      traefik.http.middlewares.ekklesia-no-frame.headers.frameDeny: "true"
       traefik.http.middlewares.ekklesia-headers.headers.browserXssFilter: "true"
-      traefik.http.middlewares.ekklesia-headers.headers.contentSecurityPolicy: "default-src 'self' https://api.ekklesia.gr; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api.qrserver.com https://avatars.githubusercontent.com; connect-src 'self' https://api.ekklesia.gr https://api.coingecko.com https://arweave.net https://api.github.com https://polis-oauth-proxy.bergamolia.workers.dev; frame-ancestors 'none'"
-      traefik.http.routers.ekklesia-web.middlewares: "ekklesia-headers"
-      traefik.http.routers.ekklesia-static.rule: "Host(`ekklesia.gr`) && (Path(`/`) || Path(`/index.html`) || Path(`/community.html`) || Path(`/legal.html`) || Path(`/bot.html`) || Path(`/govgr-dimos.html`) || Path(`/representative.html`) || Path(`/mirror-setup.html`) || Path(`/sso-verify.html`) || PathPrefix(`/wiki/`) || PathPrefix(`/tickets/`) || PathPrefix(`/votes/`) || PathPrefix(`/embed/`) || PathPrefix(`/municipality/`) || PathPrefix(`/demo/`) || PathPrefix(`/representative/`))"
+      traefik.http.routers.ekklesia-web.middlewares: "ekklesia-headers,ekklesia-no-frame"
+      traefik.http.routers.ekklesia-static.rule: "Host(`ekklesia.gr`) && (Path(`/`) || Path(`/index.html`) || Path(`/community.html`) || Path(`/legal.html`) || Path(`/bot.html`) || Path(`/govgr-dimos.html`) || Path(`/representative.html`) || Path(`/mirror-setup.html`) || Path(`/sso-verify.html`) || PathPrefix(`/wiki/`) || PathPrefix(`/tickets/`) || PathPrefix(`/votes/`) || PathPrefix(`/municipality/`) || PathPrefix(`/demo/`) || PathPrefix(`/representative/`))"
       traefik.http.routers.ekklesia-static.priority: "100"
       traefik.http.routers.ekklesia-static.entrypoints: "websecure"
       traefik.http.routers.ekklesia-static.tls.certresolver: "letsencrypt"
       traefik.http.routers.ekklesia-static.service: "ekklesia-web"
-      traefik.http.routers.ekklesia-static.middlewares: "ekklesia-headers,ekklesia-static-csp"
-      traefik.http.middlewares.ekklesia-static-csp.headers.customResponseHeaders.Content-Security-Policy-Report-Only: "default-src 'self' https://api.ekklesia.gr; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api.qrserver.com https://avatars.githubusercontent.com; connect-src 'self' https://api.ekklesia.gr https://api.coingecko.com https://arweave.net https://api.github.com https://polis-oauth-proxy.bergamolia.workers.dev; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
+      traefik.http.routers.ekklesia-static.middlewares: "ekklesia-headers,ekklesia-no-frame,ekklesia-static-csp"
+      traefik.http.middlewares.ekklesia-static-csp.headers.customResponseHeaders.Content-Security-Policy-Report-Only: "default-src 'self' https://api.ekklesia.gr; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api.qrserver.com https://avatars.githubusercontent.com; connect-src 'self' https://api.ekklesia.gr https://api.coingecko.com https://arweave.net https://api.github.com https://polis-oauth-proxy.bergamolia.workers.dev; frame-ancestors 'none'; font-src 'self'; object-src 'none'; base-uri 'self'"
+
+      traefik.http.middlewares.ekklesia-static-csp.headers.contentSecurityPolicy: "default-src 'self' https://api.ekklesia.gr; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api.qrserver.com https://avatars.githubusercontent.com; connect-src 'self' https://api.ekklesia.gr https://api.coingecko.com https://arweave.net https://api.github.com https://polis-oauth-proxy.bergamolia.workers.dev; frame-ancestors 'none'"
+      # Widgets and their QR child must allow arbitrary HTTPS parents.
+      traefik.http.routers.ekklesia-embed.rule: "Host(`ekklesia.gr`) && PathPrefix(`/embed/`)"
+      traefik.http.routers.ekklesia-embed.priority: "110"
+      traefik.http.routers.ekklesia-embed.entrypoints: "websecure"
+      traefik.http.routers.ekklesia-embed.tls.certresolver: "letsencrypt"
+      traefik.http.routers.ekklesia-embed.service: "ekklesia-web"
+      traefik.http.routers.ekklesia-embed.middlewares: "ekklesia-headers,ekklesia-embed-csp"
+      traefik.http.middlewares.ekklesia-embed-csp.headers.contentSecurityPolicy: "default-src 'self' https://api.ekklesia.gr; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api.qrserver.com https://avatars.githubusercontent.com; connect-src 'self' https://api.ekklesia.gr https://api.coingecko.com https://arweave.net https://api.github.com https://polis-oauth-proxy.bergamolia.workers.dev; frame-ancestors *"
+      traefik.http.middlewares.ekklesia-embed-csp.headers.customResponseHeaders.Content-Security-Policy-Report-Only: "default-src 'self' https://api.ekklesia.gr; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api.qrserver.com https://avatars.githubusercontent.com; connect-src 'self' https://api.ekklesia.gr https://api.coingecko.com https://arweave.net https://api.github.com https://polis-oauth-proxy.bergamolia.workers.dev; frame-ancestors *; font-src 'self'; object-src 'none'; base-uri 'self'"
 
   ollama:
     image: ollama/ollama:latest

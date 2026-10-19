@@ -13,4 +13,4 @@ def page_with_scripts(path):
             raise ValueError("behavior tests only read local assets")
         asset = ROOT / "docs" / src.lstrip("/") if src.startswith("/") else path.parent / src
         return "<script>" + asset.read_text(encoding="utf-8") + "</script>"
-    return re.sub(r'<script src="([^"]+)"[^>]*></script>', load, path.read_text(encoding="utf-8"))
+    return re.sub(r'<script\b[^>]*\bsrc="([^"]+)"[^>]*></script>', load, path.read_text(encoding="utf-8"))

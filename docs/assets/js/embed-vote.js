@@ -15,6 +15,8 @@ var authState={
 
 // Listen for QR auth messages from iframe
 window.addEventListener('message',function(evt){
+  var qrFrame = document.getElementById('qr-frame');
+  if(evt.origin !== window.location.origin || !qrFrame || evt.source !== qrFrame.contentWindow) return;
   if(!evt.data||evt.data.type!=='ekklesia-qr-auth')return;
   if(evt.data.status==='authenticated'){
     authState.authenticated=true;
@@ -57,8 +59,11 @@ async function castVote(choice){
     if(r.ok&&d.success){
       showVoteDone(choice);
       // Notify parent if embedded
-      if(window.parent!==window){
-        window.parent.postMessage({type:'ekklesia-vote-done',bill_id:billId,vote:choice},'*');
+      if(window.parent!==window && document.referrer){
+        var parentUrl = new URL(document.referrer);
+        if (parentUrl.protocol === 'https:' || parentUrl.protocol === 'http:') {
+          window.parent.postMessage({type:'ekklesia-vote-done',bill_id:billId,vote:choice},parentUrl.origin);
+        }
       }
     }else{
       alert((d.detail||d.message||'Error')+(el?' — Δοκιμάστε ξανά.':' — Try again.'));
@@ -73,9 +78,15 @@ async function castVote(choice){
 }
 
 function showVoteDone(choice){
+  var area = document.getElementById('vote-area');
+  if (!area) return;
   var labels={YES:el?'ΝΑΙ':'YES',NO:el?'ΟΧΙ':'NO',ABSTAIN:el?'ΑΠΟΧΗ':'ABSTAIN'};
   var icons={YES:'👍',NO:'👎',ABSTAIN:'⏸️'};
-  document.getElementById('vote-area').innerHTML='<div class="vote-done"><div class="icon">'+icons[choice]+'</div><div class="msg">'+(el?'Ψήφος: ':'Vote: ')+labels[choice]+'</div><div style="font-size:12px;color:#64748b;margin-top:6px">'+(el?'Ψήφος καταγράφηκε (χωρίς όνομα)':'Vote recorded (no name)')+'</div></div>';
+  area.replaceChildren();
+  var done = EmbedUI.node(area, 'div', 'vote-done');
+  EmbedUI.node(done, 'div', 'icon', icons[choice] || '');
+  EmbedUI.node(done, 'div', 'msg', (el?'Ψήφος: ':'Vote: ') + (labels[choice] || ''));
+  EmbedUI.node(done, 'div', '', el?'Ψήφος καταγράφηκε (χωρίς όνομα)':'Vote recorded (no name)');
   // Refresh results
   loadResults();
 }
@@ -83,6 +94,7 @@ function showVoteDone(choice){
 var currentBill=null;
 
 async function load(){
+  if(!document.getElementById('widget') || !document.getElementById('loader')) return;
   if(!billId){document.getElementById('loader').className='error';document.getElementById('loader').textContent=el?'Λείπει bill_id':'Missing bill_id';return}
   try{
     var r=await fetch(API+'/api/v1/bills/'+encodeURIComponent(billId));
@@ -97,59 +109,37 @@ async function loadResults(){
   try{
     var vr=await fetch(API+'/api/v1/vote/'+encodeURIComponent(billId)+'/results').then(function(x){return x.json()}).catch(function(){return{}});
     var resultsEl=document.getElementById('results-area');
-    if(resultsEl&&vr){
-      var yes=vr.yes_count,no=vr.no_count,abstain=vr.abstain_count,total=vr.total_votes;
-  var hasShares=yes!=null&&no!=null&&abstain!=null&&total!=null;
-      var yesPct=hasShares ? vr.yes_percent : null;
-      var noPct=hasShares ? vr.no_percent : null;
-      var h='';
-      if(hasShares&&total>0){
-        h+='<div class="bar-wrap"><div class="bar-yes" style="width:'+Math.max(yesPct,5)+'%">'+yesPct+'%</div><div class="bar-no" style="width:'+Math.max(noPct,5)+'%">'+noPct+'%</div></div>';
-        h+='<div class="stats">'+total+' '+(el?'ψήφοι':'votes')+'</div>';
-      }
-      if(!hasShares)h='<div class="stats">—</div><div class="stats">'+(total==null?'—':total)+' '+(el?'ψήφοι':'votes')+'</div>';
-      resultsEl.innerHTML=h;
-    }
+    if(resultsEl && vr) EmbedUI.results(resultsEl, vr, el);
   }catch(e){}
 }
 
 function render(b,vr){
-  var yes=vr.yes_count,no=vr.no_count,abstain=vr.abstain_count,total=vr.total_votes;
-  var hasShares=yes!=null&&no!=null&&abstain!=null&&total!=null;
-  var yesPct=hasShares ? vr.yes_percent : null;
-  var noPct=hasShares ? vr.no_percent : null;
-  var st=b.status||'ANNOUNCED';
-  var sc={'ACTIVE':'status-active','ANNOUNCED':'status-announced','PARLIAMENT_VOTED':'status-voted','OPEN_END':'status-open','WINDOW_24H':'status-active'};
-  var sl={'ACTIVE':el?'Ανοιχτή':'Active','ANNOUNCED':el?'Ανακοινώθηκε':'Announced','PARLIAMENT_VOTED':el?'Ψηφίστηκε':'Voted','OPEN_END':el?'Αρχείο':'Archive','WINDOW_24H':el?'24ω':'24h'};
-  var votable=st==='ACTIVE'||st==='WINDOW_24H';
-  var h='<span class="status '+(sc[st]||'status-announced')+'">'+(sl[st]||st)+'</span>';
-  h+='<div class="title">'+(b.title_el||b.title_en||billId)+'</div>';
-  if(b.pill_el)h+='<div class="pill">'+b.pill_el+'</div>';
-
-  if(votable){
-    // Auth bar + QR iframe + vote buttons
-    h+='<div id="auth-bar" class="auth-bar">'+(el?'🔐 Σκανάρετε το QR code με την εφαρμογή ekklesia.gr για ταυτοποίηση':'🔐 Scan the QR code with the ekklesia.gr app to authenticate')+'</div>';
-    h+='<iframe id="qr-frame" class="qr-frame" src="qr-login.html?purpose=vote&bill_id='+encodeURIComponent(billId)+'"></iframe>';
-    h+='<div id="vote-area"><div class="btns">';
-    h+='<button class="btn btn-yes vote-btn" disabled data-csp-click="embed-vote" data-choice="YES">'+(el?'ΝΑΙ':'YES')+'</button>';
-    h+='<button class="btn btn-no vote-btn" disabled data-csp-click="embed-vote" data-choice="NO">'+(el?'ΟΧΙ':'NO')+'</button>';
-    h+='<button class="btn btn-abstain vote-btn" disabled data-csp-click="embed-vote" data-choice="ABSTAIN">'+(el?'ΑΠΟΧΗ':'ABSTAIN')+'</button>';
-    h+='</div></div>';
+  var widget = document.getElementById('widget');
+  if (!widget) return;
+  widget.replaceChildren();
+  var st = b.status || 'ANNOUNCED';
+  var sc = {ACTIVE:'status-active', ANNOUNCED:'status-announced', PARLIAMENT_VOTED:'status-voted', OPEN_END:'status-open', WINDOW_24H:'status-active'};
+  var sl = {ACTIVE:el?'Ανοιχτή':'Active', ANNOUNCED:el?'Ανακοινώθηκε':'Announced', PARLIAMENT_VOTED:el?'Ψηφίστηκε':'Voted', OPEN_END:el?'Αρχείο':'Archive', WINDOW_24H:el?'24ω':'24h'};
+  EmbedUI.node(widget, 'span', 'status ' + (sc[st] || 'status-announced'), sl[st] || st);
+  EmbedUI.node(widget, 'div', 'title', b.title_el || b.title_en || billId);
+  if (b.pill_el) EmbedUI.node(widget, 'div', 'pill', b.pill_el);
+  if (st === 'ACTIVE' || st === 'WINDOW_24H') {
+    EmbedUI.node(widget, 'div', 'auth-bar', el?'🔐 Σκανάρετε το QR code με την εφαρμογή ekklesia.gr για ταυτοποίηση':'🔐 Scan the QR code with the ekklesia.gr app to authenticate').id = 'auth-bar';
+    var qr = EmbedUI.node(widget, 'iframe', 'qr-frame');
+    qr.id = 'qr-frame';
+    qr.src = 'qr-login.html?purpose=vote&bill_id=' + encodeURIComponent(billId);
+    var area = EmbedUI.node(widget, 'div'); area.id = 'vote-area';
+    var buttons = EmbedUI.node(area, 'div', 'btns');
+    [['YES','yes',el?'ΝΑΙ':'YES'],['NO','no',el?'ΟΧΙ':'NO'],['ABSTAIN','abstain',el?'ΑΠΟΧΗ':'ABSTAIN']].forEach(function(item) {
+      var button = EmbedUI.node(buttons, 'button', 'btn btn-' + item[1] + ' vote-btn', item[2]);
+      button.disabled = true;
+      button.setAttribute('data-csp-click', 'embed-vote');
+      button.dataset.choice = item[0];
+    });
   }
-
-  h+='<div id="results-area">';
-  if(hasShares&&total>0){
-    h+='<div class="bar-wrap"><div class="bar-yes" style="width:'+Math.max(yesPct,5)+'%">'+yesPct+'%</div><div class="bar-no" style="width:'+Math.max(noPct,5)+'%">'+noPct+'%</div></div>';
-    h+='<div class="stats">'+total+' '+(el?'ψήφοι':'votes')+'</div>';
-  }else if(!hasShares){
-    h+='<div class="stats">—</div><div class="stats">'+(total==null?"—":total)+' '+(el?'ψήφοι':'votes')+'</div>';
-  }else{
-    h+='<div class="stats">'+(el?'Δεν υπάρχουν ψήφοι ακόμα':'No votes yet')+'</div>';
-  }
-  h+='</div>';
-
-  h+='<div class="attr">'+(el?'Πηγή':'Source')+': <a href="https://ekklesia.gr" target="_blank">ekklesia.gr</a> · <a href="https://ekklesia.gr/el/bills/'+encodeURIComponent(billId)+'" target="_blank">'+(el?'Λεπτομέρειες':'Details')+'</a></div>';
-  document.getElementById('widget').innerHTML=h;
+  var results = EmbedUI.node(widget, 'div'); results.id = 'results-area';
+  EmbedUI.results(results, vr, el);
+  EmbedUI.attribution(widget, el, 'https://ekklesia.gr/el/bills/' + encodeURIComponent(billId), el?'Λεπτομέρειες':'Details');
 }
 load();
 setInterval(loadResults,60000);

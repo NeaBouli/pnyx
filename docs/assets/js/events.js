@@ -69,7 +69,7 @@
     "toggle-chat": function (event) { toggleChat() },
     "toggle-language": function (event) { toggleLang() },
     "toggle-parent": function (event) { this.parentElement.classList.toggle('open') },
-    "toggle-polis-language": function (event) { setPolisLang(polisLang==='el'?'en':'el');document.getElementById('langBtn').textContent=polisLang==='el'?'EN':'ΕΛ' },
+    "toggle-polis-language": function (event) { setPolisLang(polisLang==='el'?'en':'el');if (document.getElementById('langBtn')) document.getElementById('langBtn').textContent=polisLang==='el'?'EN':'ΕΛ' },
     "toggle-section": function (event) { toggleSection(this) },
     "demo-activate": function (event) { alert('Demo: Bill würde auf ACTIVE gesetzt') },
     "demo-filter": function (event) { setFilter(this.dataset.value) },
@@ -94,6 +94,7 @@
       var action = node.getAttribute("data-csp-" + event.type);
       if (Object.prototype.hasOwnProperty.call(actions, action)) {
         if (actions[action].call(node, event) === false) event.preventDefault();
+        break;
       }
       if (event.cancelBubble || event.type === "mouseenter" || event.type === "mouseleave") break;
       node = node.parentElement;
