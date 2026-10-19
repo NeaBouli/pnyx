@@ -106,6 +106,7 @@ services:
     logging: *default-logging
     environment:
       NEXT_PUBLIC_API_URL: https://api.ekklesia.gr
+      WEB_QR_LOGIN_NOTICE_ENABLED: ${WEB_QR_LOGIN_NOTICE_ENABLED:-false}
       NODE_ENV: production
     networks:
       - ekklesia

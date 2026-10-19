@@ -25,6 +25,7 @@ import {
   getCompassKey,
   getSigner,
   hasLocalSignerHint,
+  readLocalIdentityKeyState,
   identityKeyCheckMessage,
   migrateLegacyWebKey,
   setKeyRecordStoreForTests,
@@ -121,6 +122,68 @@ beforeEach(() => {
   serverChecks.length = 0;
 });
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+
+describe("readLocalIdentityKeyState", () => {
+  it("confirms empty storage even when old public/custody hints survive", async () => {
+    ls.set("ekklesia_public_key", PUB);
+    ls.set(KEY_CUSTODY_MARKER, "webcrypto");
+    expect(await readLocalIdentityKeyState()).toBe("absent");
+    expect(store.data.size).toBe(0);
+    expect(ls.size).toBe(2);
+  });
+
+  it("recognises an existing legacy key without migrating it", async () => {
+    legacyBrowser();
+    expect(await readLocalIdentityKeyState()).toBe("present");
+    expect(store.data.size).toBe(0);
+    expect(ls.get("ekklesia_private_key")).toBe(PRIV);
+  });
+
+  it.each(["identity", "identity_pending", "pending-rotation"])("does not announce absence with a key in %s", async (slot) => {
+    const pair = await crypto.subtle.generateKey("Ed25519", false, ["sign", "verify"]) as CryptoKeyPair;
+    store.data.set(slot, { privateKey: pair.privateKey, publicKeyHex: PUB, nullifier: NULLIFIER });
+    expect(await readLocalIdentityKeyState()).toBe("present");
+    expect(store.data.has(slot)).toBe(true);
+  });
+
+  it.each(["identity", "identity_pending", "pending-rotation"])("does not mistake a failed %s read for absence", async (slot) => {
+    store.failGetOnce = slot;
+    expect(await readLocalIdentityKeyState()).toBe("unavailable");
+  });
+
+  it("does not mistake a corrupt record or incomplete legacy key for absence", async () => {
+    store.data.set("identity", { privateKey: "corrupt" });
+    expect(await readLocalIdentityKeyState()).toBe("unavailable");
+    store.data.clear();
+    ls.set("ekklesia_private_key", PRIV);
+    expect(await readLocalIdentityKeyState()).toBe("unavailable");
+  });
+
+  it("does not mistake blocked localStorage or unavailable IndexedDB for absence", async () => {
+    vi.spyOn(localStorage, "getItem").mockImplementation(() => { throw new Error("Storage blocked"); });
+    expect(await readLocalIdentityKeyState()).toBe("unavailable");
+    vi.restoreAllMocks();
+    setKeyRecordStoreForTests(null);
+    expect(await readLocalIdentityKeyState()).toBe("unavailable");
+  });
+
+  it("waits for an in-flight keystore operation before confirming absence", async () => {
+    let release!: () => void;
+    const write = withKeystoreLock(() => new Promise<void>((done) => { release = done; }));
+    let finished = false;
+    const read = readLocalIdentityKeyState().then((result) => { finished = true; return result; });
+    await Promise.resolve();
+    expect(finished).toBe(false);
+    release();
+    await write;
+    expect(await read).toBe("absent");
+  });
+
+  it("can read without Web Locks where migration and rotation cannot run", async () => {
+    setLockManagerForTests(null);
+    expect(await readLocalIdentityKeyState()).toBe("absent");
+  });
+});
 
 describe("migrateLegacyWebKey", () => {
   it("moves the key into non-extractable custody, re-encrypts Compass, then drops the plaintext", async () => {

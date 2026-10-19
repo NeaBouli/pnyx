@@ -243,6 +243,31 @@ export function hasLocalSignerHint(): boolean {
   }
 }
 
+export type LocalIdentityKeyState = "present" | "absent" | "unavailable";
+
+/** Read-only UI check: hints and failed reads must never prove key absence. */
+export async function readLocalIdentityKeyState(): Promise<LocalIdentityKeyState> {
+  const read = async (): Promise<LocalIdentityKeyState> => {
+    // Journals can be the only surviving key after an interrupted migration.
+    for (const id of [IDENTITY_RECORD, PENDING_IDENTITY_RECORD, PENDING_ROTATION_RECORD]) {
+      if (await readRotationIdentityStrict(id)) return "present";
+    }
+    const privateKey = localStorage.getItem(LEGACY_PRIVATE_KEY);
+    if (privateKey !== null) {
+      return HEX32.test(privateKey) && HEX32.test(localStorage.getItem(LEGACY_PUBLIC_KEY) ?? "")
+        ? "present" : "unavailable";
+    }
+    return "absent";
+  };
+  try {
+    // Migration/rotation also use this lock; without Web Locks they cannot run.
+    const locked = await withKeystoreLock(read);
+    return locked ? locked.value : await read();
+  } catch {
+    return "unavailable";
+  }
+}
+
 /** Compass AES key (non-extractable), present once the identity is migrated. */
 export async function getCompassKey(): Promise<CryptoKey | null> {
   try {
