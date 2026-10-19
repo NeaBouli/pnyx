@@ -85,6 +85,30 @@ describe("Next 16 nonce policy through real next-intl middleware", () => {
   });
 });
 
+const staticRenderingExport = /export\s+(?:const\s+(?:dynamic\s*=\s*["']force-static["']|revalidate\s*=\s*(?:[1-9]|false\b|Infinity\b)|fetchCache\s*=\s*["']force-cache["']|generateStaticParams\b)|(?:async\s+)?function\s+generateStaticParams\b)/;
+
+it.each([
+  'export const revalidate = 60;',
+  'export const revalidate = false;',
+  'export const revalidate = Infinity;',
+  'export const dynamic = "force-static";',
+  "export const dynamic = 'force-static';",
+  'export const fetchCache = "force-cache";',
+  'export function generateStaticParams() { return [{ id: "cached" }]; }',
+  'export async function generateStaticParams() { return [{ id: "cached" }]; }',
+  'export const generateStaticParams = async () => [{ id: "cached" }];',
+])("the nonce guard rejects static rendering: %s", source => {
+  expect(source).toMatch(staticRenderingExport);
+});
+
+it.each([
+  'export const revalidate = 0;',
+  'export const dynamic = "force-dynamic";',
+  'export const fetchCache = "force-no-store";',
+])("the nonce guard permits request rendering: %s", source => {
+  expect(source).not.toMatch(staticRenderingExport);
+});
+
 it("every nonce-bearing page inherits request rendering with no child ISR/static override", () => {
   const app = fileURLToPath(new URL("./app", import.meta.url));
   const layout = readFileSync(resolve(app, "[locale]/layout.tsx"), "utf8");
@@ -95,6 +119,6 @@ it("every nonce-bearing page inherits request rendering with no child ISR/static
   const routes = children(app);
   expect(routes.filter(path => path.endsWith("page.tsx")).length).toBeGreaterThanOrEqual(9);
   for (const path of routes) {
-    expect(readFileSync(path, "utf8"), path).not.toMatch(/export const (?:dynamic\s*=\s*["']force-static|revalidate\s*=\s*[1-9]|fetchCache\s*=\s*["']force-cache)/);
+    expect(readFileSync(path, "utf8"), path).not.toMatch(staticRenderingExport);
   }
 });

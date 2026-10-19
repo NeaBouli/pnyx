@@ -61,6 +61,7 @@ it("all published external scripts defer in source order, including config and v
         ["docs/demo/bills.html", ["data.js", "demo-bills.js"]],
         ["docs/embed/qr-login.html", ["qrcode-vendor.js", "qr-login.js"]],
         ["docs/embed/vote.html", ["embed-ui.js", "embed-vote.js"]],
+        ["docs/embed/results.html", ["embed-ui.js", "embed-results.js"]],
         ["docs/index.html", ["landing-folds.js", "landing-cycle.js"]],
     ]) {
         const html = read(page);
