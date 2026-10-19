@@ -625,9 +625,9 @@ HLR credits (εφεδρική): ${ovHlrFallback?.remaining != null ? String(ovHl
               {/* PayPal Webhook status */}
               <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                 <h2 className="text-base font-semibold text-gray-800 mb-3">PayPal IPN Webhook</h2>
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="text-sm font-medium text-green-800">Webhook ενεργό</div>
-                  <div className="text-xs text-green-600 mt-1">Αυτόματη καταμέτρηση PayPal IPN</div>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <div className="text-sm font-medium text-gray-800">Κατάσταση webhook: άγνωστη</div>
+                  <div className="text-xs text-gray-600 mt-1">Η κατάσταση του PayPal IPN δεν παρέχεται από το API.</div>
                   <div className="text-xs text-gray-500 mt-2 font-mono">
                     https://api.ekklesia.gr/api/v1/payments/webhook/paypal
                   </div>
@@ -680,11 +680,11 @@ HLR credits (εφεδρική): ${ovHlrFallback?.remaining != null ? String(ovHl
                 </div>
               )}
 
-              {/* Manual entry placeholder */}
+              {/* Payment logs API */}
               <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                <h2 className="text-base font-semibold text-gray-800 mb-3">Χειροκίνητη Καταχώριση</h2>
+                <h2 className="text-base font-semibold text-gray-800 mb-3">Ανάγνωση Ιστορικού</h2>
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm text-gray-500">
-                  Η χειροκίνητη καταχώριση εισπράξεων είναι διαθέσιμη μέσω API (POST /api/v1/payments/admin/logs).
+                  Το ιστορικό πληρωμών διαβάζεται μέσω API (GET /api/v1/payments/admin/logs).
                 </div>
               </div>
             </>

@@ -77,14 +77,14 @@ import r0_inventory
 # Only the changed pages below receive new exact inventory fingerprints.
 # T-9149: deferred script/listener migration; public copy and JSON-LD are unchanged.
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/community.html": "dfb53e1aac9d7014a70efea42d9717a6d3410a465d568e535d1d5acb6b5ebb2a",  # T-9148: reviewed EL/EN AI wording
+    "docs/community.html": "6b68613711691a90fbfcc168f4bf56740b1b4e581754f29b408cab2fafde9e79",  # T-9153: paused donations; HLR information and FAQ EL/EN/JSON-LD
     "docs/wiki/api.html": "bc4f65e29392765b7302a8f6e638a6e86a8d41066041cb00a22faa05c12677c5",  # T-9148: reviewed EL/EN AI wording
     "docs/wiki/architecture.html": "15bf107d472a1a299c1a0f91ad42c90d6542146eb8f384b09f0ee2d39b0c34ca",
     "docs/wiki/broadcasting.html": "b5e2ee8a6c84697b9e5921d1910adc7a222de8fc41630f72cffa7c61aba106e0",
     "docs/wiki/contributing.html": "44b72f926ea13ed3d6000269ac8be6444997d8096f6d8f9377a533f29f53d842",
     "docs/wiki/database.html": "b5eb36171a860d2b0466c29d2e31d6b7461bda1d08eea83aa3bd39c48c26d219",
     "docs/wiki/delete-account.html": "de0002a7852aab5de44262c4d8ad8a86e51453a491ff3fbcfe0daa8a7d03ee25",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
-    "docs/wiki/faq.html": "7dd175c8dd10855f0f3ba3c7af3862152c8688f92a0f04abc72227b8d5e0fe98",  # T-9148: neutral public AI wording
+    "docs/wiki/faq.html": "b50f4a6bda369e5fedc946e7fcdebcb6914b5a085603f6af40620e0baba7533f",  # T-9153: paused donations; HLR information and FAQ EL/EN/JSON-LD
     "docs/wiki/index.html": "3903bcd0ff9928025235f924c78724ff0e4fbecf20d07572dbf3f2cc41271b97",  # T-9047/T-9048: named code region, contrast, headings and document language; T-9106: legal-modal claims text
     "docs/wiki/modules.html": "3debb7c511a4a2702b7924cb1e20fba5f1a0a44289fd225a01645adb478fcb0e",  # T-9148: reviewed EL/EN AI wording
     "docs/wiki/privacy.html": "418e942092ae40c39565fdccbd9afcd1e38535068683a4a58c4f266babc3bec2",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)

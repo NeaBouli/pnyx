@@ -384,9 +384,9 @@
       </div>
       <div class="fc-status" id="sDataHint" style="background:#f8fafc;color:#475569" data-el="Φόρτωση οικονομικών στοιχείων…" data-en="Loading funding data…">Φόρτωση οικονομικών στοιχείων…</div>
       <div class="fc-status" id="sGreen" style="display:none;background:#f0fdf4;color:#166534">✅ <span data-el="Server εξοφλημένος" data-en="Server paid">Server εξοφλημένος</span></div>
-      <div class="fc-status" id="sYellow" style="display:none;background:#fefce8;color:#92400e">⚠️ <span data-el="Παρακαλούμε υποστηρίξτε" data-en="Please support">Παρακαλούμε υποστηρίξτε</span></div>
+      <div class="fc-status" id="sYellow" style="display:none;background:#fefce8;color:#92400e">⚠️ <span data-el="Προσοχή στο υπόλοιπο — οι δωρεές είναι σε παύση" data-en="Balance warning — donations paused">Προσοχή στο υπόλοιπο — οι δωρεές είναι σε παύση</span></div>
       <div id="sRed" style="display:none">
-        <div class="fc-status" style="background:#fef2f2;color:#dc2626;margin-bottom:0.4rem">🔴 <span data-el="Ο server χρειάζεται χρηματοδότηση!" data-en="Server needs funding!">Ο server χρειάζεται χρηματοδότηση!</span></div>
+        <div class="fc-status" style="background:#fef2f2;color:#dc2626;margin-bottom:0.4rem">🔴 <span data-el="Αρνητικό υπόλοιπο server — οι δωρεές είναι σε παύση" data-en="Negative server balance — donations paused">Αρνητικό υπόλοιπο server — οι δωρεές είναι σε παύση</span></div>
       </div>
       <div class="fc-pay-row" style="margin-top:0.5rem">
         <a href="#payment-intake-paused" aria-disabled="true" style="background:#64748b;flex:1;text-align:center;padding:0.45rem;border-radius:0.4rem;font-weight:700;font-size:0.8rem;text-decoration:none;color:white" data-el="Προσωρινά σε παύση" data-en="Temporarily paused">Προσωρινά σε παύση</a>
@@ -420,7 +420,7 @@
       </div>
       <div class="fc-status" id="dDataHint" style="background:#f8fafc;color:#475569" data-el="Φόρτωση οικονομικών στοιχείων…" data-en="Loading funding data…">Φόρτωση οικονομικών στοιχείων…</div>
       <div class="fc-status" id="dGreen" style="display:none;background:#f0fdf4;color:#166534">✅ <span data-el="Domain ενεργό" data-en="Domain active">Domain ενεργό</span></div>
-      <div class="fc-status" id="dYellow" style="display:none;background:#fefce8;color:#92400e">⚠️ <span data-el="Ανανέωση εντός 1 έτους — παρακαλούμε υποστηρίξτε" data-en="Renewal within 1 year — please support">Ανανέωση εντός 1 έτους</span></div>
+      <div class="fc-status" id="dYellow" style="display:none;background:#fefce8;color:#92400e">⚠️ <span data-el="Ανανέωση εντός 1 έτους — οι δωρεές είναι σε παύση" data-en="Renewal within 1 year — donations paused">Ανανέωση εντός 1 έτους — οι δωρεές είναι σε παύση</span></div>
       <div id="dRed" style="display:none">
         <div class="fc-status" style="background:#fef2f2;color:#dc2626;margin-bottom:0.4rem">🔴 <span data-el="Domain λήγει σύντομα — χρειάζεται ανανέωση!" data-en="Domain expiring soon — renewal needed!">Domain λήγει σύντομα!</span></div>
       </div>
@@ -503,15 +503,13 @@
       <div class="fc-icon">📱</div>
       <div class="fc-title">HLR Lookup
         <span class="info-trigger" tabindex="0">?
-          <div class="info-popup" data-el="HLR Lookup επαληθεύει ελληνικούς αριθμούς κινητού χωρίς SMS. Δύο providers: hlrlookup.com (Primary, PayPal) και hlr-lookups.com (Fallback, BTC/LTC)." data-en="HLR Lookup verifies Greek mobile numbers without SMS. Two providers: hlrlookup.com (Primary, PayPal) and hlr-lookups.com (Fallback, BTC/LTC).">
-            HLR Lookup επαληθεύει ελληνικούς αριθμούς κινητού χωρίς SMS.<br/>
-            Δύο providers με auto-failover.<br/><br/>
-            <strong>Primary:</strong> hlrlookup.com — PayPal<br/>
-            <strong>Fallback:</strong> hlr-lookups.com — BTC/LTC
+          <div class="info-popup" data-el="HLR Lookup επαληθεύει ελληνικούς αριθμούς κινητού χωρίς SMS. Δύο providers: hlrlookup.com (Primary) και hlr-lookups.com (Fallback). Προμήθεια από τον φορέα λειτουργίας· δεν πωλούνται εδώ." data-en="HLR Lookup verifies Greek mobile numbers without SMS. Two providers: hlrlookup.com (Primary) and hlr-lookups.com (Fallback). Provider procurement by the operator; not sold here.">
+            HLR Lookup επαληθεύει ελληνικούς αριθμούς κινητού χωρίς SMS. Δύο providers: hlrlookup.com (Primary) και hlr-lookups.com (Fallback). Προμήθεια από τον φορέα λειτουργίας· δεν πωλούνται εδώ.
           </div>
         </span>
       </div>
       <div class="fc-sub" data-el="Επαλήθευση κινητού — MOD-01" data-en="Mobile verification — MOD-01">Επαλήθευση κινητού — MOD-01</div>
+      <p class="fc-sub" data-el="Προμήθεια από τον φορέα λειτουργίας· δεν πωλούνται εδώ." data-en="Provider procurement by the operator; not sold here.">Προμήθεια από τον φορέα λειτουργίας· δεν πωλούνται εδώ.</p>
 
       <!-- Failover Notice -->
       <div id="hlrFailoverNotice" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:0.4rem;padding:0.3rem 0.5rem;margin-bottom:0.4rem;font-size:0.62rem;color:#92400e;font-weight:600">
@@ -528,8 +526,7 @@
       <!-- ═══ TAB: hlrlookup.com (Primary) ═══ -->
       <div id="hlrPanelPrimary">
         <div class="fc-info">
-          <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong>~0,006€/<span data-el="επαλήθευση" data-en="verification">επαλήθευση</span></strong></div>
-          <div class="fc-row"><span style="color:var(--gray-700)" data-el="Πληρωμή:" data-en="Payment:">Πληρωμή:</span><strong>PayPal (15€ = 2500 credits)</strong></div>
+          <p data-el="Κόστος παρόχου: ~0,006 €/έλεγχο (15 € / 2500 credits), ιδιωτικό λειτουργικό έξοδο." data-en="Provider cost: ~€0.006/lookup (€15 / 2500 credits), a private operating expense.">Κόστος παρόχου: ~0,006 €/έλεγχο (15 € / 2500 credits), ιδιωτικό λειτουργικό έξοδο.</p>
         </div>
         <div class="fc-acct" id="hlrAcctPrimary">
           <div style="font-size:0.65rem;font-weight:700;color:var(--gray-500);margin-bottom:0.3rem" data-el="Κατάσταση Παροχής" data-en="Service Status">Κατάσταση Παροχής</div>
@@ -546,17 +543,12 @@
           <span class="fc-live"><span class="fc-live-dot"></span> Live</span>
         </div>
         <div class="fc-status" id="hlrStatusBox" style="background:#f0fdf4;color:#166534;margin-top:0.5rem">✅ <span id="hlrStatusText" data-el="Φόρτωση..." data-en="Loading...">Φόρτωση...</span></div>
-        <!-- PayPal Donate -->
-        <div style="margin-top:0.5rem">
-          <a href="#payment-intake-paused" aria-disabled="true" style="display:block;padding:0.4rem;background:#64748b;color:white;border-radius:0.4rem;text-align:center;font-weight:700;font-size:0.75rem;text-decoration:none" data-el="Ιδιωτική προμήθεια παρόχου — δεν πωλείται" data-en="Private provider procurement — not sold here">Ιδιωτική προμήθεια παρόχου — δεν πωλείται</a>
-        </div>
       </div>
 
       <!-- ═══ TAB: hlr-lookups.com (Fallback) ═══ -->
       <div id="hlrPanelFallback" style="display:none">
         <div class="fc-info">
-          <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong>~0,01€/<span data-el="επαλήθευση" data-en="verification">επαλήθευση</span></strong></div>
-          <div class="fc-row"><span style="color:var(--gray-700)" data-el="Πληρωμή:" data-en="Payment:">Πληρωμή:</span><strong>BTC / LTC</strong></div>
+          <p data-el="Κόστος παρόχου: ~0,01 €/έλεγχο, ιδιωτικό λειτουργικό έξοδο." data-en="Provider cost: ~€0.01/lookup, a private operating expense.">Κόστος παρόχου: ~0,01 €/έλεγχο, ιδιωτικό λειτουργικό έξοδο.</p>
         </div>
         <div class="fc-acct" id="hlrAcctFallback">
           <div style="font-size:0.65rem;font-weight:700;color:var(--gray-500);margin-bottom:0.3rem" data-el="Κατάσταση Παροχής" data-en="Service Status">Κατάσταση Παροχής</div>
@@ -573,7 +565,6 @@
           <span class="fc-live"><span class="fc-live-dot"></span> Live</span>
         </div>
         <div class="fc-status" id="hlrFbStatusBox" style="background:#f0fdf4;color:#166534;margin-top:0.5rem">✅ <span id="hlrFbStatusText" data-el="Φόρτωση..." data-en="Loading...">Φόρτωση...</span></div>
-        <a href="#payment-intake-paused" aria-disabled="true" style="display:block;margin-top:0.5rem;padding:0.4rem;background:#64748b;color:white;border-radius:0.4rem;text-align:center;font-weight:700;font-size:0.75rem;text-decoration:none" data-el="Ιδιωτική προμήθεια παρόχου — δεν πωλείται" data-en="Private provider procurement — not sold here">Ιδιωτική προμήθεια παρόχου — δεν πωλείται</a>
       </div>
     </div>
 
@@ -666,16 +657,14 @@
       <div style="font-size:0.58rem;color:#64748b;margin-top:0.4rem" id="autoRecoveryFormula">tokens_per_run × runs = 0 × live = 0</div>
     </div>
 
-    <!-- DEVELOPER DONATIONS — PayPal (freier Betrag, nicht getrackt) -->
+    <!-- DEVELOPER FUNDING — PAUSED -->
     <div class="fc" style="border-color:#0070ba">
       <div class="fc-badge" style="background:#64748b" data-el="ΠΑΥΣΗ" data-en="PAUSED">ΠΑΥΣΗ</div>
       <div class="fc-icon">👨‍💻</div>
-      <div class="fc-title" data-el="Στήριξη Ανάπτυξης" data-en="Support Development">Στήριξη Ανάπτυξης</div>
-      <div class="fc-sub" data-el="Προαιρετική δωρεά στους προγραμματιστές" data-en="Optional donation to developers">Προαιρετική δωρεά στους προγραμματιστές</div>
+      <div class="fc-title" data-el="Χρηματοδότηση Ανάπτυξης" data-en="Development Funding">Χρηματοδότηση Ανάπτυξης</div>
+      <div class="fc-sub" data-el="Οι δωρεές στους προγραμματιστές είναι προσωρινά σε παύση." data-en="Donations to developers are temporarily paused.">Οι δωρεές στους προγραμματιστές είναι προσωρινά σε παύση.</div>
       <div class="fc-info">
-        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Μέσω:" data-en="Via:">Μέσω:</span><strong>PayPal</strong></div>
         <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κατάσταση:" data-en="Status:">Κατάσταση:</span><strong data-el="Προσωρινά σε παύση" data-en="Temporarily paused">Προσωρινά σε παύση</strong></div>
-        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Ποσό:" data-en="Amount:">Ποσό:</span><strong data-el="Ελεύθερο" data-en="Any amount">Ελεύθερο</strong></div>
       </div>
       <div class="fc-info" style="margin-top:0.4rem;font-size:0.68rem">
         <div class="fc-row"><span>🍎 Apple Developer</span><strong data-el="$99/έτος (ξεχωριστά USD)" data-en="$99/year (separate USD)">$99/έτος (ξεχωριστά USD)</strong></div>

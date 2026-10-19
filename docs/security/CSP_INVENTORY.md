@@ -99,7 +99,7 @@ Only inert JSON-LD remains. No executable inline items, empty placeholders, stri
 
 | Asset | SHA-256 (hex) |
 | --- | --- |
-| `docs/assets/js/community-finance.js` | `44a03dfc4c42d27e6cd053e08865685594ef80a3bcc51a64c764d4cad182fe41` |
+| `docs/assets/js/community-finance.js` | `3c91becc9cc52c3cb5d6ddb3a5847c3f68ba0336bbb98f00095fda191379cb6f` |
 | `docs/assets/js/community-language.js` | `efcdadc65102400c45e0ae063bffafc08d9658b5aed3664ad9aaa7a650011458` |
 | `docs/assets/js/community-legal.js` | `ecd486c44686216d91a6b47869852d83b6290a9ff9619d53888efd6817790354` |
 | `docs/assets/js/community-modals.js` | `50b7e26ae7934646376cbc788bade42d74f2555e91714abdac02525f52bae067` |
