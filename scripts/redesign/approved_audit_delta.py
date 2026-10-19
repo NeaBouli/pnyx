@@ -77,7 +77,7 @@ import r0_inventory
 # Only the changed pages below receive new exact inventory fingerprints.
 # T-9149: deferred script/listener migration; public copy and JSON-LD are unchanged.
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/community.html": "6b68613711691a90fbfcc168f4bf56740b1b4e581754f29b408cab2fafde9e79",  # T-9153: paused donations; HLR information and FAQ EL/EN/JSON-LD
+    "docs/community.html": "3056fa1108b6f6701eda9888653a0eee27153b7c2af26d8865350fb3cd651383",  # T-9153: paused donations; neutral Arweave tooltip, no acquisition prompts or exchange links
     "docs/wiki/api.html": "bc4f65e29392765b7302a8f6e638a6e86a8d41066041cb00a22faa05c12677c5",  # T-9148: reviewed EL/EN AI wording
     "docs/wiki/architecture.html": "15bf107d472a1a299c1a0f91ad42c90d6542146eb8f384b09f0ee2d39b0c34ca",
     "docs/wiki/broadcasting.html": "b5e2ee8a6c84697b9e5921d1910adc7a222de8fc41630f72cffa7c61aba106e0",
