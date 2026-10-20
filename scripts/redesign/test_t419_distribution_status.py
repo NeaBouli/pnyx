@@ -3,8 +3,9 @@
 
 Offline regression over every public download link and status source. The
 single source for the Direct Android release is docs/download/APK_MANIFEST.md;
-every version, versionCode and GitHub asset URL on a public surface must match
-it. F-Droid is an independent build cycle, so public surfaces state availability
+every Direct version, versionCode, checksum and GitHub asset URL on a public
+surface must match it. Play retains vC62 in Closed Testing. F-Droid is an
+independent build cycle, so public surfaces state availability
 without pinning a version. The ekprosopos APK is not published, so nothing may
 link it while the manifest says so.
 
@@ -34,6 +35,11 @@ SURFACES = (
 
 FDROID_URL = "https://f-droid.org/packages/ekklesia.gr/"
 PLAY_TESTING_URL = "https://play.google.com/apps/testing/ekklesia.gr"
+PLAY_VERSION_CODE = "62"
+# Bilingual card labels and prose identify Play independently of Direct.
+PLAY_VERSION_MENTION = re.compile(
+    r"\bvC(\d+)\b(?=[^.;\"<>]*(?:κλειστή δοκιμή|[Cc]losed [Tt]esting))"
+)
 DISCOURSE_HUB_IOS_URL = "https://apps.apple.com/app/discourse-hub/id1173672076"
 EKPROSOPOS_APK = "ekprosopos-latest.apk"
 EKPROSOPOS_CHECKSUM = DOCS_DIR / "download" / f"{EKPROSOPOS_APK}.sha256"
@@ -104,6 +110,7 @@ class ManifestSingleSourceTest(unittest.TestCase):
         text = MANIFEST.read_text(encoding="utf-8")
         cls.version = _manifest_field(text, "Version")
         cls.version_code = _manifest_field(text, "versionCode")
+        cls.sha256 = _manifest_field(text, "Direct APK SHA-256").strip("`")
         cls.canonical_url = re.search(
             r"`(https://github\.com/NeaBouli/pnyx/releases/download/[^`]+\.apk)`",
             _manifest_field(text, "Canonical APK URL"),
@@ -115,13 +122,23 @@ class ManifestSingleSourceTest(unittest.TestCase):
             for url in re.findall(r"https://github\.com/NeaBouli/pnyx/releases/download/[^\s\"'<>)]+", _read(rel)):
                 self.assertEqual(url, self.canonical_url, f"{rel} links a non-canonical release asset")
 
-    def test_public_version_mentions_match_manifest(self) -> None:
+    def test_public_version_mentions_match_their_channel(self) -> None:
         for rel in SURFACES:
             text = _read(rel)
             for v in re.findall(r"\bv(1\.\d+\.\d+)\b", text):
                 self.assertEqual(v, self.version, f"{rel} mentions v{v}, manifest says {self.version}")
-            for vc in re.findall(r"\bvC(\d+)\b", text):
+            for vc in PLAY_VERSION_MENTION.findall(text):
+                self.assertEqual(vc, PLAY_VERSION_CODE, f"{rel} has an unexpected Play versionCode")
+            direct_text = PLAY_VERSION_MENTION.sub("", text)
+            for vc in re.findall(r"\bvC(\d+)\b", direct_text):
                 self.assertEqual(vc, self.version_code, f"{rel} mentions vC{vc}, manifest says {self.version_code}")
+
+    def test_public_checksum_matches_manifest(self) -> None:
+        self.assertEqual(
+            _read("download/ekklesia-latest.apk.sha256"),
+            f"{self.sha256}  ekklesia-latest.apk\n",
+        )
+        self.assertIn(f"- Direct APK SHA-256: {self.sha256}\n", _read("llms.txt"))
 
     def test_direct_card_links_canonical_apk(self) -> None:
         cards = _collect("index.html").cards

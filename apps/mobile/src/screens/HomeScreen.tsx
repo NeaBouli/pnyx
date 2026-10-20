@@ -10,7 +10,7 @@ import {
   registerForPushNotifications,
 } from "../lib/notifications";
 import { getCurrentVersionCode } from "../lib/app-version";
-import { resolveUpdateUrl, shouldOfferUpdate } from "../lib/update-channel";
+import { resolveUpdateUrl, shouldOfferUpdate, shouldRequireUpdate } from "../lib/update-channel";
 import { UnreadNotificationsCard } from "../components/UnreadNotificationsCard";
 import type { CompassResult } from "../compass/types";
 import type { RootStackParams } from "../navigation";
@@ -57,7 +57,7 @@ export default function HomeScreen() {
             version: data.latest_version,
             notes: data.release_notes_el,
             url: resolveUpdateUrl(data, channel),
-            force: data.force_update || false,
+            force: shouldRequireUpdate(data, currentVC, channel) || data.force_update || false,
           });
         }
       })

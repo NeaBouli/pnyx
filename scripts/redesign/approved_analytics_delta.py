@@ -35,7 +35,7 @@ POST_REMOVAL_SHA256 = {
     "docs/mirror-setup.html": "155a289804224367d2470478e6bfbe2e3dd509203f24c0b3d1a460aca0dc932c",
     "docs/municipality/article.html": "b99329c1090137cef98943defa903aadbb69990d12e9e120eaa4dc601f034d3e",
     "docs/municipality/index.html": "4c4bed7281ac29db322dbe338f8b9bb46d9e76880f27d5d019618b33c006679d",
-    "docs/sso-verify.html": "4b1db11d51d41e22568d56e721c5eddcbc3a70c713e6365f25415405300760ee",  # T-614: APK v1.0.33/vC62, Play vC62 closed testing
+    "docs/sso-verify.html": "6f4439629078b2c4c9ac7e1b7cb4887e89e74e62029b112e77a9e08f131df8a7",  # T-9157: APK v1.0.36/vC65; Play vC62 closed testing
     "docs/tickets/auth/callback.html": "a11ccd12e9c35e51582f6d7c0e07a7c98159d9a3cc7a551cc32cd6fe9a28266a",
     "docs/tickets/index.html": "f5939db716a2e6e9a13c3cda202da6ef3d24fda3477a7b553fd1cf4e4d8480ee",
     "docs/votes/active.html": "3f0f66f9b994de76c70392eb04cf15f405f7892c731ae9230aec2937c343125a",

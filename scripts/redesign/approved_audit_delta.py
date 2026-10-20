@@ -76,6 +76,7 @@ import r0_inventory
 # community model attribution is fixed to V-Labs Artificial Systems · vlabs.gr.
 # Only the changed pages below receive new exact inventory fingerprints.
 # T-9149: deferred script/listener migration; public copy and JSON-LD are unchanged.
+# T-9157: Direct APK copy is v1.0.36/vC65 in EL/EN/FAQ JSON-LD; Play stays vC62.
 APPROVED_WIKI_INVENTORY_HASH = {
     "docs/community.html": "3056fa1108b6f6701eda9888653a0eee27153b7c2af26d8865350fb3cd651383",  # T-9153: paused donations; neutral Arweave tooltip, no acquisition prompts or exchange links
     "docs/wiki/api.html": "bc4f65e29392765b7302a8f6e638a6e86a8d41066041cb00a22faa05c12677c5",  # T-9148: reviewed EL/EN AI wording
@@ -84,11 +85,11 @@ APPROVED_WIKI_INVENTORY_HASH = {
     "docs/wiki/contributing.html": "44b72f926ea13ed3d6000269ac8be6444997d8096f6d8f9377a533f29f53d842",
     "docs/wiki/database.html": "b5eb36171a860d2b0466c29d2e31d6b7461bda1d08eea83aa3bd39c48c26d219",
     "docs/wiki/delete-account.html": "de0002a7852aab5de44262c4d8ad8a86e51453a491ff3fbcfe0daa8a7d03ee25",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
-    "docs/wiki/faq.html": "b50f4a6bda369e5fedc946e7fcdebcb6914b5a085603f6af40620e0baba7533f",  # T-9153: paused donations; HLR information and FAQ EL/EN/JSON-LD
+    "docs/wiki/faq.html": "0a353b1391d787ad824bdb850ced911edd61418cad9d51e8b4d2b3b43f5a4b32",  # T-9153: paused donations; HLR information and FAQ EL/EN/JSON-LD
     "docs/wiki/index.html": "3903bcd0ff9928025235f924c78724ff0e4fbecf20d07572dbf3f2cc41271b97",  # T-9047/T-9048: named code region, contrast, headings and document language; T-9106: legal-modal claims text
     "docs/wiki/modules.html": "3debb7c511a4a2702b7924cb1e20fba5f1a0a44289fd225a01645adb478fcb0e",  # T-9148: reviewed EL/EN AI wording
     "docs/wiki/privacy.html": "418e942092ae40c39565fdccbd9afcd1e38535068683a4a58c4f266babc3bec2",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
-    "docs/wiki/roadmap.html": "f1875c1072d73bb468fbf86c06c9d1c47e048a3ce218ba04ad487225c04be579",
+    "docs/wiki/roadmap.html": "b5331fab678fd8d60c4cfc7c1b9327f7fe3fb73dc6c57c053563590c72a86c68",
     "docs/wiki/security.html": "9d2303450e9b2fbf74cb218d512cfd43ebcaf72027679e36cb2b05101ab12723",  # T-9127: OPEN_END voting closed
     "docs/wiki/whitepaper.html": "1e704f1b0b586a85cdead864cd1ba6428eeee2f360b0386c11c7ffa7f6cc91c5",  # T-9127: OPEN_END voting closed
     "docs/wiki/zk-voting.html": "5b2d5e1fe862adf56e746683077c22139e2501ba3cf45121fef93b97c8084edb",

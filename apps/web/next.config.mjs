@@ -52,7 +52,7 @@ const nextConfig = {
         // Legacy APK URL that bypasses middleware (dotted path).
         source: "/download/ekklesia-latest.apk",
         destination:
-          "https://github.com/NeaBouli/pnyx/releases/download/v1.0.33/ekklesia-v1.0.33-vC62-DIRECT.apk",
+          "https://github.com/NeaBouli/pnyx/releases/download/v1.0.36/ekklesia-v1.0.36-vC65-DIRECT.apk",
         permanent: false,
       },
     ];

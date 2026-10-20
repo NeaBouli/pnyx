@@ -6,6 +6,7 @@
 //
 //   node scripts/public-seo.mjs --check     verify docs/sitemap.xml + source hashes (CI, no git needed)
 //   node scripts/public-seo.mjs --update    refresh changed entries from git, rewrite docs/sitemap.xml
+//   node scripts/public-seo.mjs --update --working-tree  date dirty sources today for a single commit
 //   node scripts/public-seo.mjs --rebuild   recompute every lastmod from git history
 //   node scripts/public-seo.mjs --matrix    print the metadata matrix (markdown)
 import { createHash } from 'node:crypto';
@@ -51,14 +52,15 @@ function git(args) {
   return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', env: { ...process.env, TZ: 'UTC' } }).trim();
 }
 
-// UTC committer date of the last commit that touched `rel`. Refuses shallow
-// clones and uncommitted source changes so the value is reproducible.
-export function gitLastmod(rel) {
+// UTC committer date of the last commit that touched `rel`. Dirty sources
+// require an explicit working-tree opt-in and use today's UTC date instead.
+export function gitLastmod(rel, { workingTree = false } = {}) {
+  if (git(['status', '--porcelain', '--', rel]) !== '') {
+    if (workingTree) return new Date().toISOString().slice(0, 10);
+    throw new Error(`${rel} has uncommitted changes; commit the page first, or use --update --working-tree`);
+  }
   if (git(['rev-parse', '--is-shallow-repository']) === 'true') {
     throw new Error('shallow clone: lastmod needs full history (git fetch --unshallow)');
-  }
-  if (git(['status', '--porcelain', '--', rel]) !== '') {
-    throw new Error(`${rel} has uncommitted changes; commit the page first, then regenerate the sitemap`);
   }
   const date = git(['log', '-1', '--format=%cd', '--date=format-local:%Y-%m-%d', '--', rel]);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error(`${rel}: no git history`);
@@ -84,13 +86,13 @@ export function checkSitemap() {
   return problems;
 }
 
-function update({ all }) {
+function update({ all, workingTree = false }) {
   const sources = loadSources();
   for (const e of sources.entries) {
     if (!e.source) continue;
     const actual = sha256(read(e.source));
     if (all || actual !== e.sha256) {
-      e.lastmod = gitLastmod(e.source);
+      e.lastmod = gitLastmod(e.source, { workingTree });
       e.sha256 = actual;
     }
   }
@@ -163,12 +165,12 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     const problems = checkSitemap();
     for (const p of problems) console.error(`sitemap drift: ${p}`);
     if (problems.length) {
-      console.error('fix: commit the page change, then run `node scripts/public-seo.mjs --update` and commit the result');
+      console.error('fix: run `node scripts/public-seo.mjs --update --working-tree` and commit pages + generated files together');
       process.exit(1);
     }
     console.log('sitemap ok');
   } else if (mode === '--update' || mode === '--rebuild') {
-    update({ all: mode === '--rebuild' });
+    update({ all: mode === '--rebuild', workingTree: process.argv.includes('--working-tree') });
     console.log(`wrote ${SOURCES_FILE} and ${SITEMAP_FILE}`);
   } else if (mode === '--matrix') {
     console.log(matrix());

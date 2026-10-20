@@ -11,6 +11,7 @@ import {
   REQUIRED_TWITTER,
   ROOT,
   checkSitemap,
+  gitLastmod,
   inspectPage,
   loadSources,
   renderSitemap,
@@ -67,7 +68,7 @@ test('lastmod values are ISO dates, not in the future, and only on static source
   }
 });
 
-test('lastmod never postdates the last git commit of the source', (t) => {
+test('lastmod matches working-tree dates or never postdates the last source commit', (t) => {
   const git = (args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', env: { ...process.env, TZ: 'UTC' } }).trim();
   let shallow;
   try {
@@ -80,6 +81,12 @@ test('lastmod never postdates the last git commit of the source', (t) => {
     return;
   }
   for (const e of staticEntries) {
+    if (git(['status', '--porcelain', '--', e.source]) !== '') {
+      assert.throws(() => gitLastmod(e.source), /uncommitted changes/);
+      assert.equal(gitLastmod(e.source, { workingTree: true }), new Date().toISOString().slice(0, 10));
+      assert.ok(e.lastmod <= gitLastmod(e.source, { workingTree: true }), `${e.source}: working-tree lastmod is in the future`);
+      continue;
+    }
     const last = git(['log', '-1', '--format=%cd', '--date=format-local:%Y-%m-%d', '--', e.source]);
     assert.ok(e.lastmod <= last, `${e.source}: lastmod ${e.lastmod} > last commit ${last}`);
   }

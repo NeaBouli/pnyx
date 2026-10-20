@@ -244,16 +244,14 @@ export default function ProfileScreen() {
           setUpdateStatus("checking");
           try {
             const channel = Constants.expoConfig?.extra?.distributionChannel;
-            if (channel === "fdroid") {
-              setUpdateStatus("managedExternally");
-              return;
-            }
             const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
             const res = await fetch(`${API}/api/v1/app/version`);
             const data = await res.json();
             setLatestVersion(data);
             const current = getCurrentVersionCode();
-            setUpdateStatus(shouldOfferUpdate(data, current, channel) ? "updateAvailable" : "upToDate");
+            setUpdateStatus(shouldOfferUpdate(data, current, channel)
+              ? "updateAvailable"
+              : channel === "fdroid" ? "managedExternally" : "upToDate");
           } catch { setUpdateStatus("idle"); }
         }}
         disabled={updateStatus === "checking"}

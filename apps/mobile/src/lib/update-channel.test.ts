@@ -7,6 +7,7 @@ import {
   normalizeDistributionChannel,
   resolveUpdateUrl,
   shouldOfferUpdate,
+  shouldRequireUpdate,
 } from "./update-channel";
 
 describe("update channel resolver", () => {
@@ -50,6 +51,50 @@ describe("update channel resolver", () => {
     expect(normalizeDistributionChannel(undefined)).toBe("direct");
     expect(normalizeDistributionChannel("internal")).toBe("direct");
     expect(resolveUpdateUrl(payload, undefined)).toBe(payload.direct_apk_url);
+  });
+
+  const minimumPayload = {
+    ...payload,
+    latest_version_code: 65,
+    min_required_version_code: 62,
+    min_required_version_code_by_channel: { direct: 62, play: 62, fdroid: 621 },
+  };
+
+  it.each([611, 612, 613, 614])("prompts unsupported F-Droid code %i through F-Droid", (code) => {
+    expect(shouldRequireUpdate(minimumPayload, code, "fdroid")).toBe(true);
+    expect(shouldOfferUpdate(minimumPayload, code, "fdroid")).toBe(true);
+    expect(resolveUpdateUrl(minimumPayload, "fdroid")).toBe(FDROID_URL);
+  });
+
+  it.each([621, 622, 623, 624, 651, 652, 653, 654])("accepts supported F-Droid code %i", (code) => {
+    expect(shouldRequireUpdate(minimumPayload, code, "fdroid")).toBe(false);
+    expect(shouldOfferUpdate(minimumPayload, code, "fdroid")).toBe(false);
+  });
+
+  it.each(["direct", "play", undefined])("separates required and optional updates for %s", (channel) => {
+    expect(shouldRequireUpdate(minimumPayload, 61, channel)).toBe(true);
+    expect(shouldOfferUpdate(minimumPayload, 61, channel)).toBe(true);
+    expect(shouldRequireUpdate(minimumPayload, 62, channel)).toBe(false);
+    expect(shouldOfferUpdate(minimumPayload, 62, channel)).toBe(true);
+    expect(shouldOfferUpdate(minimumPayload, 65, channel)).toBe(false);
+    // A required update still prompts if the optional release field is absent.
+    expect(shouldOfferUpdate({ min_required_version_code: 62 }, 61, channel)).toBe(true);
+  });
+
+  it("never uses the legacy scalar as an F-Droid minimum", () => {
+    const legacy = { latest_version_code: 65, min_required_version_code: 62 };
+    expect(shouldRequireUpdate(legacy, 614, "fdroid")).toBe(false);
+    expect(shouldOfferUpdate(legacy, 614, "fdroid")).toBe(false);
+    expect(shouldRequireUpdate(legacy, 61, "direct")).toBe(true);
+    expect(shouldRequireUpdate({
+      ...minimumPayload,
+      min_required_version_code: 999,
+    }, 621, "fdroid")).toBe(false);
+  });
+
+  it.each([0, -1, 61.5, NaN, Infinity])("ignores invalid minimum or native code %s", (code) => {
+    expect(shouldRequireUpdate({ min_required_version_code: code }, 61, "direct")).toBe(false);
+    expect(shouldRequireUpdate(minimumPayload, code, "fdroid")).toBe(false);
   });
 
   it("falls back to canonical URLs without legacy /download route", () => {
