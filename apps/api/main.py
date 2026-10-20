@@ -162,18 +162,20 @@ def _sentry_redact_text(value: str) -> str:
     value = _SENTRY_CONTACT_PATH_RE.sub(r"\1[Filtered]", value)
     # Listmonk's SQL filter may identify a subscriber by ID as well as email.
     value = _SENTRY_PROVIDER_QUERY_RE.sub(r"\1[Filtered]", value)
-    # A literal '%' is valid in an email local part; scrub before URL decoding
-    # can turn a following hex pair into an invalid character.
-    value = _SENTRY_EMAIL_RE.sub(_SENTRY_REDACTED, value)
+    # A literal '%' is valid in an email local part. Check every stage: further
+    # decoding can destroy a previously visible email (e.g. "%ab" -> "�").
+    # Replace the whole value so no encoded portion of the email survives.
+    if _SENTRY_EMAIL_RE.search(value):
+        return _SENTRY_REDACTED
     decoded = value
-    while True:
+    for _ in range(5):
         candidate = unquote(decoded)
         if candidate == decoded:
             break
+        if _SENTRY_EMAIL_RE.search(candidate):
+            return _SENTRY_REDACTED
         decoded = candidate
-    # Decode only when needed, retaining ordinary URLs' escaping otherwise.
-    if _SENTRY_EMAIL_RE.search(decoded):
-        return _SENTRY_EMAIL_RE.sub(_SENTRY_REDACTED, decoded)
+    # Retain ordinary URLs' escaping when no stage contains an email.
     return value
 
 

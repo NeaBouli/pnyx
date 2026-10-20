@@ -181,6 +181,55 @@ async def test_backfill_initial_redis_failure_returns_sanitized_503_without_prov
     listmonk_remove.assert_not_awaited()
 
 
+@pytest.mark.parametrize("failed_key", [BREVO_REMOVE_RETRY_KEY, LISTMONK_REMOVE_RETRY_KEY])
+@pytest.mark.parametrize("completed_withdrawals", [0, 1])
+@pytest.mark.parametrize("error_type", [RedisConnectionError, ResponseError])
+async def test_backfill_withdrawal_redis_failure_returns_sanitized_503_and_retains_retries(
+    store: MemoryRedis, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture,
+    failed_key: str, completed_withdrawals: int, error_type: type[Exception],
+) -> None:
+    private = f"redis://private-user:private-password@localhost/0 {EMAIL}"
+    emails = {EMAIL, "another-subscriber@example.org"}
+    store.hashes[failed_key].update({email: "1" for email in emails})
+    original_hget = store.hget
+    reads = 0
+
+    async def failing_hget(key: str, field: str) -> str | None:
+        nonlocal reads
+        if key == failed_key:
+            reads += 1
+            if reads > completed_withdrawals:
+                raise error_type(private)
+        return await original_hget(key, field)
+
+    monkeypatch.setattr(store, "hget", failing_hget)
+    listmonk_remove = AsyncMock(return_value=True)
+    monkeypatch.setattr(newsletter, "_remove_listmonk_contact", listmonk_remove)
+    async with HTTP_CLIENT(transport=httpx.ASGITransport(app=application()), base_url="http://test") as client:
+        response = await client.post("/api/v1/admin/newsletter/backfill", params={"dry_run": False},
+                                     headers={"Authorization": "Bearer synthetic-admin-key"})
+
+        assert response.status_code == 503
+        assert response.json() == {"detail": "Newsletter store unavailable; retry"}
+        for value in (*emails, "private-user", "private-password"):
+            assert value not in response.text + caplog.text
+        assert len(store.hashes[failed_key]) == len(emails) - completed_withdrawals
+        assert set(store.hashes[failed_key]) <= emails
+        assert newsletter_service.remove_contact.await_count + listmonk_remove.await_count == completed_withdrawals
+        newsletter_service.contact_status.assert_not_awaited()
+        newsletter_service.add_contact.assert_not_awaited()
+
+        monkeypatch.setattr(store, "hget", original_hget)
+        retried = await client.post("/api/v1/admin/newsletter/backfill", params={"dry_run": False},
+                                    headers={"Authorization": "Bearer synthetic-admin-key"})
+
+    assert retried.status_code == 200
+    assert retried.json() == {"to_add": 0, "already_present": 0, "held": 0, "failed": 0}
+    assert not store.hashes[failed_key]
+    assert newsletter_service.remove_contact.await_count + listmonk_remove.await_count == len(emails)
+    newsletter_service.add_contact.assert_not_awaited()
+
+
 async def test_confirm_calls_add_once_and_replay_does_not(store: MemoryRedis) -> None:
     store.pending["newsletter:pending:synthetic-token"] = json.dumps(consent())
     async with HTTP_CLIENT(transport=httpx.ASGITransport(app=application()), base_url="http://test") as client:
