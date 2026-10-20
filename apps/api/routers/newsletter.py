@@ -12,14 +12,21 @@ import secrets
 from datetime import date, datetime, timezone
 from typing import Optional
 from rate_limit import limiter
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, EmailStr
 import httpx
 import redis.asyncio as aioredis
 
 from ip_utils import hashed_rate_subject, rate_limit_key_for_ip, redis_fixed_window_limit
+from dependencies import verify_admin_key
+from services import newsletter_service
 from services.mail_policy import operator_reply_to
-from services.newsletter_consent import CONFIRMED_KEY, CONFIRM_ONCE, CONSENT_SCHEMA, confirmation_payload
+from services.newsletter_consent import (
+    CONFIRMED_KEY, CONFIRM_ONCE, CONSENT_SCHEMA, confirmation_payload,
+    SUPPRESSED_KEY, BREVO_ADD_RETRY_KEY, BREVO_REMOVE_RETRY_KEY,
+    LISTMONK_REMOVE_RETRY_KEY, WITHDRAW_CONSENT,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/newsletter", tags=["MOD-19 Newsletter"])
@@ -70,6 +77,10 @@ class SubscribeRequest(BaseModel):
     topic_breaking_news: bool = False
 
 
+class UnsubscribeRequest(BaseModel):
+    email: EmailStr
+
+
 # ── Listmonk API helper ──────────────────────────────────────────────────────
 
 async def _listmonk_request(method: str, path: str, json_data: dict = None) -> dict:
@@ -84,14 +95,87 @@ async def _listmonk_request(method: str, path: str, json_data: dict = None) -> d
         )
         if r.status_code >= 400:
             # EKA-16: status code only — the provider body may echo the subscriber email.
-            logger.error(f"[MOD-19] Listmonk {method} {path}: {r.status_code}")
+            logger.error("[MOD-19] Listmonk request failed: status=%s", r.status_code)
+            raise HTTPException(502, "Newsletter provider request failed")
         return r.json()
+
+
+async def _remove_listmonk_contact(email: str) -> bool:
+    # Query in the body avoids putting addresses in request URLs/access logs.
+    # Listmonk accepts a SQL expression; quotes inside the literal are escaped.
+    literal = email.replace("'", "''")
+    result = await _listmonk_request("PUT", "/api/subscribers/query/blocklist", {
+        "query": f"lower(subscribers.email) = lower('{literal}')",
+    })
+    return result.get("data") is True
+
+
+async def _retry_withdrawal(store: aioredis.Redis, email: str) -> bool:
+    success = True
+    for key, remove in (
+        (BREVO_REMOVE_RETRY_KEY, newsletter_service.remove_contact),
+        (LISTMONK_REMOVE_RETRY_KEY, _remove_listmonk_contact),
+    ):
+        if not await store.hget(key, email):
+            continue
+        try:
+            if await remove(email):
+                await store.hdel(key, email)
+            else:
+                success = False
+        except Exception:
+            success = False
+    if not success:
+        logger.error("[MOD-19] Newsletter withdrawal delivery failed; retry retained")
+    return success
+
+
+async def _withdraw_subscription(store: aioredis.Redis, email: str, reason: str) -> bool:
+    # Provider events can change casing; preserve stored consent identities while
+    # matching the provider's case-insensitive contact identity.
+    identities = {email}
+    identities.update(field for field in await store.hkeys(CONFIRMED_KEY) if field.casefold() == email.casefold())
+    for identity in identities:
+        await store.eval(
+            WITHDRAW_CONSENT, 5, CONFIRMED_KEY, SUPPRESSED_KEY, BREVO_ADD_RETRY_KEY,
+            BREVO_REMOVE_RETRY_KEY, LISTMONK_REMOVE_RETRY_KEY,
+            identity, reason, "1" if LISTMONK_PW else "0", email.casefold(),
+        )
+    success = True
+    for identity in identities:
+        if not await _retry_withdrawal(store, identity):
+            success = False
+    return success
+
+
+async def _sync_brevo_contact(store: aioredis.Redis, email: str, name: str = "") -> bool:
+    """Queue before delivery; a concurrent withdrawal always wins over an add."""
+    try:
+        if await store.hget(SUPPRESSED_KEY, email.casefold()):
+            await _withdraw_subscription(store, email, "suppressed")
+            return False
+        await store.hset(BREVO_ADD_RETRY_KEY, email, "1")
+        try:
+            added = await newsletter_service.add_contact(email, name)
+        except Exception:
+            added = False  # Even a timed-out write can have reached the provider.
+        # A withdrawal may have happened while the provider request was in flight.
+        if await store.hget(SUPPRESSED_KEY, email.casefold()):
+            await _withdraw_subscription(store, email, "suppressed")
+            return False
+        if added:
+            await store.hdel(BREVO_ADD_RETRY_KEY, email)
+            return True
+    except Exception:
+        pass
+    logger.error("[MOD-19] Brevo contact sync failed; confirmed consent retained for retry")
+    return False
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 @router.get("/lists")
-async def get_lists():
+async def get_lists() -> dict:
     """Public: available newsletter lists."""
     return {
         "lists": [
@@ -106,7 +190,7 @@ async def get_lists():
 
 
 @router.post("/subscribe")
-async def subscribe(req: SubscribeRequest, request: Request):
+async def subscribe(req: SubscribeRequest, request: Request) -> dict:
     """
     Public: subscribe to newsletter.
     Sends double opt-in email via Brevo. Stores pending token in Redis.
@@ -203,8 +287,8 @@ async def subscribe(req: SubscribeRequest, request: Request):
                 # EKA-16: status code only — the provider body may echo the subscriber email.
                 logger.error(f"[MOD-19] Brevo send failed: {resp.status_code}")
                 raise HTTPException(status_code=502, detail="Email send failed")
-    except httpx.HTTPError as e:
-        logger.error(f"[MOD-19] Brevo error: {e}")
+    except httpx.HTTPError:
+        logger.error("[MOD-19] Brevo confirmation email request failed")
         raise HTTPException(status_code=502, detail="Email service error")
 
     logger.info("[MOD-19] Opt-in email sent ref=emailref:%s", email_ref[:12])
@@ -213,10 +297,8 @@ async def subscribe(req: SubscribeRequest, request: Request):
 
 @router.get("/confirm/{token}")
 @limiter.shared_limit("10/minute", scope="newsletter:confirm_subscription")
-async def confirm_subscription(token: str, request: Request = None):
+async def confirm_subscription(token: str, request: Request = None) -> HTMLResponse:
     """Confirm newsletter subscription via token from email link."""
-    from fastapi.responses import HTMLResponse
-
     r = await _get_redis()
     raw = await r.get(f"newsletter:pending:{token}")
 
@@ -239,7 +321,7 @@ async def confirm_subscription(token: str, request: Request = None):
         raise HTTPException(503, "Confirmation could not be verified")
 
     # Also register in Listmonk (if available)
-    if result == 1 and LISTMONK_PW:
+    if result == 1 and LISTMONK_PW and not await r.hget(SUPPRESSED_KEY, email.casefold()):
         try:
             await _listmonk_request("POST", "/api/subscribers", {
                 "email": email,
@@ -250,6 +332,9 @@ async def confirm_subscription(token: str, request: Request = None):
             })
         except Exception:
             pass  # Listmonk is optional — Redis is primary
+
+    if result == 1:
+        await _sync_brevo_contact(r, email, data.get("name", ""))
 
     logger.info("[MOD-19] Confirmation processed (new=%s)", result == 1)
     message = (
@@ -268,6 +353,16 @@ async def confirm_subscription(token: str, request: Request = None):
     )
 
 
+@router.post("/unsubscribe")
+async def unsubscribe(
+    req: UnsubscribeRequest, _auth: bool = Depends(verify_admin_key),
+) -> dict:
+    """Operator-recorded withdrawal; public Brevo withdrawals arrive via its webhook."""
+    store = await _get_redis()
+    await _withdraw_subscription(store, req.email, "unsubscribed")
+    return {"success": True, "message": "Unsubscribed."}
+
+
 # ── Redis for stats caching ───────────────────────────────────────────────────
 
 _nl_redis: aioredis.Redis | None = None
@@ -283,7 +378,7 @@ async def _get_redis() -> aioredis.Redis:
 # ── Stats Endpoint (Brevo + Listmonk) ────────────────────────────────────────
 
 @router.get("/stats")
-async def newsletter_stats():
+async def newsletter_stats() -> dict:
     """
     Public transparency endpoint.
     Fetches Brevo account stats + Listmonk subscriber count.
@@ -402,7 +497,7 @@ def _require_brevo_webhook_auth(request: Request) -> None:
 
 
 @router.post("/webhook/brevo")
-async def brevo_webhook(request: Request):
+async def brevo_webhook(request: Request) -> dict:
     """Receive Brevo event webhooks — track sent/opened/bounced."""
     _require_brevo_webhook_auth(request)
     try:
@@ -413,13 +508,20 @@ async def brevo_webhook(request: Request):
         r = await _get_redis()
         for event in events:
             evt = event.get("event", "")
+            # Marketing campaigns and transactional mail use different spellings.
+            evt = {"unsubscribe": "unsubscribed", "hard_bounce": "hardBounce",
+                   "soft_bounce": "softBounce"}.get(evt, evt)
             if evt in ("sent", "delivered", "opened", "clicked", "unsubscribed", "hardBounce", "softBounce"):
                 await r.hincrby("newsletter:events", evt, 1)
+            if evt in ("unsubscribed", "hardBounce", "spam", "complaint") and event.get("email"):
+                # Validate without ever returning/logging provider payloads or validation errors.
+                email = str(UnsubscribeRequest(email=event["email"]).email)
+                await _withdraw_subscription(r, email, evt)
 
         # Invalidate stats cache on activity
         await r.delete("newsletter:stats_cache")
 
         return {"received": True, "events": len(events)}
-    except Exception as e:
-        logger.error(f"[MOD-19] Brevo webhook error: {e}")
+    except Exception:
+        logger.error("[MOD-19] Brevo webhook processing failed")
         return {"received": False, "error": "Webhook processing failed"}

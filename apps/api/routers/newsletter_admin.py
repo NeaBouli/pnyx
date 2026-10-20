@@ -22,7 +22,9 @@ from services.telegram_community import _send as tg_send, TOPICS
 from services.newsletter_consent import (
     CONFIRMED_KEY, MAX_READINESS_CONTACTS, READ_CONSENT_SNAPSHOT,
     classify_contact, parse_consent, readiness_summary,
+    SUPPRESSED_KEY, BREVO_ADD_RETRY_KEY, BREVO_REMOVE_RETRY_KEY, LISTMONK_REMOVE_RETRY_KEY,
 )
+from services import newsletter_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/admin/newsletter", tags=["Admin Newsletter"])
@@ -30,7 +32,7 @@ router = APIRouter(prefix="/api/v1/admin/newsletter", tags=["Admin Newsletter"])
 BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
 BREVO_API = "https://api.brevo.com/v3"
 SENDER = {"name": "εκκλησία", "email": "newsletter@ekklesia.gr"}
-LIST_ID = int(os.getenv("BREVO_LIST_ID", "2"))
+LIST_ID = newsletter_service.LIST_ID
 READINESS_TIMEOUT_SECONDS = 25
 
 
@@ -95,6 +97,47 @@ class PreviewRequest(BaseModel):
 
 
 # ─── Endpoints ───────────────────────────────────────────────────────────────
+
+@router.post("/backfill")
+async def newsletter_backfill(dry_run: bool = True, _auth: bool = Depends(verify_admin_key)) -> dict:
+    """Reconcile confirmed consent only. Default to provider reads and aggregate counts."""
+    from routers.newsletter import _get_redis, _retry_withdrawal, _sync_brevo_contact
+
+    store = await _get_redis()
+    counts = {"to_add": 0, "already_present": 0, "failed": 0}
+    if not dry_run:
+        withdrawals = set(await store.hkeys(BREVO_REMOVE_RETRY_KEY))
+        withdrawals.update(await store.hkeys(LISTMONK_REMOVE_RETRY_KEY))
+        for email in withdrawals:
+            if not await _retry_withdrawal(store, email):
+                counts["failed"] += 1
+
+    for email, raw in (await store.hgetall(CONFIRMED_KEY)).items():
+        try:
+            data = parse_consent(email, raw)
+            if data is None or await store.hget(SUPPRESSED_KEY, email.casefold()):
+                counts["failed"] += 1
+                continue
+            status = await newsletter_service.contact_status(email)
+            if status == "already_present":
+                counts["already_present"] += 1
+                if not dry_run:
+                    await store.hdel(BREVO_ADD_RETRY_KEY, email)
+            elif status == "to_add":
+                # Recheck after the provider read: never enroll a withdrawn snapshot.
+                if await store.hget(CONFIRMED_KEY, email) != raw or await store.hget(SUPPRESSED_KEY, email.casefold()):
+                    counts["failed"] += 1
+                elif dry_run or await _sync_brevo_contact(store, email, data.get("name", "")):
+                    counts["to_add"] += 1
+                else:
+                    counts["failed"] += 1
+            else:
+                counts["failed"] += 1
+        except Exception:
+            logger.error("[NEWSLETTER] Backfill contact failed")
+            counts["failed"] += 1
+    return counts
+
 
 @router.get("/readiness")
 async def newsletter_readiness(_auth: bool = Depends(verify_admin_key)) -> dict:

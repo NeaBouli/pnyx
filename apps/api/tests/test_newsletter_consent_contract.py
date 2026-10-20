@@ -1,7 +1,6 @@
 """Mock-only consent boundaries for GH261's guarded confirmation flow.
 
-These protect existing DOI behavior; they do not assert delivery or suppression
-propagation that the current implementation does not provide.
+These protect DOI evidence and preferences alongside the delivery handoff.
 """
 import json
 from datetime import datetime, timezone
@@ -12,7 +11,7 @@ import pytest
 from fastapi import HTTPException
 
 from routers import newsletter, newsletter_admin
-from services.newsletter_consent import CONFIRM_ONCE, classify_contact, readiness_summary
+from services.newsletter_consent import BREVO_ADD_RETRY_KEY, CONFIRM_ONCE, classify_contact, readiness_summary
 
 
 def _request() -> SimpleNamespace:
@@ -26,6 +25,7 @@ def consent_redis(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     store.get = AsyncMock(return_value=None)
     store.hget = AsyncMock(return_value=None)
     store.hset = AsyncMock()
+    store.hdel = AsyncMock()
     store.setex = AsyncMock()
     store.delete = AsyncMock()
     store.eval = AsyncMock(return_value=1)
@@ -34,6 +34,7 @@ def consent_redis(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     monkeypatch.setattr(newsletter.httpx, "AsyncClient",
                         MagicMock(side_effect=AssertionError("Unexpected network client")))
     monkeypatch.setattr(newsletter, "LISTMONK_PW", "")
+    monkeypatch.setattr(newsletter.newsletter_service, "add_contact", AsyncMock(return_value=True))
     return store
 
 
@@ -56,7 +57,7 @@ async def test_confirmation_preserves_original_preferences(
     assert stored["confirmation_method"] == "double_opt_in"
     assert stored["consent_schema"] == 1  # Legacy pending proof is not upgraded.
     assert "requested_at" not in stored
-    consent_redis.hset.assert_not_awaited()
+    consent_redis.hset.assert_awaited_once_with(BREVO_ADD_RETRY_KEY, "consent@example.org", "1")
     consent_redis.delete.assert_not_awaited()
 
 
@@ -66,7 +67,7 @@ async def test_confirmation_preserves_original_preferences(
     ("monthly", "el", {"new_proposals": True, "active_votes": True,
                         "vote_results": True, "system_news": True, "breaking_news": True}),
 ])
-async def test_subscribe_then_confirm_preserves_schema2_without_delivery_permission(
+async def test_subscribe_then_confirm_preserves_schema2_with_delivery_handoff(
     consent_redis: MagicMock, monkeypatch: pytest.MonkeyPatch,
     frequency: str, language: str, topics: dict[str, bool],
 ) -> None:
@@ -135,7 +136,7 @@ async def test_subscribe_then_confirm_preserves_schema2_without_delivery_permiss
     assert summary["delivery_ready"] is False
     # Confirmation records the click but never sends another message or directly mutates consent.
     factory.assert_called_once_with(timeout=10.0)
-    consent_redis.hset.assert_not_awaited()
+    consent_redis.hset.assert_awaited_once_with(BREVO_ADD_RETRY_KEY, "schema2@example.org", "1")
     consent_redis.delete.assert_not_awaited()
 
 

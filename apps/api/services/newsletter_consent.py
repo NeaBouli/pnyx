@@ -1,4 +1,4 @@
-"""DOI evidence and read-only readiness. This module cannot enroll or send."""
+"""DOI evidence, withdrawal bookkeeping and read-only readiness; no provider I/O."""
 import json
 from collections import Counter
 from datetime import datetime
@@ -8,6 +8,10 @@ from pydantic import EmailStr, TypeAdapter
 
 
 CONFIRMED_KEY = "newsletter:confirmed"
+SUPPRESSED_KEY = "newsletter:suppressed"
+BREVO_ADD_RETRY_KEY = "newsletter:brevo:add_retry"
+BREVO_REMOVE_RETRY_KEY = "newsletter:brevo:remove_retry"
+LISTMONK_REMOVE_RETRY_KEY = "newsletter:listmonk:remove_retry"
 CONSENT_SCHEMA = 2
 MAX_READINESS_CONTACTS = 100
 TOPICS = {"new_proposals", "active_votes", "vote_results", "system_news", "breaking_news"}
@@ -21,6 +25,16 @@ local created = redis.call('HSETNX', KEYS[2], ARGV[2], ARGV[3])
 redis.call('DEL', KEYS[1])
 if created == 1 then return 1 end
 return 2
+"""
+
+# Persist withdrawal and both delivery retries before contacting either provider.
+WITHDRAW_CONSENT = """
+redis.call('HSET', KEYS[2], ARGV[4], ARGV[2])
+redis.call('HDEL', KEYS[1], ARGV[1])
+redis.call('HDEL', KEYS[3], ARGV[1])
+redis.call('HSET', KEYS[4], ARGV[1], '1')
+if ARGV[3] == '1' then redis.call('HSET', KEYS[5], ARGV[1], '1') end
+return 1
 """
 
 # Bound the hash read atomically so concurrent signups cannot defeat the limit.
