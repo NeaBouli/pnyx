@@ -11,6 +11,7 @@ import logging
 import secrets
 from datetime import date, datetime, timezone
 from typing import Optional
+from urllib.parse import urlencode
 from rate_limit import limiter
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
@@ -29,6 +30,7 @@ from services.newsletter_consent import (
     SUPPRESSED_KEY, BREVO_ADD_RETRY_KEY, BREVO_REMOVE_RETRY_KEY,
     LISTMONK_REMOVE_RETRY_KEY, WITHDRAW_CONSENT,
     BREVO_ADD_UNSETTLED_KEY, QUEUE_BREVO_ADD, QUEUE_DELIVERY_REMOVAL,
+    LISTMONK_ADD_UNSETTLED_KEY, QUEUE_LISTMONK_ADD,
     delivery_eligible, parse_consent,
 )
 
@@ -118,32 +120,41 @@ async def _listmonk_request(method: str, path: str, json_data: dict = None) -> d
         return r.json()
 
 
-async def _remove_listmonk_contact(email: str) -> bool:
-    # Query in the body avoids putting addresses in request URLs/access logs.
-    # Listmonk accepts a SQL expression; quotes inside the literal are escaped.
+async def _remove_listmonk_contact(email: str, *, require_present: bool = False) -> bool:
+    # Keep the blocklist query in the body. Listmonk accepts a SQL expression;
+    # quotes inside the literal are escaped.
     literal = email.replace("'", "''")
+    query = f"lower(subscribers.email) = lower('{literal}')"
+    if require_present:
+        # A successful bulk blocklist also returns true when nothing matched.
+        # Lookup URLs are redacted by the newsletter transport log filter.
+        result = await _listmonk_request("GET", "/api/subscribers?" + urlencode({"query": query}))
+        if not any(isinstance(contact, dict) and isinstance(contact.get("email"), str)
+                   and contact["email"].casefold() == email.casefold()
+                   for contact in result.get("data", {}).get("results", [])):
+            return False
     result = await _listmonk_request("PUT", "/api/subscribers/query/blocklist", {
-        "query": f"lower(subscribers.email) = lower('{literal}')",
+        "query": query,
     })
     return result.get("data") is True
 
 
 async def _retry_withdrawal(store: aioredis.Redis, email: str) -> bool:
     success = True
-    for key, remove in (
-        (BREVO_REMOVE_RETRY_KEY, newsletter_service.remove_contact),
-        (LISTMONK_REMOVE_RETRY_KEY, _remove_listmonk_contact),
+    for key, unsettled_key, remove in (
+        (BREVO_REMOVE_RETRY_KEY, BREVO_ADD_UNSETTLED_KEY, newsletter_service.remove_contact),
+        (LISTMONK_REMOVE_RETRY_KEY, LISTMONK_ADD_UNSETTLED_KEY, _remove_listmonk_contact),
     ):
         if not await store.hget(key, email):
             continue
         try:
-            unsettled = await store.hget(BREVO_ADD_UNSETTLED_KEY, email.casefold()) if key == BREVO_REMOVE_RETRY_KEY else None
+            unsettled = await store.hget(unsettled_key, email.casefold())
             removed = (await remove(email, require_present=True) if unsettled == "uncertain"
                        else await remove(email))
             # An absent contact is not evidence that an in-flight write settled.
             if removed and unsettled != "pending":
                 if unsettled:
-                    await store.hdel(BREVO_ADD_UNSETTLED_KEY, email.casefold())
+                    await store.hdel(unsettled_key, email.casefold())
                 await store.hdel(key, email)
             else:
                 success = False
@@ -199,6 +210,10 @@ async def _sync_brevo_contact(store: aioredis.Redis, email: str, name: str = "")
             return False
         try:
             added = await newsletter_service.add_contact(email, name)
+        except newsletter_service.ContactSuppressed:
+            await store.hdel(BREVO_ADD_UNSETTLED_KEY, email.casefold())
+            await _withdraw_subscription(store, email, "provider_suppressed")
+            return False
         except Exception:
             added = False  # Even a timed-out write can have reached the provider.
         if added:
@@ -216,6 +231,43 @@ async def _sync_brevo_contact(store: aioredis.Redis, email: str, name: str = "")
         pass
     logger.error("[MOD-19] Brevo contact sync failed; confirmed consent retained for retry")
     return False
+
+
+async def _sync_listmonk_contact(store: aioredis.Redis, email: str) -> bool:
+    """Retain removal work until even a timed-out creation has been reconciled."""
+    try:
+        if await store.hget(SUPPRESSED_KEY, email.casefold()):
+            await _withdraw_subscription(store, email, "suppressed")
+            return False
+        raw = await store.hget(CONFIRMED_KEY, email)
+        data = parse_consent(email, raw)
+        if data is None or not delivery_eligible(data, datetime.now(timezone.utc)):
+            await _remove_ineligible_contact(store, email)
+            return False
+        queued = await store.eval(
+            QUEUE_LISTMONK_ADD, 4, CONFIRMED_KEY, SUPPRESSED_KEY,
+            LISTMONK_REMOVE_RETRY_KEY, LISTMONK_ADD_UNSETTLED_KEY, email, raw, email.casefold(),
+        )
+        if queued != 1:
+            return False
+        try:
+            await _listmonk_request("POST", "/api/subscribers", {
+                "email": email, "name": data.get("name", ""),
+                "status": "enabled", "preconfirm_subscriptions": True,
+                "attribs": data.get("topics", {}),
+            })
+        except Exception:
+            await store.hset(LISTMONK_ADD_UNSETTLED_KEY, email.casefold(), "uncertain")
+            raise
+        else:
+            await store.hdel(LISTMONK_ADD_UNSETTLED_KEY, email.casefold())
+        finally:
+            if await store.hget(SUPPRESSED_KEY, email.casefold()):
+                await _withdraw_subscription(store, email, "suppressed")
+        return not await store.hget(SUPPRESSED_KEY, email.casefold())
+    except Exception:
+        logger.error("[MOD-19] Listmonk contact sync failed; reconciliation retained")
+        return False
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -376,17 +428,9 @@ async def confirm_subscription(token: str, request: Request = None) -> HTMLRespo
             elif not delivery_eligible(json.loads(confirmed_raw), confirmed_at):
                 await _remove_ineligible_contact(r, email)
             else:
-                await _sync_brevo_contact(r, email, data.get("name", ""))
-                if LISTMONK_PW and not await r.hget(SUPPRESSED_KEY, email.casefold()):
-                    try:
-                        await _listmonk_request("POST", "/api/subscribers", {
-                            "email": email, "name": data.get("name", ""),
-                            "status": "enabled", "preconfirm_subscriptions": True,
-                            "attribs": data.get("topics", {}),
-                        })
-                    finally:
-                        if await r.hget(SUPPRESSED_KEY, email.casefold()):
-                            await _withdraw_subscription(r, email, "suppressed")
+                synced = await _sync_brevo_contact(r, email, data.get("name", ""))
+                if LISTMONK_PW and synced:
+                    await _sync_listmonk_contact(r, email)
         except Exception:
             logger.error("[MOD-19] Confirmation delivery deferred; consent retained")
 

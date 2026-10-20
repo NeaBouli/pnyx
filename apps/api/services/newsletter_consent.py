@@ -12,6 +12,7 @@ SUPPRESSED_KEY = "newsletter:suppressed"
 BREVO_ADD_RETRY_KEY = "newsletter:brevo:add_retry"
 BREVO_ADD_UNSETTLED_KEY = "newsletter:brevo:add_unsettled"
 BREVO_REMOVE_RETRY_KEY = "newsletter:brevo:remove_retry"
+LISTMONK_ADD_UNSETTLED_KEY = "newsletter:listmonk:add_unsettled"
 LISTMONK_REMOVE_RETRY_KEY = "newsletter:listmonk:remove_retry"
 CONSENT_SCHEMA = 2
 MAX_READINESS_CONTACTS = 100
@@ -47,6 +48,15 @@ if redis.call('HEXISTS', KEYS[4], ARGV[1]) == 1 then return 0 end
 if redis.call('HEXISTS', KEYS[5], ARGV[3]) == 1 then return 0 end
 redis.call('HSET', KEYS[3], ARGV[1], '1')
 redis.call('HSET', KEYS[5], ARGV[3], 'pending')
+return 1
+"""
+
+QUEUE_LISTMONK_ADD = """
+if redis.call('HEXISTS', KEYS[2], ARGV[3]) == 1 then return 0 end
+if redis.call('HGET', KEYS[1], ARGV[1]) ~= ARGV[2] then return 0 end
+if redis.call('HEXISTS', KEYS[3], ARGV[1]) == 1 then return 0 end
+if redis.call('HEXISTS', KEYS[4], ARGV[3]) == 1 then return 0 end
+redis.call('HSET', KEYS[4], ARGV[3], 'pending')
 return 1
 """
 

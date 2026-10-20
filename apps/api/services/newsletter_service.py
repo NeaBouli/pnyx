@@ -23,6 +23,10 @@ SENDER = {"name": "εκκλησία", "email": "newsletter@ekklesia.gr"}
 LIST_ID = int(os.getenv("BREVO_LIST_ID", "2"))  # Πολίτες ekklesia.gr
 
 
+class ContactSuppressed(Exception):
+    """Provider suppression detected before attempting an enrollment write."""
+
+
 class _ContactRequestLogFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         # httpcore traces raw response headers (e.g. Location) without a URL.
@@ -30,7 +34,8 @@ class _ContactRequestLogFilter(logging.Filter):
         if record.name.startswith("httpcore.") and record.levelno <= logging.DEBUG:
             return False
         # Contact lookup URLs contain addresses, including when httpx logs redirects.
-        return "/contacts/" not in record.getMessage()
+        message = record.getMessage()
+        return "/contacts/" not in message and "/api/subscribers?" not in message
 
 
 for _log_name in ("httpx", "httpcore.http11", "httpcore.http2"):
@@ -110,6 +115,8 @@ async def contact_status(email: str, *, for_removal: bool = False) -> str:
 
 async def add_contact(email: str, name: str = "") -> bool:
     status = await contact_status(email)
+    if status == "suppressed":
+        raise ContactSuppressed()
     if status == "already_present":
         return True
     if status != "to_add":

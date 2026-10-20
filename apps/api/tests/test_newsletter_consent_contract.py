@@ -199,7 +199,7 @@ async def test_optional_listmonk_failure_does_not_erase_confirmed_consent(
     mocked = AsyncMock(side_effect=RuntimeError("synthetic Listmonk outage"))
     monkeypatch.setattr(newsletter, "_listmonk_request", mocked)
     assert (await newsletter.confirm_subscription("synthetic-token")).status_code == 200
-    assert consent_redis.eval.await_count == 2
+    assert consent_redis.eval.await_count == 3
     assert json.loads(consent_redis.eval.await_args_list[0].args[6])["email"] == "consent@example.org"
     mocked.assert_awaited_once()
 

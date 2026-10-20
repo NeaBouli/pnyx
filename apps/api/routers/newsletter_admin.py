@@ -26,9 +26,10 @@ from services.newsletter_consent import (
     BREVO_ADD_UNSETTLED_KEY, delivery_eligible,
 )
 from services import newsletter_service
+from routers.newsletter import NewsletterRoute
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/v1/admin/newsletter", tags=["Admin Newsletter"])
+router = APIRouter(prefix="/api/v1/admin/newsletter", tags=["Admin Newsletter"], route_class=NewsletterRoute)
 
 BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
 BREVO_API = "https://api.brevo.com/v3"
@@ -134,7 +135,11 @@ async def newsletter_backfill(dry_run: bool = True, _auth: bool = Depends(verify
             if await store.hget(CONFIRMED_KEY, email) != raw or await store.hget(SUPPRESSED_KEY, email.casefold()):
                 counts["failed"] += 1
                 continue
-            if status == "already_present":
+            if status == "suppressed":
+                if not dry_run:
+                    await _withdraw_subscription(store, email, "provider_suppressed")
+                counts["failed"] += 1
+            elif status == "already_present":
                 counts["already_present"] += 1
                 if not dry_run:
                     await store.hdel(BREVO_ADD_RETRY_KEY, email)

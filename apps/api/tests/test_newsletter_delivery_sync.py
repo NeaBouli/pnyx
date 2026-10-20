@@ -18,12 +18,14 @@ from services.newsletter_consent import (
     CONFIRMED_KEY, CONFIRM_ONCE, SUPPRESSED_KEY, BREVO_ADD_RETRY_KEY,
     BREVO_REMOVE_RETRY_KEY, LISTMONK_REMOVE_RETRY_KEY, WITHDRAW_CONSENT,
     BREVO_ADD_UNSETTLED_KEY, QUEUE_BREVO_ADD, QUEUE_DELIVERY_REMOVAL, TOPICS,
+    LISTMONK_ADD_UNSETTLED_KEY, QUEUE_LISTMONK_ADD,
 )
 
 EMAIL = "subscriber+fixture@example.org"
 HTTP_CLIENT = httpx.AsyncClient
 REMOVE_CONTACT = newsletter_service.remove_contact
 CONTACT_STATUS = newsletter_service.contact_status
+ADD_CONTACT = newsletter_service.add_contact
 
 
 def consent(email: str = EMAIL, **changes: Any) -> dict:
@@ -94,6 +96,14 @@ class MemoryRedis:
             self.hashes[brevo_retry][email] = "1"
             if configured == "1":
                 self.hashes[listmonk_retry][email] = "1"
+            return 1
+        if script == QUEUE_LISTMONK_ADD:
+            assert numkeys == 4
+            confirmed, suppressed, removal, unsettled, email, raw, normalized = args
+            if (normalized in self.hashes[suppressed] or self.hashes[confirmed].get(email) != raw
+                    or email in self.hashes[removal] or normalized in self.hashes[unsettled]):
+                return 0
+            self.hashes[unsettled][normalized] = "pending"
             return 1
         assert script == WITHDRAW_CONSENT and numkeys == 5
         confirmed, suppressed, add_retry, brevo_retry, listmonk_retry, email, reason, configured, normalized = args
@@ -336,7 +346,8 @@ async def test_provider_suppression_never_reactivated(
         return httpx.Response(200, json={"email": EMAIL, "listIds": [9], "emailBlacklisted": False, **suppression})
 
     mock_provider(monkeypatch, provider)
-    assert await newsletter_service.add_contact(EMAIL) is False
+    with pytest.raises(newsletter_service.ContactSuppressed):
+        await newsletter_service.add_contact(EMAIL)
 
 
 async def test_real_service_add_and_remove_payloads_and_removal_idempotence(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -616,6 +627,187 @@ async def test_held_contact_removal_failure_keeps_work_and_consent_for_backfill(
     assert store.hashes[BREVO_REMOVE_RETRY_KEY] == {EMAIL: "1"}
     assert store.hashes[CONFIRMED_KEY][EMAIL] == raw
     newsletter_service.add_contact.assert_not_awaited()
+
+
+async def test_listmonk_timeout_after_withdrawal_retains_removal_until_late_creation_is_blocklisted(
+    store: MemoryRedis, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture,
+) -> None:
+    monkeypatch.setattr(newsletter, "LISTMONK_PW", "synthetic-password")
+    store.pending["newsletter:pending:listmonk-timeout"] = json.dumps(consent())
+    contacts: dict[str, str] = {}
+    calls = []
+
+    async def listmonk(method, path, json_data=None):
+        calls.append((method, path, json_data))
+        if method == "POST":
+            assert store.hashes[LISTMONK_ADD_UNSETTLED_KEY] == {EMAIL: "pending"}
+            await newsletter._withdraw_subscription(store, EMAIL, "unsubscribed")
+            # Bulk success for an absent contact cannot settle the pending POST.
+            assert store.hashes[LISTMONK_REMOVE_RETRY_KEY] == {EMAIL: "1"}
+            raise httpx.ReadTimeout(f"private timeout {EMAIL}")
+        if method == "GET":
+            return {"data": {"results": [{"email": email, "status": status}
+                                         for email, status in contacts.items()]}}
+        assert method == "PUT" and path == "/api/subscribers/query/blocklist"
+        if EMAIL in contacts:
+            contacts[EMAIL] = "blocklisted"
+        return {"data": True}
+
+    monkeypatch.setattr(newsletter, "_listmonk_request", listmonk)
+    assert (await newsletter.confirm_subscription("listmonk-timeout")).status_code == 200
+    assert not store.hashes[CONFIRMED_KEY]
+    for _ in range(2):
+        assert (await newsletter_admin.newsletter_backfill(dry_run=False, _auth=True))["failed"] == 1
+        assert store.hashes[LISTMONK_REMOVE_RETRY_KEY] == {EMAIL: "1"}
+        assert store.hashes[LISTMONK_ADD_UNSETTLED_KEY] == {EMAIL: "uncertain"}
+    contacts[EMAIL] = "enabled"  # The timed-out creation commits after earlier removals.
+    assert (await newsletter_admin.newsletter_backfill(dry_run=False, _auth=True))["failed"] == 0
+    assert contacts == {EMAIL: "blocklisted"}
+    assert not store.hashes[LISTMONK_REMOVE_RETRY_KEY]
+    assert not store.hashes[LISTMONK_ADD_UNSETTLED_KEY]
+    assert store.hashes[SUPPRESSED_KEY]
+    assert sum(method == "POST" for method, _, _ in calls) == 1
+    assert EMAIL not in caplog.text
+
+
+async def test_listmonk_concurrent_adds_and_withdrawal_keep_pending_removal(
+    store: MemoryRedis, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(newsletter, "LISTMONK_PW", "synthetic-password")
+    store.hashes[CONFIRMED_KEY][EMAIL] = json.dumps(consent())
+    started, finish = asyncio.Event(), asyncio.Event()
+
+    async def listmonk(method, path, json_data=None):
+        if method == "POST":
+            started.set()
+            await finish.wait()
+        return {"data": True}
+
+    provider = AsyncMock(side_effect=listmonk)
+    monkeypatch.setattr(newsletter, "_listmonk_request", provider)
+    task = asyncio.create_task(newsletter._sync_listmonk_contact(store, EMAIL))
+    try:
+        await asyncio.wait_for(started.wait(), timeout=1)
+        assert await newsletter._sync_listmonk_contact(store, EMAIL) is False
+        await newsletter._withdraw_subscription(store, EMAIL, "unsubscribed")
+        assert store.hashes[LISTMONK_ADD_UNSETTLED_KEY] == {EMAIL: "pending"}
+        assert store.hashes[LISTMONK_REMOVE_RETRY_KEY] == {EMAIL: "1"}
+    finally:
+        finish.set()
+        assert await asyncio.wait_for(task, timeout=1) is False
+    assert not store.hashes[LISTMONK_ADD_UNSETTLED_KEY]
+    assert not store.hashes[LISTMONK_REMOVE_RETRY_KEY]
+    assert sum(call.args[0] == "POST" for call in provider.await_args_list) == 1
+
+
+@pytest.mark.parametrize("source", ["confirmation", "backfill", "backfill_add"])
+@pytest.mark.parametrize("suppression", [{"emailBlacklisted": True}, {"listUnsubscribed": [9]}])
+async def test_detected_provider_suppression_is_persisted_and_withdraws_both_providers(
+    store: MemoryRedis, monkeypatch: pytest.MonkeyPatch, source: str, suppression: dict,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.DEBUG)
+    monkeypatch.setattr(newsletter, "LISTMONK_PW", "synthetic-password")
+    monkeypatch.setattr(newsletter_service, "add_contact", ADD_CONTACT)
+    monkeypatch.setattr(newsletter_service, "contact_status", CONTACT_STATUS)
+    monkeypatch.setattr(newsletter_service, "remove_contact", REMOVE_CONTACT)
+    listmonk = AsyncMock(return_value={"data": True})
+    monkeypatch.setattr(newsletter, "_listmonk_request", listmonk)
+    reads = 0
+    writes = []
+
+    def provider(request):
+        nonlocal reads
+        if request.method == "GET":
+            reads += 1
+            # Also cover suppression detected by add_contact after backfill's initial read.
+            if source == "backfill_add" and reads == 1:
+                return httpx.Response(404)
+            return httpx.Response(200, json={"email": EMAIL.upper(), "listIds": [9],
+                                           "emailBlacklisted": False, **suppression})
+        writes.append(request.url.path)
+        assert request.url.path.endswith("/contacts/remove")
+        return httpx.Response(201, json={"contacts": {"success": [EMAIL]}})
+
+    mock_provider(monkeypatch, provider)
+    raw = json.dumps(consent())
+    if source == "confirmation":
+        store.pending["newsletter:pending:provider-suppression"] = raw
+        assert (await newsletter.confirm_subscription("provider-suppression")).status_code == 200
+    else:
+        store.hashes[CONFIRMED_KEY][EMAIL] = raw
+        assert (await newsletter_admin.newsletter_backfill(dry_run=False, _auth=True))["failed"] == 1
+    assert store.hashes[SUPPRESSED_KEY] == {EMAIL: "provider_suppressed"}
+    assert not store.hashes[CONFIRMED_KEY]
+    assert not store.hashes[BREVO_ADD_RETRY_KEY]
+    assert not store.hashes[BREVO_ADD_UNSETTLED_KEY]
+    assert not store.hashes[BREVO_REMOVE_RETRY_KEY]
+    assert not store.hashes[LISTMONK_REMOVE_RETRY_KEY]
+    assert len(writes) == 1
+    listmonk.assert_awaited_once_with("PUT", "/api/subscribers/query/blocklist", {
+        "query": f"lower(subscribers.email) = lower('{EMAIL}')",
+    })
+    # An old pending link must obey the persisted suppression without provider lookup.
+    store.pending["newsletter:pending:older-link"] = raw
+    assert (await newsletter.confirm_subscription("older-link")).status_code == 200
+    assert not store.hashes[CONFIRMED_KEY]
+    assert all(call.args[0] == "PUT" for call in listmonk.await_args_list)
+    for private in (EMAIL, "example.org", "synthetic-private-key"):
+        assert private not in caplog.text
+
+
+async def test_confirmation_skips_listmonk_if_detected_suppression_cannot_be_persisted(
+    store: MemoryRedis, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture,
+) -> None:
+    store.pending["newsletter:pending:persistence-failure"] = json.dumps(consent())
+    monkeypatch.setattr(newsletter, "LISTMONK_PW", "synthetic-password")
+    newsletter_service.add_contact.side_effect = newsletter_service.ContactSuppressed()
+    monkeypatch.setattr(newsletter, "_withdraw_subscription",
+                        AsyncMock(side_effect=RuntimeError(f"private Redis failure {EMAIL}")))
+    listmonk = AsyncMock()
+    monkeypatch.setattr(newsletter, "_listmonk_request", listmonk)
+    assert (await newsletter.confirm_subscription("persistence-failure")).status_code == 200
+    listmonk.assert_not_awaited()
+    assert EMAIL not in caplog.text
+
+
+@pytest.mark.parametrize("invalid", ["private@example.org", "synthetic-private-token", "{'email':'private@example.org'}"])
+async def test_admin_backfill_invalid_dry_run_has_sanitized_422_without_io(
+    store: MemoryRedis, monkeypatch: pytest.MonkeyPatch, invalid: str,
+) -> None:
+    redis = AsyncMock(side_effect=AssertionError("Invalid request must not access Redis"))
+    monkeypatch.setattr(newsletter, "_get_redis", redis)
+    async with HTTP_CLIENT(transport=httpx.ASGITransport(app=application()), base_url="http://test") as client:
+        response = await client.post("/api/v1/admin/newsletter/backfill", params={"dry_run": invalid},
+                                     headers={"Authorization": "Bearer synthetic-admin-key"})
+    assert response.status_code == 422
+    assert response.json() == {"detail": "Invalid newsletter request"}
+    redis.assert_not_awaited()
+    newsletter_service.contact_status.assert_not_awaited()
+    newsletter_service.add_contact.assert_not_awaited()
+    assert not store.mutations
+
+
+async def test_listmonk_uncertain_removal_lookup_redacts_identity_in_transport_logs(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.DEBUG)
+    monkeypatch.setattr(newsletter, "LISTMONK_PW", "synthetic-password")
+    calls = []
+
+    def provider(request):
+        calls.append(request)
+        if request.method == "GET":
+            assert request.url.params["query"] == f"lower(subscribers.email) = lower('{EMAIL}')"
+            return httpx.Response(200, json={"data": {"results": [{"email": EMAIL}]}})
+        assert request.method == "PUT"
+        return httpx.Response(200, json={"data": True})
+
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **kw: HTTP_CLIENT(transport=httpx.MockTransport(provider), **kw))
+    assert await newsletter._remove_listmonk_contact(EMAIL, require_present=True) is True
+    assert len(calls) == 2
+    for private in (EMAIL, "example.org", "subscriber%2Bfixture%40example.org"):
+        assert private not in caplog.text
 
 
 async def test_provider_header_tracing_private_using_actual_http_transport(

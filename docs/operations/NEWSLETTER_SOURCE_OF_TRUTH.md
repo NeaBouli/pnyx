@@ -51,17 +51,26 @@ withdrawals are safe. Failed removals remain in `newsletter:brevo:remove_retry`
 and `newsletter:listmonk:remove_retry` until retried. Local/provider suppression
 wins over confirmation and backfill; no blacklist or unsubscribe flag is reset.
 An in-flight addition checks withdrawal again and compensates with removal.
-`newsletter:brevo:add_unsettled` serializes additions per case-insensitive identity
-and records `pending` before the provider request. Failure/timeout records
+`newsletter:brevo:add_unsettled` and `newsletter:listmonk:add_unsettled`
+serialize additions per case-insensitive identity
+and record `pending` before the provider request. Failure/timeout records
 `uncertain`; withdrawal never cancels this marker. Removal work remains durable
 while a request is pending, and an absent contact cannot resolve uncertainty.
-After an uncertain add, backfill must observe membership and acknowledge its
-removal before clearing removal work. For an eligible, unsuppressed contact,
+After an uncertain add, backfill must observe the Brevo membership or Listmonk
+contact and acknowledge its removal/blocklisting before clearing removal work.
+Listmonk's bulk blocklist success alone cannot establish that a contact exists.
+For an eligible, unsuppressed Brevo contact,
 observing membership reconciles the original addition without sending another.
 Repeated absence retains the work for later backfills; a process crash leaving
 `pending`, or a failed write that never commits, requires operator reconciliation
 with provider evidence before clearing the unsettled marker. No elapsed-time
 assumption allows suppression to be bypassed.
+
+Brevo suppression detected during confirmation or apply backfill is persisted
+as `provider_suppressed` in Redis and queues withdrawal from both providers.
+Confirmation attempts Listmonk enrollment only after successful Brevo sync;
+suppression persistence failures therefore cannot enable the secondary provider.
+Dry-run backfill remains read-only, including when it detects suppression.
 
 Webhook withdrawals are persisted before event counters or cache invalidation,
 including every withdrawal in a batch. Persistence failures return HTTP 429
@@ -96,8 +105,8 @@ segmentation are OUT OF SCOPE for this PR. Monthly reports and admin campaigns
 currently target the same configured Brevo list; they do not filter recipients
 or content by those saved preferences. Having at least one enabled topic grants
 list eligibility only, and does not mean those choices are enforced by campaigns.
-The integrator will file the follow-up issue to implement and test audience
-selection for language, frequency and topics across both campaign send paths.
+Audience selection for language, frequency and topics across both campaign send
+paths is tracked in [issue #667](https://github.com/NeaBouli/pnyx/issues/667).
 The read-only readiness report continues to flag this delivery limitation.
 
 Provider operations follow the official
