@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Vendetta Labs — MIT License
 
 # Web Framework
-fastapi==0.143.1
+fastapi==0.143.3
 uvicorn[standard]==0.54.0
 
 # Database
