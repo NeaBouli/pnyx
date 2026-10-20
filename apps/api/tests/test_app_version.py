@@ -53,6 +53,28 @@ async def test_app_version_direct_apk_url_points_to_file() -> None:
 
 
 @pytest.mark.asyncio
+async def test_minimum_version_contract_preserves_legacy_and_fdroid_code_schemes() -> None:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/api/v1/app/version")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["min_required_version_code"] == 62
+    assert data["min_required_version_code_by_channel"] == {
+        "direct": 62, "play": 62, "fdroid": 621,
+    }
+    # Do not force all supported clients (including F-Droid 621-624) to update.
+    assert data["force_update"] is False
+    assert data["latest_version_code"] == 65
+    for channel in ("direct", "play"):
+        minimum = data["min_required_version_code_by_channel"][channel]
+        assert 61 < minimum <= 62 <= 65
+    minimum = data["min_required_version_code_by_channel"]["fdroid"]
+    assert all(code < minimum for code in range(611, 615))
+    assert all(code >= minimum for code in (*range(621, 625), *range(651, 655)))
+
+
+@pytest.mark.asyncio
 async def test_legacy_version_download_url_matches_direct_apk_file() -> None:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get("/api/v1/version")

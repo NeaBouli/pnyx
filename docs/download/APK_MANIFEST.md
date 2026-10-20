@@ -40,17 +40,20 @@ https://ekklesia.gr/representative/index.html
 
 | Field | Value |
 |---|---|
-| Version | 1.0.33 |
-| versionCode | 62 |
+| Version | 1.0.36 |
+| versionCode | 65 |
 | Package | ekklesia.gr |
-| APK SHA256 | `d248ee83e5cd7d9bdaec2c6ffb7adc1789b747114a8350c293723294f8cb0f53` |
-| AAB SHA256 | `9dabc33f571b8f0120e7f7bd3a5c0d869f3608cf9523e46f55689b69ec743452` |
-| Signing certificate SHA256 | `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec` |
-| Canonical APK URL | `https://github.com/NeaBouli/pnyx/releases/download/v1.0.33/ekklesia-v1.0.33-vC62-DIRECT.apk` (published; checksums in `ekklesia-v1.0.33-SHA256SUMS.txt`) |
-| Server alias | `https://ekklesia.gr/download/ekklesia-latest.apk` redirects to the v1.0.33 Direct APK (web `next.config.mjs`) |
-| Build date | 2026-10-04 (release published 2026-10-06) |
-| Release gate | COMPLETE — GitHub release v1.0.33 (tag `d5c72690`, built from `bc17f529` with identical mobile/package trees), APK checks (package, versionName/Code, `direct` channel, ZK off, pinned zkey, 16 KB-aligned 64-bit `.so`, signature continuity with v1.0.32), published asset checksums, Google Play Closed Testing Alpha live since 2026-10-06, API `/api/v1/app/version` reports 1.0.33/62 since 2026-10-08. Play production access is pending (tester requirement). F-Droid builds independently and may still list 1.0.32 (versionCodes 611-614). |
-| Includes | Security and compatibility update for newer Android devices (16 KB page size). The app-icon notification count, Xiaomi/MIUI and Greek mobile-input fixes from earlier releases are retained. Voting, identity, eligibility and ZK policy are unchanged; ZK voting stays disabled. |
+| Direct APK SHA-256 | `ece60ca1a0e9091bdb062d35a868f646d19002b37e82b7f54d77fc233581f5ec` |
+| Canonical APK URL | `https://github.com/NeaBouli/pnyx/releases/download/v1.0.36/ekklesia-v1.0.36-vC65-DIRECT.apk` |
+| Server alias | `https://ekklesia.gr/download/ekklesia-latest.apk` redirects to the v1.0.36 Direct APK (web `next.config.mjs`) |
+| Includes | Clearer no-name wording, safer key handling, one vote correction in the 24-hour window. |
+
+The v1.0.36 URL and checksum above are the supplied release values for T-9157;
+this offline documentation update does not re-download or re-verify the binary.
+Historical v1.0.33 artifact/build/signature and Play Closed Testing evidence is
+recorded in [the vC62 release receipt](../operations/ANDROID_V62_RELEASE_2026-10-06.md).
+Google Play production access remains pending. F-Droid builds independently and
+may trail the Direct release.
 
 Android treats the Direct, Google Play and F-Droid builds as separate signing
 channels. Installing one channel over another can therefore report a package
@@ -59,13 +62,13 @@ their installed channel. Changing channel requires uninstalling the installed
 copy first and then verifying again because the private voting key is stored
 only on that device installation.
 
-Post-publication validation command for the canonical v1.0.33 asset:
+Post-publication validation command for the canonical v1.0.36 asset:
 
 ```bash
 (
   set -euo pipefail
-  expected='d248ee83e5cd7d9bdaec2c6ffb7adc1789b747114a8350c293723294f8cb0f53'
-  actual="$(curl -fsSL https://github.com/NeaBouli/pnyx/releases/download/v1.0.33/ekklesia-v1.0.33-vC62-DIRECT.apk | sha256sum | awk '{print $1}')"
+  expected='ece60ca1a0e9091bdb062d35a868f646d19002b37e82b7f54d77fc233581f5ec'
+  actual="$(curl -fsSL https://github.com/NeaBouli/pnyx/releases/download/v1.0.36/ekklesia-v1.0.36-vC65-DIRECT.apk | sha256sum | awk '{print $1}')"
   test "$actual" = "$expected"
   printf 'APK SHA256 verified: %s\n' "$actual"
 )

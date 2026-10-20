@@ -12,7 +12,14 @@ router = APIRouter(prefix="/api/v1/app", tags=["App Version"])
 # Hardcoded — bei neuem Release hier anpassen
 LATEST_VERSION = "1.0.36"
 LATEST_VERSION_CODE = 65
-MIN_REQUIRED_VERSION_CODE = 1
+# v1.0.33 signs vote-status reads and uses v2 evaluations. F-Droid adds
+# an ABI digit (1-4) to the base code; keep the scalar for legacy clients.
+MIN_REQUIRED_VERSION_CODE = 62
+MIN_REQUIRED_VERSION_CODE_BY_CHANNEL = {
+    "direct": MIN_REQUIRED_VERSION_CODE,
+    "play": MIN_REQUIRED_VERSION_CODE,
+    "fdroid": MIN_REQUIRED_VERSION_CODE * 10 + 1,
+}
 FORCE_UPDATE = False
 
 RELEASE_NOTES_EL = "v1.0.36 — Σαφέστερη διατύπωση «χωρίς όνομα», ασφαλέστερος χειρισμός κλειδιών, μία διόρθωση ψήφου στο 24ωρο."
@@ -29,6 +36,7 @@ async def app_version():
         "latest_version": LATEST_VERSION,
         "latest_version_code": LATEST_VERSION_CODE,
         "min_required_version_code": MIN_REQUIRED_VERSION_CODE,
+        "min_required_version_code_by_channel": MIN_REQUIRED_VERSION_CODE_BY_CHANNEL,
         "release_notes_el": RELEASE_NOTES_EL,
         "release_notes_en": RELEASE_NOTES_EN,
         "fdroid_url": FDROID_URL,

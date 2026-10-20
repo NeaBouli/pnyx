@@ -43,7 +43,9 @@ ekklesia.gr (εκκλησία του έθνους) is an independent civic initi
 
 - Backend: Python FastAPI, PostgreSQL 15, Redis 8.10
 - Frontend: Next.js 16 (SSR, i18n el/en)
-- Mobile: Expo React Native (Android vC62 / v1.0.33 published for Direct download, live through the public API/latest-APK alias and live for testers in Play Closed Testing; icon notification counts are enabled where the Android launcher supports them; Play production access remains pending; F-Droid lists the app from its own independent build, which can trail the Direct release; Direct, Play and F-Droid stay separately routed)
+- Direct Android APK: https://github.com/NeaBouli/pnyx/releases/download/v1.0.36/ekklesia-v1.0.36-vC65-DIRECT.apk
+- Direct APK SHA-256: ece60ca1a0e9091bdb062d35a868f646d19002b37e82b7f54d77fc233581f5ec
+- Mobile: Expo React Native (Android vC65 / v1.0.36 published for Direct download through the public API/latest-APK alias; vC62 remains live for testers in Play Closed Testing; icon notification counts are enabled where the Android launcher supports them; Play production access remains pending; F-Droid lists the app from its own independent build, which can trail the Direct release; Direct, Play and F-Droid stay separately routed)
 - Crypto: Ed25519 (PyNaCl + @noble/curves), HMAC nullifier chain
 - Assistant: deterministic FAQ answers by default (AGENT_MODE=hybrid explicitly restores the legacy hybrid path); summaries and translations have separate processing paths.
 - Forum: Discourse (pnyx.ekklesia.gr)

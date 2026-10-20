@@ -8,10 +8,12 @@ export interface UpdateUrlPayload {
 
 export interface UpdateVersionPayload extends UpdateUrlPayload {
   latest_version_code?: number | null;
+  min_required_version_code?: number | null;
+  min_required_version_code_by_channel?: Partial<Record<"direct" | "play" | "fdroid", number | null>> | null;
 }
 
 export const DIRECT_APK_URL =
-  "https://github.com/NeaBouli/pnyx/releases/download/v1.0.32/ekklesia-v1.0.32-vC61-DIRECT.apk";
+  "https://github.com/NeaBouli/pnyx/releases/download/v1.0.36/ekklesia-v1.0.36-vC65-DIRECT.apk";
 export const PLAY_STORE_URL = "https://play.google.com/apps/testing/ekklesia.gr";
 export const FDROID_URL = "https://f-droid.org/packages/ekklesia.gr/";
 
@@ -28,12 +30,31 @@ export function getDistributionChannelLabel(channel: DistributionChannel): "Goog
   return "Direct";
 }
 
+export function shouldRequireUpdate(
+  payload: UpdateVersionPayload,
+  currentVersionCode: number,
+  channel: DistributionChannel,
+): boolean {
+  const normalizedChannel = normalizeDistributionChannel(channel);
+  // The server supplies ABI-scheme minimums for F-Droid. Never compare its
+  // native code against the legacy Direct/Play scalar (614 > 62).
+  const minimum = payload.min_required_version_code_by_channel?.[normalizedChannel]
+    ?? (normalizedChannel === "fdroid" ? undefined : payload.min_required_version_code);
+  return typeof minimum === "number"
+    && Number.isSafeInteger(minimum)
+    && minimum > 0
+    && Number.isSafeInteger(currentVersionCode)
+    && currentVersionCode > 0
+    && currentVersionCode < minimum;
+}
+
 export function shouldOfferUpdate(
   payload: UpdateVersionPayload,
   currentVersionCode: number,
   channel: DistributionChannel,
 ): boolean {
-  // F-Droid assigns ABI-specific version codes and is the update authority.
+  if (shouldRequireUpdate(payload, currentVersionCode, channel)) return true;
+  // Supported F-Droid builds continue to delegate optional updates to F-Droid.
   if (normalizeDistributionChannel(channel) === "fdroid") return false;
   return typeof payload.latest_version_code === "number"
     && Number.isSafeInteger(payload.latest_version_code)
