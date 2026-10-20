@@ -23,6 +23,7 @@ from services.newsletter_consent import (
     CONFIRMED_KEY, MAX_READINESS_CONTACTS, READ_CONSENT_SNAPSHOT,
     classify_contact, parse_consent, readiness_summary,
     SUPPRESSED_KEY, BREVO_ADD_RETRY_KEY, BREVO_REMOVE_RETRY_KEY, LISTMONK_REMOVE_RETRY_KEY,
+    BREVO_ADD_UNSETTLED_KEY, delivery_eligible,
 )
 from services import newsletter_service
 
@@ -101,10 +102,13 @@ class PreviewRequest(BaseModel):
 @router.post("/backfill")
 async def newsletter_backfill(dry_run: bool = True, _auth: bool = Depends(verify_admin_key)) -> dict:
     """Reconcile confirmed consent only. Default to provider reads and aggregate counts."""
-    from routers.newsletter import _get_redis, _retry_withdrawal, _sync_brevo_contact
+    from routers.newsletter import (
+        _get_redis, _retry_withdrawal, _sync_brevo_contact,
+        _remove_ineligible_contact, _withdraw_subscription,
+    )
 
     store = await _get_redis()
-    counts = {"to_add": 0, "already_present": 0, "failed": 0}
+    counts = {"to_add": 0, "already_present": 0, "held": 0, "failed": 0}
     if not dry_run:
         withdrawals = set(await store.hkeys(BREVO_REMOVE_RETRY_KEY))
         withdrawals.update(await store.hkeys(LISTMONK_REMOVE_RETRY_KEY))
@@ -115,14 +119,27 @@ async def newsletter_backfill(dry_run: bool = True, _auth: bool = Depends(verify
     for email, raw in (await store.hgetall(CONFIRMED_KEY)).items():
         try:
             data = parse_consent(email, raw)
-            if data is None or await store.hget(SUPPRESSED_KEY, email.casefold()):
+            if await store.hget(SUPPRESSED_KEY, email.casefold()):
+                if not dry_run:
+                    await _withdraw_subscription(store, email, "suppressed")
                 counts["failed"] += 1
                 continue
+            if data is None or not delivery_eligible(data, datetime.now(timezone.utc)):
+                counts["failed" if data is None else "held"] += 1
+                if not dry_run and not await _remove_ineligible_contact(store, email):
+                    counts["failed"] += 1
+                continue
             status = await newsletter_service.contact_status(email)
+            # Recheck even an existing member against withdrawal during the GET.
+            if await store.hget(CONFIRMED_KEY, email) != raw or await store.hget(SUPPRESSED_KEY, email.casefold()):
+                counts["failed"] += 1
+                continue
             if status == "already_present":
                 counts["already_present"] += 1
                 if not dry_run:
                     await store.hdel(BREVO_ADD_RETRY_KEY, email)
+                    if await store.hget(BREVO_ADD_UNSETTLED_KEY, email.casefold()) == "uncertain":
+                        await store.hdel(BREVO_ADD_UNSETTLED_KEY, email.casefold())
             elif status == "to_add":
                 # Recheck after the provider read: never enroll a withdrawn snapshot.
                 if await store.hget(CONFIRMED_KEY, email) != raw or await store.hget(SUPPRESSED_KEY, email.casefold()):

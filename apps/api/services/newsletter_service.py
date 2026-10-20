@@ -25,6 +25,10 @@ LIST_ID = int(os.getenv("BREVO_LIST_ID", "2"))  # Πολίτες ekklesia.gr
 
 class _ContactRequestLogFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
+        # httpcore traces raw response headers (e.g. Location) without a URL.
+        # Suppress transport debug records even when application DEBUG is on.
+        if record.name.startswith("httpcore.") and record.levelno <= logging.DEBUG:
+            return False
         # Contact lookup URLs contain addresses, including when httpx logs redirects.
         return "/contacts/" not in record.getMessage()
 
@@ -119,14 +123,14 @@ async def add_contact(email: str, name: str = "") -> bool:
     return result is not None
 
 
-async def remove_contact(email: str) -> bool:
+async def remove_contact(email: str, *, require_present: bool = False) -> bool:
     """Unlink only the campaign list; retain provider history and suppression."""
     status = await contact_status(email, for_removal=True)
     if status == "failed":
         return False
     # A missing contact or an existing contact outside the list is already removed.
     if status == "to_add":
-        return True
+        return not require_present
     result = await _brevo_post(f"contacts/lists/{LIST_ID}/contacts/remove", {"emails": [email]})
     if result is None:
         return False

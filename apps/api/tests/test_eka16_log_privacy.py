@@ -8,6 +8,7 @@ Mock-only: no real Redis, email provider or network access.
 """
 import json
 import logging
+from datetime import datetime, timezone
 from types import SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock
@@ -16,6 +17,7 @@ import pytest
 from fastapi import HTTPException
 
 from routers import contact, newsletter
+from services.newsletter_consent import CONFIRMED_KEY, CONFIRM_ONCE, TOPICS
 
 SENTINELS = {
     "first_name": "SentinelFirst",
@@ -262,15 +264,18 @@ async def test_newsletter_subscribe_http_error_logs_no_pii(
 class _ConfirmRedis:
     def __init__(self, pending_json: str) -> None:
         self._pending_json = pending_json
+        self.confirmed: dict[str, str] = {}
 
     async def get(self, key: str) -> str:
         return self._pending_json
 
     async def eval(self, script: str, numkeys: int, *args: Any) -> int:
+        if script == CONFIRM_ONCE:
+            self.confirmed[args[3]] = args[4]
         return 1
 
-    async def hget(self, key: str, field: str) -> None:
-        return None
+    async def hget(self, key: str, field: str) -> str | None:
+        return self.confirmed.get(field) if key == CONFIRMED_KEY else None
 
     async def hset(self, key: str, field: str, value: str) -> None:
         pass
@@ -289,7 +294,9 @@ async def test_newsletter_confirm_listmonk_error_body_never_logged(
             "subscriber_type": "citizens",
             "frequency": "weekly",
             "language": "el",
-            "topics": {},
+            "consent_schema": 2,
+            "requested_at": datetime.now(timezone.utc).isoformat(),
+            "topics": {topic: True for topic in TOPICS},
         }
     )
     monkeypatch.setattr(newsletter, "_get_redis", lambda: _async(_ConfirmRedis(pending)))

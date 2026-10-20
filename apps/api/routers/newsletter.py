@@ -14,6 +14,8 @@ from typing import Optional
 from rate_limit import limiter
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
+from fastapi.exceptions import RequestValidationError
+from fastapi.routing import APIRoute
 from pydantic import BaseModel, EmailStr
 import httpx
 import redis.asyncio as aioredis
@@ -26,10 +28,26 @@ from services.newsletter_consent import (
     CONFIRMED_KEY, CONFIRM_ONCE, CONSENT_SCHEMA, confirmation_payload,
     SUPPRESSED_KEY, BREVO_ADD_RETRY_KEY, BREVO_REMOVE_RETRY_KEY,
     LISTMONK_REMOVE_RETRY_KEY, WITHDRAW_CONSENT,
+    BREVO_ADD_UNSETTLED_KEY, QUEUE_BREVO_ADD, QUEUE_DELIVERY_REMOVAL,
+    delivery_eligible, parse_consent,
 )
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/v1/newsletter", tags=["MOD-19 Newsletter"])
+
+class NewsletterRoute(APIRoute):
+    def get_route_handler(self):
+        handler = super().get_route_handler()
+
+        async def sanitized_handler(request: Request):
+            try:
+                return await handler(request)
+            except RequestValidationError:
+                raise HTTPException(422, "Invalid newsletter request") from None
+
+        return sanitized_handler
+
+
+router = APIRouter(prefix="/api/v1/newsletter", tags=["MOD-19 Newsletter"], route_class=NewsletterRoute)
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
@@ -119,7 +137,13 @@ async def _retry_withdrawal(store: aioredis.Redis, email: str) -> bool:
         if not await store.hget(key, email):
             continue
         try:
-            if await remove(email):
+            unsettled = await store.hget(BREVO_ADD_UNSETTLED_KEY, email.casefold()) if key == BREVO_REMOVE_RETRY_KEY else None
+            removed = (await remove(email, require_present=True) if unsettled == "uncertain"
+                       else await remove(email))
+            # An absent contact is not evidence that an in-flight write settled.
+            if removed and unsettled != "pending":
+                if unsettled:
+                    await store.hdel(BREVO_ADD_UNSETTLED_KEY, email.casefold())
                 await store.hdel(key, email)
             else:
                 success = False
@@ -128,6 +152,14 @@ async def _retry_withdrawal(store: aioredis.Redis, email: str) -> bool:
     if not success:
         logger.error("[MOD-19] Newsletter withdrawal delivery failed; retry retained")
     return success
+
+
+async def _remove_ineligible_contact(store: aioredis.Redis, email: str) -> bool:
+    await store.eval(
+        QUEUE_DELIVERY_REMOVAL, 3, BREVO_ADD_RETRY_KEY, BREVO_REMOVE_RETRY_KEY,
+        LISTMONK_REMOVE_RETRY_KEY, email, "1" if LISTMONK_PW else "0",
+    )
+    return await _retry_withdrawal(store, email)
 
 
 async def _withdraw_subscription(store: aioredis.Redis, email: str, reason: str) -> bool:
@@ -154,11 +186,25 @@ async def _sync_brevo_contact(store: aioredis.Redis, email: str, name: str = "")
         if await store.hget(SUPPRESSED_KEY, email.casefold()):
             await _withdraw_subscription(store, email, "suppressed")
             return False
-        await store.hset(BREVO_ADD_RETRY_KEY, email, "1")
+        raw = await store.hget(CONFIRMED_KEY, email)
+        data = parse_consent(email, raw)
+        if data is None or not delivery_eligible(data, datetime.now(timezone.utc)):
+            await _remove_ineligible_contact(store, email)
+            return False
+        queued = await store.eval(
+            QUEUE_BREVO_ADD, 5, CONFIRMED_KEY, SUPPRESSED_KEY, BREVO_ADD_RETRY_KEY,
+            BREVO_REMOVE_RETRY_KEY, BREVO_ADD_UNSETTLED_KEY, email, raw, email.casefold(),
+        )
+        if queued != 1:
+            return False
         try:
             added = await newsletter_service.add_contact(email, name)
         except Exception:
             added = False  # Even a timed-out write can have reached the provider.
+        if added:
+            await store.hdel(BREVO_ADD_UNSETTLED_KEY, email.casefold())
+        else:
+            await store.hset(BREVO_ADD_UNSETTLED_KEY, email.casefold(), "uncertain")
         # A withdrawal may have happened while the provider request was in flight.
         if await store.hget(SUPPRESSED_KEY, email.casefold()):
             await _withdraw_subscription(store, email, "suppressed")
@@ -311,30 +357,38 @@ async def confirm_subscription(token: str, request: Request = None) -> HTMLRespo
     data = json.loads(raw)
     email = data["email"]
 
+    confirmed_at = datetime.now(timezone.utc)
+    confirmed_raw = confirmation_payload(data, confirmed_at)
     result = await r.eval(
         CONFIRM_ONCE, 2, f"newsletter:pending:{token}", CONFIRMED_KEY,
-        raw, email, confirmation_payload(data, datetime.now(timezone.utc)),
+        raw, email, confirmed_raw,
     )
     if result == 0:
         return HTMLResponse("Confirmation link expired or already used.", status_code=410)
     if result not in (1, 2):
         raise HTTPException(503, "Confirmation could not be verified")
 
-    # Also register in Listmonk (if available)
-    if result == 1 and LISTMONK_PW and not await r.hget(SUPPRESSED_KEY, email.casefold()):
-        try:
-            await _listmonk_request("POST", "/api/subscribers", {
-                "email": email,
-                "name": data.get("name", ""),
-                "status": "enabled",
-                "preconfirm_subscriptions": True,
-                "attribs": data.get("topics", {}),
-            })
-        except Exception:
-            pass  # Listmonk is optional — Redis is primary
-
     if result == 1:
-        await _sync_brevo_contact(r, email, data.get("name", ""))
+        try:
+            # All delivery checks are optional after consent has been saved.
+            if await r.hget(SUPPRESSED_KEY, email.casefold()):
+                await _withdraw_subscription(r, email, "suppressed")
+            elif not delivery_eligible(json.loads(confirmed_raw), confirmed_at):
+                await _remove_ineligible_contact(r, email)
+            else:
+                await _sync_brevo_contact(r, email, data.get("name", ""))
+                if LISTMONK_PW and not await r.hget(SUPPRESSED_KEY, email.casefold()):
+                    try:
+                        await _listmonk_request("POST", "/api/subscribers", {
+                            "email": email, "name": data.get("name", ""),
+                            "status": "enabled", "preconfirm_subscriptions": True,
+                            "attribs": data.get("topics", {}),
+                        })
+                    finally:
+                        if await r.hget(SUPPRESSED_KEY, email.casefold()):
+                            await _withdraw_subscription(r, email, "suppressed")
+        except Exception:
+            logger.error("[MOD-19] Confirmation delivery deferred; consent retained")
 
     logger.info("[MOD-19] Confirmation processed (new=%s)", result == 1)
     message = (
@@ -358,8 +412,12 @@ async def unsubscribe(
     req: UnsubscribeRequest, _auth: bool = Depends(verify_admin_key),
 ) -> dict:
     """Operator-recorded withdrawal; public Brevo withdrawals arrive via its webhook."""
-    store = await _get_redis()
-    await _withdraw_subscription(store, req.email, "unsubscribed")
+    try:
+        store = await _get_redis()
+        await _withdraw_subscription(store, req.email, "unsubscribed")
+    except Exception:
+        logger.error("[MOD-19] Newsletter withdrawal persistence failed")
+        raise HTTPException(503, "Withdrawal could not be persisted; retry") from None
     return {"success": True, "message": "Unsubscribed."}
 
 
@@ -506,22 +564,33 @@ async def brevo_webhook(request: Request) -> dict:
             events = [events]
 
         r = await _get_redis()
+        # Persist every withdrawal before optional counters/cache work. A batch
+        # must not lose later withdrawals because an earlier counter failed.
         for event in events:
             evt = event.get("event", "")
             # Marketing campaigns and transactional mail use different spellings.
             evt = {"unsubscribe": "unsubscribed", "hard_bounce": "hardBounce",
                    "soft_bounce": "softBounce"}.get(evt, evt)
-            if evt in ("sent", "delivered", "opened", "clicked", "unsubscribed", "hardBounce", "softBounce"):
-                await r.hincrby("newsletter:events", evt, 1)
             if evt in ("unsubscribed", "hardBounce", "spam", "complaint") and event.get("email"):
                 # Validate without ever returning/logging provider payloads or validation errors.
                 email = str(UnsubscribeRequest(email=event["email"]).email)
                 await _withdraw_subscription(r, email, evt)
 
+    except Exception:
+        logger.error("[MOD-19] Brevo webhook withdrawal persistence failed")
+        # Brevo discards 5xx responses; 429 is its retryable HTTP status.
+        raise HTTPException(429, "Webhook processing deferred; retry", headers={"Retry-After": "600"}) from None
+
+    try:
+        for event in events:
+            evt = {"unsubscribe": "unsubscribed", "hard_bounce": "hardBounce",
+                   "soft_bounce": "softBounce"}.get(event.get("event", ""), event.get("event", ""))
+            if evt in ("sent", "delivered", "opened", "clicked", "unsubscribed", "hardBounce", "softBounce"):
+                await r.hincrby("newsletter:events", evt, 1)
+
         # Invalidate stats cache on activity
         await r.delete("newsletter:stats_cache")
 
-        return {"received": True, "events": len(events)}
     except Exception:
-        logger.error("[MOD-19] Brevo webhook processing failed")
-        return {"received": False, "error": "Webhook processing failed"}
+        logger.error("[MOD-19] Brevo webhook statistics update failed")
+    return {"received": True, "events": len(events)}

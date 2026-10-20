@@ -183,5 +183,5 @@ async def test_authenticated_processing_error_is_not_disclosed(
 
     result = await newsletter.brevo_webhook(request)
 
-    assert result == {"received": False, "error": "Webhook processing failed"}
+    assert result == {"received": True, "events": 1}
     assert internal_detail not in str(result)
