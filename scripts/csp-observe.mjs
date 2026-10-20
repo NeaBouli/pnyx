@@ -316,13 +316,17 @@ async function observe(paths, options) {
   } finally {
     if (browser) await browser.close();
     report.observations = [...groups.values()].sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
-    report.complete = Boolean(report.billPath) && report.coverage.length === paths.length * MATRIX.length
-      && report.coverage.every((row) => row.result === 'ok' && row.reportOnlyHeader);
+    report.complete = coverageComplete(report);
     mkdirSync(options.outDir, { recursive: true });
     writeFileSync(join(options.outDir, 'csp-observation.json'), `${JSON.stringify(report, null, 2)}\n`);
     writeFileSync(join(options.outDir, 'csp-observation.md'), markdown(report));
   }
   return report;
+}
+
+export function coverageComplete(report) {
+  return Boolean(report.billPath) && report.coverage.length === report.pagePaths.length * MATRIX.length
+    && report.coverage.every((row) => row.result === 'ok' && row.enforcedHeader && !row.reportOnlyHeader);
 }
 
 async function main() {

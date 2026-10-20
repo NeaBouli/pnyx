@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   ORIGIN, aggregateViolation, allowedRequest, blockedOrigin, collectPagePaths,
-  consoleViolation, normalizeViolation, routeReadOnly,
+  consoleViolation, coverageComplete, normalizeViolation, routeReadOnly,
 } from './csp-observe.mjs';
 
 test('aggregation strips queries/fragments and credentials; blocked resources retain only origins', () => {
@@ -92,9 +92,23 @@ test('routing strips cookies and auth and refuses an external redirect without f
   await routeReadOnly({
     request: () => ({ url: () => ORIGIN + '/', method: () => 'GET', headers: () => ({}) }),
     fetch: async () => ({ status: () => 200, dispose: async () => {},
-      headers: () => ({ 'set-cookie': 'private', 'content-security-policy-report-only': "script-src 'self'" }) }),
+      headers: () => ({ 'set-cookie': 'private', 'content-security-policy': "script-src 'self'" }) }),
     fulfill: async (response) => { fulfilled = response; },
   }, counts);
   assert.equal(fulfilled.headers['set-cookie'], undefined);
-  assert.equal(fulfilled.headers['content-security-policy-report-only'], "script-src 'self'");
+  assert.equal(fulfilled.headers['content-security-policy'], "script-src 'self'");
+  assert.equal(fulfilled.headers['content-security-policy-report-only'], undefined);
+});
+
+test('observation requires enforced CSP and rejects the Report-Only duplicate', () => {
+  const row = { result: 'ok', enforcedHeader: true, reportOnlyHeader: false };
+  const report = { billPath: '/el/bills/public-id', pagePaths: ['/el/bills/public-id'], coverage: Array.from({ length: 4 }, () => ({ ...row })) };
+  assert.equal(coverageComplete(report), true);
+  for (const headers of [{ enforcedHeader: false }, { reportOnlyHeader: true },
+    { enforcedHeader: false, reportOnlyHeader: true }, { result: 'http-error' }]) {
+    report.coverage[0] = { ...row, ...headers };
+    assert.equal(coverageComplete(report), false);
+  }
+  report.coverage = [{ ...row }];
+  assert.equal(coverageComplete(report), false);
 });

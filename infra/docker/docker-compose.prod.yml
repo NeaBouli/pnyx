@@ -107,6 +107,7 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: https://api.ekklesia.gr
       NODE_ENV: production
+      CSP_ENFORCE: ${CSP_ENFORCE:-true}
     networks:
       - ekklesia
     # T-9149: static HTML uses an edge target; dynamic Next responses own their nonce CSP.
@@ -136,9 +137,8 @@ services:
       traefik.http.routers.ekklesia-static.tls.certresolver: "letsencrypt"
       traefik.http.routers.ekklesia-static.service: "ekklesia-web"
       traefik.http.routers.ekklesia-static.middlewares: "ekklesia-headers,ekklesia-no-frame,ekklesia-static-csp"
-      traefik.http.middlewares.ekklesia-static-csp.headers.customResponseHeaders.Content-Security-Policy-Report-Only: "default-src 'self' https://api.ekklesia.gr; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api.qrserver.com https://avatars.githubusercontent.com; connect-src 'self' https://api.ekklesia.gr https://api.coingecko.com https://arweave.net https://api.github.com https://polis-oauth-proxy.bergamolia.workers.dev; frame-ancestors 'none'; font-src 'self'; object-src 'none'; base-uri 'self'"
 
-      traefik.http.middlewares.ekklesia-static-csp.headers.contentSecurityPolicy: "default-src 'self' https://api.ekklesia.gr; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api.qrserver.com https://avatars.githubusercontent.com; connect-src 'self' https://api.ekklesia.gr https://api.coingecko.com https://arweave.net https://api.github.com https://polis-oauth-proxy.bergamolia.workers.dev; frame-ancestors 'none'"
+      traefik.http.middlewares.ekklesia-static-csp.headers.contentSecurityPolicy: "default-src 'self' https://api.ekklesia.gr; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api.qrserver.com https://avatars.githubusercontent.com; connect-src 'self' https://api.ekklesia.gr https://api.coingecko.com https://arweave.net https://api.github.com https://polis-oauth-proxy.bergamolia.workers.dev; frame-ancestors 'none'; font-src 'self'; object-src 'none'; base-uri 'self'"
       # Widgets and their QR child must allow arbitrary HTTPS parents.
       traefik.http.routers.ekklesia-embed.rule: "Host(`ekklesia.gr`) && PathPrefix(`/embed/`)"
       traefik.http.routers.ekklesia-embed.priority: "110"
@@ -146,8 +146,7 @@ services:
       traefik.http.routers.ekklesia-embed.tls.certresolver: "letsencrypt"
       traefik.http.routers.ekklesia-embed.service: "ekklesia-web"
       traefik.http.routers.ekklesia-embed.middlewares: "ekklesia-headers,ekklesia-embed-csp"
-      traefik.http.middlewares.ekklesia-embed-csp.headers.contentSecurityPolicy: "default-src 'self' https://api.ekklesia.gr; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api.qrserver.com https://avatars.githubusercontent.com; connect-src 'self' https://api.ekklesia.gr https://api.coingecko.com https://arweave.net https://api.github.com https://polis-oauth-proxy.bergamolia.workers.dev; frame-ancestors *"
-      traefik.http.middlewares.ekklesia-embed-csp.headers.customResponseHeaders.Content-Security-Policy-Report-Only: "default-src 'self' https://api.ekklesia.gr; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api.qrserver.com https://avatars.githubusercontent.com; connect-src 'self' https://api.ekklesia.gr https://api.coingecko.com https://arweave.net https://api.github.com https://polis-oauth-proxy.bergamolia.workers.dev; frame-ancestors *; font-src 'self'; object-src 'none'; base-uri 'self'"
+      traefik.http.middlewares.ekklesia-embed-csp.headers.contentSecurityPolicy: "default-src 'self' https://api.ekklesia.gr; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api.qrserver.com https://avatars.githubusercontent.com; connect-src 'self' https://api.ekklesia.gr https://api.coingecko.com https://arweave.net https://api.github.com https://polis-oauth-proxy.bergamolia.workers.dev; frame-ancestors *; font-src 'self'; object-src 'none'; base-uri 'self'"
 
   ollama:
     image: ollama/ollama:latest
