@@ -105,6 +105,8 @@ class UnsubscribeRequest(BaseModel):
 
 async def _listmonk_request(method: str, path: str, json_data: dict = None) -> dict:
     if not LISTMONK_PW:
+        if method in ("POST", "PUT"):
+            raise newsletter_service.ContactNotWritten()
         raise HTTPException(status_code=503, detail="Newsletter system not configured")
     async with httpx.AsyncClient(timeout=10.0) as client:
         r = await client.request(
@@ -113,9 +115,11 @@ async def _listmonk_request(method: str, path: str, json_data: dict = None) -> d
             json=json_data,
             auth=(LISTMONK_USER, LISTMONK_PW),
         )
-        if r.status_code >= 400:
+        if r.status_code >= 300:
             # EKA-16: status code only — the provider body may echo the subscriber email.
             logger.error("[MOD-19] Listmonk request failed: status=%s", r.status_code)
+            if method in ("POST", "PUT") and r.status_code < 500:
+                raise newsletter_service.ContactNotWritten()
             raise HTTPException(502, "Newsletter provider request failed")
         return r.json()
 
@@ -208,15 +212,20 @@ async def _sync_brevo_contact(store: aioredis.Redis, email: str, name: str = "")
         )
         if queued != 1:
             return False
+        not_written = False
         try:
             added = await newsletter_service.add_contact(email, name)
         except newsletter_service.ContactSuppressed:
             await store.hdel(BREVO_ADD_UNSETTLED_KEY, email.casefold())
             await _withdraw_subscription(store, email, "provider_suppressed")
             return False
+        except (newsletter_service.ContactNotWritten, httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout):
+            # No write can still arrive: release serialization and retain retry work.
+            not_written = True
+            added = False
         except Exception:
             added = False  # Even a timed-out write can have reached the provider.
-        if added:
+        if added or not_written:
             await store.hdel(BREVO_ADD_UNSETTLED_KEY, email.casefold())
         else:
             await store.hset(BREVO_ADD_UNSETTLED_KEY, email.casefold(), "uncertain")
@@ -256,6 +265,9 @@ async def _sync_listmonk_contact(store: aioredis.Redis, email: str) -> bool:
                 "status": "enabled", "preconfirm_subscriptions": True,
                 "attribs": data.get("topics", {}),
             })
+        except (newsletter_service.ContactNotWritten, httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout):
+            await store.hdel(LISTMONK_ADD_UNSETTLED_KEY, email.casefold())
+            raise
         except Exception:
             await store.hset(LISTMONK_ADD_UNSETTLED_KEY, email.casefold(), "uncertain")
             raise

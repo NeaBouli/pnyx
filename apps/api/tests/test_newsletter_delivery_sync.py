@@ -429,6 +429,209 @@ def mock_provider(
     monkeypatch.setattr(httpx, "AsyncClient", lambda **kw: HTTP_CLIENT(transport=httpx.MockTransport(handler), **kw))
 
 
+@pytest.mark.parametrize("source", ["sync", "backfill"])
+@pytest.mark.parametrize("failure", [
+    "lookup_503", "lookup_timeout", "unconfigured", "connect", "connect_timeout", "pool_timeout", "rejected",
+])
+async def test_brevo_prewrite_failure_can_retry_after_healthy_absent_lookup(
+    store: MemoryRedis, monkeypatch: pytest.MonkeyPatch, source: str, failure: str,
+) -> None:
+    raw = json.dumps(consent())
+    store.hashes[CONFIRMED_KEY][EMAIL] = raw
+    monkeypatch.setattr(newsletter_service, "add_contact", ADD_CONTACT)
+    monkeypatch.setattr(newsletter_service, "contact_status", CONTACT_STATUS)
+    requests: list[str] = []
+    failed = failure == "unconfigured"
+
+    def provider(request: httpx.Request) -> httpx.Response:
+        nonlocal failed
+        requests.append(request.method)
+        if request.method == "GET":
+            if not failed and failure.startswith("lookup") and (source == "sync" or len(requests) == 2):
+                failed = True
+                if failure == "lookup_timeout":
+                    raise httpx.ReadTimeout("synthetic lookup timeout", request=request)
+                return httpx.Response(503)
+            return httpx.Response(404)
+        assert request.method == "POST"
+        if not failed:
+            failed = True
+            if failure == "rejected":
+                return httpx.Response(401)
+            error = {"connect": httpx.ConnectError, "connect_timeout": httpx.ConnectTimeout,
+                     "pool_timeout": httpx.PoolTimeout}[failure]
+            raise error("synthetic failure before send", request=request)
+        return httpx.Response(201, json={"id": 123})
+
+    mock_provider(monkeypatch, provider)
+    if failure == "unconfigured":
+        monkeypatch.setattr(newsletter_service, "BREVO_API_KEY", "")
+    if source == "sync":
+        assert await newsletter._sync_brevo_contact(store, EMAIL) is False
+    else:
+        assert (await newsletter_admin.newsletter_backfill(dry_run=False, _auth=True))["failed"] == 1
+    assert store.hashes[CONFIRMED_KEY][EMAIL] == raw
+    # Backfill can fail its initial lookup before queueing an enrollment.
+    assert store.hashes[BREVO_ADD_RETRY_KEY] == ({} if source == "backfill" and failure == "unconfigured"
+                                               else {EMAIL: "1"})
+    assert not store.hashes[BREVO_ADD_UNSETTLED_KEY]
+    assert requests.count("POST") == (0 if failure.startswith("lookup") or failure == "unconfigured" else 1)
+
+    monkeypatch.setattr(newsletter_service, "BREVO_API_KEY", "synthetic-private-key")
+    assert await newsletter_admin.newsletter_backfill(dry_run=False, _auth=True) == {
+        "to_add": 1, "already_present": 0, "held": 0, "failed": 0,
+    }
+    assert requests[-3:] == ["GET", "GET", "POST"]
+    assert not store.hashes[BREVO_ADD_RETRY_KEY]
+    assert not store.hashes[BREVO_ADD_UNSETTLED_KEY]
+
+
+@pytest.mark.parametrize("failure", ["read_timeout", "write_timeout", "503"])
+async def test_brevo_indeterminate_post_stays_uncertain_until_positive_lookup(
+    store: MemoryRedis, monkeypatch: pytest.MonkeyPatch, failure: str,
+) -> None:
+    store.hashes[CONFIRMED_KEY][EMAIL] = json.dumps(consent())
+    monkeypatch.setattr(newsletter_service, "add_contact", ADD_CONTACT)
+    monkeypatch.setattr(newsletter_service, "contact_status", CONTACT_STATUS)
+    present = False
+    writes = 0
+
+    def provider(request: httpx.Request) -> httpx.Response:
+        nonlocal writes
+        if request.method == "GET":
+            if present:
+                return httpx.Response(200, json={"email": EMAIL, "listIds": [9], "emailBlacklisted": False})
+            return httpx.Response(404)
+        writes += 1
+        assert request.method == "POST"
+        if failure == "503":
+            return httpx.Response(503)
+        error = httpx.ReadTimeout if failure == "read_timeout" else httpx.WriteTimeout
+        raise error("synthetic timeout after send", request=request)
+
+    mock_provider(monkeypatch, provider)
+    assert await newsletter._sync_brevo_contact(store, EMAIL) is False
+    for _ in range(2):
+        assert store.hashes[BREVO_ADD_UNSETTLED_KEY] == {EMAIL: "uncertain"}
+        assert (await newsletter_admin.newsletter_backfill(dry_run=False, _auth=True))["failed"] == 1
+    assert writes == 1
+    present = True
+    assert (await newsletter_admin.newsletter_backfill(dry_run=False, _auth=True))["already_present"] == 1
+    assert not store.hashes[BREVO_ADD_UNSETTLED_KEY]
+    assert not store.hashes[BREVO_ADD_RETRY_KEY]
+    assert writes == 1
+
+
+@pytest.mark.parametrize("failure", ["unconfigured", "connect", "connect_timeout", "pool_timeout", "rejected"])
+async def test_listmonk_prewrite_failure_leaves_enrollment_retryable(
+    store: MemoryRedis, monkeypatch: pytest.MonkeyPatch, failure: str,
+) -> None:
+    raw = json.dumps(consent())
+    store.hashes[CONFIRMED_KEY][EMAIL] = raw
+    monkeypatch.setattr(newsletter, "LISTMONK_PW", "" if failure == "unconfigured" else "synthetic-password")
+    writes = 0
+
+    def provider(request: httpx.Request) -> httpx.Response:
+        nonlocal writes
+        assert request.method == "POST" and request.url.path == "/api/subscribers"
+        writes += 1
+        if writes == 1 and failure != "unconfigured":
+            if failure == "rejected":
+                return httpx.Response(401)
+            error = {"connect": httpx.ConnectError, "connect_timeout": httpx.ConnectTimeout,
+                     "pool_timeout": httpx.PoolTimeout}[failure]
+            raise error("synthetic failure before send", request=request)
+        return httpx.Response(200, json={"data": {"id": 123}})
+
+    mock_provider(monkeypatch, provider)
+    assert await newsletter._sync_listmonk_contact(store, EMAIL) is False
+    assert not store.hashes[LISTMONK_ADD_UNSETTLED_KEY]
+    assert store.hashes[CONFIRMED_KEY][EMAIL] == raw
+    assert writes == (0 if failure == "unconfigured" else 1)
+    monkeypatch.setattr(newsletter, "LISTMONK_PW", "synthetic-password")
+    assert await newsletter._sync_listmonk_contact(store, EMAIL) is True
+    assert not store.hashes[LISTMONK_ADD_UNSETTLED_KEY]
+    assert writes == (1 if failure == "unconfigured" else 2)
+
+
+@pytest.mark.parametrize("failure", ["read_timeout", "write_timeout", "503"])
+async def test_listmonk_indeterminate_post_requires_positive_withdrawal_reconciliation(
+    store: MemoryRedis, monkeypatch: pytest.MonkeyPatch, failure: str,
+) -> None:
+    store.hashes[CONFIRMED_KEY][EMAIL] = json.dumps(consent())
+    monkeypatch.setattr(newsletter, "LISTMONK_PW", "synthetic-password")
+    present = False
+    writes: list[str] = []
+    fail_lookup = True
+
+    def provider(request: httpx.Request) -> httpx.Response:
+        nonlocal present, fail_lookup
+        if request.method == "GET":
+            if fail_lookup:
+                fail_lookup = False
+                return httpx.Response(503)
+            return httpx.Response(200, json={"data": {"results": [{"email": EMAIL}] if present else []}})
+        writes.append(request.method)
+        if request.method == "PUT":
+            present = False
+            return httpx.Response(200, json={"data": True})
+        assert request.method == "POST"
+        if failure == "503":
+            return httpx.Response(503)
+        error = httpx.ReadTimeout if failure == "read_timeout" else httpx.WriteTimeout
+        raise error("synthetic timeout after send", request=request)
+
+    mock_provider(monkeypatch, provider)
+    assert await newsletter._sync_listmonk_contact(store, EMAIL) is False
+    assert await newsletter._sync_listmonk_contact(store, EMAIL) is False
+    assert writes == ["POST"]
+    assert await newsletter._withdraw_subscription(store, EMAIL, "unsubscribed") is False
+    for _ in range(2):
+        assert store.hashes[LISTMONK_ADD_UNSETTLED_KEY] == {EMAIL: "uncertain"}
+        assert store.hashes[LISTMONK_REMOVE_RETRY_KEY] == {EMAIL: "1"}
+        assert (await newsletter_admin.newsletter_backfill(dry_run=False, _auth=True))["failed"] == 1
+    present = True
+    assert (await newsletter_admin.newsletter_backfill(dry_run=False, _auth=True))["failed"] == 0
+    assert not present
+    assert writes == ["POST", "PUT"]
+    assert not store.hashes[LISTMONK_ADD_UNSETTLED_KEY]
+    assert not store.hashes[LISTMONK_REMOVE_RETRY_KEY]
+    assert not store.hashes[CONFIRMED_KEY]
+
+
+@pytest.mark.parametrize("provider_name", ["brevo", "listmonk"])
+async def test_withdrawal_during_prewrite_failure_clears_unsettled_work(
+    store: MemoryRedis, monkeypatch: pytest.MonkeyPatch, provider_name: str,
+) -> None:
+    store.hashes[CONFIRMED_KEY][EMAIL] = json.dumps(consent())
+    is_brevo = provider_name == "brevo"
+    unsettled_key = BREVO_ADD_UNSETTLED_KEY if is_brevo else LISTMONK_ADD_UNSETTLED_KEY
+    sync = newsletter._sync_brevo_contact if is_brevo else newsletter._sync_listmonk_contact
+    monkeypatch.setattr(newsletter_service, "add_contact", ADD_CONTACT)
+    monkeypatch.setattr(newsletter_service, "contact_status", CONTACT_STATUS)
+    monkeypatch.setattr(newsletter, "LISTMONK_PW", "" if is_brevo else "synthetic-password")
+
+    async def provider(request: httpx.Request) -> httpx.Response:
+        if request.method == "PUT":
+            return httpx.Response(200, json={"data": True})
+        assert request.method == ("GET" if is_brevo else "POST")
+        await newsletter._withdraw_subscription(store, EMAIL, "unsubscribed")
+        assert store.hashes[unsettled_key] == {EMAIL: "pending"}
+        if is_brevo:
+            return httpx.Response(503)
+        raise httpx.ConnectError("synthetic failure before send", request=request)
+
+    mock_provider(monkeypatch, provider)
+    assert await sync(store, EMAIL) is False
+    assert not store.hashes[CONFIRMED_KEY]
+    assert store.hashes[SUPPRESSED_KEY] == {EMAIL: "suppressed"}
+    assert not store.hashes[unsettled_key]
+    assert not store.hashes[BREVO_ADD_RETRY_KEY]
+    assert not store.hashes[BREVO_REMOVE_RETRY_KEY]
+    assert not store.hashes[LISTMONK_REMOVE_RETRY_KEY]
+    assert (await newsletter_admin.newsletter_backfill(dry_run=False, _auth=True))["failed"] == 0
+
+
 @pytest.mark.parametrize("suppression", [{"emailBlacklisted": True}, {"listUnsubscribed": [9]}])
 async def test_provider_suppression_never_reactivated(
     monkeypatch: pytest.MonkeyPatch, suppression: dict,
@@ -490,7 +693,11 @@ async def test_contact_lookup_failures_private_and_no_unsafe_write(
         return httpx.Response(int(failure), text=f"private {EMAIL}")
 
     mock_provider(monkeypatch, provider)
-    assert await newsletter_service.add_contact(EMAIL) is False
+    if failure == "404":
+        assert await newsletter_service.add_contact(EMAIL) is False
+    else:
+        with pytest.raises(newsletter_service.ContactNotWritten):
+            await newsletter_service.add_contact(EMAIL)
     assert len(requests) == (2 if failure == "404" else 1)
     for private in (EMAIL, "example.org", "synthetic-private-key", "outside.invalid"):
         assert private not in caplog.text

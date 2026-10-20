@@ -27,6 +27,10 @@ class ContactSuppressed(Exception):
     """Provider suppression detected before attempting an enrollment write."""
 
 
+class ContactNotWritten(Exception):
+    """Enrollment failed before send or was definitively rejected by the provider."""
+
+
 class _ContactRequestLogFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         # httpcore traces raw response headers (e.g. Location) without a URL.
@@ -62,9 +66,11 @@ def _wrap(body: str) -> str:
     return f'<html><body style="font-family:system-ui,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#0f172a">{_HEADER}{body}{_FOOTER}</body></html>'
 
 
-async def _brevo_post(endpoint: str, data: dict) -> dict | None:
+async def _brevo_post(endpoint: str, data: dict, *, track_enrollment: bool = False) -> dict | None:
     if not BREVO_API_KEY:
         logger.warning("[NEWSLETTER] BREVO_API_KEY not set")
+        if track_enrollment:
+            raise ContactNotWritten()
         return None
     try:
         async with httpx.AsyncClient(timeout=15) as client:
@@ -76,6 +82,14 @@ async def _brevo_post(endpoint: str, data: dict) -> dict | None:
             if r.status_code in (200, 201, 202, 204):
                 return r.json() if r.text else {}
             logger.warning("[NEWSLETTER] Brevo request failed: status=%s", r.status_code)
+            if track_enrollment and 300 <= r.status_code < 500:
+                raise ContactNotWritten()
+    except ContactNotWritten:
+        raise
+    except (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout):
+        logger.error("[NEWSLETTER] Brevo request failed before send")
+        if track_enrollment:
+            raise ContactNotWritten() from None
     except Exception:
         logger.error("[NEWSLETTER] Brevo request failed")
     return None
@@ -120,13 +134,13 @@ async def add_contact(email: str, name: str = "") -> bool:
     if status == "already_present":
         return True
     if status != "to_add":
-        return False
+        raise ContactNotWritten()
     result = await _brevo_post("contacts", {
         "email": email,
         "attributes": {"FIRSTNAME": name} if name else {},
         "listIds": [LIST_ID],
         "updateEnabled": True,
-    })
+    }, track_enrollment=True)
     return result is not None
 
 
