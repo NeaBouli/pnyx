@@ -5,7 +5,7 @@ import re
 import secrets
 from contextlib import asynccontextmanager
 from typing import Any
-from urllib.parse import parse_qsl, unquote, unquote_plus, urlencode
+from urllib.parse import parse_qsl, unquote, unquote_plus, urlencode, urlsplit
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
@@ -150,32 +150,62 @@ _SENTRY_SENSITIVE_KEY_PARTS = (
     "privatekey", "secret", "token",
 )
 _SENTRY_DROPPED_HEADERS = {"xforwardedfor", "cookie"}
-_SENTRY_EMAIL_RE = re.compile(r"[\w.!#$%&'*+=?^`{|}~+-]+@[\w-]+(?:\.[\w-]+)+")
+_SENTRY_URL_ORIGIN_RE = re.compile(r"https?://[^/?#\s]+", re.IGNORECASE)
 _SENTRY_CONTACT_PATH_RE = re.compile(
     r"(/(?:v3/contacts|api/subscribers)/)[^/?#\s\"'<>]+", re.IGNORECASE,
 )
 _SENTRY_PROVIDER_QUERY_RE = re.compile(r"([?&]query=)[^&#]*", re.IGNORECASE)
 
 
+def _sentry_provider_url(value: str) -> tuple[int, str] | None:
+    """Find a configured provider origin, including in HTTP span descriptions."""
+    if "://" not in value:
+        return None
+    from routers.newsletter import LISTMONK_URL
+    from services.newsletter_service import BREVO_API
+
+    providers = (BREVO_API, f"{LISTMONK_URL.rstrip('/')}/api")
+    for match in _SENTRY_URL_ORIGIN_RE.finditer(value):
+        try:
+            host = urlsplit(match.group()).hostname
+            for base in providers:
+                parsed = urlsplit(base)
+                if host and host == parsed.hostname:
+                    return match.end(), parsed.path.rstrip("/")
+        except ValueError:
+            continue
+    return None
+
+
 def _sentry_redact_text(value: str) -> str:
-    """Provider IDs and emails can occur in any telemetry string, under any key."""
+    """Scrub provider targets and any value containing @ at any decoding stage."""
+    provider = _sentry_provider_url(value)
+    if provider:
+        end, prefix = provider
+        target = value[end:]
+        # Consume the entire target, even with unescaped quotes, slashes or
+        # whitespace. Provider paths and queries may contain opaque identities.
+        path = target.partition("?")[0].partition("#")[0]
+        kept_prefix = prefix if path == prefix or path.startswith(f"{prefix}/") else ""
+        value = f"{value[:end]}{kept_prefix}/{_SENTRY_REDACTED}"
+        if "?" in target:
+            value += f"?{_SENTRY_REDACTED}"
     value = _SENTRY_CONTACT_PATH_RE.sub(r"\1[Filtered]", value)
     # Listmonk's SQL filter may identify a subscriber by ID as well as email.
     value = _SENTRY_PROVIDER_QUERY_RE.sub(r"\1[Filtered]", value)
-    # A literal '%' is valid in an email local part. Check every stage: further
-    # decoding can destroy a previously visible email (e.g. "%ab" -> "�").
-    # Replace the whole value so no encoded portion of the email survives.
-    if _SENTRY_EMAIL_RE.search(value):
+    # Over-redact instead of trying to recognize email syntax. Check every
+    # stage because further decoding can change a literal '%' in a local part.
+    if "@" in value:
         return _SENTRY_REDACTED
     decoded = value
     for _ in range(5):
         candidate = unquote(decoded)
         if candidate == decoded:
             break
-        if _SENTRY_EMAIL_RE.search(candidate):
+        if "@" in candidate:
             return _SENTRY_REDACTED
         decoded = candidate
-    # Retain ordinary URLs' escaping when no stage contains an email.
+    # Retain ordinary URLs' escaping when no stage contains @.
     return value
 
 
@@ -188,18 +218,24 @@ def _sentry_is_sensitive_key(key: Any) -> bool:
     return any(part in norm for part in _SENTRY_SENSITIVE_KEY_PARTS)
 
 
-def _sentry_redact(value: Any, *, redact_keys: bool = True) -> Any:
+def _sentry_redact(value: Any, *, redact_keys: bool = True, provider: bool = False) -> Any:
     """Recursively scrub secrets and email values, including nested telemetry data."""
     if isinstance(value, dict):
+        provider = provider or any(
+            isinstance(value.get(k), str) and _sentry_provider_url(value[k])
+            for k in ("url", "http.url", "description", "message")
+        )
         return {
             k: _SENTRY_REDACTED if redact_keys and _sentry_is_sensitive_key(k)
+            else _SENTRY_REDACTED if provider and _sentry_norm_key(k) in {"path", "http.path", "http.target"}
             # ASGI-scope in Frame-Locals traegt die rohe Query unter "query_string"
-            else _sentry_redact_query(v) if _sentry_norm_key(k) in {"querystring", "http.query"}
-            else _sentry_redact(v, redact_keys=redact_keys)
+            else (_SENTRY_REDACTED if provider else _sentry_redact_query(v))
+            if _sentry_norm_key(k) in {"querystring", "http.query"}
+            else _sentry_redact(v, redact_keys=redact_keys, provider=provider)
             for k, v in value.items()
         }
     if isinstance(value, (list, tuple)):
-        redacted = [_sentry_redact(v, redact_keys=redact_keys) for v in value]
+        redacted = [_sentry_redact(v, redact_keys=redact_keys, provider=provider) for v in value]
         # ASGI-Header in Frame-Locals werden als 2er-Listen serialisiert.
         if redact_keys and len(value) == 2 and isinstance(value[0], (str, bytes)) and _sentry_is_sensitive_key(value[0]):
             redacted[1] = _SENTRY_REDACTED
