@@ -28,6 +28,7 @@ async def isolated_redis(monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[tuple
     monkeypatch.setattr(newsletter, "_get_redis", AsyncMock(return_value=client))
     monkeypatch.setattr(newsletter, "CONFIRMED_KEY", confirmed)
     monkeypatch.setattr(newsletter, "LISTMONK_PW", "")
+    monkeypatch.setattr(newsletter.newsletter_service, "remove_contact", AsyncMock(return_value=True))
     try:
         yield client, token, confirmed
     finally:
@@ -42,7 +43,7 @@ async def test_twenty_concurrent_clicks_have_one_winner(
     original = {"email": "consent@example.org", "frequency": "weekly", "language": "en"}
     await client.set(f"newsletter:pending:{token}", json.dumps(original), ex=60)
     monkeypatch.setattr(newsletter, "LISTMONK_PW", "synthetic-password")
-    optional_provider = AsyncMock(return_value={})
+    optional_provider = AsyncMock(return_value={"data": True})
     monkeypatch.setattr(newsletter, "_listmonk_request", optional_provider)
     responses = await asyncio.gather(*[newsletter.confirm_subscription(token) for _ in range(20)])
     assert [response.status_code for response in responses].count(200) == 1
@@ -51,7 +52,10 @@ async def test_twenty_concurrent_clicks_have_one_winner(
     assert all(stored[key] == value for key, value in original.items())
     assert stored["consent_schema"] == 1
     assert await client.exists(f"newsletter:pending:{token}") == 0
-    optional_provider.assert_awaited_once()
+    # Legacy proof is preserved, but only a removal may reach the provider.
+    optional_provider.assert_awaited_once_with("PUT", "/api/subscribers/query/blocklist", {
+        "query": "lower(subscribers.email) = lower('consent@example.org')",
+    })
 
 
 async def test_second_pending_token_cannot_replace_existing_consent(isolated_redis: tuple) -> None:

@@ -1,7 +1,6 @@
 """Mock-only consent boundaries for GH261's guarded confirmation flow.
 
-These protect existing DOI behavior; they do not assert delivery or suppression
-propagation that the current implementation does not provide.
+These protect DOI evidence and preferences alongside the delivery handoff.
 """
 import json
 from datetime import datetime, timezone
@@ -12,7 +11,9 @@ import pytest
 from fastapi import HTTPException
 
 from routers import newsletter, newsletter_admin
-from services.newsletter_consent import CONFIRM_ONCE, classify_contact, readiness_summary
+from services.newsletter_consent import (
+    CONFIRMED_KEY, QUEUE_BREVO_ADD, CONFIRM_ONCE, TOPICS, classify_contact, readiness_summary,
+)
 
 
 def _request() -> SimpleNamespace:
@@ -26,14 +27,31 @@ def consent_redis(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     store.get = AsyncMock(return_value=None)
     store.hget = AsyncMock(return_value=None)
     store.hset = AsyncMock()
+    store.hdel = AsyncMock()
+    store.hkeys = AsyncMock(return_value=[])
     store.setex = AsyncMock()
     store.delete = AsyncMock()
     store.eval = AsyncMock(return_value=1)
+    confirmed = {}
+
+    async def evaluate(script, *args):
+        if script == CONFIRM_ONCE and store.eval.return_value == 1:
+            confirmed[args[4]] = args[5]
+        return store.eval.return_value
+
+    async def get_hash(key, field):
+        if key == CONFIRMED_KEY and field in confirmed:
+            return confirmed[field]
+        return store.hget.return_value
+
+    store.eval.side_effect = evaluate
+    store.hget.side_effect = get_hash
     monkeypatch.setattr(newsletter, "_get_redis", AsyncMock(return_value=store))
     # Network is forbidden even if a future refactor adds a provider call.
     monkeypatch.setattr(newsletter.httpx, "AsyncClient",
                         MagicMock(side_effect=AssertionError("Unexpected network client")))
     monkeypatch.setattr(newsletter, "LISTMONK_PW", "")
+    monkeypatch.setattr(newsletter.newsletter_service, "add_contact", AsyncMock(return_value=True))
     return store
 
 
@@ -48,7 +66,7 @@ async def test_confirmation_preserves_original_preferences(
     consent_redis.get.return_value = raw
     result = await newsletter.confirm_subscription("synthetic-token")
     assert result.status_code == 200
-    args = consent_redis.eval.await_args.args
+    args = consent_redis.eval.await_args_list[0].args
     assert args[1:6] == (2, "newsletter:pending:synthetic-token", "newsletter:confirmed", raw, "consent@example.org")
     stored = json.loads(args[6])
     assert {key: stored[key] for key in json.loads(raw)} == json.loads(raw)
@@ -56,6 +74,7 @@ async def test_confirmation_preserves_original_preferences(
     assert stored["confirmation_method"] == "double_opt_in"
     assert stored["consent_schema"] == 1  # Legacy pending proof is not upgraded.
     assert "requested_at" not in stored
+    newsletter.newsletter_service.add_contact.assert_not_awaited()
     consent_redis.hset.assert_not_awaited()
     consent_redis.delete.assert_not_awaited()
 
@@ -66,7 +85,7 @@ async def test_confirmation_preserves_original_preferences(
     ("monthly", "el", {"new_proposals": True, "active_votes": True,
                         "vote_results": True, "system_news": True, "breaking_news": True}),
 ])
-async def test_subscribe_then_confirm_preserves_schema2_without_delivery_permission(
+async def test_subscribe_then_confirm_preserves_schema2_with_delivery_handoff(
     consent_redis: MagicMock, monkeypatch: pytest.MonkeyPatch,
     frequency: str, language: str, topics: dict[str, bool],
 ) -> None:
@@ -79,7 +98,7 @@ async def test_subscribe_then_confirm_preserves_schema2_without_delivery_permiss
         @classmethod
         def now(cls, tz: object) -> datetime:
             assert tz is timezone.utc
-            return next(moments)
+            return next(moments, confirmed_at)
 
     monkeypatch.setattr(newsletter, "datetime", Clock)
     monkeypatch.setattr(newsletter.secrets, "token_urlsafe", lambda size: "synthetic-schema2-token")
@@ -115,8 +134,8 @@ async def test_subscribe_then_confirm_preserves_schema2_without_delivery_permiss
 
     consent_redis.get.return_value = raw
     assert (await newsletter.confirm_subscription("synthetic-schema2-token")).status_code == 200
-    assert consent_redis.eval.await_count == 3
-    args = consent_redis.eval.await_args.args
+    assert consent_redis.eval.await_count == 4
+    args = consent_redis.eval.await_args_list[2].args
     assert args[:6] == (CONFIRM_ONCE, 2, pending_key, "newsletter:confirmed", raw, "schema2@example.org")
     confirmed = json.loads(args[6])
     assert {key: confirmed[key] for key in pending} == pending
@@ -135,7 +154,8 @@ async def test_subscribe_then_confirm_preserves_schema2_without_delivery_permiss
     assert summary["delivery_ready"] is False
     # Confirmation records the click but never sends another message or directly mutates consent.
     factory.assert_called_once_with(timeout=10.0)
-    consent_redis.hset.assert_not_awaited()
+    assert consent_redis.eval.await_args.args[0] == QUEUE_BREVO_ADD
+    newsletter.newsletter_service.add_contact.assert_awaited_once_with("schema2@example.org", "Synthetic")
     consent_redis.delete.assert_not_awaited()
 
 
@@ -153,7 +173,7 @@ async def test_sequential_confirmation_replay_is_rejected(consent_redis: MagicMo
     consent_redis.get.side_effect = [json.dumps({"email": "consent@example.org"}), None]
     assert (await newsletter.confirm_subscription("synthetic-token")).status_code == 200
     assert (await newsletter.confirm_subscription("synthetic-token")).status_code == 410
-    consent_redis.eval.assert_awaited_once()
+    assert sum(call.args[0] == CONFIRM_ONCE for call in consent_redis.eval.await_args_list) == 1
 
 
 async def test_confirmation_write_failure_keeps_pending_token(
@@ -171,14 +191,16 @@ async def test_optional_listmonk_failure_does_not_erase_confirmed_consent(
     consent_redis: MagicMock, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """An optional provider outage cannot discard the local confirmation record."""
-    raw = json.dumps({"email": "consent@example.org", "frequency": "monthly", "language": "el"})
+    raw = json.dumps({"email": "consent@example.org", "frequency": "monthly", "language": "el",
+                      "consent_schema": 2, "requested_at": datetime.now(timezone.utc).isoformat(),
+                      "topics": {topic: True for topic in TOPICS}})
     consent_redis.get.return_value = raw
     monkeypatch.setattr(newsletter, "LISTMONK_PW", "synthetic-test-password")
     mocked = AsyncMock(side_effect=RuntimeError("synthetic Listmonk outage"))
     monkeypatch.setattr(newsletter, "_listmonk_request", mocked)
     assert (await newsletter.confirm_subscription("synthetic-token")).status_code == 200
-    consent_redis.eval.assert_awaited_once()
-    assert json.loads(consent_redis.eval.await_args.args[6])["email"] == "consent@example.org"
+    assert consent_redis.eval.await_count == 3
+    assert json.loads(consent_redis.eval.await_args_list[0].args[6])["email"] == "consent@example.org"
     mocked.assert_awaited_once()
 
 

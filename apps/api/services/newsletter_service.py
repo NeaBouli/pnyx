@@ -5,6 +5,7 @@ Handles: welcome emails, monthly reports, bill notifications.
 import os
 import logging
 from datetime import datetime, timezone, timedelta
+from urllib.parse import quote
 
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,7 +20,30 @@ logger = logging.getLogger(__name__)
 BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
 BREVO_API = "https://api.brevo.com/v3"
 SENDER = {"name": "εκκλησία", "email": "newsletter@ekklesia.gr"}
-LIST_ID = 2  # Πολίτες ekklesia.gr
+LIST_ID = int(os.getenv("BREVO_LIST_ID", "2"))  # Πολίτες ekklesia.gr
+
+
+class ContactSuppressed(Exception):
+    """Provider suppression detected before attempting an enrollment write."""
+
+
+class ContactNotWritten(Exception):
+    """Enrollment failed before send or was definitively rejected by the provider."""
+
+
+class _ContactRequestLogFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        # httpcore traces raw response headers (e.g. Location) without a URL.
+        # Suppress transport debug records even when application DEBUG is on.
+        if record.name.startswith("httpcore.") and record.levelno <= logging.DEBUG:
+            return False
+        # Contact lookup URLs contain addresses, including when httpx logs redirects.
+        message = record.getMessage()
+        return "/contacts/" not in message and "/api/subscribers?" not in message
+
+
+for _log_name in ("httpx", "httpcore.http11", "httpcore.http2"):
+    logging.getLogger(_log_name).addFilter(_ContactRequestLogFilter())
 
 # Base template with logo + social buttons
 _HEADER = """<div style="text-align:center;padding:20px 0;border-bottom:2px solid #e2e8f0;margin-bottom:24px">
@@ -42,9 +66,11 @@ def _wrap(body: str) -> str:
     return f'<html><body style="font-family:system-ui,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#0f172a">{_HEADER}{body}{_FOOTER}</body></html>'
 
 
-async def _brevo_post(endpoint: str, data: dict) -> dict | None:
+async def _brevo_post(endpoint: str, data: dict, *, track_enrollment: bool = False) -> dict | None:
     if not BREVO_API_KEY:
         logger.warning("[NEWSLETTER] BREVO_API_KEY not set")
+        if track_enrollment:
+            raise ContactNotWritten()
         return None
     try:
         async with httpx.AsyncClient(timeout=15) as client:
@@ -55,20 +81,82 @@ async def _brevo_post(endpoint: str, data: dict) -> dict | None:
             )
             if r.status_code in (200, 201, 202, 204):
                 return r.json() if r.text else {}
-            logger.warning("[NEWSLETTER] Brevo %s failed: %s %s", endpoint, r.status_code, r.text[:100])
-    except Exception as e:
-        logger.error("[NEWSLETTER] Brevo error: %s", e)
+            logger.warning("[NEWSLETTER] Brevo request failed: status=%s", r.status_code)
+            if track_enrollment and 300 <= r.status_code < 500:
+                raise ContactNotWritten()
+    except ContactNotWritten:
+        raise
+    except (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout):
+        logger.error("[NEWSLETTER] Brevo request failed before send")
+        if track_enrollment:
+            raise ContactNotWritten() from None
+    except Exception:
+        logger.error("[NEWSLETTER] Brevo request failed")
     return None
 
 
+async def contact_status(email: str, *, for_removal: bool = False) -> str:
+    """Read membership and suppression without exposing provider data or identity."""
+    if not BREVO_API_KEY:
+        return "failed"
+    try:
+        async with httpx.AsyncClient(timeout=15, follow_redirects=False) as client:
+            response = await client.get(
+                f"{BREVO_API}/contacts/{quote(email, safe='')}",
+                headers={"api-key": BREVO_API_KEY},
+            )
+        if response.status_code == 404:
+            return "to_add"
+        if response.status_code != 200:
+            return "failed"
+        data = response.json()
+        if not isinstance(data, dict) or str(data.get("email", "")).casefold() != email.casefold():
+            return "failed"
+        lists = data.get("listIds")
+        unsubscribed = data.get("listUnsubscribed", [])
+        if not for_removal and (data.get("emailBlacklisted") is True
+                                or (isinstance(unsubscribed, list) and LIST_ID in unsubscribed)):
+            return "suppressed"
+        if (type(data.get("emailBlacklisted")) is not bool or not isinstance(lists, list)
+                or not isinstance(unsubscribed, list)
+                or any(type(value) is not int for value in lists + unsubscribed)):
+            return "failed"
+        return "already_present" if LIST_ID in lists else "to_add"
+    except Exception:
+        logger.error("[NEWSLETTER] Brevo contact lookup failed")
+        return "failed"
+
+
 async def add_contact(email: str, name: str = "") -> bool:
+    status = await contact_status(email)
+    if status == "suppressed":
+        raise ContactSuppressed()
+    if status == "already_present":
+        return True
+    if status != "to_add":
+        raise ContactNotWritten()
     result = await _brevo_post("contacts", {
         "email": email,
         "attributes": {"FIRSTNAME": name} if name else {},
         "listIds": [LIST_ID],
         "updateEnabled": True,
-    })
+    }, track_enrollment=True)
     return result is not None
+
+
+async def remove_contact(email: str, *, require_present: bool = False) -> bool:
+    """Unlink only the campaign list; retain provider history and suppression."""
+    status = await contact_status(email, for_removal=True)
+    if status == "failed":
+        return False
+    # A missing contact or an existing contact outside the list is already removed.
+    if status == "to_add":
+        return not require_present
+    result = await _brevo_post(f"contacts/lists/{LIST_ID}/contacts/remove", {"emails": [email]})
+    if result is None:
+        return False
+    contacts = result.get("contacts", {})
+    return not contacts.get("failure", [])
 
 
 async def send_transactional(to_email: str, subject: str, html_body: str) -> bool:

@@ -8,13 +8,16 @@ Mock-only: no real Redis, email provider or network access.
 """
 import json
 import logging
+from datetime import datetime, timezone
 from types import SimpleNamespace
 from typing import Any
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi import HTTPException
 
 from routers import contact, newsletter
+from services.newsletter_consent import CONFIRMED_KEY, CONFIRM_ONCE, TOPICS
 
 SENTINELS = {
     "first_name": "SentinelFirst",
@@ -255,18 +258,30 @@ async def test_newsletter_subscribe_http_error_logs_no_pii(
     assert exc.value.status_code == 502
     logs = _log_text(caplog, "routers.newsletter")
     assert SENTINELS["email"] not in logs
-    assert "[MOD-19] Brevo error: connection refused" in logs
+    assert "[MOD-19] Brevo confirmation email request failed" in logs
 
 
 class _ConfirmRedis:
     def __init__(self, pending_json: str) -> None:
         self._pending_json = pending_json
+        self.confirmed: dict[str, str] = {}
 
     async def get(self, key: str) -> str:
         return self._pending_json
 
     async def eval(self, script: str, numkeys: int, *args: Any) -> int:
+        if script == CONFIRM_ONCE:
+            self.confirmed[args[3]] = args[4]
         return 1
+
+    async def hget(self, key: str, field: str) -> str | None:
+        return self.confirmed.get(field) if key == CONFIRMED_KEY else None
+
+    async def hset(self, key: str, field: str, value: str) -> None:
+        pass
+
+    async def hdel(self, key: str, field: str) -> None:
+        pass
 
 
 async def test_newsletter_confirm_listmonk_error_body_never_logged(
@@ -279,11 +294,14 @@ async def test_newsletter_confirm_listmonk_error_body_never_logged(
             "subscriber_type": "citizens",
             "frequency": "weekly",
             "language": "el",
-            "topics": {},
+            "consent_schema": 2,
+            "requested_at": datetime.now(timezone.utc).isoformat(),
+            "topics": {topic: True for topic in TOPICS},
         }
     )
     monkeypatch.setattr(newsletter, "_get_redis", lambda: _async(_ConfirmRedis(pending)))
     monkeypatch.setattr(newsletter, "LISTMONK_PW", "pw")
+    monkeypatch.setattr(newsletter.newsletter_service, "add_contact", AsyncMock(return_value=True))
     client = _client_class(response=_FakeResponse(400, PROVIDER_ECHO))
     monkeypatch.setattr(newsletter.httpx, "AsyncClient", client)
     with caplog.at_level(logging.DEBUG, logger="routers.newsletter"):
@@ -293,4 +311,4 @@ async def test_newsletter_confirm_listmonk_error_body_never_logged(
     logs = _log_text(caplog, "routers.newsletter")
     assert SENTINELS["email"] not in logs
     assert PROVIDER_ECHO not in logs
-    assert "[MOD-19] Listmonk POST /api/subscribers: 400" in logs
+    assert "[MOD-19] Listmonk request failed: status=400" in logs
