@@ -11,6 +11,7 @@ from unittest.mock import AsyncMock, MagicMock
 import httpx
 import pytest
 from fastapi import FastAPI
+from redis.exceptions import ConnectionError as RedisConnectionError, ResponseError
 
 from routers import newsletter, newsletter_admin
 from services import newsletter_service
@@ -136,6 +137,48 @@ def application() -> FastAPI:
     app.include_router(newsletter.router)
     app.include_router(newsletter_admin.router)
     return app
+
+
+@pytest.mark.parametrize("dry_run,failure", [
+    (True, "connect"), (False, "connect"), (True, "confirmed"), (False, "confirmed"),
+    (False, "brevo_retry"), (False, "listmonk_retry"),
+])
+@pytest.mark.parametrize("error_type", [RedisConnectionError, ResponseError])
+async def test_backfill_initial_redis_failure_returns_sanitized_503_without_provider_io(
+    store: MemoryRedis, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture,
+    dry_run: bool, failure: str, error_type: type[Exception],
+) -> None:
+    private = f"redis://private-user:private-password@localhost/0 {EMAIL}"
+    if failure == "connect":
+        monkeypatch.setattr(newsletter, "_get_redis", AsyncMock(side_effect=error_type(private)))
+    elif failure == "confirmed":
+        store.hgetall = AsyncMock(side_effect=error_type(private))
+    else:
+        failed_key = BREVO_REMOVE_RETRY_KEY if failure == "brevo_retry" else LISTMONK_REMOVE_RETRY_KEY
+
+        async def scan(key: str) -> list[str]:
+            if key == failed_key:
+                raise error_type(private)
+            return [EMAIL]
+
+        store.hkeys = AsyncMock(side_effect=scan)
+    store.hashes[BREVO_REMOVE_RETRY_KEY][EMAIL] = "1"
+    store.hashes[CONFIRMED_KEY][EMAIL] = json.dumps(consent())
+    listmonk_remove = AsyncMock(return_value=True)
+    monkeypatch.setattr(newsletter, "_remove_listmonk_contact", listmonk_remove)
+    async with HTTP_CLIENT(transport=httpx.ASGITransport(app=application()), base_url="http://test") as client:
+        response = await client.post("/api/v1/admin/newsletter/backfill", params={"dry_run": dry_run},
+                                     headers={"Authorization": "Bearer synthetic-admin-key"})
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "Newsletter store unavailable; retry"}
+    for value in (EMAIL, "private-user", "private-password"):
+        assert value not in response.text + caplog.text
+    assert not store.mutations
+    newsletter_service.contact_status.assert_not_awaited()
+    newsletter_service.add_contact.assert_not_awaited()
+    newsletter_service.remove_contact.assert_not_awaited()
+    listmonk_remove.assert_not_awaited()
 
 
 async def test_confirm_calls_add_once_and_replay_does_not(store: MemoryRedis) -> None:

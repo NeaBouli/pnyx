@@ -5,7 +5,7 @@ import re
 import secrets
 from contextlib import asynccontextmanager
 from typing import Any
-from urllib.parse import parse_qsl, unquote_plus, urlencode
+from urllib.parse import parse_qsl, unquote, unquote_plus, urlencode
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
@@ -150,6 +150,31 @@ _SENTRY_SENSITIVE_KEY_PARTS = (
     "privatekey", "secret", "token",
 )
 _SENTRY_DROPPED_HEADERS = {"xforwardedfor", "cookie"}
+_SENTRY_EMAIL_RE = re.compile(r"[\w.!#$%&'*+=?^`{|}~+-]+@[\w-]+(?:\.[\w-]+)+")
+_SENTRY_CONTACT_PATH_RE = re.compile(
+    r"(/(?:v3/contacts|api/subscribers)/)[^/?#\s\"'<>]+", re.IGNORECASE,
+)
+_SENTRY_PROVIDER_QUERY_RE = re.compile(r"([?&]query=)[^&#]*", re.IGNORECASE)
+
+
+def _sentry_redact_text(value: str) -> str:
+    """Provider IDs and emails can occur in any telemetry string, under any key."""
+    value = _SENTRY_CONTACT_PATH_RE.sub(r"\1[Filtered]", value)
+    # Listmonk's SQL filter may identify a subscriber by ID as well as email.
+    value = _SENTRY_PROVIDER_QUERY_RE.sub(r"\1[Filtered]", value)
+    # A literal '%' is valid in an email local part; scrub before URL decoding
+    # can turn a following hex pair into an invalid character.
+    value = _SENTRY_EMAIL_RE.sub(_SENTRY_REDACTED, value)
+    decoded = value
+    while True:
+        candidate = unquote(decoded)
+        if candidate == decoded:
+            break
+        decoded = candidate
+    # Decode only when needed, retaining ordinary URLs' escaping otherwise.
+    if _SENTRY_EMAIL_RE.search(decoded):
+        return _SENTRY_EMAIL_RE.sub(_SENTRY_REDACTED, decoded)
+    return value
 
 
 def _sentry_norm_key(key: Any) -> str:
@@ -161,22 +186,24 @@ def _sentry_is_sensitive_key(key: Any) -> bool:
     return any(part in norm for part in _SENTRY_SENSITIVE_KEY_PARTS)
 
 
-def _sentry_redact(value: Any) -> Any:
-    """Rekursiv sensible Keys in dict/list-Strukturen ersetzen."""
+def _sentry_redact(value: Any, *, redact_keys: bool = True) -> Any:
+    """Recursively scrub secrets and email values, including nested telemetry data."""
     if isinstance(value, dict):
         return {
-            k: _SENTRY_REDACTED if _sentry_is_sensitive_key(k)
+            k: _SENTRY_REDACTED if redact_keys and _sentry_is_sensitive_key(k)
             # ASGI-scope in Frame-Locals traegt die rohe Query unter "query_string"
-            else _sentry_redact_query(v) if _sentry_norm_key(k) == "querystring"
-            else _sentry_redact(v)
+            else _sentry_redact_query(v) if _sentry_norm_key(k) in {"querystring", "http.query"}
+            else _sentry_redact(v, redact_keys=redact_keys)
             for k, v in value.items()
         }
     if isinstance(value, (list, tuple)):
-        redacted = [_sentry_redact(v) for v in value]
+        redacted = [_sentry_redact(v, redact_keys=redact_keys) for v in value]
         # ASGI-Header in Frame-Locals werden als 2er-Listen serialisiert.
-        if len(value) == 2 and isinstance(value[0], (str, bytes)) and _sentry_is_sensitive_key(value[0]):
+        if redact_keys and len(value) == 2 and isinstance(value[0], (str, bytes)) and _sentry_is_sensitive_key(value[0]):
             redacted[1] = _SENTRY_REDACTED
         return tuple(redacted) if isinstance(value, tuple) else redacted
+    if isinstance(value, str):
+        return _sentry_redact_text(value)
     return value
 
 
@@ -197,7 +224,7 @@ def _sentry_is_sensitive_query_key(key: Any) -> bool:
     if _sentry_is_sensitive_key(key):
         return True
     norm = _sentry_norm_key(str(key).strip())
-    return any(norm.startswith(prefix) for prefix in _SENTRY_SENSITIVE_QUERY_PREFIXES)
+    return norm == "query" or any(norm.startswith(prefix) for prefix in _SENTRY_SENSITIVE_QUERY_PREFIXES)
 
 
 def _sentry_is_sensitive_header(key: Any) -> bool:
@@ -210,7 +237,7 @@ def _sentry_redact_url(url: Any) -> Any:
     newsletter confirm token, nullifier/signature query values)."""
     if not isinstance(url, str) or not url:
         return url
-    return redact_access_log_target(url)
+    return _sentry_redact_text(redact_access_log_target(url))
 
 
 def _sentry_redact_query(query: Any) -> Any:
@@ -222,14 +249,15 @@ def _sentry_redact_query(query: Any) -> Any:
             return f"b{query[1]}{_sentry_redact_query(query[2:-1])}{query[1]}"
         pairs = parse_qsl(query, keep_blank_values=True)
         return urlencode([
-            (k, _SENTRY_REDACTED if _sentry_is_sensitive_query_key(k) else v) for k, v in pairs
+            (k, _SENTRY_REDACTED if _sentry_is_sensitive_query_key(k) else _sentry_redact_text(v))
+            for k, v in pairs
         ])
     if isinstance(query, list):
         return [
             [item[0], _SENTRY_REDACTED]
             if isinstance(item, (list, tuple)) and len(item) == 2
             and isinstance(item[0], str) and _sentry_is_sensitive_query_key(item[0])
-            else item
+            else _sentry_redact(item)
             for item in query
         ]
     return _sentry_redact(query)
@@ -239,6 +267,23 @@ def _sentry_redact_query(query: Any) -> Any:
 # line or the end of the text; values may themselves contain brackets.
 _SQL_PARAMETERS_RE = re.compile(r"\[parameters: .*?(?=\n\(Background|\Z)", re.DOTALL)
 _PG_DETAIL_RE = re.compile(r"(DETAIL:\s*).*?(?=\n|\Z)")
+
+
+def _before_breadcrumb_filter(breadcrumb, hint):
+    """Scrub HTTPX breadcrumbs before they enter Sentry's scope."""
+    breadcrumb = _sentry_redact(breadcrumb)
+    if not isinstance(breadcrumb, dict):
+        return breadcrumb
+    if isinstance(breadcrumb.get("description"), str):
+        breadcrumb["description"] = _sentry_redact_url(breadcrumb["description"])
+    data = breadcrumb.get("data")
+    if isinstance(data, dict):
+        for key in ("url", "http.url"):
+            if key in data:
+                data[key] = _sentry_redact_url(data[key])
+        if "http.fragment" in data:
+            data["http.fragment"] = _SENTRY_REDACTED
+    return breadcrumb
 
 
 def _before_send_filter(event, hint):
@@ -271,18 +316,7 @@ def _before_send_filter(event, hint):
     for item in [*(crumbs or []), *spans]:
         if not isinstance(item, dict):
             continue
-        if isinstance(item.get("description"), str):
-            item["description"] = _sentry_redact_url(item["description"])
-        data = item.get("data")
-        if not isinstance(data, dict):
-            continue
-        for key in ("url", "http.url"):
-            if key in data:
-                data[key] = _sentry_redact_url(data[key])
-        if "http.query" in data:
-            data["http.query"] = _sentry_redact_query(data["http.query"])
-        if "http.fragment" in data:
-            data["http.fragment"] = _SENTRY_REDACTED
+        item.update(_before_breadcrumb_filter(item, hint))
     if "extra" in event:
         event["extra"] = _sentry_redact(event["extra"])
     for container in ("exception", "threads"):
@@ -299,7 +333,9 @@ def _before_send_filter(event, hint):
             for frame in frames:
                 if isinstance(frame, dict) and "vars" in frame:
                     frame["vars"] = _sentry_redact(frame["vars"])
-    return event
+    # Preserve protocol containers such as request.cookies while scrubbing every
+    # string. Sensitive keys inside payloads were handled above.
+    return _sentry_redact(event, redact_keys=False)
 
 
 def _sentry_init_options(dsn: str) -> dict[str, Any]:
@@ -329,6 +365,7 @@ def _sentry_init_options(dsn: str) -> dict[str, Any]:
         "max_request_body_size": "never",
         "before_send": _before_send_filter,
         "before_send_transaction": _before_send_filter,
+        "before_breadcrumb": _before_breadcrumb_filter,
     }
 
 

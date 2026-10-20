@@ -108,16 +108,24 @@ async def newsletter_backfill(dry_run: bool = True, _auth: bool = Depends(verify
         _remove_ineligible_contact, _withdraw_subscription,
     )
 
-    store = await _get_redis()
+    try:
+        store = await _get_redis()
+        withdrawals = set()
+        if not dry_run:
+            withdrawals.update(await store.hkeys(BREVO_REMOVE_RETRY_KEY))
+            withdrawals.update(await store.hkeys(LISTMONK_REMOVE_RETRY_KEY))
+        confirmed = await store.hgetall(CONFIRMED_KEY)
+    except Exception:
+        logger.error("[NEWSLETTER] Backfill store unavailable")
+        raise HTTPException(503, "Newsletter store unavailable; retry") from None
+
     counts = {"to_add": 0, "already_present": 0, "held": 0, "failed": 0}
     if not dry_run:
-        withdrawals = set(await store.hkeys(BREVO_REMOVE_RETRY_KEY))
-        withdrawals.update(await store.hkeys(LISTMONK_REMOVE_RETRY_KEY))
         for email in withdrawals:
             if not await _retry_withdrawal(store, email):
                 counts["failed"] += 1
 
-    for email, raw in (await store.hgetall(CONFIRMED_KEY)).items():
+    for email, raw in confirmed.items():
         try:
             data = parse_consent(email, raw)
             if await store.hget(SUPPRESSED_KEY, email.casefold()):
