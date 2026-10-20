@@ -19,7 +19,7 @@ csp = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(csp)
 COMPOSE = "infra/docker/docker-compose.prod.yml"
 LAYOUT = "apps/web/src/app/[locale]/layout.tsx"
-REPORT = "customResponseHeaders.Content-Security-Policy-Report-Only:"
+ENFORCED = "ekklesia-static-csp.headers.contentSecurityPolicy:"
 BINDING = 'traefik.http.routers.ekklesia-web.middlewares: "ekklesia-headers,ekklesia-no-frame"'
 
 
@@ -48,10 +48,27 @@ class InventoryGateTests(unittest.TestCase):
         with redirect_stdout(io.StringIO()):
             csp.main(["--check"])
 
-    def test_commented_report_only_label_fails_check(self):
+    def test_commented_enforced_label_fails_check(self):
         self.mutate_compose(lambda text: "\n".join(
-            "      # " + line.strip() if REPORT in line else line for line in text.split("\n")))
-        with self.assertRaisesRegex(SystemExit, "active enforced and Report-Only"):
+            "      # " + line.strip() if ENFORCED in line else line for line in text.split("\n")))
+        with self.assertRaisesRegex(SystemExit, "active enforced policy"):
+            csp.main(["--check"])
+
+    def test_report_only_and_duplicate_enforced_writers_are_forbidden(self):
+        path = self.root / COMPOSE
+        original = path.read_text()
+        for header in ("Content-Security-Policy-Report-Only", "Content-Security-Policy"):
+            for surface in ("static", "embed"):
+                with self.subTest(header=header, surface=surface):
+                    compose = yaml.safe_load(original)
+                    compose["services"]["web"]["labels"][f"traefik.http.middlewares.ekklesia-{surface}-csp.headers.customResponseHeaders.{header}"] = "duplicate"
+                    path.write_text(yaml.safe_dump(compose))
+                    with self.assertRaisesRegex(SystemExit, "Report-Only is forbidden|one CSP writer"):
+                        csp.main(["--check"])
+
+    def test_enforcement_default_and_false_rollback_are_required(self):
+        self.mutate_compose(lambda text: text.replace("${CSP_ENFORCE:-true}", "false"))
+        with self.assertRaisesRegex(SystemExit, "CSP_ENFORCE must default to true"):
             csp.main(["--check"])
 
     def test_removed_router_binding_fails_check(self):
@@ -129,19 +146,21 @@ class InventoryGateTests(unittest.TestCase):
         (self.root / "docs/example.html").write_text('<script type="application/ld+json">{"@type":"Thing"}</script>')
         self.assertIn("**1 JSON-LD blocks**", csp.render())
 
-    def test_promotion_cannot_leave_shared_static_policy_on_next(self):
+    def test_compatibility_overlay_cannot_change_policies_or_environment(self):
         path = self.root / "infra/docker/docker-compose.csp-enforce.yml"
-        source = path.read_text().replace('    labels:', "    labels:\n      traefik.http.middlewares.ekklesia-headers.headers.contentSecurityPolicy: broken")
-        path.write_text(source)
-        with self.assertRaisesRegex(SystemExit, "promotion must preserve the dynamic nonce"):
-            csp.main(["--check"])
+        for override in ({"environment": {"CSP_ENFORCE": "true"}},
+                         {"labels": {"traefik.http.middlewares.ekklesia-headers.headers.contentSecurityPolicy": "broken"}}):
+            with self.subTest(override=override):
+                path.write_text(yaml.safe_dump({"services": {"web": override}}))
+                with self.assertRaisesRegex(SystemExit, "overlay must remain a no-op"):
+                    csp.main(["--check"])
 
     def test_embed_cannot_inherit_frame_deny(self):
         self.mutate_compose(lambda text: text.replace('middlewares: "ekklesia-headers,ekklesia-embed-csp"', 'middlewares: "ekklesia-headers,ekklesia-no-frame,ekklesia-embed-csp"'))
         with self.assertRaisesRegex(SystemExit, "embed router must stay frameable"):
             csp.main(["--check"])
 
-    def test_embed_legacy_and_target_must_both_allow_framing(self):
+    def test_embed_enforced_policy_must_allow_framing(self):
         self.mutate_compose(lambda text: text.replace('frame-ancestors *', "frame-ancestors 'none'", 1))
         with self.assertRaisesRegex(SystemExit, "embed router must stay frameable"):
             csp.main(["--check"])

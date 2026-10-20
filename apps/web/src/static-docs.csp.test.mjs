@@ -3,6 +3,8 @@ import { JSDOM } from "jsdom";
 import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { load } from "js-yaml";
+import { STATIC_CSP } from "./lib/csp";
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const read = (name) => readFileSync(resolve(root, name), "utf8");
 const script = (name) => read(`docs/assets/js/${name}.js`);
@@ -21,6 +23,12 @@ function dom(body = "", query = "") {
     return { w, document: w.document, run };
 }
 afterEach(() => { windows.splice(0).forEach(d => d.window.close()); });
+it.each(["static", "embed"])("%s sends exactly one strict enforced CSP by default", surface => {
+    const labels = load(read("infra/docker/docker-compose.prod.yml")).services.web.labels;
+    const prefix = `traefik.http.middlewares.ekklesia-${surface}-csp.headers.`;
+    const policies = Object.entries(labels).filter(([key]) => key.startsWith(prefix) && /content-?security-?policy/i.test(key));
+    expect(policies).toEqual([[prefix + "contentSecurityPolicy", surface === "embed" ? STATIC_CSP.replace("frame-ancestors 'none'", "frame-ancestors *") : STATIC_CSP]]);
+});
 // Verified against origin/main 4ff02f8c: Greek on each load, no storage accesses.
 const languages = ["community-language", "landing-language", "govgr-dimos", "wiki-language", "wiki-faq-2", "wiki-index-2", "wiki-modules-2", "wiki-roadmap-2", "wiki-zk-voting-1", "wiki-broadcasting-2", "wiki-audit-2", "mirror-setup-language", "representative-language"];
 describe("old language contracts", () => {

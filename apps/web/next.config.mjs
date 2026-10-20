@@ -63,8 +63,9 @@ const nextConfig = {
         source: "/:path*",
         headers: [
           {
-            // Config headers affect only the response. A legacy CSP emitted by
-            // proxy would overwrite its nonce-bearing request CSP in Next's router.
+            // Response fallback for assets/redirects and CSP_ENFORCE=false rollback.
+            // The proxy replaces this with strict nonce enforcement by default.
+            // Emitting legacy CSP in proxy would overwrite its render request CSP.
             key: "Content-Security-Policy",
             value: LEGACY_CSP,
           },

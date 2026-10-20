@@ -72,10 +72,11 @@ export default function proxy(request: NextRequest) {
   headers.set("Content-Security-Policy", policy);
   headers.delete("Content-Security-Policy-Report-Only");
   const response = intlMiddleware(new NextRequest(request, { headers }));
-  response.headers.set("Content-Security-Policy-Report-Only", policy);
+  response.headers.delete("Content-Security-Policy-Report-Only");
   // Next's router copies middleware response headers over request overrides.
-  // next.config supplies legacy enforcement without replacing the render CSP.
-  if (process.env.CSP_ENFORCE === "true") {
+  // In rollback mode next.config supplies legacy enforcement without replacing
+  // the nonce-bearing request CSP used by the renderer.
+  if (process.env.CSP_ENFORCE !== "false") {
     response.headers.set("Content-Security-Policy", policy);
   }
   // Nonce-bearing HTML/RSC must never be replayed with a new response header.

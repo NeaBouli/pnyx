@@ -80,12 +80,15 @@ test('unknown router option shapes fail with the Next version and an actionable 
     /Next\.js future.*getResolveRoutes must return a function/);
 });
 
-test('production router and renders retain fresh nonces and preserve observation/enforcement response policies', async () => {
+test('production router and renders retain fresh nonces and exactly one CSP in default, enforced and rollback modes', async () => {
   const conf = JSON.parse(readFileSync(resolve(app, '.next/required-server-files.json'), 'utf8')).config;
   const manifest = JSON.parse(readFileSync(resolve(app, '.next/prerender-manifest.json'), 'utf8'));
   for (const path of Object.keys(manifest.routes)) assert.ok(!/^\/(el|en)(\/|$)/.test(path), `localized page prerendered: ${path}`);
   const server = new NextServer({ dir: app, dev: false, conf });
   const originalEnforce = process.env.CSP_ENFORCE;
+  const originalFetch = globalThis.fetch;
+  // Bills SSR can fetch public initial data; exercise its fallback without HTTP.
+  globalThis.fetch = async () => { throw new Error('CSP render check is offline'); };
   try {
     await server.prepare();
     const fsChecker = await setupFsCheck({ dir: app, dev: false, config: conf });
@@ -103,8 +106,9 @@ test('production router and renders retain fresh nonces and preserve observation
       },
     }, {});
     const routeOptions = createRouteOptions(resolveRoutes, nextVersion, conf.assetPrefix ?? '');
-    for (const enforce of [false, true]) {
-      process.env.CSP_ENFORCE = String(enforce);
+    for (const enforce of [undefined, 'true', 'false']) {
+      if (enforce === undefined) delete process.env.CSP_ENFORCE;
+      else process.env.CSP_ENFORCE = enforce;
       for (const path of ['/el/bills', '/en/sso-verify', '/el/analytics', '/el/unknown']) {
         const nonces = [];
         const cacheHeaders = [];
@@ -120,9 +124,9 @@ test('production router and renders retain fresh nonces and preserve observation
           removeRequestMeta(req, 'middlewareInvoke');
           const nonce = req.headers['x-nonce'];
           assert.ok(nonce && nonce !== 'attacker');
-          const target = res.getHeader('content-security-policy-report-only');
-          assert.equal(req.headers['content-security-policy'], target, 'router must retain the nonce CSP for rendering');
+          const target = req.headers['content-security-policy'];
           assert.equal(getScriptNonceFromHeader(target), nonce);
+          assert.equal(req.headers['content-security-policy-report-only'], undefined);
           const result = await server.renderToHTML(req, res, path, {});
           const html = result ?? Buffer.concat(chunks).toString('utf8');
           assert.equal(res.statusCode, path === '/el/unknown' ? 404 : 200);
@@ -131,8 +135,9 @@ test('production router and renders retain fresh nonces and preserve observation
           const scripts = [...html.matchAll(/<script\b([^>]*)>/g)];
           assert.ok(scripts.length > 1);
           for (const [, attrs] of scripts) assert.ok(attrs.includes(`nonce="${nonce}"`), `rendered script nonce mismatches proxy: ${attrs}`);
-          assert.equal(res.getHeader('content-security-policy'), enforce ? target : LEGACY_CSP);
-          assert.equal(res.getHeader('content-security-policy-report-only'), target);
+          assert.equal(res.getHeader('content-security-policy'), enforce === 'false' ? LEGACY_CSP : target);
+          assert.equal(res.getHeader('content-security-policy-report-only'), undefined);
+          assert.deepEqual(res.getHeaderNames().filter(name => /^content-security-policy(?:-report-only)?$/i.test(name)), ['content-security-policy']);
           assert.match(res.getHeader('cache-control'), /private/);
           assert.match(res.getHeader('cache-control'), /no-store/);
           const nextCache = res.getHeader('x-nextjs-cache');
@@ -140,12 +145,13 @@ test('production router and renders retain fresh nonces and preserve observation
           nonces.push(nonce); cacheHeaders.push(nextCache ?? '(absent)');
         }
         assert.notEqual(nonces[0], nonces[1]);
-        process.stdout.write(`${enforce ? 'enforce' : 'observe'} ${path}: two fresh matching HTML/Flight nonces; x-nextjs-cache=${cacheHeaders.join(', ')}\n`);
+        process.stdout.write(`${enforce === undefined ? 'default' : enforce === 'false' ? 'rollback' : 'enforce'} ${path}: two fresh matching HTML/Flight nonces; x-nextjs-cache=${cacheHeaders.join(', ')}\n`);
       }
     }
   } finally {
     if (originalEnforce === undefined) delete process.env.CSP_ENFORCE;
     else process.env.CSP_ENFORCE = originalEnforce;
     await server.close();
+    globalThis.fetch = originalFetch;
   }
 });

@@ -53,52 +53,50 @@ test('data values cannot introduce code and Enter triggers the chat listener', (
 });
 
 const browserModule = process.env.PLAYWRIGHT_MODULE;
-test('Chromium/WebKit: JSON-LD, language, FAQ and generated demo controls under Report-Only then enforced CSP (no network)', { skip: !browserModule }, async () => {
+test('Chromium/WebKit: JSON-LD, language, FAQ and generated demo controls under a single enforced CSP (no network)', { skip: !browserModule }, async () => {
   const require = createRequire(import.meta.url);
   const { chromium, webkit } = require(browserModule);
   const target = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'";
   for (const engine of [chromium, webkit]) {
     const browser = await engine.launch();
     try {
-      for (const header of ['Content-Security-Policy-Report-Only', 'Content-Security-Policy']) {
-        const context = await browser.newContext({ serviceWorkers: 'block' });
-        await context.route('**/*', async route => {
-          // Every request is fulfilled from disk or aborted; no HTTP/DNS fetch is made.
-          const url = new URL(route.request().url());
-          if (url.origin !== 'https://csp.invalid') return route.abort();
-          const path = resolve(root, 'docs', '.' + decodeURIComponent(url.pathname));
-          if (!path.startsWith(resolve(root, 'docs') + '/') || !existsSync(path)) return route.fulfill({ status: 404, body: '' });
-          const type = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css' }[extname(path)] ?? 'application/octet-stream';
-          return route.fulfill({ status: 200, headers: { [header]: target }, contentType: type, body: readFileSync(path) });
+      const context = await browser.newContext({ serviceWorkers: 'block' });
+      await context.route('**/*', async route => {
+        // Every request is fulfilled from disk or aborted; no HTTP/DNS fetch is made.
+        const url = new URL(route.request().url());
+        if (url.origin !== 'https://csp.invalid') return route.abort();
+        const path = resolve(root, 'docs', '.' + decodeURIComponent(url.pathname));
+        if (!path.startsWith(resolve(root, 'docs') + '/') || !existsSync(path)) return route.fulfill({ status: 404, body: '' });
+        const type = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css' }[extname(path)] ?? 'application/octet-stream';
+        return route.fulfill({ status: 200, headers: { 'Content-Security-Policy': target }, contentType: type, body: readFileSync(path) });
+      });
+      const page = await context.newPage();
+      await page.addInitScript(() => {
+        window.cspScriptViolations = [];
+        document.addEventListener('securitypolicyviolation', e => {
+          if (e.effectiveDirective.startsWith('script-src')) window.cspScriptViolations.push(e.effectiveDirective);
         });
-        const page = await context.newPage();
-        await page.addInitScript(() => {
-          window.cspScriptViolations = [];
-          document.addEventListener('securitypolicyviolation', e => {
-            if (e.effectiveDirective.startsWith('script-src')) window.cspScriptViolations.push(e.effectiveDirective);
-          });
-        });
-        await page.goto('https://csp.invalid/wiki/faq.html');
-        const json = await page.locator('script[type="application/ld+json"]').allTextContents();
-        assert.ok(json.length); json.forEach(body => JSON.parse(body));
-        await page.locator('#langBtn').click();
-        assert.equal(await page.locator('html').getAttribute('lang'), 'en');
-        await page.locator('#langBtn').click();
-        assert.equal(await page.locator('html').getAttribute('lang'), 'el');
-        const faq = page.locator('[data-csp-click="toggle-parent"]').first();
-        await faq.click();
-        assert.ok(await faq.evaluate(el => el.parentElement.classList.contains('open')));
-        assert.deepEqual(await page.evaluate(() => window.cspScriptViolations), []);
-        await page.goto('https://csp.invalid/demo/bills.html');
-        await page.locator('[data-csp-click="demo-filter"][data-value="ACTIVE"]').click();
-        assert.equal(await page.evaluate(() => currentFilter), 'ACTIVE');
-        const vote = page.locator('[data-csp-click="demo-vote"]').first();
-        const bill = await vote.getAttribute('data-bill');
-        await vote.click();
-        assert.equal(await page.evaluate(id => demoGetVote(id), bill), 'YES');
-        assert.deepEqual(await page.evaluate(() => window.cspScriptViolations), []);
-        await context.close();
-      }
+      });
+      await page.goto('https://csp.invalid/wiki/faq.html');
+      const json = await page.locator('script[type="application/ld+json"]').allTextContents();
+      assert.ok(json.length); json.forEach(body => JSON.parse(body));
+      await page.locator('#langBtn').click();
+      assert.equal(await page.locator('html').getAttribute('lang'), 'en');
+      await page.locator('#langBtn').click();
+      assert.equal(await page.locator('html').getAttribute('lang'), 'el');
+      const faq = page.locator('[data-csp-click="toggle-parent"]').first();
+      await faq.click();
+      assert.ok(await faq.evaluate(el => el.parentElement.classList.contains('open')));
+      assert.deepEqual(await page.evaluate(() => window.cspScriptViolations), []);
+      await page.goto('https://csp.invalid/demo/bills.html');
+      await page.locator('[data-csp-click="demo-filter"][data-value="ACTIVE"]').click();
+      assert.equal(await page.evaluate(() => currentFilter), 'ACTIVE');
+      const vote = page.locator('[data-csp-click="demo-vote"]').first();
+      const bill = await vote.getAttribute('data-bill');
+      await vote.click();
+      assert.equal(await page.evaluate(id => demoGetVote(id), bill), 'YES');
+      assert.deepEqual(await page.evaluate(() => window.cspScriptViolations), []);
+      await context.close();
     } finally { await browser.close(); }
   }
 });

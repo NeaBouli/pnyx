@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,6 +12,7 @@ const { getScriptNonceFromHeader } = require("next/dist/server/app-render/get-sc
 const { createInlinedDataReadableStream } = require("next/dist/server/app-render/use-flight-response");
 const testing = require("next/experimental/testing/server");
 
+beforeEach(() => vi.stubEnv("CSP_ENFORCE", undefined));
 afterEach(() => vi.unstubAllEnvs());
 
 describe("Next 16 nonce policy through real next-intl middleware", () => {
@@ -31,7 +32,7 @@ describe("Next 16 nonce policy through real next-intl middleware", () => {
       "Content-Security-Policy-Report-Only": "script-src 'nonce-attacker'",
     } }));
     const nonce = response.headers.get("x-middleware-request-x-nonce");
-    const policy = response.headers.get("Content-Security-Policy-Report-Only");
+    const policy = response.headers.get("Content-Security-Policy");
     expect(nonce).toMatch(/^[A-Za-z0-9+/]{43}=$/);
     expect(Buffer.from(nonce!, "base64").length).toBe(32);
     expect(response.headers.get("x-middleware-request-content-security-policy")).toBe(policy);
@@ -39,9 +40,7 @@ describe("Next 16 nonce policy through real next-intl middleware", () => {
     expect(response.headers.get("x-middleware-request-x-next-intl-locale")).toBe(path.split("/")[1]);
     expect(policy).toBe(STATIC_CSP.replace("script-src 'self'", `script-src 'self' 'nonce-${nonce}'`));
     expect(policy?.split(";").find(directive => directive.trim().startsWith("script-src"))).not.toMatch(/unsafe-inline|unsafe-eval|strict-dynamic|sha256-|attacker/);
-    // Legacy enforcement is a config response header; emitting it here would
-    // overwrite the request nonce when Next processes middleware headers.
-    expect(response.headers.get("Content-Security-Policy")).toBeNull();
+    expect(response.headers.get("Content-Security-Policy-Report-Only")).toBeNull();
     expect(response.headers.get("cache-control")).toContain("no-store");
     expect(response.headers.get("x-middleware-request-content-security-policy-report-only")).toBeNull();
   });
@@ -69,11 +68,13 @@ describe("Next 16 nonce policy through real next-intl middleware", () => {
     expect(new Set(nonces).size).toBe(3);
   });
 
-  it("promotes the same candidate while retaining Report-Only", () => {
-    vi.stubEnv("CSP_ENFORCE", "true");
+  it.each([undefined, "true", "false"])("emits one enforced policy with CSP_ENFORCE=%s (config supplies rollback)", enforce => {
+    vi.stubEnv("CSP_ENFORCE", enforce);
     const response = proxy(new NextRequest("https://ekklesia.gr/en/bills"));
-    expect(response.headers.get("Content-Security-Policy")).toBe(response.headers.get("Content-Security-Policy-Report-Only"));
-    expect(getScriptNonceFromHeader(response.headers.get("Content-Security-Policy"))).toBeTruthy();
+    const renderPolicy = response.headers.get("x-middleware-request-content-security-policy");
+    expect(getScriptNonceFromHeader(renderPolicy)).toBeTruthy();
+    expect(response.headers.get("Content-Security-Policy")).toBe(enforce === "false" ? null : renderPolicy);
+    expect(response.headers.get("Content-Security-Policy-Report-Only")).toBeNull();
   });
 
   it("preserves static rewrites and locale redirects without attaching a nonce", () => {
