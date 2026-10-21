@@ -269,6 +269,9 @@ class _ConfirmRedis:
     async def get(self, key: str) -> str:
         return self._pending_json
 
+    async def set(self, key: str, value: str, *, nx: bool = False, px: int = 0) -> bool:
+        return True
+
     async def eval(self, script: str, numkeys: int, *args: Any) -> int:
         if script == CONFIRM_ONCE:
             self.confirmed[args[3]] = args[4]

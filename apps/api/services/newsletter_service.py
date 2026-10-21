@@ -15,6 +15,7 @@ from sqlalchemy import select, func
 from services.bill_visibility import public_bill_filter
 from services.mail_policy import OPERATOR_EMAIL, operator_reply_to
 from services.small_cell import small_cell_k
+from services.newsletter_lock import newsletter_lock, NewsletterLockUnavailable
 
 logger = logging.getLogger(__name__)
 
@@ -187,17 +188,21 @@ async def send_reconfirmation(email: str, token: str) -> bool:
 
 async def ensure_reconfirmations_paused() -> bool:
     """Fail closed before campaigns if a pending pause cannot be reconciled."""
-    from routers.newsletter import _get_redis, _remove_ineligible_contact
-    from services.newsletter_consent import RECONFIRM_KEY, parse_consent
+    from routers.newsletter import _get_redis, _remove_ineligible_contact, _reconcile_consent_aliases
+    from services.newsletter_consent import RECONFIRM_KEY, parse_consent, has_doi_evidence
 
     try:
         store = await _get_redis()
         for identity, raw in (await store.hgetall(RECONFIRM_KEY)).items():
             data = json.loads(raw)
             email = data["email"]
-            if parse_consent(email, raw) is None or identity != email.casefold():
+            if parse_consent(email, raw, include_expired=True) is None or identity != email.casefold():
                 return False
             if await store.hget(RECONFIRM_KEY, identity) != raw:
+                continue
+            now = datetime.now(timezone.utc)
+            chosen = await _reconcile_consent_aliases(store, identity, now)
+            if chosen and has_doi_evidence(chosen[2], now):
                 continue
             if not await _remove_ineligible_contact(store, email):
                 return False
@@ -364,23 +369,26 @@ async def send_monthly_report(db: AsyncSession) -> bool:
 <a href="https://ekklesia.gr/el/bills" style="display:inline-block;padding:12px 24px;background:#2563eb;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px">Δείτε τα νομοσχέδια →</a>
 </p>"""
 
-    # Send as campaign to list
-    if not await ensure_reconfirmations_paused():
-        return False
-    result = await _brevo_post("emailCampaigns", {
-        "name": f"Monthly Report {month_name}",
-        "subject": f"ekklesia.gr — Μηνιαία Αναφορά {month_name}",
-        "sender": SENDER,
-        "replyTo": OPERATOR_EMAIL,
-        "type": "classic",
-        "recipients": {"listIds": [LIST_ID]},
-        "htmlContent": _wrap(body),
-    })
-    if result and result.get("id"):
-        # Send immediately
-        if not await ensure_reconfirmations_paused():
-            return False
-        await _brevo_post(f"emailCampaigns/{result['id']}/sendNow", {})
-        logger.info("[NEWSLETTER] Monthly report sent — campaign %s", result["id"])
-        return True
+    # Hold the same lease as reconfirmation transitions through provider dispatch.
+    try:
+        async with newsletter_lock() as lease:
+            if not await ensure_reconfirmations_paused():
+                return False
+            await lease.check()
+            result = await _brevo_post("emailCampaigns", {
+                "name": f"Monthly Report {month_name}",
+                "subject": f"ekklesia.gr — Μηνιαία Αναφορά {month_name}",
+                "sender": SENDER,
+                "replyTo": OPERATOR_EMAIL,
+                "type": "classic",
+                "recipients": {"listIds": [LIST_ID]},
+                "htmlContent": _wrap(body),
+            })
+            if result and result.get("id"):
+                await lease.check()
+                await _brevo_post(f"emailCampaigns/{result['id']}/sendNow", {})
+                logger.info("[NEWSLETTER] Monthly report sent — campaign %s", result["id"])
+                return True
+    except NewsletterLockUnavailable:
+        logger.warning("[NEWSLETTER] Campaign busy; retry")
     return False

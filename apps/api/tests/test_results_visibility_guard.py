@@ -169,6 +169,9 @@ async def test_monthly_newsletter_queries_apply_the_guard(monkeypatch):
     """Runs send_monthly_report and inspects the statements it actually executes."""
     scalars, executes = [], []
     monkeypatch.setattr(newsletter_service, "ensure_reconfirmations_paused", AsyncMock(return_value=True))
+    from routers import newsletter
+    from tests.test_newsletter_delivery_sync import MemoryRedis
+    monkeypatch.setattr(newsletter, "_get_redis", AsyncMock(return_value=MemoryRedis()))
 
     class _ReportDb:
         async def scalar(self, statement, *_args, **_kwargs):

@@ -2,16 +2,19 @@
 import asyncio
 import json
 import os
+import time
 from collections.abc import AsyncIterator
 from unittest.mock import AsyncMock
 from urllib.parse import urlparse
 from uuid import uuid4
 
 import pytest
+from fastapi import HTTPException
 import redis.asyncio as aioredis
 from redis.exceptions import ResponseError
 
 from routers import newsletter
+from services import newsletter_lock
 from services.newsletter_consent import (
     CONFIRM_ONCE, READ_CONSENT_SNAPSHOT, START_RECONFIRM, CLAIM_RECONFIRM_SEND,
     CONFIRM_RECONFIRM, EXPIRE_RECONFIRM, FINISH_RECONFIRM_EXPIRY,
@@ -30,12 +33,13 @@ async def isolated_redis(monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[tuple
     confirmed = f"test:newsletter:confirmed:{uuid4().hex}"
     monkeypatch.setattr(newsletter, "_get_redis", AsyncMock(return_value=client))
     monkeypatch.setattr(newsletter, "CONFIRMED_KEY", confirmed)
+    monkeypatch.setattr(newsletter_lock, "LOCK_KEY", f"{confirmed}:campaign-lock")
     monkeypatch.setattr(newsletter, "LISTMONK_PW", "")
     monkeypatch.setattr(newsletter.newsletter_service, "remove_contact", AsyncMock(return_value=True))
     try:
         yield client, token, confirmed
     finally:
-        await client.delete(f"newsletter:pending:{token}", f"newsletter:pending:{token}-other", confirmed)
+        await client.delete(f"newsletter:pending:{token}", f"newsletter:pending:{token}-other", confirmed, f"{confirmed}:campaign-lock")
         await client.aclose()
 
 
@@ -48,7 +52,17 @@ async def test_twenty_concurrent_clicks_have_one_winner(
     monkeypatch.setattr(newsletter, "LISTMONK_PW", "synthetic-password")
     optional_provider = AsyncMock(return_value={"data": True})
     monkeypatch.setattr(newsletter, "_listmonk_request", optional_provider)
-    responses = await asyncio.gather(*[newsletter.confirm_subscription(token) for _ in range(20)])
+    async def click():
+        try:
+            return await newsletter.confirm_subscription(token)
+        except HTTPException as exc:
+            assert exc.status_code == 503
+            return None
+
+    responses = await asyncio.gather(*[click() for _ in range(20)])
+    # Contending workers retry after the winning consent write releases its lease.
+    responses = [response if response is not None else await newsletter.confirm_subscription(token)
+                 for response in responses]
     assert [response.status_code for response in responses].count(200) == 1
     assert [response.status_code for response in responses].count(410) == 19
     stored = json.loads(await client.hget(confirmed, original["email"]))
@@ -117,13 +131,13 @@ async def test_reconfirmation_lua_has_one_winner_and_durable_cleanup(
     try:
         await client.hset(confirmed, email, legacy)
         args = (START_RECONFIRM, 5, confirmed, suppressed, registry, token, old_token,
-                email, email, legacy, "", invitation, 2592000)
+                email, email, legacy, "", invitation, int(time.time() * 1000) + 2592000000)
         results = await asyncio.gather(*[client.eval(*args) for _ in range(20)])
         assert results.count(1) == 1 and results.count(0) == 19
         assert await client.ttl(token) > 2591900
-        assert await client.eval(CLAIM_RECONFIRM_SEND, 3, confirmed, registry, suppressed,
+        assert await client.eval(CLAIM_RECONFIRM_SEND, 4, confirmed, registry, suppressed, token,
                                  email, email, invitation, attempted) == 1
-        assert await client.eval(CLAIM_RECONFIRM_SEND, 3, confirmed, registry, suppressed,
+        assert await client.eval(CLAIM_RECONFIRM_SEND, 4, confirmed, registry, suppressed, token,
                                  email, email, invitation, attempted) == 0
         if finish == "confirm":
             args = (CONFIRM_RECONFIRM, 4, token, confirmed, registry, suppressed,
@@ -145,3 +159,59 @@ async def test_reconfirmation_lua_has_one_winner_and_durable_cleanup(
         assert not await client.exists(token)
     finally:
         await client.delete(registry, suppressed, token, old_token, addition, brevo_retry, listmonk_retry)
+
+
+async def test_campaign_lease_is_shared_renewed_and_owner_checked(isolated_redis, monkeypatch):
+    from services import newsletter_lock
+    client, _, confirmed = isolated_redis
+    key = f"{confirmed}:campaign-lock"
+    monkeypatch.setattr(newsletter_lock, "LOCK_KEY", key)
+    monkeypatch.setattr(newsletter_lock, "LOCK_MS", 120)
+    other_worker = aioredis.Redis(connection_pool=client.connection_pool)
+    try:
+        async with newsletter_lock.newsletter_lock(client) as lease:
+            with pytest.raises(newsletter_lock.NewsletterLockUnavailable):
+                async with newsletter_lock.newsletter_lock(other_worker):
+                    pytest.fail("A second worker acquired the campaign lease")
+            await asyncio.sleep(.18)
+            assert await client.get(key) == lease.owner
+            assert await client.pttl(key) > 0
+            await client.set(key, "replacement-owner", px=1000)
+            with pytest.raises(newsletter_lock.NewsletterLockUnavailable):
+                await lease.check()
+        assert await client.get(key) == "replacement-owner"
+    finally:
+        await client.delete(key)
+        await other_worker.aclose()
+
+
+async def test_alias_pruning_cannot_delete_concurrent_fresh_evidence(isolated_redis):
+    from services.newsletter_consent import RECONCILE_CONSENT_ALIASES
+    client, _, confirmed = isolated_redis
+    email, alias = "consent@example.org", "CONSENT@example.org"
+    records = {email: "pending", alias: "legacy"}
+    await client.hset(confirmed, mapping=records)
+    await client.hset(confirmed, alias, "fresh-doi")
+    assert await client.eval(RECONCILE_CONSENT_ALIASES, 1, confirmed, json.dumps(records), email) == 0
+    assert await client.hget(confirmed, alias) == "fresh-doi"
+    records[alias] = "fresh-doi"
+    assert await client.eval(RECONCILE_CONSENT_ALIASES, 1, confirmed, json.dumps(records), alias) == 1
+    assert await client.hgetall(confirmed) == {alias: "fresh-doi"}
+
+
+async def test_send_claim_rejects_token_at_absolute_deadline(isolated_redis):
+    client, _, confirmed = isolated_redis
+    registry, suppressed, token = [f"{confirmed}:{suffix}" for suffix in ("registry", "suppressed", "token")]
+    email = "consent@example.org"
+    try:
+        await client.hset(confirmed, email, "legacy")
+        deadline = int(time.time() * 1000) + 2000
+        assert await client.eval(START_RECONFIRM, 5, confirmed, suppressed, registry, token, token,
+                                 email, email, "legacy", "", "invitation", deadline) == 1
+        assert await client.pexpiretime(token) == deadline
+        await client.pexpireat(token, int(time.time() * 1000) - 1)
+        assert await client.eval(CLAIM_RECONFIRM_SEND, 4, confirmed, registry, suppressed, token,
+                                 email, email, "invitation", "attempted") == 0
+        assert await client.hget(confirmed, email) == "invitation"
+    finally:
+        await client.delete(registry, suppressed, token)

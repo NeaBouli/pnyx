@@ -373,6 +373,9 @@ async def test_future_public_telegram_result_notification_suppresses_small_total
 async def test_future_public_newsletter_does_not_bypass_result_suppression(monkeypatch):
     from services import newsletter_service
     monkeypatch.setattr(newsletter_service, "ensure_reconfirmations_paused", AsyncMock(return_value=True))
+    from routers import newsletter
+    from tests.test_newsletter_delivery_sync import MemoryRedis
+    monkeypatch.setattr(newsletter, "_get_redis", AsyncMock(return_value=MemoryRedis()))
     captured = []
 
     async def capture(endpoint, data):

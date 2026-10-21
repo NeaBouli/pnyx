@@ -2,7 +2,7 @@
 import json
 import hashlib
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from pydantic import EmailStr, TypeAdapter
@@ -89,7 +89,7 @@ if redis.call('HGET', KEYS[1], ARGV[1]) ~= ARGV[3] then return 0 end
 if (redis.call('HGET', KEYS[3], ARGV[2]) or '') ~= ARGV[4] then return 0 end
 redis.call('HSET', KEYS[3], ARGV[2], ARGV[5])
 redis.call('HSET', KEYS[1], ARGV[1], ARGV[5])
-redis.call('SET', KEYS[4], ARGV[5], 'EX', ARGV[6])
+redis.call('SET', KEYS[4], ARGV[5], 'PXAT', ARGV[6])
 if KEYS[5] ~= KEYS[4] then redis.call('DEL', KEYS[5]) end
 return 1
 """
@@ -97,6 +97,7 @@ return 1
 # Claim before SMTP: a timeout/crash may have delivered, so only explicit resend
 # may attempt another email. The fixed original deadline is never extended.
 CLAIM_RECONFIRM_SEND = """
+if redis.call('EXISTS', KEYS[4]) == 0 then return 0 end
 if redis.call('HEXISTS', KEYS[3], ARGV[2]) == 1 then return 0 end
 if redis.call('HGET', KEYS[1], ARGV[1]) ~= ARGV[3] then return 0 end
 if redis.call('HGET', KEYS[2], ARGV[2]) ~= ARGV[3] then return 0 end
@@ -137,6 +138,25 @@ redis.call('HDEL', KEYS[1], ARGV[1])
 return 1
 """
 
+# Compare every alias before pruning so a concurrent fresh confirmation wins.
+RECONCILE_CONSENT_ALIASES = """
+local entries = cjson.decode(ARGV[1])
+for email, raw in pairs(entries) do
+    if redis.call('HGET', KEYS[1], email) ~= raw then return 0 end
+end
+for email, raw in pairs(entries) do
+    if email ~= ARGV[2] then redis.call('HDEL', KEYS[1], email) end
+end
+return 1
+"""
+
+RETIRE_RECONFIRM = """
+if redis.call('HGET', KEYS[1], ARGV[1]) ~= ARGV[2] then return 0 end
+redis.call('HDEL', KEYS[1], ARGV[1])
+redis.call('DEL', KEYS[2])
+return 1
+"""
+
 
 def reconfirm_token_key(token: str) -> str:
     return reconfirm_digest_key(hashlib.sha256(token.encode()).hexdigest())
@@ -157,15 +177,26 @@ def confirmation_payload(data: dict[str, Any], now: datetime) -> str:
     return json.dumps(confirmed)
 
 
-def parse_consent(email: str, raw: str) -> dict[str, Any] | None:
+def reconfirm_deadline(data: dict[str, Any]) -> datetime:
+    created = datetime.fromisoformat(data["reconfirm_created_at"])
+    deadline = datetime.fromisoformat(data["reconfirm_deadline_at"]) if data.get("reconfirm_deadline_at") else created + timedelta(seconds=RECONFIRM_SECONDS)
+    if created.tzinfo is None or deadline.tzinfo is None:
+        raise ValueError("Invalid reconfirmation timestamp")
+    return min(deadline, created + timedelta(seconds=RECONFIRM_SECONDS))
+
+
+def parse_consent(email: str, raw: str, now: datetime | None = None, *, include_expired: bool = False) -> dict[str, Any] | None:
     """Do not infer or normalize a missing/mismatched local identity."""
     try:
         data = json.loads(raw)
         if not isinstance(data, dict) or data.get("email") != email:
             return None
         _EMAIL.validate_python(email)
+        if (not include_expired and data.get("consent_state") == "reconfirm_pending"
+                and reconfirm_deadline(data) <= (now or datetime.now(timezone.utc))):
+            return None
         return data
-    except (TypeError, ValueError):
+    except (KeyError, TypeError, ValueError):
         return None
 
 
@@ -197,7 +228,7 @@ def classify_contact(
     provider: Any, list_id: int, now: datetime,
 ) -> tuple[str, list[str]]:
     """KEEP means no change, not approved consent. No result authorizes a write."""
-    data = parse_consent(email, raw)
+    data = parse_consent(email, raw, now)
     if data is None:
         return "EXCLUDE", ["invalid_consent_record"]
     reasons = []

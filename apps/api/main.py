@@ -1206,7 +1206,7 @@ async def lifespan(app):
     await add_persisted_interval_job(scheduler, scheduled_cplm_refresh, hours=6, name="cplm_refresh")
     await add_persisted_interval_job(scheduler, scheduled_greek_topics, hours=6, name="greek_topics")
     add_observed_job(scheduler, scheduled_monthly_newsletter, CronTrigger(day=1, hour=9, minute=0), name="monthly_newsletter")
-    add_observed_job(scheduler, scheduled_newsletter_reconfirm_expiry, CronTrigger(hour=3, minute=0, timezone="UTC"), name="newsletter_reconfirm_expiry")
+    add_observed_job(scheduler, scheduled_newsletter_reconfirm_expiry, CronTrigger(minute=0, timezone="UTC"), name="newsletter_reconfirm_expiry")
     await initialize_job_states(scheduler)
     install_schedule_listener(scheduler)
     scheduler.start()

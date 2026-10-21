@@ -101,7 +101,10 @@ async def test_send_transactional_reply_to() -> None:
     assert payload["to"] == [{"email": "user@example.org"}]
 
 
-async def test_monthly_report_campaign_reply_to() -> None:
+async def test_monthly_report_campaign_reply_to(monkeypatch: pytest.MonkeyPatch) -> None:
+    from routers import newsletter
+    from tests.test_newsletter_delivery_sync import MemoryRedis
+    monkeypatch.setattr(newsletter, "_get_redis", AsyncMock(return_value=MemoryRedis()))
     from services import newsletter_service
 
     scalar_results = iter([1, 2, 3, 4])
