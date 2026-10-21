@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Text, ActivityIndicator, View } from "react-native";
+import { Text, ActivityIndicator, View, useWindowDimensions } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as SecureStore from "expo-secure-store";
 import { colors } from "../theme";
 import { ChannelNotice } from "../components/ChannelNotice";
@@ -24,6 +25,7 @@ import CompassScreen from "../screens/CompassScreen";
 import PolisLoginScreen from "../screens/PolisLoginScreen";
 import ImportAccountScreen from "../screens/ImportAccountScreen";
 import { linking } from "./linking";
+import { getTabBarMetrics, TAB_BAR_MAX_FONT_SIZE_MULTIPLIER } from "./tab-bar-layout";
 import PolitikoiScreen from "../screens/PolitikoiScreen";
 import EvaluatePoliticianScreen from "../screens/EvaluatePoliticianScreen";
 import ZkSemaphoreScreen from "../screens/ZkSemaphoreScreen";
@@ -62,31 +64,39 @@ const TAB_ICONS: Record<string, string> = {
 };
 
 function TabNavigator() {
+  const { fontScale, width, height } = useWindowDimensions();
+  const { bottom } = useSafeAreaInsets();
+  const tabBar = getTabBarMetrics(fontScale, bottom);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerStyle: { backgroundColor: colors.headerBg },
         headerTintColor: colors.headerText,
         headerTitleStyle: { fontWeight: "900" },
-        tabBarStyle: { backgroundColor: colors.tabBarBg, borderTopColor: colors.border },
+        tabBarStyle: { backgroundColor: colors.tabBarBg, borderTopColor: colors.border, height: tabBar.height },
+        tabBarItemStyle: { minWidth: 48, minHeight: 48 },
+        tabBarIconStyle: { width: tabBar.iconWidth, height: tabBar.iconHeight },
+        tabBarLabelPosition: width > height ? "beside-icon" : "below-icon",
+        tabBarAccessibilityLabel: route.name === "Home" ? "εκκλησία" : route.name === "Bills" ? "Ψηφοφορίες" : route.name === "Trending" ? "Trending" : route.name === "Tickets" ? "POLIS" : "Κόμματα",
         tabBarActiveTintColor: colors.tabBarActive,
         tabBarInactiveTintColor: colors.tabBarInactive,
-        // GH-298: label keeps system font scaling but stays on one line and
-        // shrinks to fit its fixed-width column instead of wrapping/clipping.
-        tabBarLabel: ({ color }: { color: string }) => (
+        // GH-298: cap scaling locally and let the bar grow with the same scale.
+        tabBarLabel: ({ color, position }) => (
           <Text
+            maxFontSizeMultiplier={TAB_BAR_MAX_FONT_SIZE_MULTIPLIER}
             numberOfLines={1}
             adjustsFontSizeToFit
             minimumFontScale={0.75}
-            style={{ color, fontSize: 10, fontWeight: "700" }}
+            ellipsizeMode="tail"
+            style={{ color, fontSize: 10, lineHeight: 14, fontWeight: "700", flexShrink: 1, maxWidth: "100%", textAlign: "center", marginStart: position === "beside-icon" ? 5 : 0 }}
           >
             {route.name === "Home" ? "εκκλησία" : route.name === "Bills" ? "Ψ/φορία" : route.name === "Trending" ? "Trending" : route.name === "Tickets" ? "POLIS" : "Κόμματα"}
           </Text>
         ),
-        // Emoji is a graphic: size it from the navigator's icon size and keep
-        // it inside the fixed 28dp icon slot regardless of font scale.
+        // The navigator's icon wrapper grows too, keeping scaled emoji inside it.
         tabBarIcon: ({ size }: { size: number }) => (
-          <Text allowFontScaling={false} style={{ fontSize: Math.round(Math.min(size, 28) * 0.8), lineHeight: Math.min(size, 28), textAlign: "center" }}>
+          <Text maxFontSizeMultiplier={TAB_BAR_MAX_FONT_SIZE_MULTIPLIER} numberOfLines={1} style={{ fontSize: Math.round(Math.min(size, 28) * 0.8), lineHeight: Math.min(size, 28), textAlign: "center" }}>
             {TAB_ICONS[route.name] || "●"}
           </Text>
         ),
