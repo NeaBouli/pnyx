@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field
 
 from dependencies import verify_admin_key
 from services.mail_policy import OPERATOR_EMAIL
+from services.newsletter_lock import newsletter_lock, NewsletterLockUnavailable
 from services.telegram_community import _send as tg_send, TOPICS
 from services.newsletter_consent import (
     CONFIRMED_KEY, MAX_READINESS_CONTACTS, READ_CONSENT_SNAPSHOT,
@@ -99,6 +100,30 @@ class PreviewRequest(BaseModel):
 
 
 # ─── Endpoints ───────────────────────────────────────────────────────────────
+
+@router.post("/reconfirm")
+async def newsletter_reconfirm(
+    dry_run: bool = True, resend: bool = False, _auth: bool = Depends(verify_admin_key),
+) -> dict[str, int]:
+    from routers.newsletter import reconfirm_legacy
+    try:
+        return await reconfirm_legacy(dry_run=dry_run, resend=resend)
+    except Exception:
+        logger.error("[NEWSLETTER] Reconfirmation unavailable; retry retained")
+        raise HTTPException(503, "Newsletter reconfirmation unavailable; retry") from None
+
+
+@router.post("/reconfirm/expire")
+async def newsletter_reconfirm_expire(
+    dry_run: bool = True, _auth: bool = Depends(verify_admin_key),
+) -> dict[str, int]:
+    from routers.newsletter import expire_reconfirmations
+    try:
+        return await expire_reconfirmations(dry_run=dry_run)
+    except Exception:
+        logger.error("[NEWSLETTER] Reconfirmation expiry unavailable; retry retained")
+        raise HTTPException(503, "Newsletter reconfirmation unavailable; retry") from None
+
 
 @router.post("/backfill")
 async def newsletter_backfill(dry_run: bool = True, _auth: bool = Depends(verify_admin_key)) -> dict:
@@ -293,7 +318,14 @@ async def newsletter_send(req: SendRequest, _auth: bool = Depends(verify_admin_k
     except Exception as e:
         logger.warning("[NEWSLETTER] Could not fetch campaign %d details: %s", req.campaign_id, e)
 
-    await _brevo_request("POST", f"emailCampaigns/{req.campaign_id}/sendNow", {})
+    try:
+        async with newsletter_lock() as lease:
+            if not await newsletter_service.ensure_reconfirmations_paused():
+                raise HTTPException(503, "Newsletter campaign paused; retry")
+            await lease.check()
+            await _brevo_request("POST", f"emailCampaigns/{req.campaign_id}/sendNow", {})
+    except NewsletterLockUnavailable:
+        raise HTTPException(503, "Newsletter campaign paused; retry") from None
     logger.info("[NEWSLETTER] Campaign %d sent", req.campaign_id)
 
     # NEA-263: Cross-publish to Telegram (non-blocking)

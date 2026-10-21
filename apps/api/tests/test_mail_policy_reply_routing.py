@@ -101,7 +101,10 @@ async def test_send_transactional_reply_to() -> None:
     assert payload["to"] == [{"email": "user@example.org"}]
 
 
-async def test_monthly_report_campaign_reply_to() -> None:
+async def test_monthly_report_campaign_reply_to(monkeypatch: pytest.MonkeyPatch) -> None:
+    from routers import newsletter
+    from tests.test_newsletter_delivery_sync import MemoryRedis
+    monkeypatch.setattr(newsletter, "_get_redis", AsyncMock(return_value=MemoryRedis()))
     from services import newsletter_service
 
     scalar_results = iter([1, 2, 3, 4])
@@ -117,7 +120,9 @@ async def test_monthly_report_campaign_reply_to() -> None:
         calls.append((endpoint, data))
         return {"id": 123} if endpoint == "emailCampaigns" else {}
 
-    with patch.object(newsletter_service, "_brevo_post", side_effect=fake_post):
+    with patch.object(newsletter_service, "_brevo_post", side_effect=fake_post), patch.object(
+        newsletter_service, "ensure_reconfirmations_paused", AsyncMock(return_value=True),
+    ):
         ok = await newsletter_service.send_monthly_report(db)
 
     assert ok is True

@@ -9,8 +9,8 @@ import os
 import json
 import logging
 import secrets
-from datetime import date, datetime, timezone
-from typing import Optional
+from datetime import date, datetime, timezone, timedelta
+from typing import Any, Optional
 from urllib.parse import urlencode
 from rate_limit import limiter
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -25,13 +25,18 @@ from ip_utils import hashed_rate_subject, rate_limit_key_for_ip, redis_fixed_win
 from dependencies import verify_admin_key
 from services import newsletter_service
 from services.mail_policy import operator_reply_to
+from services.newsletter_lock import newsletter_lock, NewsletterLockUnavailable
 from services.newsletter_consent import (
     CONFIRMED_KEY, CONFIRM_ONCE, CONSENT_SCHEMA, confirmation_payload,
     SUPPRESSED_KEY, BREVO_ADD_RETRY_KEY, BREVO_REMOVE_RETRY_KEY,
     LISTMONK_REMOVE_RETRY_KEY, WITHDRAW_CONSENT,
     BREVO_ADD_UNSETTLED_KEY, QUEUE_BREVO_ADD, QUEUE_DELIVERY_REMOVAL,
     LISTMONK_ADD_UNSETTLED_KEY, QUEUE_LISTMONK_ADD,
-    delivery_eligible, parse_consent,
+    delivery_eligible, has_doi_evidence, parse_consent,
+    RECONFIRM_KEY, RECONFIRM_SECONDS, START_RECONFIRM, CLAIM_RECONFIRM_SEND,
+    CONFIRM_RECONFIRM, EXPIRE_RECONFIRM, FINISH_RECONFIRM_EXPIRY,
+    reconfirm_token_key, reconfirm_digest_key, reconfirm_deadline,
+    RECONCILE_CONSENT_ALIASES, RETIRE_RECONFIRM,
 )
 
 logger = logging.getLogger(__name__)
@@ -143,6 +148,35 @@ async def _remove_listmonk_contact(email: str, *, require_present: bool = False)
     return result.get("data") is True
 
 
+async def _listmonk_reconfirm_contact(email: str) -> dict[str, Any] | None:
+    literal = email.replace("'", "''")
+    query = f"lower(subscribers.email) = lower('{literal}')"
+    result = await _listmonk_request("GET", "/api/subscribers?" + urlencode({"query": query}))
+    contacts = result["data"]["results"]
+    if not isinstance(contacts, list):
+        raise ValueError("Invalid newsletter provider state")
+    for contact in contacts:
+        if isinstance(contact, dict) and str(contact.get("email", "")).casefold() == email.casefold():
+            if (type(contact.get("id")) is not int or contact.get("status") not in {"enabled", "blocklisted"}
+                    or not isinstance(contact.get("lists"), list)):
+                raise ValueError("Invalid newsletter provider state")
+            return contact
+    if contacts:
+        raise ValueError("Invalid newsletter provider identity")
+    return None
+
+
+async def _unlink_listmonk_contact(email: str, *, require_present: bool = False) -> bool:
+    """Pause newsletter lists without blocklisting or deleting the contact."""
+    contact = await _listmonk_reconfirm_contact(email)
+    if contact is None:
+        return not require_present
+    result = await _listmonk_request("PUT", "/api/subscribers/lists", {
+        "ids": [contact["id"]], "action": "remove", "target_list_ids": sorted(LIST_IDS.values()),
+    })
+    return result.get("data") is True
+
+
 async def _retry_withdrawal(store: aioredis.Redis, email: str) -> bool:
     success = True
     for key, unsettled_key, remove in (
@@ -152,6 +186,10 @@ async def _retry_withdrawal(store: aioredis.Redis, email: str) -> bool:
         if not await store.hget(key, email):
             continue
         try:
+            if key == LISTMONK_REMOVE_RETRY_KEY:
+                reconfirm = parse_consent(email, await store.hget(RECONFIRM_KEY, email.casefold()), include_expired=True)
+                if reconfirm is not None and not await store.hget(SUPPRESSED_KEY, email.casefold()):
+                    remove = _unlink_listmonk_contact
             unsettled = await store.hget(unsettled_key, email.casefold())
             removed = (await remove(email, require_present=True) if unsettled == "uncertain"
                        else await remove(email))
@@ -175,6 +213,201 @@ async def _remove_ineligible_contact(store: aioredis.Redis, email: str) -> bool:
         LISTMONK_REMOVE_RETRY_KEY, email, "1" if LISTMONK_PW else "0",
     )
     return await _retry_withdrawal(store, email)
+
+
+_reconfirm_deadline = reconfirm_deadline
+
+
+async def _reconcile_consent_aliases(store, identity: str, now: datetime, *, dry_run: bool = False):
+    records = {email: raw for email, raw in (await store.hgetall(CONFIRMED_KEY)).items()
+               if email.casefold() == identity}
+    valid = [(email, raw, parse_consent(email, raw, now, include_expired=True))
+             for email, raw in records.items()]
+    valid = [item for item in valid if item[2] is not None]
+    if not valid:
+        return None
+    fresh = [item for item in valid if has_doi_evidence(item[2], now)]
+    if fresh:
+        chosen = max(fresh, key=lambda item: datetime.fromisoformat(item[2]["confirmed_at"]))
+    else:
+        pending = await store.hget(RECONFIRM_KEY, identity)
+        chosen = next((item for item in valid if item[1] == pending), valid[0])
+    if not dry_run and len(records) > 1:
+        if await store.eval(RECONCILE_CONSENT_ALIASES, 1, CONFIRMED_KEY, json.dumps(records), chosen[0]) != 1:
+            return None
+    if fresh and not dry_run:
+        previous = await store.hget(RECONFIRM_KEY, identity)
+        if previous:
+            pending = json.loads(previous)
+            if pending.get("reconfirm_token_hash"):
+                await store.eval(RETIRE_RECONFIRM, 2, RECONFIRM_KEY,
+                                 reconfirm_digest_key(pending["reconfirm_token_hash"]), identity, previous)
+            else:
+                await store.eval(FINISH_RECONFIRM_EXPIRY, 1, RECONFIRM_KEY, identity, previous)
+    return chosen
+
+
+async def reconfirm_legacy(dry_run: bool = True, resend: bool = False) -> dict[str, int]:
+    store = await _get_redis()
+    if dry_run:
+        return await _reconfirm_legacy(store, dry_run, resend)
+    async with newsletter_lock(store):
+        return await _reconfirm_legacy(store, dry_run, resend)
+
+
+async def _reconfirm_legacy(store, dry_run: bool, resend: bool) -> dict[str, int]:
+    """Invite only valid local legacy identities without validated DOI evidence."""
+    counts = {"selected": 0, "pending": 0, "paused": 0, "sent": 0, "skipped": 0, "failed": 0}
+    confirmed = await store.hgetall(CONFIRMED_KEY)
+    seen = set()
+    for email, raw in confirmed.items():
+        now = datetime.now(timezone.utc)
+        identity = email.casefold()
+        if identity in seen:
+            continue
+        seen.add(identity)
+        chosen = await _reconcile_consent_aliases(store, identity, now, dry_run=dry_run)
+        if chosen is None:
+            counts["skipped"] += 1
+            continue
+        email, raw, data = chosen
+        if (has_doi_evidence(data, now)
+                or (data.get("consent_state") == "reconfirm_pending" and _reconfirm_deadline(data) <= now)
+                or await store.hget(SUPPRESSED_KEY, email.casefold())):
+            counts["skipped"] += 1
+            continue
+        previous = await store.hget(RECONFIRM_KEY, email.casefold())
+        pending = parse_consent(email, previous, now, include_expired=True)
+        if previous and pending is None:
+            counts["skipped"] += 1
+            continue
+        if pending and (pending.get("consent_state") != "reconfirm_pending" or _reconfirm_deadline(pending) <= now):
+            counts["skipped"] += 1
+            continue
+        # Provider suppression must also win for the otherwise held legacy set.
+        status = await newsletter_service.contact_status(email)
+        if status == "suppressed":
+            if not dry_run:
+                await _withdraw_subscription(store, email, "provider_suppressed")
+            counts["skipped"] += 1
+            continue
+        if status not in {"already_present", "to_add"}:
+            counts["failed"] += 1
+            continue
+        if LISTMONK_PW:
+            contact = await _listmonk_reconfirm_contact(email)
+            if contact and (contact["status"] == "blocklisted" or any(
+                item.get("id") in LIST_IDS.values() and item.get("subscription_status") == "unsubscribed"
+                for item in contact["lists"]
+            )):
+                if not dry_run:
+                    await _withdraw_subscription(store, email, "provider_suppressed")
+                counts["skipped"] += 1
+                continue
+        counts["selected"] += 1
+        if pending:
+            counts["pending"] += 1
+        if dry_run:
+            continue
+        if (await store.hget(CONFIRMED_KEY, email) != raw
+                or await store.hget(SUPPRESSED_KEY, email.casefold())):
+            counts["skipped"] += 1
+            continue
+        if pending and not resend:
+            # Retry a failed pause, never retry an ambiguous SMTP attempt.
+            if await _remove_ineligible_contact(store, email):
+                counts["paused"] += 1
+            else:
+                counts["failed"] += 1
+            continue
+        token = secrets.token_urlsafe(32)
+        token_key = reconfirm_token_key(token)
+        now = datetime.now(timezone.utc)
+        if pending and _reconfirm_deadline(pending) <= now:
+            counts["skipped"] += 1
+            continue
+        created = pending["reconfirm_created_at"] if pending else now.isoformat()
+        invitation = {key: value for key, value in data.items()
+                      if not key.startswith("reconfirm_") and key not in {"confirmed_at", "confirmation_method", "confirmation_source"}}
+        invitation.update(consent_schema=CONSENT_SCHEMA, requested_at=created,
+                          consent_state="reconfirm_pending", reconfirm_created_at=created,
+                          reconfirm_token_hash=token_key.rsplit(":", 1)[1])
+        invitation["reconfirm_deadline_at"] = (_reconfirm_deadline(pending) if pending else _reconfirm_deadline(invitation)).isoformat()
+        invitation_raw = json.dumps(invitation)
+        expires_ms = int(_reconfirm_deadline(invitation).timestamp() * 1000)
+        old_key = reconfirm_digest_key(pending["reconfirm_token_hash"]) if pending else token_key
+        started = await store.eval(START_RECONFIRM, 5, CONFIRMED_KEY, SUPPRESSED_KEY, RECONFIRM_KEY,
+                                   token_key, old_key, email, email.casefold(), raw, previous or "", invitation_raw, expires_ms)
+        if started != 1:
+            counts["skipped"] += 1
+            continue
+        if not await _remove_ineligible_contact(store, email):
+            counts["failed"] += 1
+            continue
+        counts["paused"] += 1
+        now = datetime.now(timezone.utc)
+        if _reconfirm_deadline(invitation) <= now:
+            counts["skipped"] += 1
+            continue
+        attempted = dict(invitation, reconfirm_send_attempted_at=now.isoformat())
+        claimed = await store.eval(CLAIM_RECONFIRM_SEND, 4, CONFIRMED_KEY, RECONFIRM_KEY, SUPPRESSED_KEY, token_key,
+                                   email, email.casefold(), invitation_raw, json.dumps(attempted))
+        if claimed != 1 or _reconfirm_deadline(invitation) <= datetime.now(timezone.utc):
+            counts["skipped"] += 1
+            continue
+        if await newsletter_service.send_reconfirmation(email, token):
+            counts["sent"] += 1
+        else:
+            counts["failed"] += 1
+    return counts
+
+
+async def expire_reconfirmations(dry_run: bool = True) -> dict[str, int]:
+    store = await _get_redis()
+    if dry_run:
+        return await _expire_reconfirmations(store, dry_run)
+    async with newsletter_lock(store):
+        return await _expire_reconfirmations(store, dry_run)
+
+
+async def _expire_reconfirmations(store, dry_run: bool) -> dict[str, int]:
+    """Remove expired local consent; retain cleanup work until both lists are safe."""
+    counts = {"expired": 0, "deleted": 0, "pending": 0, "failed": 0}
+    records = await store.hgetall(RECONFIRM_KEY)
+    for identity, raw in records.items():
+        now = datetime.now(timezone.utc)
+        data = json.loads(raw)
+        email = data["email"]
+        if identity != email.casefold() or data.get("consent_state") not in {"reconfirm_pending", "reconfirm_expiring"}:
+            counts["failed"] += 1
+            continue
+        chosen = await _reconcile_consent_aliases(store, identity, now, dry_run=dry_run)
+        if chosen and has_doi_evidence(chosen[2], now):
+            continue
+        if _reconfirm_deadline(data) > now:
+            counts["pending"] += 1
+            continue
+        counts["expired"] += 1
+        if dry_run:
+            continue
+        if data["consent_state"] == "reconfirm_pending":
+            cleanup = json.dumps({"email": email, "consent_state": "reconfirm_expiring",
+                                  "reconfirm_created_at": data["reconfirm_created_at"],
+                                  "reconfirm_deadline_at": _reconfirm_deadline(data).isoformat()})
+            changed = await store.eval(
+                EXPIRE_RECONFIRM, 6, CONFIRMED_KEY, RECONFIRM_KEY,
+                reconfirm_digest_key(data["reconfirm_token_hash"]), BREVO_ADD_RETRY_KEY,
+                BREVO_REMOVE_RETRY_KEY, LISTMONK_REMOVE_RETRY_KEY,
+                email, identity, raw, cleanup, "1" if LISTMONK_PW else "0",
+            )
+            if changed != 1:
+                continue
+            raw = cleanup
+        if await _retry_withdrawal(store, email):
+            counts["deleted"] += await store.eval(FINISH_RECONFIRM_EXPIRY, 1, RECONFIRM_KEY, identity, raw)
+        else:
+            counts["failed"] += 1
+    return counts
 
 
 async def _withdraw_subscription(store: aioredis.Redis, email: str, reason: str) -> bool:
@@ -202,7 +435,7 @@ async def _sync_brevo_contact(store: aioredis.Redis, email: str, name: str = "")
             await _withdraw_subscription(store, email, "suppressed")
             return False
         raw = await store.hget(CONFIRMED_KEY, email)
-        data = parse_consent(email, raw)
+        data = parse_consent(email, raw, datetime.now(timezone.utc))
         if data is None or not delivery_eligible(data, datetime.now(timezone.utc)):
             await _remove_ineligible_contact(store, email)
             return False
@@ -249,7 +482,7 @@ async def _sync_listmonk_contact(store: aioredis.Redis, email: str) -> bool:
             await _withdraw_subscription(store, email, "suppressed")
             return False
         raw = await store.hget(CONFIRMED_KEY, email)
-        data = parse_consent(email, raw)
+        data = parse_consent(email, raw, datetime.now(timezone.utc))
         if data is None or not delivery_eligible(data, datetime.now(timezone.utc)):
             await _remove_ineligible_contact(store, email)
             return False
@@ -317,7 +550,10 @@ async def subscribe(req: SubscribeRequest, request: Request) -> dict:
 
     # Check if already confirmed — must not consume rate-limit counters or resend
     existing = await r.hget("newsletter:confirmed", req.email)
-    if existing:
+    existing_data = parse_consent(req.email, existing, include_expired=True)
+    expired = (existing_data is not None and existing_data.get("consent_state") == "reconfirm_pending"
+               and _reconfirm_deadline(existing_data) <= datetime.now(timezone.utc))
+    if existing and not expired:
         return {"success": True, "message": "Already subscribed."}
 
     # EKA-04: rate-limit attempted confirmation emails before any token write
@@ -409,24 +645,61 @@ async def subscribe(req: SubscribeRequest, request: Request) -> dict:
 @limiter.shared_limit("10/minute", scope="newsletter:confirm_subscription")
 async def confirm_subscription(token: str, request: Request = None) -> HTMLResponse:
     """Confirm newsletter subscription via token from email link."""
-    r = await _get_redis()
-    raw = await r.get(f"newsletter:pending:{token}")
+    try:
+        r = await _get_redis()
+        raw = await r.get(f"newsletter:pending:{token}")
+        reconfirm_raw = await r.get(reconfirm_token_key(token)) if not raw else None
+    except Exception:
+        raise HTTPException(503, "Newsletter confirmation unavailable; retry") from None
 
-    if not raw:
+    if not raw and not reconfirm_raw:
         return HTMLResponse(
             '<div style="text-align:center;padding:3rem;font-family:sans-serif"><h2>Link abgelaufen</h2><p>Bitte registrieren Sie sich erneut auf ekklesia.gr</p></div>',
             status_code=410
         )
 
-    data = json.loads(raw)
-    email = data["email"]
-
     confirmed_at = datetime.now(timezone.utc)
-    confirmed_raw = confirmation_payload(data, confirmed_at)
-    result = await r.eval(
-        CONFIRM_ONCE, 2, f"newsletter:pending:{token}", CONFIRMED_KEY,
-        raw, email, confirmed_raw,
-    )
+    if reconfirm_raw:
+        try:
+            async with newsletter_lock(r):
+                invitation = json.loads(reconfirm_raw)
+                email = invitation["email"]
+                current = await r.hget(RECONFIRM_KEY, email.casefold())
+                data = parse_consent(email, current, confirmed_at)
+                if (data is None or data.get("consent_state") != "reconfirm_pending"
+                        or reconfirm_digest_key(data["reconfirm_token_hash"]) != reconfirm_token_key(token)
+                        or _reconfirm_deadline(data) <= confirmed_at):
+                    return HTMLResponse("Confirmation link expired or already used.", status_code=410)
+                data = {key: value for key, value in data.items()
+                        if not key.startswith("reconfirm_") and key != "consent_state"}
+                data["confirmation_source"] = "legacy_reconfirmation"
+                confirmed_raw = confirmation_payload(data, confirmed_at)
+                result = await r.eval(CONFIRM_RECONFIRM, 4, reconfirm_token_key(token), CONFIRMED_KEY,
+                                      RECONFIRM_KEY, SUPPRESSED_KEY, reconfirm_raw, email,
+                                      email.casefold(), current, confirmed_raw)
+                if result == 1:
+                    await _reconcile_consent_aliases(r, email.casefold(), confirmed_at)
+        except Exception:
+            raise HTTPException(503, "Newsletter confirmation unavailable; retry") from None
+    else:
+        data = json.loads(raw)
+        email = data["email"]
+        confirmed_raw = confirmation_payload(data, confirmed_at)
+        # Ordinary DOI can arrive under another casing during legacy cleanup.
+        # Serialize its consent write with that lifecycle as well.
+        try:
+            async with newsletter_lock(r):
+                existing = await r.hget(CONFIRMED_KEY, email)
+                old = parse_consent(email, existing, confirmed_at, include_expired=True)
+                if (old is not None and old.get("consent_state") == "reconfirm_pending"
+                        and _reconfirm_deadline(old) <= confirmed_at):
+                    await r.eval(RECONCILE_CONSENT_ALIASES, 1, CONFIRMED_KEY, json.dumps({email: existing}), "")
+                result = await r.eval(
+                    CONFIRM_ONCE, 2, f"newsletter:pending:{token}", CONFIRMED_KEY,
+                    raw, email, confirmed_raw,
+                )
+        except NewsletterLockUnavailable:
+            raise HTTPException(503, "Newsletter confirmation unavailable; retry") from None
     if result == 0:
         return HTMLResponse("Confirmation link expired or already used.", status_code=410)
     if result not in (1, 2):

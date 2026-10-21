@@ -15,6 +15,7 @@ from redis.exceptions import ConnectionError as RedisConnectionError, ResponseEr
 
 from routers import newsletter, newsletter_admin
 from services import newsletter_service
+from services.newsletter_lock import RENEW_LOCK, RELEASE_LOCK
 from services.newsletter_consent import (
     CONFIRMED_KEY, CONFIRM_ONCE, SUPPRESSED_KEY, BREVO_ADD_RETRY_KEY,
     BREVO_REMOVE_RETRY_KEY, LISTMONK_REMOVE_RETRY_KEY, WITHDRAW_CONSENT,
@@ -49,6 +50,12 @@ class MemoryRedis:
     async def get(self, key: str) -> str | None:
         return self.pending.get(key)
 
+    async def set(self, key: str, value: str, *, nx: bool = False, px: int = 0):
+        if nx and key in self.pending:
+            return None
+        self.pending[key] = value
+        return True
+
     async def hget(self, key: str, field: str) -> str | None:
         return self.hashes[key].get(field)
 
@@ -73,6 +80,13 @@ class MemoryRedis:
         self.mutations.append(key)
 
     async def eval(self, script: str, numkeys: int, *args: Any) -> int:
+        if script in (RENEW_LOCK, RELEASE_LOCK):
+            key, owner = args[:2]
+            if self.pending.get(key) != owner:
+                return 0
+            if script == RELEASE_LOCK:
+                self.pending.pop(key)
+            return 1
         self.mutations.append("eval")
         if script == CONFIRM_ONCE:
             pending_key, confirmed_key, raw, email, confirmed = args
@@ -780,7 +794,14 @@ async def test_suppression_lookup_failure_after_confirmation_preserves_success_a
         monkeypatch.setattr(newsletter, "LISTMONK_PW", "synthetic-password")
     optional = AsyncMock()
     monkeypatch.setattr(newsletter, "_listmonk_request", optional)
-    store.hget = AsyncMock(side_effect=RuntimeError(f"private redis error {EMAIL}"))
+    original_hget = store.hget
+
+    async def failed_suppression_lookup(key, field):
+        if key == SUPPRESSED_KEY:
+            raise RuntimeError(f"private redis error {EMAIL}")
+        return await original_hget(key, field)
+
+    store.hget = AsyncMock(side_effect=failed_suppression_lookup)
     async with HTTP_CLIENT(transport=httpx.ASGITransport(app=application()), base_url="http://test") as client:
         response = await client.get("/api/v1/newsletter/confirm/redis-outage")
     assert response.status_code == 200

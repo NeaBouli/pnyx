@@ -1,7 +1,8 @@
 """DOI evidence, withdrawal bookkeeping and read-only readiness; no provider I/O."""
 import json
+import hashlib
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from pydantic import EmailStr, TypeAdapter
@@ -15,6 +16,8 @@ BREVO_REMOVE_RETRY_KEY = "newsletter:brevo:remove_retry"
 LISTMONK_ADD_UNSETTLED_KEY = "newsletter:listmonk:add_unsettled"
 LISTMONK_REMOVE_RETRY_KEY = "newsletter:listmonk:remove_retry"
 CONSENT_SCHEMA = 2
+RECONFIRM_KEY = "newsletter:reconfirm"
+RECONFIRM_SECONDS = 30 * 86400
 MAX_READINESS_CONTACTS = 100
 TOPICS = {"new_proposals", "active_votes", "vote_results", "system_news", "breaking_news"}
 _EMAIL = TypeAdapter(EmailStr)
@@ -78,6 +81,90 @@ for i = 1, #entries do result[#result + 1] = entries[i] end
 return result
 """
 
+# Compare both records so concurrent runs cannot issue two invitations. Only
+# digests of the bearer token are persisted, separate from ordinary signup keys.
+START_RECONFIRM = """
+if redis.call('HEXISTS', KEYS[2], ARGV[2]) == 1 then return 0 end
+if redis.call('HGET', KEYS[1], ARGV[1]) ~= ARGV[3] then return 0 end
+if (redis.call('HGET', KEYS[3], ARGV[2]) or '') ~= ARGV[4] then return 0 end
+redis.call('HSET', KEYS[3], ARGV[2], ARGV[5])
+redis.call('HSET', KEYS[1], ARGV[1], ARGV[5])
+redis.call('SET', KEYS[4], ARGV[5], 'PXAT', ARGV[6])
+if KEYS[5] ~= KEYS[4] then redis.call('DEL', KEYS[5]) end
+return 1
+"""
+
+# Claim before SMTP: a timeout/crash may have delivered, so only explicit resend
+# may attempt another email. The fixed original deadline is never extended.
+CLAIM_RECONFIRM_SEND = """
+if redis.call('EXISTS', KEYS[4]) == 0 then return 0 end
+if redis.call('HEXISTS', KEYS[3], ARGV[2]) == 1 then return 0 end
+if redis.call('HGET', KEYS[1], ARGV[1]) ~= ARGV[3] then return 0 end
+if redis.call('HGET', KEYS[2], ARGV[2]) ~= ARGV[3] then return 0 end
+redis.call('HSET', KEYS[2], ARGV[2], ARGV[4])
+redis.call('HSET', KEYS[1], ARGV[1], ARGV[4])
+return 1
+"""
+
+CONFIRM_RECONFIRM = """
+if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
+if redis.call('HEXISTS', KEYS[4], ARGV[3]) == 1 then return 0 end
+if redis.call('HGET', KEYS[2], ARGV[2]) ~= ARGV[4] then return 0 end
+if redis.call('HGET', KEYS[3], ARGV[3]) ~= ARGV[4] then return 0 end
+redis.call('HSET', KEYS[2], ARGV[2], ARGV[5])
+redis.call('HDEL', KEYS[3], ARGV[3])
+redis.call('DEL', KEYS[1])
+return 1
+"""
+
+# Delete consent and the token before provider I/O; retain only a cleanup ledger
+# until durable removals have completed. A click and expiry cannot both win.
+EXPIRE_RECONFIRM = """
+if redis.call('HGET', KEYS[2], ARGV[2]) ~= ARGV[3] then return 0 end
+local current = redis.call('HGET', KEYS[1], ARGV[1])
+if current and current ~= ARGV[3] then return 0 end
+redis.call('HSET', KEYS[2], ARGV[2], ARGV[4])
+redis.call('HSET', KEYS[5], ARGV[1], '1')
+if ARGV[5] == '1' then redis.call('HSET', KEYS[6], ARGV[1], '1') end
+redis.call('HDEL', KEYS[4], ARGV[1])
+redis.call('HDEL', KEYS[1], ARGV[1])
+redis.call('DEL', KEYS[3])
+return 1
+"""
+
+FINISH_RECONFIRM_EXPIRY = """
+if redis.call('HGET', KEYS[1], ARGV[1]) ~= ARGV[2] then return 0 end
+redis.call('HDEL', KEYS[1], ARGV[1])
+return 1
+"""
+
+# Compare every alias before pruning so a concurrent fresh confirmation wins.
+RECONCILE_CONSENT_ALIASES = """
+local entries = cjson.decode(ARGV[1])
+for email, raw in pairs(entries) do
+    if redis.call('HGET', KEYS[1], email) ~= raw then return 0 end
+end
+for email, raw in pairs(entries) do
+    if email ~= ARGV[2] then redis.call('HDEL', KEYS[1], email) end
+end
+return 1
+"""
+
+RETIRE_RECONFIRM = """
+if redis.call('HGET', KEYS[1], ARGV[1]) ~= ARGV[2] then return 0 end
+redis.call('HDEL', KEYS[1], ARGV[1])
+redis.call('DEL', KEYS[2])
+return 1
+"""
+
+
+def reconfirm_token_key(token: str) -> str:
+    return reconfirm_digest_key(hashlib.sha256(token.encode()).hexdigest())
+
+
+def reconfirm_digest_key(digest: str) -> str:
+    return f"newsletter:reconfirm:token:{digest}"
+
 
 def confirmation_payload(data: dict[str, Any], now: datetime) -> str:
     """Timestamp this click only; never backfill existing confirmed records."""
@@ -90,15 +177,26 @@ def confirmation_payload(data: dict[str, Any], now: datetime) -> str:
     return json.dumps(confirmed)
 
 
-def parse_consent(email: str, raw: str) -> dict[str, Any] | None:
+def reconfirm_deadline(data: dict[str, Any]) -> datetime:
+    created = datetime.fromisoformat(data["reconfirm_created_at"])
+    deadline = datetime.fromisoformat(data["reconfirm_deadline_at"]) if data.get("reconfirm_deadline_at") else created + timedelta(seconds=RECONFIRM_SECONDS)
+    if created.tzinfo is None or deadline.tzinfo is None:
+        raise ValueError("Invalid reconfirmation timestamp")
+    return min(deadline, created + timedelta(seconds=RECONFIRM_SECONDS))
+
+
+def parse_consent(email: str, raw: str, now: datetime | None = None, *, include_expired: bool = False) -> dict[str, Any] | None:
     """Do not infer or normalize a missing/mismatched local identity."""
     try:
         data = json.loads(raw)
         if not isinstance(data, dict) or data.get("email") != email:
             return None
         _EMAIL.validate_python(email)
+        if (not include_expired and data.get("consent_state") == "reconfirm_pending"
+                and reconfirm_deadline(data) <= (now or datetime.now(timezone.utc))):
+            return None
         return data
-    except (TypeError, ValueError):
+    except (KeyError, TypeError, ValueError):
         return None
 
 
@@ -109,16 +207,18 @@ def has_doi_evidence(data: dict[str, Any], now: datetime) -> bool:
     try:
         requested = datetime.fromisoformat(data["requested_at"])
         confirmed = datetime.fromisoformat(data["confirmed_at"])
+        window = RECONFIRM_SECONDS if data.get("confirmation_source") == "legacy_reconfirmation" else 86400
         return (requested.tzinfo is not None and confirmed.tzinfo is not None
                 and requested <= confirmed <= now
-                and (confirmed - requested).total_seconds() <= 86400)
+                and (confirmed - requested).total_seconds() <= window)
     except (KeyError, TypeError, ValueError):
         return False
 
 
 def delivery_eligible(data: dict[str, Any], now: datetime) -> bool:
     topics = data.get("topics")
-    return (has_doi_evidence(data, now) and isinstance(topics, dict)
+    return (data.get("consent_state") != "reconfirm_pending"
+            and has_doi_evidence(data, now) and isinstance(topics, dict)
             and set(topics) == TOPICS and all(type(v) is bool for v in topics.values())
             and any(topics.values()))
 
@@ -128,7 +228,7 @@ def classify_contact(
     provider: Any, list_id: int, now: datetime,
 ) -> tuple[str, list[str]]:
     """KEEP means no change, not approved consent. No result authorizes a write."""
-    data = parse_consent(email, raw)
+    data = parse_consent(email, raw, now)
     if data is None:
         return "EXCLUDE", ["invalid_consent_record"]
     reasons = []

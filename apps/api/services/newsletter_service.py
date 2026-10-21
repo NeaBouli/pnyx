@@ -3,6 +3,7 @@ Newsletter Service — Brevo API direkt (Listmonk v6 API bug workaround).
 Handles: welcome emails, monthly reports, bill notifications.
 """
 import os
+import json
 import logging
 from datetime import datetime, timezone, timedelta
 from urllib.parse import quote
@@ -14,6 +15,7 @@ from sqlalchemy import select, func
 from services.bill_visibility import public_bill_filter
 from services.mail_policy import OPERATOR_EMAIL, operator_reply_to
 from services.small_cell import small_cell_k
+from services.newsletter_lock import newsletter_lock, NewsletterLockUnavailable
 
 logger = logging.getLogger(__name__)
 
@@ -159,15 +161,55 @@ async def remove_contact(email: str, *, require_present: bool = False) -> bool:
     return not contacts.get("failure", [])
 
 
-async def send_transactional(to_email: str, subject: str, html_body: str) -> bool:
+async def send_transactional(to_email: str, subject: str, html_body: str, *, neutral: bool = False) -> bool:
     result = await _brevo_post("smtp/email", {
         "sender": SENDER,
         "to": [{"email": to_email}],
         "replyTo": operator_reply_to(),
         "subject": subject,
-        "htmlContent": _wrap(html_body),
+        "htmlContent": html_body if neutral else _wrap(html_body),
     })
     return result is not None
+
+
+async def send_reconfirmation(email: str, token: str) -> bool:
+    """One neutral transactional invitation, without promotional template links."""
+    url = f"https://api.ekklesia.gr/api/v1/newsletter/confirm/{token}"
+    subject = "Επιβεβαιώστε την εγγραφή σας στο ενημερωτικό δελτίο του ekklesia.gr"
+    body = (
+        '<html lang="el"><body><p>' + subject + '.</p>'
+        f'<p><a href="{url}">Επιβεβαίωση εγγραφής</a></p>'
+        '<p>Ο σύνδεσμος ισχύει για 30 ημέρες και μπορεί να χρησιμοποιηθεί μία φορά.</p>'
+        '<p>Χωρίς επιβεβαίωση δεν θα σας σταλούν άλλα email και η εγγραφή σας '
+        'στο ενημερωτικό δελτίο θα διαγραφεί μετά από 30 ημέρες.</p></body></html>'
+    )
+    return await send_transactional(email, subject, body, neutral=True)
+
+
+async def ensure_reconfirmations_paused() -> bool:
+    """Fail closed before campaigns if a pending pause cannot be reconciled."""
+    from routers.newsletter import _get_redis, _remove_ineligible_contact, _reconcile_consent_aliases
+    from services.newsletter_consent import RECONFIRM_KEY, parse_consent, has_doi_evidence
+
+    try:
+        store = await _get_redis()
+        for identity, raw in (await store.hgetall(RECONFIRM_KEY)).items():
+            data = json.loads(raw)
+            email = data["email"]
+            if parse_consent(email, raw, include_expired=True) is None or identity != email.casefold():
+                return False
+            if await store.hget(RECONFIRM_KEY, identity) != raw:
+                continue
+            now = datetime.now(timezone.utc)
+            chosen = await _reconcile_consent_aliases(store, identity, now)
+            if chosen and has_doi_evidence(chosen[2], now):
+                continue
+            if not await _remove_ineligible_contact(store, email):
+                return False
+        return True
+    except Exception:
+        logger.error("[NEWSLETTER] Campaign paused; reconfirmation check unavailable")
+        return False
 
 
 async def send_welcome(email: str) -> bool:
@@ -327,19 +369,26 @@ async def send_monthly_report(db: AsyncSession) -> bool:
 <a href="https://ekklesia.gr/el/bills" style="display:inline-block;padding:12px 24px;background:#2563eb;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px">Δείτε τα νομοσχέδια →</a>
 </p>"""
 
-    # Send as campaign to list
-    result = await _brevo_post("emailCampaigns", {
-        "name": f"Monthly Report {month_name}",
-        "subject": f"ekklesia.gr — Μηνιαία Αναφορά {month_name}",
-        "sender": SENDER,
-        "replyTo": OPERATOR_EMAIL,
-        "type": "classic",
-        "recipients": {"listIds": [LIST_ID]},
-        "htmlContent": _wrap(body),
-    })
-    if result and result.get("id"):
-        # Send immediately
-        await _brevo_post(f"emailCampaigns/{result['id']}/sendNow", {})
-        logger.info("[NEWSLETTER] Monthly report sent — campaign %s", result["id"])
-        return True
+    # Hold the same lease as reconfirmation transitions through provider dispatch.
+    try:
+        async with newsletter_lock() as lease:
+            if not await ensure_reconfirmations_paused():
+                return False
+            await lease.check()
+            result = await _brevo_post("emailCampaigns", {
+                "name": f"Monthly Report {month_name}",
+                "subject": f"ekklesia.gr — Μηνιαία Αναφορά {month_name}",
+                "sender": SENDER,
+                "replyTo": OPERATOR_EMAIL,
+                "type": "classic",
+                "recipients": {"listIds": [LIST_ID]},
+                "htmlContent": _wrap(body),
+            })
+            if result and result.get("id"):
+                await lease.check()
+                await _brevo_post(f"emailCampaigns/{result['id']}/sendNow", {})
+                logger.info("[NEWSLETTER] Monthly report sent — campaign %s", result["id"])
+                return True
+    except NewsletterLockUnavailable:
+        logger.warning("[NEWSLETTER] Campaign busy; retry")
     return False

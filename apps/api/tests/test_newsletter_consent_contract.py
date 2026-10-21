@@ -30,6 +30,7 @@ def consent_redis(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     store.hdel = AsyncMock()
     store.hkeys = AsyncMock(return_value=[])
     store.setex = AsyncMock()
+    store.set = AsyncMock(return_value=True)
     store.delete = AsyncMock()
     store.eval = AsyncMock(return_value=1)
     confirmed = {}
@@ -134,7 +135,7 @@ async def test_subscribe_then_confirm_preserves_schema2_with_delivery_handoff(
 
     consent_redis.get.return_value = raw
     assert (await newsletter.confirm_subscription("synthetic-schema2-token")).status_code == 200
-    assert consent_redis.eval.await_count == 4
+    assert consent_redis.eval.await_count == 5
     args = consent_redis.eval.await_args_list[2].args
     assert args[:6] == (CONFIRM_ONCE, 2, pending_key, "newsletter:confirmed", raw, "schema2@example.org")
     confirmed = json.loads(args[6])
@@ -170,7 +171,7 @@ async def test_expired_confirmation_does_not_activate_any_contact(consent_redis:
 
 async def test_sequential_confirmation_replay_is_rejected(consent_redis: MagicMock) -> None:
     """Once absent from pending state, a token cannot confirm again sequentially."""
-    consent_redis.get.side_effect = [json.dumps({"email": "consent@example.org"}), None]
+    consent_redis.get.side_effect = [json.dumps({"email": "consent@example.org"}), None, None]
     assert (await newsletter.confirm_subscription("synthetic-token")).status_code == 200
     assert (await newsletter.confirm_subscription("synthetic-token")).status_code == 410
     assert sum(call.args[0] == CONFIRM_ONCE for call in consent_redis.eval.await_args_list) == 1
@@ -199,7 +200,7 @@ async def test_optional_listmonk_failure_does_not_erase_confirmed_consent(
     mocked = AsyncMock(side_effect=RuntimeError("synthetic Listmonk outage"))
     monkeypatch.setattr(newsletter, "_listmonk_request", mocked)
     assert (await newsletter.confirm_subscription("synthetic-token")).status_code == 200
-    assert consent_redis.eval.await_count == 3
+    assert consent_redis.eval.await_count == 4
     assert json.loads(consent_redis.eval.await_args_list[0].args[6])["email"] == "consent@example.org"
     mocked.assert_awaited_once()
 
