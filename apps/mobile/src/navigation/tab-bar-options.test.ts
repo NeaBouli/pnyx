@@ -4,6 +4,7 @@ import { URL } from "node:url";
 import ts from "typescript";
 import { describe, expect, it, vi } from "vitest";
 import { colors } from "../theme";
+import * as tabBarLayout from "./tab-bar-layout";
 
 type El = { type: unknown; props: Record<string, any> };
 
@@ -15,7 +16,7 @@ const ICON_SLOT_TALL = 28;
  * React Native and navigators, then pull `TabNavigator` out of the root
  * stack's "Tabs" screen so its `screenOptions` can be inspected directly.
  */
-function loadTabNavigator(): El {
+function loadTabNavigator({ fontScale = 1, width = 360, height = 800, bottomInset = 0 } = {}): El {
   const react = {
     useState: (_init: unknown) => [false, () => {}],
     useEffect: () => {},
@@ -25,7 +26,15 @@ function loadTabNavigator(): El {
   };
   const requireMock = vi.fn((id: string): unknown => {
     if (id === "react") return { __esModule: true, default: react, ...react };
-    if (id === "react-native") return { Text: "Text", View: "View", ActivityIndicator: "ActivityIndicator" };
+    if (id === "react-native") {
+      return {
+        Text: "Text", View: "View", ActivityIndicator: "ActivityIndicator",
+        useWindowDimensions: () => ({ fontScale, width, height, scale: 3 }),
+      };
+    }
+    if (id === "react-native-safe-area-context") {
+      return { useSafeAreaInsets: () => ({ top: 0, bottom: bottomInset, left: 0, right: 0 }) };
+    }
     if (id === "@react-navigation/native") return { NavigationContainer: "NavigationContainer" };
     if (id === "@react-navigation/stack") {
       return { createStackNavigator: () => ({ Navigator: "Stack.Navigator", Screen: "Stack.Screen" }) };
@@ -36,6 +45,7 @@ function loadTabNavigator(): El {
     if (id === "expo-secure-store") return { getItemAsync: async () => null };
     if (id === "../theme") return { colors };
     if (id === "./linking") return { linking: { prefixes: [], config: { screens: {} } } };
+    if (id === "./tab-bar-layout") return tabBarLayout;
     if (id.startsWith("../components/") || id.startsWith("../screens/")) {
       return { __esModule: true, default: id, ChannelNotice: id, MirrorReadOnlyBanner: id, UpdateBanner: id };
     }
@@ -109,7 +119,7 @@ describe("TabNavigator bottom tab options (GH-298)", () => {
       expect(opts.tabBarActiveTintColor).toBe(colors.tabBarActive);
       expect(opts.tabBarInactiveTintColor).toBe(colors.tabBarInactive);
       expect(opts.tabBarShowLabel).not.toBe(false);
-      expect(opts.tabBarStyle).toEqual({ backgroundColor: colors.tabBarBg, borderTopColor: colors.border });
+      expect(opts.tabBarStyle).toEqual({ backgroundColor: colors.tabBarBg, borderTopColor: colors.border, height: 56 });
       for (const state of [
         { color: colors.tabBarActive, focused: true },
         { color: colors.tabBarInactive, focused: false },
@@ -125,17 +135,19 @@ describe("TabNavigator bottom tab options (GH-298)", () => {
       const label = optionsFor(e.name).tabBarLabel({ color: "#000", focused: false, position, children: e.title });
       expect(label.type).toBe("Text");
       expect(label.props.allowFontScaling).not.toBe(false);
-      if (label.props.maxFontSizeMultiplier !== undefined) {
-        expect(label.props.maxFontSizeMultiplier === 0 || label.props.maxFontSizeMultiplier >= 1.8).toBe(true);
-      }
+      expect(label.props.maxFontSizeMultiplier).toBe(1.4);
       expect(label.props.numberOfLines).toBe(1);
       expect(label.props.adjustsFontSizeToFit).toBe(true);
+      expect(label.props.ellipsizeMode).toBe("tail");
       expect(label.props.minimumFontScale).toBeGreaterThanOrEqual(0.75);
       expect(label.props.minimumFontScale).toBeLessThan(1);
+      expect(label.props.style.flexShrink).toBe(1);
+      expect(label.props.style.maxWidth).toBe("100%");
+      expect(label.props.style.marginStart).toBe(position === "beside-icon" ? 5 : 0);
     }
   });
 
-  it("leaves tab bar, buttons, item geometry and safe-area handling to the navigator", () => {
+  it("keeps navigator buttons and safe-area handling, with full accessibility labels and minimum touch targets", () => {
     // Configuration delegation only: this does not measure native touch targets
     // or prove taps/layout at system font scale 1.8 or width greater than height.
     expect(tabNavigator.type).toBe("Tab.Navigator");
@@ -144,18 +156,21 @@ describe("TabNavigator bottom tab options (GH-298)", () => {
     for (const e of EXPECTED) {
       const opts = optionsFor(e.name);
       expect(opts.tabBarButton).toBeUndefined();
-      expect(opts.tabBarItemStyle).toBeUndefined();
+      expect(opts.tabBarAccessibilityLabel).toBe(e.title);
+      expect(opts.tabBarItemStyle).toEqual({ minWidth: 48, minHeight: 48 });
       expect(opts.safeAreaInsets).toBeUndefined();
     }
   });
 
-  it("sizes the emoji icon from the navigator size as a non-scaling graphic inside the 28dp slot", () => {
+  it("caps emoji scaling locally and sizes the graphic from the navigator size", () => {
     for (const e of EXPECTED) {
       for (const size of [25, 18, 40]) {
         const icon = optionsFor(e.name).tabBarIcon({ focused: false, color: "#000", size });
         expect(icon.type).toBe("Text");
         expect(textContent(icon)).toBe(e.icon);
-        expect(icon.props.allowFontScaling).toBe(false);
+        expect(icon.props.allowFontScaling).not.toBe(false);
+        expect(icon.props.maxFontSizeMultiplier).toBe(1.4);
+        expect(icon.props.numberOfLines).toBe(1);
         const { fontSize, lineHeight } = icon.props.style;
         expect(fontSize).toBeLessThanOrEqual(Math.min(size, ICON_SLOT_TALL));
         expect(lineHeight).toBeLessThanOrEqual(ICON_SLOT_TALL);
@@ -165,6 +180,25 @@ describe("TabNavigator bottom tab options (GH-298)", () => {
       const small = optionsFor(e.name).tabBarIcon({ focused: false, color: "#000", size: 18 }).props.style.fontSize;
       const regular = optionsFor(e.name).tabBarIcon({ focused: false, color: "#000", size: 25 }).props.style.fontSize;
       expect(small).toBeLessThan(regular);
+    }
+  });
+
+  it.each([1, 1.3, 1.8].flatMap(fontScale => [0, 24].flatMap(bottomInset => [
+    { fontScale, bottomInset, width: 360, height: 800, position: "below-icon" },
+    { fontScale, bottomInset, width: 800, height: 360, position: "beside-icon" },
+  ])))("applies scale $fontScale and inset $bottomInset at $width x $height", layout => {
+    const navigator = loadTabNavigator(layout);
+    const metrics = tabBarLayout.getTabBarMetrics(layout.fontScale, layout.bottomInset);
+    const scale = Math.min(layout.fontScale, 1.4);
+    for (const e of EXPECTED) {
+      const opts = navigator.props.screenOptions({ route: { name: e.name } });
+      expect(opts.tabBarStyle.height).toBe(metrics.height);
+      expect(opts.tabBarStyle.height - layout.bottomInset - 1).toBeGreaterThanOrEqual(48);
+      expect(opts.tabBarStyle.paddingBottom).toBeUndefined();
+      expect(opts.tabBarLabelPosition).toBe(layout.position);
+      expect(opts.tabBarIconStyle).toEqual({ width: metrics.iconWidth, height: metrics.iconHeight });
+      const icon = opts.tabBarIcon({ focused: false, color: "#000", size: 25 });
+      expect(icon.props.style.lineHeight * scale).toBeLessThanOrEqual(opts.tabBarIconStyle.height);
     }
   });
 });
