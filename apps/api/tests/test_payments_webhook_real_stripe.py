@@ -7,13 +7,17 @@ tests in test_payments_webhook_safety.py cannot catch that.
 import hashlib
 import hmac
 import json
+import logging
 import os
 import sys
 import time
+from collections.abc import AsyncIterator
+from unittest.mock import AsyncMock, Mock
 
+import httpx
 import pytest
 import stripe
-from fastapi import HTTPException
+from fastapi import FastAPI, HTTPException
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -45,7 +49,7 @@ def _checkout_event(event_id: str = "evt_t610_paid", amount: int = 2500, livemod
             "amount_total": amount,
             "payment_intent": "pi_t610_paid",
             "livemode": livemode,
-            "metadata": {"payment_purpose": "infrastructure_support"},
+            "metadata": {"source": "ekklesia", "payment_purpose": "infrastructure_support"},
         }},
     }
 
@@ -54,7 +58,185 @@ def _checkout_event(event_id: str = "evt_t610_paid", amount: int = 2500, livemod
 def _real_stripe(monkeypatch):
     monkeypatch.setenv("PAYMENTS_INTAKE_GATE", "legal_recipient_confirmed")
     monkeypatch.setenv("STRIPE_WEBHOOK_SECRET", SECRET)
+    monkeypatch.delenv("STRIPE_EKKLESIA_PAYMENT_LINKS", raising=False)
     monkeypatch.setitem(sys.modules, "stripe", stripe)
+
+
+@pytest.fixture
+async def webhook_client() -> AsyncIterator[httpx.AsyncClient]:
+    app = FastAPI()
+    app.include_router(payments.router)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        yield client
+
+
+@pytest.mark.parametrize("intake_open", [False, True])
+@pytest.mark.parametrize("allowlist", ["", " , plink_ours , , plink_also_ours, "])
+@pytest.mark.parametrize("metadata,payment_link", [
+    (None, None),
+    ({}, ""),
+    ({"payment_purpose": "infrastructure_support"}, "plink_foreign"),
+    ({"payment_purpose": "developer_support"}, {"id": "plink_foreign"}),
+    ({"source": "other", "payment_purpose": "infrastructure_support"}, "plink_foreign"),
+    ({"source": "Ekklesia", "payment_purpose": "developer_support"}, "plink_foreign"),
+    ({"source": "", "payment_purpose": "infrastructure_support"}, None),
+])
+async def test_foreign_signed_checkout_is_ignored_before_intake_and_storage(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    webhook_client: httpx.AsyncClient,
+    intake_open: bool,
+    allowlist: str,
+    metadata: dict | None,
+    payment_link: str | dict | None,
+) -> None:
+    monkeypatch.setenv("PAYMENTS_INTAKE_GATE", "legal_recipient_confirmed" if intake_open else "")
+    monkeypatch.setenv("STRIPE_EKKLESIA_PAYMENT_LINKS", allowlist)
+    event = _checkout_event(livemode=True)
+    session = event["data"]["object"]
+    session["payment_link"] = payment_link
+    session["customer_details"] = {"email": "foreign@example.invalid"}
+    if metadata is None:
+        session.pop("metadata")
+    else:
+        session["metadata"] = metadata
+    get_redis = AsyncMock(side_effect=AssertionError("foreign checkout accessed storage"))
+    intake = Mock(side_effect=AssertionError("foreign checkout reached intake"))
+    monkeypatch.setattr(payments, "_get_redis", get_redis)
+    monkeypatch.setattr(payments, "_payment_intake_enabled", intake)
+    caplog.set_level(logging.INFO, logger=payments.__name__)
+    request = _signed(event)
+
+    response = await webhook_client.post(
+        "/api/v1/payments/webhook", content=request._body, headers=request.headers
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ignored_foreign"}
+    get_redis.assert_not_called()
+    intake.assert_not_called()
+    assert [record.getMessage() for record in caplog.records if record.name == payments.__name__] == [
+        "[MOD-18] Stripe webhook ignored_foreign count=1"
+    ]
+
+
+async def test_foreign_checkout_still_requires_a_valid_signature(
+    monkeypatch: pytest.MonkeyPatch, webhook_client: httpx.AsyncClient,
+) -> None:
+    event = _checkout_event()
+    event["data"]["object"]["metadata"] = {"source": "other"}
+    request = _signed(event)
+    request.headers["stripe-signature"] = request.headers["stripe-signature"].replace("v1=", "v1=00")
+    ownership = Mock(side_effect=AssertionError("unverified event reached ownership check"))
+    get_redis = AsyncMock(side_effect=AssertionError("unverified event accessed storage"))
+    monkeypatch.setattr(payments, "_stripe_checkout_is_ours", ownership)
+    monkeypatch.setattr(payments, "_get_redis", get_redis)
+
+    response = await webhook_client.post(
+        "/api/v1/payments/webhook", content=request._body, headers=request.headers
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Invalid signature"}
+    ownership.assert_not_called()
+    get_redis.assert_not_called()
+
+
+@pytest.mark.parametrize("intake_open", [False, True])
+@pytest.mark.parametrize("source,payment_link,allowlist", [
+    ("ekklesia", None, ""),
+    (None, "plink_ours", " , plink_other, plink_ours , ,"),
+    ("other", "plink_ours", "plink_ours"),
+    (None, {"id": "plink_ours", "object": "payment_link"}, "plink_ours"),
+])
+async def test_owned_signed_checkout_preserves_intake_behavior(
+    monkeypatch: pytest.MonkeyPatch,
+    webhook_client: httpx.AsyncClient,
+    intake_open: bool,
+    source: str | None,
+    payment_link: str | dict | None,
+    allowlist: str,
+) -> None:
+    monkeypatch.setenv("PAYMENTS_INTAKE_GATE", "legal_recipient_confirmed" if intake_open else "")
+    monkeypatch.setenv("STRIPE_EKKLESIA_PAYMENT_LINKS", allowlist)
+    event = _checkout_event()
+    session = event["data"]["object"]
+    session["metadata"] = {"payment_purpose": "infrastructure_support"}
+    if source is not None:
+        session["metadata"]["source"] = source
+    session["payment_link"] = payment_link
+    redis = _SuccessRedis()
+    get_redis = AsyncMock(return_value=redis)
+    monkeypatch.setattr(payments, "_get_redis", get_redis)
+    request = _signed(event)
+
+    response = await webhook_client.post(
+        "/api/v1/payments/webhook", content=request._body, headers=request.headers
+    )
+
+    if intake_open:
+        assert response.status_code == 200
+        assert response.json()["processed"] is True
+        assert len([key for key, _ in redis.pushed if key == payments.R_PAYMENTS]) == 1
+    else:
+        assert response.status_code == 503
+        assert response.json() == {"detail": "Payment intake is awaiting legal recipient approval"}
+        get_redis.assert_not_called()
+        assert redis.set_calls == []
+        assert redis.pushed == []
+
+
+@pytest.mark.parametrize("intake_open", [False, True])
+@pytest.mark.parametrize("event_type", [
+    "charge.refunded", "charge.dispute.created", "charge.dispute.closed",
+])
+@pytest.mark.parametrize("payment_intent,currency", [
+    ("pi_foreign", "eur"), ("pi_foreign", "usd"), (None, "eur"),
+])
+async def test_foreign_signed_adjustment_has_no_writes(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    webhook_client: httpx.AsyncClient,
+    intake_open: bool,
+    event_type: str,
+    payment_intent: str | None,
+    currency: str,
+) -> None:
+    monkeypatch.setenv("PAYMENTS_INTAKE_GATE", "legal_recipient_confirmed" if intake_open else "")
+    # Checkout ownership markers cannot substitute for an existing payment mapping.
+    monkeypatch.setenv("STRIPE_EKKLESIA_PAYMENT_LINKS", "plink_ours")
+    event = {
+        "id": "evt_foreign_adjustment", "object": "event", "type": event_type,
+        "livemode": True,
+        "data": {"object": {
+            "id": "ch_foreign", "payment_intent": payment_intent,
+            "currency": currency, "amount_refunded": 500, "amount": 500,
+            "metadata": {"source": "ekklesia"}, "payment_link": "plink_ours",
+            "billing_details": {"email": "foreign@example.invalid"},
+        }},
+    }
+    redis = _SuccessRedis()
+    # Even an old event claim cannot authorize a foreign adjustment.
+    redis.values[f"{payments.R_STRIPE_EVENT_PREFIX}evt_foreign_adjustment"] = "processing"
+    before = redis.values.copy()
+    monkeypatch.setattr(payments, "_get_redis", AsyncMock(return_value=redis))
+    caplog.set_level(logging.INFO, logger=payments.__name__)
+    request = _signed(event)
+
+    response = await webhook_client.post(
+        "/api/v1/payments/webhook", content=request._body, headers=request.headers
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ignored_foreign"}
+    assert redis.values == before
+    assert redis.set_calls == []
+    assert redis.pushed == []
+    assert [record.getMessage() for record in caplog.records if record.name == payments.__name__] == [
+        "[MOD-18] Stripe webhook ignored_foreign count=1"
+    ]
 
 
 def test_real_construct_event_returns_a_non_dict_object():
