@@ -31,7 +31,7 @@ The following evidence labels are used:
 | `OPEN` | A current task or defect remains unresolved. |
 | `EXTERNAL-GATE` | Completion depends on an external store, maintainer, upstream project, tester or owner action. |
 | `FUTURE-GATED` | Deliberately planned work that must not be treated as a V1 regression. |
-| `PRIVATE-GATE` | Detailed evidence belongs in the private VLABS/operator record and is intentionally redacted here. |
+| `PRIVATE-GATE` | Detailed evidence belongs in the private operator record and is intentionally redacted here. |
 | `HISTORICAL` | Useful retained context, but not current authority. |
 
 Priority of sources for this checkpoint:
@@ -92,7 +92,7 @@ finished**.
 | Newsletter/mail | Yellow | Send path works, but consent source and Brevo campaign audience are not yet proven coherent. |
 | AI/chatbot | Yellow | Module is healthy, but knowledge, prompt-injection, guardrail and answer-quality findings are open. |
 | Dashboard/admin | Green/yellow | Login and module health are live; full authenticated panel acceptance and review follow-ups remain. |
-| Finance/support | Safely disabled | No paid product is active; private VLABS gates and immutable candidate evidence remain incomplete. |
+| Finance/support | Safely disabled | No paid product is active; private operator gates and immutable candidate evidence remain incomplete. |
 | Redesign | Planned only | Design archive is preserved but not wired into production. |
 
 ## 3. What "completely finished" means
@@ -887,7 +887,7 @@ Public status: `PRIVATE-GATE`, intake disabled.
   change.
 
 No private recipient, account, provider or tax details may be copied into this
-repository. Finance coordination remains separate through the private VLABS
+repository. Finance coordination remains separate through the private operator
 operator.
 
 ## 19. Redesign status
@@ -1101,7 +1101,7 @@ This is the recommended execution order. Only one bounded package should be
 - Extract the real-SDK normalization fix from the mixed local tree into one
   immutable branch.
 - Focused plus full API tests and independent review.
-- Private VLABS handoff under the existing request ID.
+- Private operator handoff under the existing request ID.
 - Keep intake disabled until both readiness gates match the same immutable
   version.
 
@@ -1120,7 +1120,7 @@ This is the recommended execution order. Only one bounded package should be
 | Four additional opted-in Play testers | Google production-access test | Production request remains disabled. |
 | Exact affected Xiaomi evidence | #315 acceptance | Do not guess or release another workaround. |
 | Redesign visual choices | Relevant redesign phases | Does not block security packages. |
-| Private finance evidence package | VLABS route assessment | Support intake remains disabled. |
+| Private finance evidence package | Operator route assessment | Support intake remains disabled. |
 | Explicit database authorization after reviewed dry-run | 28 Diavgeia mapping cases | No DB write. |
 | Linear OAuth reauthentication | Fresh tracker reconciliation | GitHub remains current public authority. |
 | Separate approval for any production rollout | Every deploy/restart/recreate | Code merge does not imply deployment. |

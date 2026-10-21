@@ -34,7 +34,7 @@ Ekklesia ist ein fortgeschrittenes Monorepo mit FastAPI, Next.js, Expo, Dashboar
 - Dashboard: Next.js, NextAuth/GitHub, admin API calls.
 - Mobile: Expo/React Native Android, SecureStore, Ed25519, notifications.
 - Infra: Docker Compose lokal/produktiv, Traefik, Redis, PostgreSQL, Ollama, Listmonk, Discourse, Plausible.
-- Server: `ekklesia-api`, `ekklesia-dashboard`, `ekklesia-web`, `ekklesia-ollama`, `vlabs-web`, `plausible`, `listmonk`, `traefik-central`, Discourse `app`, `ekklesia-db`, Redis.
+- Server: `ekklesia-api`, `ekklesia-dashboard`, `ekklesia-web`, `ekklesia-ollama`, other non-Ekklesia services, `plausible`, `listmonk`, `traefik-central`, Discourse `app`, `ekklesia-db`, Redis.
 
 ## Critical Findings
 
