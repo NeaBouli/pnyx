@@ -888,7 +888,7 @@ Public status: `PRIVATE-GATE`, intake disabled.
 
 No private recipient, account, provider or tax details may be copied into this
 repository. Finance coordination remains separate through the private operator
-operator.
+channel.
 
 ## 19. Redesign status
 
