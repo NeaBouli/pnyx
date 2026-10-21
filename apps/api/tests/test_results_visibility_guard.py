@@ -5,6 +5,7 @@ bill analytics, the MP breakdown, the landing feeds (latest / in-progress) and t
 newsletter must apply the same rule through services.bill_visibility.
 """
 from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi import HTTPException
@@ -167,6 +168,7 @@ async def test_in_progress_feed_excludes_running_votes():
 async def test_monthly_newsletter_queries_apply_the_guard(monkeypatch):
     """Runs send_monthly_report and inspects the statements it actually executes."""
     scalars, executes = [], []
+    monkeypatch.setattr(newsletter_service, "ensure_reconfirmations_paused", AsyncMock(return_value=True))
 
     class _ReportDb:
         async def scalar(self, statement, *_args, **_kwargs):

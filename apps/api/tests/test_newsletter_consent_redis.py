@@ -12,7 +12,10 @@ import redis.asyncio as aioredis
 from redis.exceptions import ResponseError
 
 from routers import newsletter
-from services.newsletter_consent import CONFIRM_ONCE, READ_CONSENT_SNAPSHOT
+from services.newsletter_consent import (
+    CONFIRM_ONCE, READ_CONSENT_SNAPSHOT, START_RECONFIRM, CLAIM_RECONFIRM_SEND,
+    CONFIRM_RECONFIRM, EXPIRE_RECONFIRM, FINISH_RECONFIRM_EXPIRY,
+)
 
 
 @pytest.fixture
@@ -99,3 +102,46 @@ async def test_read_only_snapshot_is_bounded_and_unchanged(isolated_redis: tuple
     assert dict(zip(snapshot[1::2], snapshot[2::2])) == before
     assert await client.hgetall(confirmed) == before
     assert await client.get(f"newsletter:pending:{token}") == "pending-must-not-be-included"
+
+
+@pytest.mark.parametrize("finish", ["confirm", "expire"])
+async def test_reconfirmation_lua_has_one_winner_and_durable_cleanup(
+    isolated_redis: tuple, finish: str,
+) -> None:
+    client, _, confirmed = isolated_redis
+    registry, suppressed, token, old_token, addition, brevo_retry, listmonk_retry = [
+        f"{confirmed}:{suffix}" for suffix in ("registry", "suppressed", "token", "old", "add", "brevo", "listmonk")
+    ]
+    email = "consent@example.org"
+    legacy, invitation, attempted, evidence = "legacy", "invitation", "attempted", "fresh-doi"
+    try:
+        await client.hset(confirmed, email, legacy)
+        args = (START_RECONFIRM, 5, confirmed, suppressed, registry, token, old_token,
+                email, email, legacy, "", invitation, 2592000)
+        results = await asyncio.gather(*[client.eval(*args) for _ in range(20)])
+        assert results.count(1) == 1 and results.count(0) == 19
+        assert await client.ttl(token) > 2591900
+        assert await client.eval(CLAIM_RECONFIRM_SEND, 3, confirmed, registry, suppressed,
+                                 email, email, invitation, attempted) == 1
+        assert await client.eval(CLAIM_RECONFIRM_SEND, 3, confirmed, registry, suppressed,
+                                 email, email, invitation, attempted) == 0
+        if finish == "confirm":
+            args = (CONFIRM_RECONFIRM, 4, token, confirmed, registry, suppressed,
+                    invitation, email, email, attempted, evidence)
+            results = await asyncio.gather(*[client.eval(*args) for _ in range(20)])
+            assert results.count(1) == 1 and results.count(0) == 19
+            assert await client.hget(confirmed, email) == evidence
+            assert not await client.hexists(registry, email)
+        else:
+            args = (EXPIRE_RECONFIRM, 6, confirmed, registry, token, addition, brevo_retry, listmonk_retry,
+                    email, email, attempted, "cleanup", "1")
+            results = await asyncio.gather(*[client.eval(*args) for _ in range(20)])
+            assert results.count(1) == 1 and results.count(0) == 19
+            assert not await client.hexists(confirmed, email)
+            assert await client.hget(registry, email) == "cleanup"
+            assert await client.hget(brevo_retry, email) == await client.hget(listmonk_retry, email) == "1"
+            assert await client.eval(FINISH_RECONFIRM_EXPIRY, 1, registry, email, "stale") == 0
+            assert await client.eval(FINISH_RECONFIRM_EXPIRY, 1, registry, email, "cleanup") == 1
+        assert not await client.exists(token)
+    finally:
+        await client.delete(registry, suppressed, token, old_token, addition, brevo_retry, listmonk_retry)

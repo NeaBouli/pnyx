@@ -1,6 +1,7 @@
-# Newsletter consent and delivery (T-9158 / #261)
+# Newsletter consent and delivery (#261)
 
-`newsletter:confirmed` in Redis is the consent record. Pending signup tokens
+`newsletter:confirmed` in Redis stores local records. Only validated DOI evidence
+authorizes delivery; `reconfirm_pending` records and pending signup tokens
 are not consent. Confirmation preserves the requested preferences and DOI
 evidence; backfill never invents timestamps or changes that evidence.
 
@@ -26,6 +27,7 @@ flowchart LR
 A new confirmation attempts enrollment only with validated schema-2 double-opt-in
 evidence (timezone-aware request/click timestamps in order, within 24 hours,
 neither in the future) and at least one enabled topic in a valid topic map.
+The explicit legacy reconfirmation flow below permits a 30-day click window.
 Legacy/incomplete evidence and all-disabled topics never authorize enrollment;
 apply backfill removes their existing delivery memberships while retaining
 the consent record for review. Confirmation still succeeds when delivery or
@@ -95,6 +97,71 @@ Repeating apply reports successful
 members as already present. Pending signups and provider-only contacts are
 outside the backfill scope. Responses/logs contain no contact identities or
 credentials.
+
+Legacy records without validated DOI evidence can receive one fresh, neutral
+Greek confirmation invitation through
+`POST /api/v1/admin/newsletter/reconfirm`. This uses the same admin bearer
+authentication as backfill. `dry_run=true` is the default, including when
+`resend=true` is supplied: it reads local and provider state, performs no writes
+or sends, and returns only `selected`, `pending`, `paused`, `sent`, `skipped`,
+and `failed` counts. The selection is the valid local identity subset held by
+backfill for missing DOI evidence; records with valid evidence but no topics
+are outside this flow. Local withdrawals, Brevo suppression and Listmonk
+blocklists/unsubscribed newsletter memberships exclude invitations. Unreadable
+provider state cannot authorize an invitation.
+
+`?dry_run=false` atomically marks each selected local record as
+`consent_state=reconfirm_pending` with an aware `reconfirm_created_at`. It stores
+a matching lifecycle entry under `newsletter:reconfirm`, keyed by normalized
+identity. The lifecycle and token records persist SHA-256 token digests, never
+the bearer token itself. It then unlinks the configured Brevo campaign list and,
+when configured, Listmonk's newsletter lists, retaining the provider contacts
+and their suppression history. Durable removal retries use the existing queues;
+reconfirmation pauses unlink Listmonk memberships instead of blocklisting.
+The transactional invitation is sent only after both pauses succeed. It uses
+the existing transactional sender and Reply-To, a single confirmation link,
+and a notice that no further emails are sent without confirmation and the
+newsletter record is deleted after 30 days. It contains no campaign content or
+promotional footer links.
+
+An existing pending token prevents automatic resends, including after an
+ambiguous SMTP outcome or a crash. The send attempt is claimed atomically
+before SMTP. Repeating apply retries the pause but does not send again.
+An intentional `?dry_run=false&resend=true` rotates and invalidates the previous
+token. Resend retains the original creation time and deletion deadline; it
+cannot revive an expired invitation. A pause or send failure therefore requires
+an explicit resend after the provider issue is resolved.
+
+The invitation uses the existing public `/api/v1/newsletter/confirm/{token}`
+route. The token is single use and expires at the original 30-day deadline.
+The click atomically replaces the exact pending legacy record with schema-2
+DOI evidence, aware `requested_at` and `confirmed_at`, and
+`confirmation_source=legacy_reconfirmation`. This source has a 30-day evidence
+window; ordinary signup evidence retains its 24-hour window. Saved preferences
+are preserved. At least one enabled topic in a valid topic map is still required
+before the normal Brevo enrollment path runs. A withdrawal, expiry, rotated
+token or repeated click cannot restore the legacy record or repeat enrollment.
+
+`POST /api/v1/admin/newsletter/reconfirm/expire` also requires admin bearer auth
+and defaults to `dry_run=true`. It reports only `expired`, `deleted`, `pending`,
+and `failed` counts. Apply deletes expired legacy consent and its token before
+provider cleanup, retaining a minimal `reconfirm_expiring` removal ledger until
+both providers acknowledge removal. Failures remain retryable; repeated expiry
+is safe, and successful fresh confirmations are outside its scope. `deleted`
+counts completed cleanup operations. Provider cleanup unlinks newsletter lists;
+legacy records have no reliable provider-contact ownership evidence, so shared
+provider contacts and suppression history are retained.
+
+The existing APScheduler registers `newsletter_reconfirm_expiry` daily at
+03:00 UTC, using the existing cross-worker lease and observed-job wrapper.
+It calls the same expiry operation with `dry_run=false`, catches failures, and
+logs aggregate counts or a fixed error message only. It sends no reminders.
+Monthly and admin campaign send paths reconcile pending/expiring pauses before
+sending and fail closed if Redis or provider removal is unavailable. Backfill
+also treats pending reconfirmations as ineligible. Newsletter validation and
+availability failures remain fixed 422/503 responses; addresses and bearer
+tokens are absent from operation responses and logs, and the existing access-log
+and Sentry confirmation-token scrubbers cover the reused public link route.
 
 This documents the implemented handoff, superseding the historical no-writer
 inventory in [the delivery audit](newsletter-delivery-audit.md). Campaign

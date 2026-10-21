@@ -64,6 +64,9 @@ def redact_access_log_path(path: str) -> str:
         start = idx + len(marker)
         end = path.find("/", start)
         segment_end = len(path) if end == -1 else end
+        # Sentry also runs this on route templates, which contain no secret.
+        if re.fullmatch(r"\{[A-Za-z_][A-Za-z_0-9]*\}", path[start:segment_end]):
+            continue
         path = path[:start] + _ACCESS_LOG_REDACTED + path[segment_end:]
     return path
 
@@ -179,6 +182,7 @@ def _sentry_provider_url(value: str) -> tuple[int, str] | None:
 
 def _sentry_redact_text(value: str) -> str:
     """Scrub provider targets and any value containing @ at any decoding stage."""
+    value = redact_access_log_path(value)
     provider = _sentry_provider_url(value)
     if provider:
         end, prefix = provider
@@ -1002,6 +1006,20 @@ async def scheduled_greek_topics():
         await record_failure(name, str(e))
 
 
+async def scheduled_newsletter_reconfirm_expiry() -> None:
+    """Daily idempotent expiry, guarded by the scheduler's cross-worker lease."""
+    from routers.newsletter import expire_reconfirmations
+    try:
+        counts = await expire_reconfirmations(dry_run=False)
+        logger.info("[NEWSLETTER] Reconfirmation expiry expired=%d deleted=%d pending=%d failed=%d",
+                    counts["expired"], counts["deleted"], counts["pending"], counts["failed"])
+        if counts["failed"]:
+            report_outcome("failed")
+    except Exception:
+        logger.error("[NEWSLETTER] Reconfirmation expiry unavailable; retry retained")
+        report_outcome("failed")
+
+
 async def scheduled_monthly_newsletter():
     """Send monthly report newsletter on 1st of each month at 09:00 UTC."""
     from services.newsletter_service import send_monthly_report
@@ -1188,6 +1206,7 @@ async def lifespan(app):
     await add_persisted_interval_job(scheduler, scheduled_cplm_refresh, hours=6, name="cplm_refresh")
     await add_persisted_interval_job(scheduler, scheduled_greek_topics, hours=6, name="greek_topics")
     add_observed_job(scheduler, scheduled_monthly_newsletter, CronTrigger(day=1, hour=9, minute=0), name="monthly_newsletter")
+    add_observed_job(scheduler, scheduled_newsletter_reconfirm_expiry, CronTrigger(hour=3, minute=0, timezone="UTC"), name="newsletter_reconfirm_expiry")
     await initialize_job_states(scheduler)
     install_schedule_listener(scheduler)
     scheduler.start()

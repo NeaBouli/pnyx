@@ -281,7 +281,12 @@ async def test_lifespan_restores_all_long_jobs_before_scheduler_starts(state, mo
 
     async with main.lifespan(main.app):
         assert started == [True]
-        assert len(scheduler.get_jobs()) == 14
+        assert len(scheduler.get_jobs()) == 15
+        expiry = scheduler.get_job("newsletter_reconfirm_expiry")
+        assert expiry.func is scheduler_state.run_interval_job
+        assert expiry.kwargs["func"] is main.scheduled_newsletter_reconfirm_expiry
+        assert str(expiry.trigger) == "cron[hour='3', minute='0']"
+        assert str(expiry.trigger.timezone) == "UTC"
         for job_id, (name, hours, function_name) in LONG_JOBS.items():
             job = scheduler.get_job(job_id)
             assert job.trigger.interval == timedelta(hours=hours)

@@ -100,6 +100,30 @@ class PreviewRequest(BaseModel):
 
 # ─── Endpoints ───────────────────────────────────────────────────────────────
 
+@router.post("/reconfirm")
+async def newsletter_reconfirm(
+    dry_run: bool = True, resend: bool = False, _auth: bool = Depends(verify_admin_key),
+) -> dict[str, int]:
+    from routers.newsletter import reconfirm_legacy
+    try:
+        return await reconfirm_legacy(dry_run=dry_run, resend=resend)
+    except Exception:
+        logger.error("[NEWSLETTER] Reconfirmation unavailable; retry retained")
+        raise HTTPException(503, "Newsletter reconfirmation unavailable; retry") from None
+
+
+@router.post("/reconfirm/expire")
+async def newsletter_reconfirm_expire(
+    dry_run: bool = True, _auth: bool = Depends(verify_admin_key),
+) -> dict[str, int]:
+    from routers.newsletter import expire_reconfirmations
+    try:
+        return await expire_reconfirmations(dry_run=dry_run)
+    except Exception:
+        logger.error("[NEWSLETTER] Reconfirmation expiry unavailable; retry retained")
+        raise HTTPException(503, "Newsletter reconfirmation unavailable; retry") from None
+
+
 @router.post("/backfill")
 async def newsletter_backfill(dry_run: bool = True, _auth: bool = Depends(verify_admin_key)) -> dict:
     """Reconcile confirmed consent only. Default to provider reads and aggregate counts."""
@@ -293,6 +317,8 @@ async def newsletter_send(req: SendRequest, _auth: bool = Depends(verify_admin_k
     except Exception as e:
         logger.warning("[NEWSLETTER] Could not fetch campaign %d details: %s", req.campaign_id, e)
 
+    if not await newsletter_service.ensure_reconfirmations_paused():
+        raise HTTPException(503, "Newsletter campaign paused; retry")
     await _brevo_request("POST", f"emailCampaigns/{req.campaign_id}/sendNow", {})
     logger.info("[NEWSLETTER] Campaign %d sent", req.campaign_id)
 

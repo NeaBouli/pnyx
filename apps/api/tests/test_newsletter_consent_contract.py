@@ -170,7 +170,7 @@ async def test_expired_confirmation_does_not_activate_any_contact(consent_redis:
 
 async def test_sequential_confirmation_replay_is_rejected(consent_redis: MagicMock) -> None:
     """Once absent from pending state, a token cannot confirm again sequentially."""
-    consent_redis.get.side_effect = [json.dumps({"email": "consent@example.org"}), None]
+    consent_redis.get.side_effect = [json.dumps({"email": "consent@example.org"}), None, None]
     assert (await newsletter.confirm_subscription("synthetic-token")).status_code == 200
     assert (await newsletter.confirm_subscription("synthetic-token")).status_code == 410
     assert sum(call.args[0] == CONFIRM_ONCE for call in consent_redis.eval.await_args_list) == 1

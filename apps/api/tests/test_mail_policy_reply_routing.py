@@ -117,7 +117,9 @@ async def test_monthly_report_campaign_reply_to() -> None:
         calls.append((endpoint, data))
         return {"id": 123} if endpoint == "emailCampaigns" else {}
 
-    with patch.object(newsletter_service, "_brevo_post", side_effect=fake_post):
+    with patch.object(newsletter_service, "_brevo_post", side_effect=fake_post), patch.object(
+        newsletter_service, "ensure_reconfirmations_paused", AsyncMock(return_value=True),
+    ):
         ok = await newsletter_service.send_monthly_report(db)
 
     assert ok is True
