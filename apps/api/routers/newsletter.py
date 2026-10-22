@@ -10,8 +10,10 @@ import json
 import logging
 import secrets
 from datetime import date, datetime, timezone, timedelta
+from functools import lru_cache
+from ipaddress import IPv4Address
 from typing import Any, Optional
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 from rate_limit import limiter
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
@@ -59,7 +61,27 @@ router = APIRouter(prefix="/api/v1/newsletter", tags=["MOD-19 Newsletter"], rout
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
-LISTMONK_URL = os.getenv("LISTMONK_URL", "http://172.18.0.7:9000")
+@lru_cache(maxsize=1)
+def _warn_listmonk_ipv4_url() -> None:
+    logger.warning(
+        "Newsletter list service URL uses a raw IPv4 address; configure "
+        "LISTMONK_URL with a stable service hostname because container IPs change on recreate"
+    )
+
+
+def _listmonk_base_url() -> str:
+    url = os.getenv("LISTMONK_URL", "http://listmonk:9000")
+    try:
+        IPv4Address(urlsplit(url).hostname or "")
+    except ValueError:
+        pass
+    else:
+        _warn_listmonk_ipv4_url()
+    return url
+
+
+LISTMONK_URL: str = _listmonk_base_url()
+# Legacy env names: supply a dedicated API username and API token, not an admin login.
 LISTMONK_USER = os.getenv("LISTMONK_ADMIN_USER", "admin")
 LISTMONK_PW = os.getenv("LISTMONK_ADMIN_PASSWORD", "")
 BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
@@ -109,7 +131,18 @@ class UnsubscribeRequest(BaseModel):
 
 # ── Listmonk API helper ──────────────────────────────────────────────────────
 
-async def _listmonk_request(method: str, path: str, json_data: dict = None) -> dict:
+@lru_cache(maxsize=1)
+def _warn_listmonk_auth_rejected() -> None:
+    logger.error(
+        "Newsletter list service rejected credentials; configure an API user and API token "
+        "with subscriber and list subscription permissions using "
+        "LISTMONK_ADMIN_USER and LISTMONK_ADMIN_PASSWORD"
+    )
+
+
+async def _listmonk_request(
+    method: str, path: str, json_data: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     if not LISTMONK_PW:
         if method in ("POST", "PUT"):
             raise newsletter_service.ContactNotWritten()
@@ -123,7 +156,10 @@ async def _listmonk_request(method: str, path: str, json_data: dict = None) -> d
         )
         if r.status_code >= 300:
             # EKA-16: status code only — the provider body may echo the subscriber email.
-            logger.error("[MOD-19] Listmonk request failed: status=%s", r.status_code)
+            if r.status_code in (401, 403):
+                _warn_listmonk_auth_rejected()
+            else:
+                logger.error("[MOD-19] Listmonk request failed: status=%s", r.status_code)
             if method in ("POST", "PUT") and r.status_code < 500:
                 raise newsletter_service.ContactNotWritten()
             raise HTTPException(502, "Newsletter provider request failed")
