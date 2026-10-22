@@ -148,6 +148,10 @@ def test_rate_limit_response_keeps_cors_and_noindex_headers(
     assert response.status_code == 429
     assert response.headers["access-control-allow-origin"] == "https://ekklesia.gr"
     assert response.headers["x-robots-tag"] == "noindex, nofollow"
+    assert response.headers.get_list("content-security-policy") == [
+        "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+    ]
+    assert response.headers["x-content-type-options"] == "nosniff"
 
 
 def test_cors_preflight_does_not_consume_rate_limit(

@@ -17,6 +17,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from rate_limit import limiter
 from security_startup import validate_identity_kdf_config, validate_server_salt_config
+from security_headers import API_CSP, SecurityHeadersMiddleware
 from services.scheduler_state import add_persisted_interval_job, add_observed_job, initialize_job_states, install_schedule_listener
 from services.scheduler_observability import configure_logging, report_outcome, attempt
 
@@ -1268,6 +1269,17 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+
+@app.exception_handler(Exception)
+async def server_error_response(request: Request, exc: Exception) -> PlainTextResponse:
+    # Starlette creates unhandled 500 responses outside user middleware.
+    # Preserve its default body and status while covering those responses too.
+    return PlainTextResponse(
+        "Internal Server Error", status_code=500,
+        headers={"Content-Security-Policy": API_CSP, "X-Content-Type-Options": "nosniff"},
+    )
+
+
 # Middleware enforces defaults on direct routes (e.g. /health), not on current
 # FastAPI _IncludedRouter entries. Router coverage requires explicit decorators
 # or handler-level Redis guards; do not assume an API-wide 60/min ceiling.
@@ -1296,6 +1308,16 @@ async def add_noindex_header(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Robots-Tag"] = "noindex, nofollow"
     return response
+
+
+# CSP belongs to the app so HTML documents can use a narrower resource policy.
+# Keep this outside CORS and SlowAPI, including their early responses.
+app.add_middleware(
+    SecurityHeadersMiddleware,
+    documentation_paths={
+        "/docs": "swagger", "/redoc": "redoc", "/docs/oauth2-redirect": "oauth2",
+    } if _is_dev else None,
+)
 
 
 app.include_router(identity.router)

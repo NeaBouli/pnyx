@@ -71,6 +71,7 @@ services:
       - traefik.http.routers.ekklesia-api.entrypoints=websecure
       - traefik.http.routers.ekklesia-api.tls.certresolver=letsencrypt
       - traefik.http.services.ekklesia-api.loadbalancer.server.port=8000
+      # API CSP is set by the app, including its HTML document exceptions.
       - traefik.http.middlewares.api-headers.headers.frameDeny=true
       - traefik.http.middlewares.api-headers.headers.contentTypeNosniff=true
       - traefik.http.middlewares.api-headers.headers.browserXssFilter=true
