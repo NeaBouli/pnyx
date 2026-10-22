@@ -236,6 +236,16 @@ jobs:
         working-directory: ${{ matrix.path }}
         run: ${{ matrix.verify }}
 
+      - name: Check dashboard CSP
+        if: matrix.name == 'Dashboard'
+        working-directory: ${{ matrix.path }}
+        run: node --test csp.test.mjs
+
+      - name: Check dashboard production CSP rendering
+        if: matrix.name == 'Dashboard'
+        working-directory: ${{ matrix.path }}
+        run: npm run test:csp-render
+
   fallback-fork-guard:
     name: Fallback Fork Guard
     # GitHub-hosted only. While CI_RUNNER (fallback) is set, the fallback-capable jobs skip

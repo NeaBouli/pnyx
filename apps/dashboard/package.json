@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start -p 3001",
     "lint": "eslint .",
+    "test": "node --test ../../scripts/client-yaml-security.check.cjs image-codec.check.mjs *.test.mjs",
+    "test:csp-render": "NODE_ENV=production node --test csp-render.check.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
