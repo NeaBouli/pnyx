@@ -26,6 +26,7 @@ from dependencies import verify_admin_key
 from services import newsletter_service
 from services.mail_policy import operator_reply_to
 from services.newsletter_lock import newsletter_lock, NewsletterLockUnavailable
+from security_headers import API_CSP, csp_hash
 from services.newsletter_consent import (
     CONFIRMED_KEY, CONFIRM_ONCE, CONSENT_SCHEMA, confirmation_payload,
     SUPPRESSED_KEY, BREVO_ADD_RETRY_KEY, BREVO_REMOVE_RETRY_KEY,
@@ -641,6 +642,25 @@ async def subscribe(req: SubscribeRequest, request: Request) -> dict:
     return {"success": True, "message": "Confirmation email sent. Please check your inbox."}
 
 
+_CONFIRMATION_STYLE = (
+    "body{text-align:center;padding:3rem;font-family:sans-serif}"
+    "h2,a{color:#2563eb}"
+)
+CONFIRMATION_CSP = (
+    f"{API_CSP}; style-src {csp_hash(_CONFIRMATION_STYLE)}"
+    "; img-src https://ekklesia.gr/pnx.png"
+)
+
+
+def _confirmation_page(content: str, status_code: int = 200) -> HTMLResponse:
+    return HTMLResponse(
+        f"<!doctype html><html><head><meta charset=\"utf-8\">"
+        f"<style>{_CONFIRMATION_STYLE}</style></head><body>{content}</body></html>",
+        status_code=status_code,
+        headers={"Content-Security-Policy": CONFIRMATION_CSP},
+    )
+
+
 @router.get("/confirm/{token}")
 @limiter.shared_limit("10/minute", scope="newsletter:confirm_subscription")
 async def confirm_subscription(token: str, request: Request = None) -> HTMLResponse:
@@ -653,8 +673,8 @@ async def confirm_subscription(token: str, request: Request = None) -> HTMLRespo
         raise HTTPException(503, "Newsletter confirmation unavailable; retry") from None
 
     if not raw and not reconfirm_raw:
-        return HTMLResponse(
-            '<div style="text-align:center;padding:3rem;font-family:sans-serif"><h2>Link abgelaufen</h2><p>Bitte registrieren Sie sich erneut auf ekklesia.gr</p></div>',
+        return _confirmation_page(
+            '<h2>Link abgelaufen</h2><p>Bitte registrieren Sie sich erneut auf ekklesia.gr</p>',
             status_code=410
         )
 
@@ -669,7 +689,7 @@ async def confirm_subscription(token: str, request: Request = None) -> HTMLRespo
                 if (data is None or data.get("consent_state") != "reconfirm_pending"
                         or reconfirm_digest_key(data["reconfirm_token_hash"]) != reconfirm_token_key(token)
                         or _reconfirm_deadline(data) <= confirmed_at):
-                    return HTMLResponse("Confirmation link expired or already used.", status_code=410)
+                    return _confirmation_page("Confirmation link expired or already used.", status_code=410)
                 data = {key: value for key, value in data.items()
                         if not key.startswith("reconfirm_") and key != "consent_state"}
                 data["confirmation_source"] = "legacy_reconfirmation"
@@ -701,7 +721,7 @@ async def confirm_subscription(token: str, request: Request = None) -> HTMLRespo
         except NewsletterLockUnavailable:
             raise HTTPException(503, "Newsletter confirmation unavailable; retry") from None
     if result == 0:
-        return HTMLResponse("Confirmation link expired or already used.", status_code=410)
+        return _confirmation_page("Confirmation link expired or already used.", status_code=410)
     if result not in (1, 2):
         raise HTTPException(503, "Confirmation could not be verified")
 
@@ -726,13 +746,11 @@ async def confirm_subscription(token: str, request: Request = None) -> HTMLRespo
         "Η εγγραφή σας ήταν ήδη επιβεβαιωμένη. Οι προηγούμενες προτιμήσεις σας παραμένουν αμετάβλητες."
     )
 
-    return HTMLResponse(
-        '<div style="text-align:center;padding:3rem;font-family:sans-serif">'
+    return _confirmation_page(
         '<img src="https://ekklesia.gr/pnx.png" width="60"/>'
-        '<h2 style="color:#2563eb">Εγγραφή Επιβεβαιώθηκε!</h2>'
+        '<h2>Εγγραφή Επιβεβαιώθηκε!</h2>'
         f'<p>{message}</p>'
-        '<a href="https://ekklesia.gr" style="color:#2563eb">← Επιστροφή στο ekklesia.gr</a>'
-        '</div>'
+        '<a href="https://ekklesia.gr">← Επιστροφή στο ekklesia.gr</a>'
     )
 
 
