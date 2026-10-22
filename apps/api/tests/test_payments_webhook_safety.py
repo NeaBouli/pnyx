@@ -843,7 +843,7 @@ async def test_closed_intake_still_processes_signed_stripe_adjustments(monkeypat
         "stripe_session": "cs_closed_gate",
         "payment_intent": "pi_closed_gate",
     })
-    redis.values[f"{payments.R_STRIPE_PAYMENT_PREFIX}pi_closed_gate"] = "cs_closed_gate"
+    redis.values[f"{payments.R_STRIPE_OWNED_PAYMENT_PREFIX}pi_closed_gate"] = "cs_closed_gate"
     event = {
         "id": "evt_closed_gate_refund",
         "type": "charge.refunded",
@@ -881,7 +881,7 @@ async def test_stripe_adjustment_resumes_after_accounting_review_failure(monkeyp
         "stripe_session": "cs_retry_adjustment",
         "payment_intent": "pi_retry_adjustment",
     })
-    redis.values[f"{payments.R_STRIPE_PAYMENT_PREFIX}pi_retry_adjustment"] = "cs_retry_adjustment"
+    redis.values[f"{payments.R_STRIPE_OWNED_PAYMENT_PREFIX}pi_retry_adjustment"] = "cs_retry_adjustment"
     event_key = f"{payments.R_STRIPE_EVENT_PREFIX}evt_retry_adjustment"
     redis.values[event_key] = "accounting_review_required"
     event = {
@@ -915,7 +915,7 @@ async def test_stripe_adjustment_resumes_after_accounting_review_failure(monkeyp
 
 @pytest.mark.asyncio
 async def test_owned_stripe_projection_lock_contention_remains_retryable(monkeypatch):
-    payment_intent_key = f"{payments.R_STRIPE_PAYMENT_PREFIX}pi_late_busy"
+    payment_intent_key = f"{payments.R_STRIPE_OWNED_PAYMENT_PREFIX}pi_late_busy"
     redis = _SuccessRedis()
     redis.values[payment_intent_key] = "cs_late_busy"
     event = {
@@ -966,7 +966,7 @@ async def test_stripe_processing_claim_returns_retryable_status(monkeypatch):
     )
     redis = _SuccessRedis()
     redis.values[f"{payments.R_STRIPE_EVENT_PREFIX}evt_processing"] = "processing"
-    redis.values[f"{payments.R_STRIPE_PAYMENT_PREFIX}pi_processing"] = "cs_processing"
+    redis.values[f"{payments.R_STRIPE_OWNED_PAYMENT_PREFIX}pi_processing"] = "cs_processing"
 
     async def fake_get_redis():
         return redis
@@ -990,7 +990,7 @@ async def test_stripe_expired_claim_race_returns_retryable_status(monkeypatch):
             return await super().set(key, value, **kwargs)
 
         async def get(self, key):
-            if key == f"{payments.R_STRIPE_PAYMENT_PREFIX}pi_expired_claim":
+            if key == f"{payments.R_STRIPE_OWNED_PAYMENT_PREFIX}pi_expired_claim":
                 return "cs_expired_claim"
             return None
 
@@ -1141,7 +1141,7 @@ async def test_stripe_dispute_emits_adjustment_without_customer_data(monkeypatch
     redis = _SuccessRedis()
 
     async def fake_get(key):
-        if key == f"{payments.R_STRIPE_PAYMENT_PREFIX}pi_test_hlr":
+        if key == f"{payments.R_STRIPE_OWNED_PAYMENT_PREFIX}pi_test_hlr":
             return "cs_test_hlr"
         return None
 

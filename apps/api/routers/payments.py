@@ -61,7 +61,8 @@ R_DOMAIN_RECEIVED = "donations:domain:received"  # float
 R_RESERVE = "donations:reserve"       # float
 R_STRIPE_SESSION_PREFIX = "donations:stripe:session:"
 R_STRIPE_EVENT_PREFIX = "payments:stripe:event:"
-R_STRIPE_PAYMENT_PREFIX = "payments:stripe:payment_intent:"
+R_STRIPE_PAYMENT_PREFIX = "payments:stripe:payment_intent:"  # Legacy; never proves ownership.
+R_STRIPE_OWNED_PAYMENT_PREFIX = "payments:stripe:owned-payment-intent:v1:"
 R_FINANCE_EVENTS = "payments:finance_events"
 R_FINANCE_EVENT_MARKER_PREFIX = "payments:finance-event:v1:"
 R_ADJUSTMENT_STATE_PREFIX = "payments:adjustment_state:"
@@ -184,8 +185,11 @@ def _stripe_checkout_is_ours(session: dict) -> bool:
     return isinstance(payment_link, str) and payment_link in allowed_links
 
 
-def _ignored_foreign_stripe_event() -> dict[str, str]:
-    logger.info("[MOD-18] Stripe webhook ignored_foreign count=1")
+def _ignored_foreign_stripe_event(*, legacy_mapping: bool = False) -> dict[str, str]:
+    if legacy_mapping:
+        logger.info("[MOD-18] Stripe webhook ignored_foreign legacy_mapping count=1")
+    else:
+        logger.info("[MOD-18] Stripe webhook ignored_foreign count=1")
     return {"status": "ignored_foreign"}
 
 
@@ -241,14 +245,16 @@ async def _process_stripe_adjustment(event: dict, event_type: str) -> dict:
     adjustment = event.get("data", {}).get("object", {})
     payment_intent = adjustment.get("payment_intent", "")
 
-    # The account is shared: only a recorded Ekklesia payment proves ownership.
+    # Only mappings written after the Checkout ownership check prove ownership.
     # Check before validation, idempotency claims, finance events or pending work.
     if not isinstance(payment_intent, str) or not payment_intent.startswith("pi_"):
         return _ignored_foreign_stripe_event()
     r = await _get_redis()
-    session_id = await r.get(f"{R_STRIPE_PAYMENT_PREFIX}{payment_intent}")
+    session_id = await r.get(f"{R_STRIPE_OWNED_PAYMENT_PREFIX}{payment_intent}")
     if not isinstance(session_id, str) or not session_id.startswith("cs_"):
-        return _ignored_foreign_stripe_event()
+        # Read old keys solely to classify legacy mappings; never promote them.
+        legacy_mapping = await r.get(f"{R_STRIPE_PAYMENT_PREFIX}{payment_intent}")
+        return _ignored_foreign_stripe_event(legacy_mapping=legacy_mapping is not None)
 
     currency = str(adjustment.get("currency", "")).upper()
     amount_field = "amount_refunded" if event_type == "charge.refunded" else "amount"
@@ -1089,7 +1095,8 @@ async def stripe_webhook(request: Request) -> dict:
             "currency": "EUR",
             "fulfillment_state": fulfillment_state,
         })
-        await r.set(f"{R_STRIPE_PAYMENT_PREFIX}{payment_intent}", session_id)
+        # This versioned key records that this Checkout passed ownership checks.
+        await r.set(f"{R_STRIPE_OWNED_PAYMENT_PREFIX}{payment_intent}", session_id)
         if session.get("livemode") is True:
             await _drain_pending_adjustments(
                 r,
