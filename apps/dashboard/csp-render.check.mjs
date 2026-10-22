@@ -87,7 +87,8 @@ test('production login, authenticated HTML, errors and assets have one fresh mat
       assert.equal(typeof policy, 'string')
       assert.doesNotMatch(policy, /attacker|unsafe-eval|strict-dynamic|,|\*/)
       assert.match(policy, /style-src 'self' 'unsafe-inline'/)
-      assert.match(policy, /img-src 'self' data: https:\/\/avatars\.githubusercontent\.com;/)
+      assert.equal(policy.match(/img-src[^;]+/)[0],
+        "img-src 'self' data: https://avatars.githubusercontent.com https://ekklesia.gr/pnx.png")
       assert.equal(res.getHeader('x-content-type-options'), 'nosniff')
       assert.equal(res.getHeader('referrer-policy'), 'strict-origin-when-cross-origin')
       return policy

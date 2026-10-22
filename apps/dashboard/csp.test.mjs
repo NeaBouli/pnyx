@@ -54,12 +54,24 @@ test('policy has only the required browser origins and directives', () => {
   const csp = load('./src/lib/csp.ts', {}, {})
   assert.equal(csp.noncePolicy('fixture'), [
     "default-src 'self'", "script-src 'self' 'nonce-fixture'",
-    "style-src 'self' 'unsafe-inline'", "img-src 'self' data: https://avatars.githubusercontent.com",
+    "style-src 'self' 'unsafe-inline'", "img-src 'self' data: https://avatars.githubusercontent.com https://ekklesia.gr/pnx.png",
     "connect-src 'self' https://api.ekklesia.gr", "font-src 'self'", "frame-ancestors 'none'",
     "object-src 'none'", "base-uri 'self'", "form-action 'self'",
   ].join('; '))
   assert.equal(load('./src/lib/csp.ts', {}, { NEXT_PUBLIC_API_URL: 'https://api.example.test:8443/v1/' })
     .noncePolicy('fixture').match(/connect-src[^;]+/)[0], "connect-src 'self' https://api.example.test:8443")
+})
+
+test('newsletter previews allow the exact template logo URL without allowing its whole origin', () => {
+  const { noncePolicy } = load('./src/lib/csp.ts')
+  const imageSources = noncePolicy('fixture').match(/img-src ([^;]+)/)[1].split(' ')
+  const logo = 'https://ekklesia.gr/pnx.png'
+  assert.deepEqual(imageSources.filter(source => source.startsWith(new URL(logo).origin)), [logo])
+  for (const template of ['weekly-digest.html', 'monthly-digest.html']) {
+    const html = readFileSync(new URL(`../../newsletter/templates/${template}`, import.meta.url), 'utf8')
+    const images = [...html.matchAll(/<img\b[^>]*\bsrc="([^"]+)"/g)].map(match => match[1])
+    assert.ok(images.includes(logo), `${template} must use the permitted logo URL`)
+  }
 })
 
 test('Web Crypto generates independent 256-bit base64 nonces', () => {

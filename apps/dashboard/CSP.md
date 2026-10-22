@@ -8,7 +8,7 @@ errors and static assets. The dashboard Traefik router has no CSP middleware.
 The default enforced policy is:
 
 ```text
-default-src 'self'; script-src 'self' 'nonce-<per-request base64 nonce>'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com; connect-src 'self' https://api.ekklesia.gr; font-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'
+default-src 'self'; script-src 'self' 'nonce-<per-request base64 nonce>'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com https://ekklesia.gr/pnx.png; connect-src 'self' https://api.ekklesia.gr; font-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'
 ```
 
 The nonce contains 32 random bytes generated with Web Crypto. Next receives the
@@ -31,6 +31,7 @@ bars, including `src/app/(dashboard)/analytics/page.tsx`.
 | --- | --- |
 | `https://api.ekklesia.gr` | Direct browser API requests: `src/lib/api.ts:1` and `src/app/(dashboard)/analytics/page.tsx:12`. `connect-src` uses only the origin of the same `NEXT_PUBLIC_API_URL` value, including when configured with a path. |
 | `https://avatars.githubusercontent.com` | GitHub's profile `avatar_url`, passed from `src/lib/auth.ts` through `src/components/layout/DashboardShell.tsx` to the image in `src/components/layout/Sidebar.tsx`. |
+| `https://ekklesia.gr/pnx.png` | Exact logo URL used by `newsletter/templates/weekly-digest.html` and `newsletter/templates/monthly-digest.html`. Newsletter `srcDoc` previews inherit the dashboard CSP; `img-src` permits only this path on the public site. |
 | `https://github.com/login/oauth/authorize` | GitHub OAuth provider in `src/lib/auth.ts`. The login button in `src/app/login/page.tsx` calls NextAuth's `signIn('github')`, which posts to same-origin `/api/auth/signin/github`, receives a URL, then navigates to GitHub. No cross-origin form action or browser connection permission is required. |
 | `https://api.github.com` | GitHub provider profile/email requests run on the server through NextAuth; no browser CSP permission is required. |
 | `https://pnyx.ekklesia.gr` | Forum JSON is fetched only by `src/app/api/discourse/route.ts`. The browser calls `/api/discourse`. Forum links open a separate page. |
@@ -39,9 +40,9 @@ bars, including `src/app/(dashboard)/analytics/page.tsx`.
 | `https://sentry.io` | Navigation link in `src/app/(dashboard)/stats/page.tsx:142`. |
 
 Links to the public site, Listmonk, Sentry and app downloads do not load resources
-into the dashboard. The embed page displays generated iframe markup as text;
-the newsletter preview uses a sandboxed `srcDoc` iframe. These uses require no
-additional external origins.
+into the dashboard. The embed page displays generated iframe markup as text.
+The newsletter preview uses a sandboxed `srcDoc` iframe and requires the exact
+logo URL listed above.
 
 ## Rollback
 
@@ -51,6 +52,8 @@ enforced CSP. The renderer still receives the nonce-bearing request policy, so
 rollback does not remove script nonces. No rebuild is needed. Unset the flag or
 set `CSP_ENFORCE=true` and restart to restore enforcement. Observe Report-Only
 violations in browser developer tools; no reporting endpoint is configured.
+Production Compose forwards `${CSP_ENFORCE:-true}` to the dashboard service;
+recreate the container after changing the deployment environment value.
 
 ## Verification
 
@@ -64,9 +67,10 @@ npm run build
 npm run test:csp-render
 ```
 
-`npm run build` also runs the CSP unit and production render checks through
-`postbuild`, so the existing dashboard CI build includes these checks. When
-invoking `next build` directly, run `npm run test:csp-render` afterward.
+The dashboard CI job explicitly runs `node --test csp.test.mjs` and, after
+`npm run build`, `npm run test:csp-render`, with lifecycle scripts disabled.
+The build has no postbuild hook; run the production check explicitly after
+building locally too.
 
 The unit suite covers policy content, configured API origin, nonce entropy,
 untrusted incoming headers, redirects, role denials, asset caching and rollback.

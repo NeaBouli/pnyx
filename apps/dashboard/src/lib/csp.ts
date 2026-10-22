@@ -11,7 +11,8 @@ export function noncePolicy(nonce: string): string {
     `script-src 'self' 'nonce-${nonce}'`,
     // Recharts and the dashboard's progress bars use inline styles.
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https://avatars.githubusercontent.com",
+    // Newsletter srcDoc previews inherit this policy and load the public logo.
+    "img-src 'self' data: https://avatars.githubusercontent.com https://ekklesia.gr/pnx.png",
     `connect-src 'self' ${API_ORIGIN}`,
     "font-src 'self'",
     "frame-ancestors 'none'",
