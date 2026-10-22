@@ -14,6 +14,7 @@ from routers import payments
 @pytest.fixture(autouse=True)
 def _enable_test_payment_intake(monkeypatch):
     monkeypatch.setenv("PAYMENTS_INTAKE_GATE", "legal_recipient_confirmed")
+    monkeypatch.delenv("STRIPE_EKKLESIA_PAYMENT_LINKS", raising=False)
 
 
 class _Request:
@@ -426,7 +427,10 @@ async def test_unpaid_checkout_is_ignored(monkeypatch):
     event = {
         "id": "evt_test_duplicate",
         "type": "checkout.session.completed",
-        "data": {"object": {"id": "cs_test_unpaid", "payment_status": "unpaid"}},
+        "data": {"object": {
+            "id": "cs_test_unpaid", "payment_status": "unpaid",
+            "metadata": {"source": "ekklesia"},
+        }},
     }
     stripe_module = SimpleNamespace(
         Webhook=SimpleNamespace(construct_event=lambda *_args: event),
@@ -451,7 +455,7 @@ async def test_duplicate_stripe_session_is_not_allocated(monkeypatch):
                 "payment_status": "paid",
                 "mode": "payment",
                 "currency": "eur",
-                "metadata": {"payment_purpose": "infrastructure_support"},
+                "metadata": {"source": "ekklesia", "payment_purpose": "infrastructure_support"},
                 "amount_total": 1000,
                 "payment_intent": "pi_test_duplicate",
             }
@@ -493,7 +497,7 @@ async def test_paid_checkout_is_processed_once_and_logged(monkeypatch):
                 "payment_status": "paid",
                 "mode": "payment",
                 "currency": "eur",
-                "metadata": {"payment_purpose": "infrastructure_support"},
+                "metadata": {"source": "ekklesia", "payment_purpose": "infrastructure_support"},
                 "amount_total": 2500,
                 "payment_intent": "pi_test_paid",
             }
@@ -578,7 +582,7 @@ async def test_stripe_capture_recovers_after_atomic_record_commit(monkeypatch):
             "amount_total": 1500,
             "payment_intent": "pi_live_recovery",
             "livemode": True,
-            "metadata": {"payment_purpose": "infrastructure_support"},
+            "metadata": {"source": "ekklesia", "payment_purpose": "infrastructure_support"},
         }},
     }
     stripe_module = SimpleNamespace(
@@ -815,7 +819,7 @@ async def test_payment_intake_gate_blocks_before_stripe_capture_processing(monke
     event = {
         "id": "evt_gate_closed",
         "type": "checkout.session.completed",
-        "data": {"object": {}},
+        "data": {"object": {"metadata": {"source": "ekklesia"}}},
     }
     stripe_module = SimpleNamespace(
         Webhook=SimpleNamespace(construct_event=lambda *_args: event),
@@ -839,7 +843,7 @@ async def test_closed_intake_still_processes_signed_stripe_adjustments(monkeypat
         "stripe_session": "cs_closed_gate",
         "payment_intent": "pi_closed_gate",
     })
-    redis.values[f"{payments.R_STRIPE_PAYMENT_PREFIX}pi_closed_gate"] = "cs_closed_gate"
+    redis.values[f"{payments.R_STRIPE_OWNED_PAYMENT_PREFIX}pi_closed_gate"] = "cs_closed_gate"
     event = {
         "id": "evt_closed_gate_refund",
         "type": "charge.refunded",
@@ -877,7 +881,7 @@ async def test_stripe_adjustment_resumes_after_accounting_review_failure(monkeyp
         "stripe_session": "cs_retry_adjustment",
         "payment_intent": "pi_retry_adjustment",
     })
-    redis.values[f"{payments.R_STRIPE_PAYMENT_PREFIX}pi_retry_adjustment"] = "cs_retry_adjustment"
+    redis.values[f"{payments.R_STRIPE_OWNED_PAYMENT_PREFIX}pi_retry_adjustment"] = "cs_retry_adjustment"
     event_key = f"{payments.R_STRIPE_EVENT_PREFIX}evt_retry_adjustment"
     redis.values[event_key] = "accounting_review_required"
     event = {
@@ -910,21 +914,10 @@ async def test_stripe_adjustment_resumes_after_accounting_review_failure(monkeyp
 
 
 @pytest.mark.asyncio
-async def test_late_stripe_projection_lock_contention_remains_retryable(monkeypatch):
-    payment_intent_key = f"{payments.R_STRIPE_PAYMENT_PREFIX}pi_late_busy"
-
-    class _LateSessionRedis(_SuccessRedis):
-        def __init__(self):
-            super().__init__()
-            self.payment_intent_reads = 0
-
-        async def get(self, key):
-            if key == payment_intent_key:
-                self.payment_intent_reads += 1
-                return None if self.payment_intent_reads == 1 else "cs_late_busy"
-            return await super().get(key)
-
-    redis = _LateSessionRedis()
+async def test_owned_stripe_projection_lock_contention_remains_retryable(monkeypatch):
+    payment_intent_key = f"{payments.R_STRIPE_OWNED_PAYMENT_PREFIX}pi_late_busy"
+    redis = _SuccessRedis()
+    redis.values[payment_intent_key] = "cs_late_busy"
     event = {
         "id": "evt_late_busy",
         "type": "charge.refunded",
@@ -939,11 +932,11 @@ async def test_late_stripe_projection_lock_contention_remains_retryable(monkeypa
     async def fake_get_redis():
         return redis
 
-    async def busy_drain(*_args):
-        return 0
+    async def busy_projection(*_args):
+        return {"applied": False, "reason": "payment_projection_busy"}
 
     monkeypatch.setattr(payments, "_get_redis", fake_get_redis)
-    monkeypatch.setattr(payments, "_drain_pending_adjustments", busy_drain)
+    monkeypatch.setattr(payments, "_apply_public_payment_adjustment", busy_projection)
 
     with pytest.raises(HTTPException) as exc:
         await payments._process_stripe_adjustment(event, "charge.refunded")
@@ -973,6 +966,7 @@ async def test_stripe_processing_claim_returns_retryable_status(monkeypatch):
     )
     redis = _SuccessRedis()
     redis.values[f"{payments.R_STRIPE_EVENT_PREFIX}evt_processing"] = "processing"
+    redis.values[f"{payments.R_STRIPE_OWNED_PAYMENT_PREFIX}pi_processing"] = "cs_processing"
 
     async def fake_get_redis():
         return redis
@@ -995,7 +989,9 @@ async def test_stripe_expired_claim_race_returns_retryable_status(monkeypatch):
                 return None
             return await super().set(key, value, **kwargs)
 
-        async def get(self, _key):
+        async def get(self, key):
+            if key == f"{payments.R_STRIPE_OWNED_PAYMENT_PREFIX}pi_expired_claim":
+                return "cs_expired_claim"
             return None
 
     event = {
@@ -1037,7 +1033,7 @@ async def test_stripe_capture_processing_claim_returns_retryable_status(monkeypa
             "payment_status": "paid",
             "mode": "payment",
             "currency": "eur",
-            "metadata": {"payment_purpose": "infrastructure_support"},
+            "metadata": {"source": "ekklesia", "payment_purpose": "infrastructure_support"},
             "amount_total": 1500,
             "payment_intent": "pi_capture_processing",
         }},
@@ -1074,7 +1070,7 @@ async def test_paid_stripe_checkout_requires_eur_payment_mode_and_explicit_purpo
             "currency": "usd",
             "amount_total": 1000,
             "payment_intent": "pi_test_wrong_currency",
-            "metadata": {},
+            "metadata": {"source": "ekklesia"},
         }},
     }
     stripe_module = SimpleNamespace(
@@ -1102,7 +1098,7 @@ async def test_hlr_provider_credits_cannot_be_sold_through_donation_intake(monke
             "currency": "eur",
             "amount_total": 1500,
             "payment_intent": "pi_test_hlr",
-            "metadata": {"payment_purpose": "hlr_credits"},
+            "metadata": {"source": "ekklesia", "payment_purpose": "hlr_credits"},
         }},
     }
     stripe_module = SimpleNamespace(
@@ -1145,7 +1141,7 @@ async def test_stripe_dispute_emits_adjustment_without_customer_data(monkeypatch
     redis = _SuccessRedis()
 
     async def fake_get(key):
-        if key == f"{payments.R_STRIPE_PAYMENT_PREFIX}pi_test_hlr":
+        if key == f"{payments.R_STRIPE_OWNED_PAYMENT_PREFIX}pi_test_hlr":
             return "cs_test_hlr"
         return None
 
@@ -1180,7 +1176,7 @@ async def test_stripe_refunds_update_public_projection_monotonically(monkeypatch
                 "amount_total": 1500,
                 "payment_intent": "pi_live_payment",
                 "livemode": True,
-                "metadata": {"payment_purpose": "infrastructure_support"},
+                "metadata": {"source": "ekklesia", "payment_purpose": "infrastructure_support"},
             }},
         },
         *[
@@ -1201,7 +1197,7 @@ async def test_stripe_refunds_update_public_projection_monotonically(monkeypatch
             )
         ],
     ]
-    events = [events[1], events[0], *events[2:]]
+    events = [events[1], events[0], events[1], *events[2:]]
     stripe_module = SimpleNamespace(
         Webhook=SimpleNamespace(construct_event=lambda *_args: events.pop(0)),
         error=SimpleNamespace(SignatureVerificationError=ValueError),
@@ -1219,10 +1215,14 @@ async def test_stripe_refunds_update_public_projection_monotonically(monkeypatch
     monkeypatch.setattr(payments, "_get_redis", fake_get_redis)
     monkeypatch.setattr(payments, "allocate_donation", fake_allocate)
 
-    pending = await payments.stripe_webhook(_Request(signature="test-signature"))
-    assert pending == {"received": True, "processed": False, "requires_manual_review": True}
+    ignored = await payments.stripe_webhook(_Request(signature="test-signature"))
+    assert ignored == {"status": "ignored_foreign"}
+    assert redis.set_calls == []
+    assert redis.pushed == []
     assert payments.R_PUBLIC_SERVER_RECEIVED not in redis.values
 
+    await payments.stripe_webhook(_Request(signature="test-signature"))
+    assert redis.values[payments.R_PUBLIC_SERVER_RECEIVED] == "15.0"
     await payments.stripe_webhook(_Request(signature="test-signature"))
     assert redis.values[payments.R_PUBLIC_SERVER_RECEIVED] == "10.0"
     assert redis.values[payments.R_PUBLIC_PAYMENT_COUNT] == "1"

@@ -61,7 +61,8 @@ R_DOMAIN_RECEIVED = "donations:domain:received"  # float
 R_RESERVE = "donations:reserve"       # float
 R_STRIPE_SESSION_PREFIX = "donations:stripe:session:"
 R_STRIPE_EVENT_PREFIX = "payments:stripe:event:"
-R_STRIPE_PAYMENT_PREFIX = "payments:stripe:payment_intent:"
+R_STRIPE_PAYMENT_PREFIX = "payments:stripe:payment_intent:"  # Legacy; never proves ownership.
+R_STRIPE_OWNED_PAYMENT_PREFIX = "payments:stripe:owned-payment-intent:v1:"
 R_FINANCE_EVENTS = "payments:finance_events"
 R_FINANCE_EVENT_MARKER_PREFIX = "payments:finance-event:v1:"
 R_ADJUSTMENT_STATE_PREFIX = "payments:adjustment_state:"
@@ -168,6 +169,30 @@ def _payment_intake_enabled() -> bool:
     return os.getenv("PAYMENTS_INTAKE_GATE", "") == "legal_recipient_confirmed"
 
 
+def _stripe_checkout_is_ours(session: dict) -> bool:
+    """Require an explicit project marker or an allowlisted Payment Link."""
+    metadata = session.get("metadata") or {}
+    if isinstance(metadata, dict) and metadata.get("source") == "ekklesia":
+        return True
+    payment_link = session.get("payment_link")
+    if isinstance(payment_link, dict):
+        payment_link = payment_link.get("id")
+    allowed_links = {
+        link.strip()
+        for link in os.getenv("STRIPE_EKKLESIA_PAYMENT_LINKS", "").split(",")
+        if link.strip()
+    }
+    return isinstance(payment_link, str) and payment_link in allowed_links
+
+
+def _ignored_foreign_stripe_event(*, legacy_mapping: bool = False) -> dict[str, str]:
+    if legacy_mapping:
+        logger.info("[MOD-18] Stripe webhook ignored_foreign legacy_mapping count=1")
+    else:
+        logger.info("[MOD-18] Stripe webhook ignored_foreign count=1")
+    return {"status": "ignored_foreign"}
+
+
 def _payment_purpose(value: str) -> str | None:
     normalized = value.strip().lower()
     return normalized if normalized in ALLOWED_PAYMENT_PURPOSES else None
@@ -219,18 +244,27 @@ async def _process_stripe_adjustment(event: dict, event_type: str) -> dict:
     event_id = event.get("id", "")
     adjustment = event.get("data", {}).get("object", {})
     payment_intent = adjustment.get("payment_intent", "")
+
+    # Only mappings written after the Checkout ownership check prove ownership.
+    # Check before validation, idempotency claims, finance events or pending work.
+    if not isinstance(payment_intent, str) or not payment_intent.startswith("pi_"):
+        return _ignored_foreign_stripe_event()
+    r = await _get_redis()
+    session_id = await r.get(f"{R_STRIPE_OWNED_PAYMENT_PREFIX}{payment_intent}")
+    if not isinstance(session_id, str) or not session_id.startswith("cs_"):
+        # Read old keys solely to classify legacy mappings; never promote them.
+        legacy_mapping = await r.get(f"{R_STRIPE_PAYMENT_PREFIX}{payment_intent}")
+        return _ignored_foreign_stripe_event(legacy_mapping=legacy_mapping is not None)
+
     currency = str(adjustment.get("currency", "")).upper()
     amount_field = "amount_refunded" if event_type == "charge.refunded" else "amount"
     amount_cents = adjustment.get(amount_field)
 
     if not isinstance(event_id, str) or not event_id.startswith("evt_"):
         raise HTTPException(status_code=400, detail="Invalid Stripe event")
-    if not isinstance(payment_intent, str) or not payment_intent.startswith("pi_"):
-        raise HTTPException(status_code=400, detail="Invalid Stripe payment reference")
     if currency != "EUR" or not isinstance(amount_cents, int) or amount_cents <= 0:
         raise HTTPException(status_code=400, detail="Invalid Stripe adjustment")
 
-    r = await _get_redis()
     event_key = f"{R_STRIPE_EVENT_PREFIX}{event_id}"
     pending_key = f"{R_PENDING_STRIPE_ADJUSTMENT_PREFIX}{payment_intent}"
     claimed = await r.set(event_key, "processing", nx=True, ex=900)
@@ -239,21 +273,18 @@ async def _process_stripe_adjustment(event: dict, event_type: str) -> dict:
         if existing_claim == "processing":
             raise HTTPException(status_code=503, detail="Stripe adjustment is already processing")
         if existing_claim == "pending_payment":
-            session_id = await r.get(f"{R_STRIPE_PAYMENT_PREFIX}{payment_intent}")
-            if session_id:
-                processed = await _drain_pending_adjustments(
-                    r,
-                    pending_key,
-                    f"stripe:{session_id}",
-                )
-                if processed == 0:
-                    raise HTTPException(status_code=503, detail="Payment projection retry is pending")
-                return {
-                    "received": True,
-                    "processed": True,
-                    "requires_manual_review": False,
-                }
-            raise HTTPException(status_code=503, detail="Payment projection retry is pending")
+            processed = await _drain_pending_adjustments(
+                r,
+                pending_key,
+                f"stripe:{session_id}",
+            )
+            if processed == 0:
+                raise HTTPException(status_code=503, detail="Payment projection retry is pending")
+            return {
+                "received": True,
+                "processed": True,
+                "requires_manual_review": False,
+            }
         if existing_claim == "accounting_review_required":
             if not await _resume_webhook_claim(r, event_key, existing_claim):
                 raise HTTPException(status_code=503, detail="Stripe adjustment retry is already processing")
@@ -262,7 +293,6 @@ async def _process_stripe_adjustment(event: dict, event_type: str) -> dict:
         else:
             raise HTTPException(status_code=503, detail="Stripe adjustment claim is not ready")
 
-    session_id = await r.get(f"{R_STRIPE_PAYMENT_PREFIX}{payment_intent}")
     live_mode = event.get("livemode") is True
     adjustment_kind = _stripe_adjustment_kind(event_type, adjustment)
     state = {
@@ -272,45 +302,27 @@ async def _process_stripe_adjustment(event: dict, event_type: str) -> dict:
     }[event_type]
     try:
         projection_result = {"applied": False, "reason": "test_mode"}
-        if session_id:
-            await r.set(f"{R_ADJUSTMENT_STATE_PREFIX}{session_id}", state)
-            if live_mode:
-                projection_result = await _apply_public_payment_adjustment(
-                    r,
-                    f"stripe:{session_id}",
-                    amount_cents,
-                    adjustment_kind,
-                    event_id,
-                )
-                if projection_result.get("reason") in {"payment_projection_missing", "payment_projection_busy"}:
-                    await _queue_pending_adjustment(r, pending_key, {
-                        "event_key": event_key,
-                        "adjustment_id": event_id,
-                        "amount_cents": amount_cents,
-                        "adjustment_kind": adjustment_kind,
-                    })
-        elif live_mode:
-            await _queue_pending_adjustment(r, pending_key, {
-                "event_key": event_key,
-                "adjustment_id": event_id,
-                "amount_cents": amount_cents,
-                "adjustment_kind": adjustment_kind,
-            })
-            projection_result = {"applied": False, "reason": "payment_projection_pending"}
-            late_session_id = await r.get(f"{R_STRIPE_PAYMENT_PREFIX}{payment_intent}")
-            if late_session_id:
-                session_id = late_session_id
-                drained = await _drain_pending_adjustments(r, pending_key, f"stripe:{session_id}")
-                projection_result = (
-                    {"applied": True, "reason": "reconciled"}
-                    if drained
-                    else {"applied": False, "reason": "payment_projection_busy"}
-                )
+        await r.set(f"{R_ADJUSTMENT_STATE_PREFIX}{session_id}", state)
+        if live_mode:
+            projection_result = await _apply_public_payment_adjustment(
+                r,
+                f"stripe:{session_id}",
+                amount_cents,
+                adjustment_kind,
+                event_id,
+            )
+            if projection_result.get("reason") in {"payment_projection_missing", "payment_projection_busy"}:
+                await _queue_pending_adjustment(r, pending_key, {
+                    "event_key": event_key,
+                    "adjustment_id": event_id,
+                    "amount_cents": amount_cents,
+                    "adjustment_kind": adjustment_kind,
+                })
         projection_pending = live_mode and projection_result.get("reason") in {
-            "payment_projection_missing", "payment_projection_pending", "payment_projection_busy",
+            "payment_projection_missing", "payment_projection_busy",
         }
         retry_required = live_mode and projection_result.get("reason") == "payment_projection_busy"
-        requires_manual_review = not bool(session_id) or projection_pending
+        requires_manual_review = projection_pending
         await _append_finance_event(r, {
             "event_id": event_id,
             "event_type": event_type,
@@ -326,7 +338,7 @@ async def _process_stripe_adjustment(event: dict, event_type: str) -> dict:
         })
         await r.set(
             event_key,
-            "pending_payment" if projection_pending else "processed" if session_id else "accounting_review_required",
+            "pending_payment" if projection_pending else "processed",
         )
     except Exception:
         await r.set(event_key, "accounting_review_required")
@@ -337,7 +349,7 @@ async def _process_stripe_adjustment(event: dict, event_type: str) -> dict:
 
     return {
         "received": True,
-        "processed": bool(session_id) and not projection_pending,
+        "processed": not projection_pending,
         "requires_manual_review": requires_manual_review,
     }
 
@@ -843,7 +855,7 @@ async def _drain_pending_adjustments(r: aioredis.Redis, key: str, reference: str
                 )
                 if quarantined != 1:
                     raise HTTPException(status_code=503, detail="Pending adjustment quarantine failed")
-                logger.error("[MOD-18] Quarantined malformed pending adjustment for %s", reference)
+                logger.error("[MOD-18] Quarantined malformed pending adjustment count=1")
                 continue
             result = await _apply_public_payment_adjustment(
                 r,
@@ -946,7 +958,7 @@ def _months_elapsed(start_str: str) -> int:
 # ── Stripe Webhook ────────────────────────────────────────────────────────────
 
 @router.post("/webhook")
-async def stripe_webhook(request: Request):
+async def stripe_webhook(request: Request) -> dict:
     """
     Stripe Webhook — verarbeitet checkout.session.completed Events.
     Signatur wird verifiziert wenn STRIPE_WEBHOOK_SECRET gesetzt ist.
@@ -985,10 +997,13 @@ async def stripe_webhook(request: Request):
     if event_type != "checkout.session.completed":
         return {"received": True, "processed": False}
 
+    session = event.get("data", {}).get("object", {})
+    if not _stripe_checkout_is_ours(session):
+        return _ignored_foreign_stripe_event()
+
     if not _payment_intake_enabled():
         raise HTTPException(status_code=503, detail="Payment intake is awaiting legal recipient approval")
 
-    session = event.get("data", {}).get("object", {})
     if session.get("payment_status") != "paid":
         return {"received": True, "processed": False}
     if session.get("mode") != "payment" or str(session.get("currency", "")).lower() != "eur":
@@ -1080,7 +1095,8 @@ async def stripe_webhook(request: Request):
             "currency": "EUR",
             "fulfillment_state": fulfillment_state,
         })
-        await r.set(f"{R_STRIPE_PAYMENT_PREFIX}{payment_intent}", session_id)
+        # This versioned key records that this Checkout passed ownership checks.
+        await r.set(f"{R_STRIPE_OWNED_PAYMENT_PREFIX}{payment_intent}", session_id)
         if session.get("livemode") is True:
             await _drain_pending_adjustments(
                 r,
@@ -1097,7 +1113,7 @@ async def stripe_webhook(request: Request):
             await r.delete(idempotency_key)
         raise
 
-    logger.info(f"[MOD-18] Donation {amount_total}€ allocated: {allocation}")
+    logger.info("[MOD-18] Stripe checkout processed count=1")
     result = {"received": True, "processed": True, "allocation": allocation}
     if capture_state == "recorded":
         result["recovered"] = True

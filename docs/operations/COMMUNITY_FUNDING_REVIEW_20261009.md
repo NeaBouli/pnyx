@@ -25,6 +25,28 @@ Stripe API calls, production configuration changes, or deployment were performed
 - Public projections filter for verified live support and exclude identity and
   provider-event fields. Source tracing is not a live accounting reconciliation.
 
+## Stripe webhook ownership check (T-9161)
+
+The webhook can receive events that do not belong to Ekklesia. After signature verification,
+Checkout belongs to Ekklesia only when `metadata.source == "ekklesia"` or its
+`payment_link` ID is in `STRIPE_EKKLESIA_PAYMENT_LINKS` (comma-separated IDs;
+whitespace and empty entries are ignored; unset/empty allows no links). A known
+`payment_purpose` alone does not establish ownership. Owned payments still require
+the existing purpose validation (`infrastructure_support` or `developer_support`)
+and legal intake approval; closed intake continues to return retryable HTTP 503.
+
+Foreign Checkout and unmapped refund/dispute events return HTTP 200
+`{"status":"ignored_foreign"}` before claims or writes, with one count-only log
+line. Adjustments require the existing Ekklesia payment-intent-to-session mapping;
+unmapped events are ignored rather than queued, including events delivered before
+capture is recorded. Mapped adjustments retain their existing handling even while
+intake is closed.
+
+Additionally restrict this Stripe endpoint's subscribed event types to
+`checkout.session.completed`, `charge.refunded`, `charge.dispute.created`, and
+`charge.dispute.closed`. Event-type filtering complements the ownership check;
+it does not replace it.
+
 ## Verification status and gates
 
 Source review completed. The local responsive-browser check is **BLOCKED / needs
