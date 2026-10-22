@@ -25,7 +25,9 @@ An unset token keeps the optional integration disabled. See the official
 
 As an operator step, assign only subscriber and list subscription permissions:
 get subscribers (`subscribers:get`, `subscribers:get_all`), manage subscribers
-(`subscribers:manage`, including blocklisting), and a list role with manage
+(`subscribers:manage`, including blocklisting), query subscribers
+(`subscribers:sql_query`, required by the withdrawal and re-confirmation
+lookups; without it these calls fail with 403), and a list role with manage
 access to the configured newsletter lists for subscription changes. Do not
 grant settings, campaign, user/role administration or Super Admin permissions.
 See [Listmonk roles and permissions](https://listmonk.app/docs/roles-and-permissions/).
