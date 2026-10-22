@@ -9,6 +9,7 @@ import html
 import logging
 import asyncio
 from datetime import datetime, timezone
+from typing import Any
 from urllib.parse import quote
 
 import httpx
@@ -37,6 +38,7 @@ BREVO_API = "https://api.brevo.com/v3"
 SENDER = {"name": "εκκλησία", "email": "newsletter@ekklesia.gr"}
 LIST_ID = newsletter_service.LIST_ID
 READINESS_TIMEOUT_SECONDS = 25
+LIST_SERVICE_READINESS_TIMEOUT_SECONDS = 5.0
 
 
 class _ContactRequestLogFilter(logging.Filter):
@@ -194,7 +196,9 @@ async def newsletter_backfill(dry_run: bool = True, _auth: bool = Depends(verify
 
 
 @router.get("/readiness")
-async def newsletter_readiness(_auth: bool = Depends(verify_admin_key)) -> dict:
+async def newsletter_readiness(
+    _auth: bool = Depends(verify_admin_key), check_list_service: bool = False,
+) -> dict[str, Any]:
     """Bounded local-confirmation audit: Redis reads and provider GETs only.
 
     Not a full provider inventory or an execution manifest. Never returns email
@@ -205,8 +209,9 @@ async def newsletter_readiness(_auth: bool = Depends(verify_admin_key)) -> dict:
     store = await _get_redis()
     snapshot = await store.eval_ro(READ_CONSENT_SNAPSHOT, 1, CONFIRMED_KEY, MAX_READINESS_CONTACTS)
     count = int(snapshot[0])
+    connection = {"list_service": await _listmonk_connection_health()} if check_list_service else {}
     if count > MAX_READINESS_CONTACTS:
-        return readiness_summary([], count, False)
+        return {**readiness_summary([], count, False), **connection}
     now = datetime.now(timezone.utc)
     semaphore = asyncio.Semaphore(5)
 
@@ -234,7 +239,26 @@ async def newsletter_readiness(_auth: bool = Depends(verify_admin_key)) -> dict:
                 ])
     except TimeoutError:
         raise HTTPException(504, "Readiness check timed out; no contacts changed") from None
-    return readiness_summary(decisions, count, True)
+    return {**readiness_summary(decisions, count, True), **connection}
+
+
+async def _listmonk_connection_health() -> dict[str, int]:
+    """Optional bounded provider GET; never return contact data or raw errors."""
+    from routers.newsletter import LISTMONK_PW, _listmonk_request
+
+    counts = {"configured": int(bool(LISTMONK_PW)), "reachable": 0, "failed": 0}
+    if not LISTMONK_PW:
+        return counts
+    try:
+        async with asyncio.timeout(LIST_SERVICE_READINESS_TIMEOUT_SECONDS):
+            result = await _listmonk_request("GET", "/api/subscribers?per_page=1&page=1")
+            total = result["data"]["total"]
+            if type(total) is not int or total < 0:
+                raise ValueError("Invalid newsletter provider count")
+        counts["reachable"] = 1
+    except Exception:
+        counts["failed"] = 1
+    return counts
 
 
 @router.get("/stats")

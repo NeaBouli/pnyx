@@ -10,6 +10,48 @@ admin campaigns share `BREVO_LIST_ID`, with the existing list default.
 `BREVO_API_KEY` remains server-side. Listmonk is an optional secondary provider.
 List membership does not replace consent or override provider suppression.
 
+The self-hosted list service uses `LISTMONK_URL`, defaulting to the Compose
+service name `http://listmonk:9000`. Keep a stable service hostname: container
+IPs can change on recreate. A configured raw IPv4 host produces one warning
+per API process; the warning never includes the URL or credentials.
+
+Create a dedicated **API user** in Listmonk's Admin → Users screen and generate
+its API token. The existing environment variable names remain for compatibility:
+`LISTMONK_ADMIN_USER` must contain that API username and
+`LISTMONK_ADMIN_PASSWORD` must contain its API token, **not the admin login or
+password**. The integration sends this username/token pair with HTTP Basic auth.
+An unset token keeps the optional integration disabled. See the official
+[API authentication documentation](https://listmonk.app/docs/apis/apis/#auth).
+
+As an operator step, assign only subscriber and list subscription permissions:
+get subscribers (`subscribers:get`, `subscribers:get_all`), manage subscribers
+(`subscribers:manage`, including blocklisting), query subscribers
+(`subscribers:sql_query`, required by the withdrawal and re-confirmation
+lookups; without it these calls fail with 403), and a list role with manage
+access to the configured newsletter lists for subscription changes. Do not
+grant settings, campaign, user/role administration or Super Admin permissions.
+See [Listmonk roles and permissions](https://listmonk.app/docs/roles-and-permissions/).
+The application does not create users or modify provider roles.
+
+HTTP 401/403 responses log one actionable, fixed message per API process:
+configure an API user and API token with the required permissions. The log and
+public errors omit identities, credentials and provider response bodies.
+Authentication failures preserve the existing fail-safe behavior: definite
+enrollment rejections remain retryable, and queued removals retain their retry
+markers. Correct the credentials/permissions and retry the existing operation;
+do not clear consent, suppression or retry state to work around authentication.
+
+For an optional connection check, call the existing authenticated
+`GET /api/v1/admin/newsletter/readiness?check_list_service=true` using the same
+admin bearer authentication described below. It adds only `list_service`
+counts: `configured`, `reachable` and `failed` (each 0 or 1). It performs at most
+one subscriber GET with a five-second budget and discards subscriber data.
+An unset token returns all zeros without a provider request. Connection,
+authentication and malformed-response failures set `failed=1` without exposing
+provider details. The check runs only when requested, never during API startup;
+the default readiness output is unchanged. It does not authorize delivery or
+change the consent audit's existing blockers.
+
 The boundary covered by this change is:
 
 ```mermaid
