@@ -131,12 +131,18 @@ async def test_completeness_preserves_fetch_outcome(monkeypatch, caplog, outcome
     )
 
 
+@pytest.mark.parametrize("deferred", ["cooldown", "redis_down", "lease_busy"])
 @respx.mock
-async def test_completeness_cooldown_is_skipped_without_degrading(monkeypatch, caplog, scraper_clock):
+async def test_completeness_deferral_keeps_scheduler_running(monkeypatch, caplog, scraper_clock, scraper_redis, deferred):
     caplog.set_level(logging.INFO)
     candidate = bill("private-id", "PARLIAMENT")
     job, _ = load_job(monkeypatch, [candidate])
-    scraper_clock.limiter.observe(candidate.parliament_url, 403, {})
+    if deferred == "cooldown":
+        await scraper_clock.limiter.record(candidate.parliament_url, 403, {})
+    elif deferred == "redis_down":
+        scraper_redis.down = True
+    else:
+        await scraper_clock.limiter.reserve(candidate.parliament_url)
     await job()
     assert candidate.summary_long_el is None
     assert "[COMPLETENESS] fetched=0 skipped=1 failed=0" in caplog.text

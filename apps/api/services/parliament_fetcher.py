@@ -137,7 +137,7 @@ async def _channel_jina_markdown(url: str) -> str:
                 if resp.status_code != 200:
                     logger.warning("[CH1] Jina MD attempt %d: HTTP %d", attempt + 1, resp.status_code)
                     if resp.status_code == 403:
-                        host_limiter.check(str(resp.url))
+                        await host_limiter.check_persisted(str(resp.url))
                 else:
                     text = _extract_markdown_content(resp.text)
                     if len(text) >= MIN_TEXT_LENGTH:
@@ -195,7 +195,7 @@ async def _channel_jina_html(url: str) -> str:
                 if resp.status_code != 200:
                     logger.warning("[CH2] Jina HTML attempt %d: HTTP %d", attempt + 1, resp.status_code)
                     if resp.status_code == 403:
-                        host_limiter.check(str(resp.url))
+                        await host_limiter.check_persisted(str(resp.url))
                 else:
                     text = _extract_text_from_html(resp.text)
                     if len(text) >= MIN_TEXT_LENGTH:
@@ -374,7 +374,7 @@ async def _channel_playwright(url: str) -> str:
             try:
                 async with attempt_timeout(TIMEOUT) as deadline:
                     p = await manager.__aenter__()
-                    host_limiter.check(url)
+                    await host_limiter.check_persisted(url)
                     browser = await p.chromium.launch(headless=True)
 
                     async def paced_route(route):
@@ -405,7 +405,7 @@ async def _channel_playwright(url: str) -> str:
                     ) as browser_http:
                         response = await page.goto(url, timeout=TIMEOUT * 1000, wait_until="networkidle")
                         if response is not None and response.status != 200:
-                            host_limiter.check(url)
+                            await host_limiter.check_persisted(url)
                             return ""
                         content = await page.inner_text("body")
             finally:
@@ -507,7 +507,6 @@ async def _channel_direct_parliament(url: str) -> str:
     async with attempt_timeout(TIMEOUT), httpx.AsyncClient(timeout=TIMEOUT, trust_env=False, follow_redirects=True, event_hooks=SCRAPER_HTTP_HOOKS) as client:
         response = await client.get(url, headers={"User-Agent": USER_AGENT})
         if response.status_code == 403:
-            host_limiter.observe(url, 403, response.headers)
             from services.source_freshness import record_source_blocked
             await record_source_blocked()
             raise HostCooldown("Parliament source_blocked")
@@ -525,7 +524,7 @@ async def _fetch_bill_text_result(
         if not parliament_url:
             outcome = "skipped"
             return "", outcome
-        host_limiter.check(parliament_url)
+        await host_limiter.check_persisted(parliament_url)
         host = (urlsplit(parliament_url).hostname or "").lower()
         if source == "DIAVGEIA" or host == "diavgeia.gov.gr" or host.endswith(".diavgeia.gov.gr"):
             text, outcome = await _fetch_diavgeia_document(parliament_url)
@@ -547,7 +546,7 @@ async def _fetch_bill_text_result(
             _channel_ollama_extract, _channel_playwright,
         ):
             try:
-                host_limiter.check(parliament_url)
+                await host_limiter.check_persisted(parliament_url)
                 text = await channel(parliament_url)
             except HostCooldown:
                 deferred = True

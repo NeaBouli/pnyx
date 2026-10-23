@@ -711,7 +711,16 @@ async def scraper_jobs():
     except Exception:
         states = [{"name": n, "status": "unknown", "error_count": 0,
                    "last_run": None, **safe_state([None] * len(FIELDS))} for n in names]
-    return {"scrapers": states}
+    return {"scrapers": states, "host_cooldowns": await _host_cooldowns()}
+
+
+async def _host_cooldowns() -> dict[str, dict[str, float | int | None]]:
+    from services.scraper_http import host_limiter
+    # Fixed source hosts remain visible after a worker restart. No paths,
+    # request data, reason text, or response bodies are included.
+    return {host: await host_limiter.status(f"https://{host}/") for host in (
+        "hellenicparliament.gr", "diavgeia.gov.gr",
+    )}
 
 
 @router.get("/status")
@@ -727,6 +736,7 @@ async def scraper_status(request: Request = None):
             "rule_based":  {"status": "always_available"},
         },
         "active_provider": "assistant" if ollama_ok else ("fallback" if HF_API_KEY else "rule_based"),
+        "host_cooldowns": await _host_cooldowns(),
     }
 
 

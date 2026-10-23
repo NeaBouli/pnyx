@@ -109,14 +109,14 @@ async def prepare(request: httpx.Request) -> None:
 
 
 async def observe(response: httpx.Response) -> None:
-    from services.scraper_http import HostCooldown, host_limiter
+    from services.scraper_http import HostCooldown
     from services.source_freshness import record_source_blocked
     url = str(response.url)
     if not is_parliament(url):
         return
     await response.aread()
     if response.status_code == 403 or (response.status_code == 200 and access_denied(response.text)):
-        host_limiter.observe(url, 403, response.headers)
+        response.request.extensions["scraper_forbidden"] = True
         await record_source_blocked()
         raise HostCooldown("Parliament source_blocked")
     cached = responses.get(url)
