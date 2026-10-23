@@ -16,7 +16,7 @@ from redis.exceptions import ConnectionError as RedisConnectionError, ResponseEr
 from routers import newsletter, newsletter_admin
 from services import newsletter_service
 from services.newsletter_lock import RENEW_LOCK, RELEASE_LOCK, NewsletterLockUnavailable
-from services.newsletter_claims import WRITE_CLAIM
+from services.newsletter_claims import ACQUIRE_CLAIM, WRITE_CLAIM, FENCE_FIELD
 from services.newsletter_consent import (
     CONFIRMED_KEY, CONFIRM_ONCE, SUPPRESSED_KEY, BREVO_ADD_RETRY_KEY,
     BREVO_REMOVE_RETRY_KEY, LISTMONK_REMOVE_RETRY_KEY, WITHDRAW_CONSENT,
@@ -81,7 +81,7 @@ class MemoryRedis:
     async def delete(self, key: str) -> None:
         self.mutations.append(key)
 
-    async def eval(self, script: str, numkeys: int, *args: Any) -> int:
+    async def eval(self, script: str, numkeys: int, *args: Any):
         if script in (RENEW_LOCK, RELEASE_LOCK):
             key, owner = args[:2]
             if self.pending.get(key) != owner:
@@ -90,12 +90,26 @@ class MemoryRedis:
                 self.pending.pop(key)
             return 1
         self.mutations.append("eval")
-        if script == WRITE_CLAIM:
-            lock, claims, owner, key, previous, updated = args
+        if script in (ACQUIRE_CLAIM, WRITE_CLAIM):
+            lock, claims, owner, key, previous, campaign_key, campaign_previous = args[:7]
             if self.pending.get(lock) != owner or self.hashes[claims].get(key, "") != previous:
-                return 0
+                return [0, ""] if script == ACQUIRE_CLAIM else 0
+            if campaign_key and self.hashes[claims].get(campaign_key, "") != campaign_previous:
+                return [0, ""] if script == ACQUIRE_CLAIM else 0
+            if script == ACQUIRE_CLAIM:
+                fence = int(self.hashes[claims].get(FENCE_FIELD, "0")) + 1
+                self.hashes[claims][FENCE_FIELD] = str(fence)
+                updated = json.dumps({**json.loads(args[-1]), "fence": fence})
+            else:
+                fence, updated = args[-2:]
+                if str(json.loads(previous)["fence"]) != fence or (
+                    campaign_previous and str(json.loads(campaign_previous)["fence"]) != fence
+                ):
+                    return 0
             self.hashes[claims][key] = updated
-            return 1
+            if campaign_key:
+                self.hashes[claims][campaign_key] = updated
+            return [1, updated] if script == ACQUIRE_CLAIM else 1
         if script == UPDATE_PREFERENCES:
             confirmed, suppressed, retry, email, normalized, raw, updated = args
             if normalized in self.hashes[suppressed] or self.hashes[confirmed].get(email) != raw:

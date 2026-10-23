@@ -421,8 +421,8 @@ async def newsletter_send(req: SendRequest, _auth: bool = Depends(verify_admin_k
         async with newsletter_lock() as lease:
             # The provider campaign ID is the stable identity of this send request.
             claim = await DispatchClaim.acquire(lease, f"admin:{req.campaign_id}", req.campaign_id)
-            if claim.state in {"sent", "uncertain"}:
-                return {"reason": "already_sent" if claim.state == "sent" else "dispatch_uncertain",
+            if not claim.acquired:
+                return {"reason": "already_sent" if claim.state == "sent" else f"dispatch_{claim.state}",
                         "sent": 0, "uncertain": int(claim.state == "uncertain")}
             async with claim.attempt():
                 campaign = await _brevo_request("GET", f"emailCampaigns/{req.campaign_id}")

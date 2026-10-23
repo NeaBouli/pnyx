@@ -437,9 +437,9 @@ async def send_monthly_report(db: AsyncSession) -> bool:
                     claim = await DispatchClaim.acquire(lease, f"monthly:{now:%Y-%m}:{plan.language}")
                     if claim.state == "sent":
                         continue
-                    if claim.state == "uncertain":
+                    if not claim.acquired:
                         complete = False
-                        log_audience("dispatch_uncertain", {"uncertain": 1})
+                        log_audience(f"dispatch_{claim.state}", {claim.state: 1})
                         continue
                     audience = await prepare_audience(lease.store, plan)
                     if not audience.selected:
@@ -477,7 +477,7 @@ async def send_monthly_report(db: AsyncSession) -> bool:
                         )
                     log_audience("sent", audience.counts)
                 except AudienceUnavailable as exc:
-                    if claim is not None and claim.state == "claimed":
+                    if claim is not None and claim.acquired and claim.state == "claimed":
                         await claim.write("failed")
                     complete = False
                     log_audience(exc.reason, exc.counts)

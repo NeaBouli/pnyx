@@ -3,6 +3,7 @@ import asyncio
 import json
 import os
 import time
+from dataclasses import replace
 from collections.abc import AsyncIterator
 from unittest.mock import AsyncMock
 from urllib.parse import urlparse
@@ -254,3 +255,61 @@ async def test_preference_queue_failure_preserves_original_consent(isolated_redi
         assert await client.hget(confirmed, email) == "original-doi"
     finally:
         await client.delete(suppressed, addition)
+
+
+async def test_shared_campaign_claim_has_one_winner_and_counts_once(isolated_redis, monkeypatch):
+    from services import newsletter_claims
+    from services.newsletter_audience import AudienceUnavailable
+
+    client, _, confirmed = isolated_redis
+    key = f"{confirmed}:dispatch"
+    monkeypatch.setattr(newsletter_claims, "CLAIMS_KEY", key)
+    try:
+        async with newsletter_lock.newsletter_lock(client) as lease:
+            results = await asyncio.gather(*[
+                newsletter_claims.DispatchClaim.acquire(lease, f"request:{index}", 1)
+                for index in range(20)
+            ], return_exceptions=True)
+            assert all(isinstance(result, (newsletter_claims.DispatchClaim, AudienceUnavailable))
+                       for result in results)
+            winners = [result for result in results
+                       if isinstance(result, newsletter_claims.DispatchClaim) and result.acquired]
+            assert len(winners) == 1
+            send = AsyncMock(return_value={})
+            await winners[0].send(send, {}, "provider_unavailable")
+            send.assert_awaited_once()
+            alias = await newsletter_claims.DispatchClaim.acquire(lease, "admin:1", 1)
+            assert alias.state == "sent" and not alias.acquired
+        assert await newsletter_claims.dispatch_status(client) == {
+            "claimed": 0, "sent": 1, "failed": 0, "uncertain": 0,
+        }
+    finally:
+        await client.delete(key)
+
+
+async def test_shared_campaign_fence_rejects_stale_worker_and_shared_record(isolated_redis, monkeypatch):
+    from services import newsletter_claims
+    from services.newsletter_audience import AudienceUnavailable
+
+    client, _, confirmed = isolated_redis
+    key = f"{confirmed}:dispatch"
+    monkeypatch.setattr(newsletter_claims, "CLAIMS_KEY", key)
+    try:
+        async with newsletter_lock.newsletter_lock(client) as lease:
+            old = await newsletter_claims.DispatchClaim.acquire(lease, "monthly:2026-10:el", 1)
+            await replace(old).write("failed")
+            current = await newsletter_claims.DispatchClaim.acquire(lease, "admin:1", 1)
+            assert current.fence > old.fence
+            send = AsyncMock(return_value={})
+            before = await client.hgetall(key)
+            with pytest.raises(AudienceUnavailable):
+                await old.send(send, {}, "provider_unavailable")
+            assert await client.hgetall(key) == before
+            replacement = json.dumps({"state": "claimed", "campaign_id": 1, "fence": current.fence + 1})
+            await client.hset(key, "campaign:1", replacement)
+            with pytest.raises(AudienceUnavailable):
+                await current.send(send, {}, "provider_unavailable")
+            assert await client.hget(key, "campaign:1") == replacement
+            send.assert_not_awaited()
+    finally:
+        await client.delete(key)

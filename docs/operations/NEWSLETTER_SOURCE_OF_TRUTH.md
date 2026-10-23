@@ -256,6 +256,19 @@ unblock a campaign: retry the withdrawal instead. Withdrawal persistence and
 ordinary preference writes remain serialized by the same lock. Once `sendNow`
 has started, mail accepted by the provider cannot be recalled.
 
+Both send paths share the durable `newsletter:dispatch:v1` ledger. It records
+the provider campaign ID alongside the logical monthly month/language or admin
+request key. A monotonic fencing counter is checked atomically against the
+lease, logical record and shared campaign record immediately before `sendNow`.
+An existing `claimed`, `uncertain` or `sent` campaign blocks every other path,
+including older logical records without the shared campaign index. Only a
+definitely failed attempt can acquire a new fence and retry the same draft.
+Uncertain claims require manual review; even a provider `sent` response does
+not automatically settle them. Authenticated
+`GET /api/v1/admin/newsletter/dispatch-status` reports read-only counts, counting
+each provider campaign once without exposing IDs or request keys. It does not
+release claims or authorize retries.
+
 Failures before dispatch abort and attempt deletion in `finally`. Send rejection
 or timeout also attempts deletion and returns failure; the code never retries an
 uncertain send automatically. Successful provider acceptance is followed by
