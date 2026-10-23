@@ -4,9 +4,11 @@ Handles: welcome emails, monthly reports, bill notifications.
 """
 import os
 import json
+import html
 import logging
 from datetime import datetime, timezone, timedelta
 from urllib.parse import quote
+from typing import Any
 
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +18,7 @@ from services.bill_visibility import public_bill_filter
 from services.mail_policy import OPERATOR_EMAIL, operator_reply_to
 from services.small_cell import small_cell_k
 from services.newsletter_lock import newsletter_lock, NewsletterLockUnavailable
+from services.newsletter_consent import preference_attributes
 
 logger = logging.getLogger(__name__)
 
@@ -64,8 +67,8 @@ _FOOTER = """<hr style="border:none;border-top:1px solid #e2e8f0;margin:32px 0 1
 <p style="color:#94a3b8;font-size:11px;text-align:center;margin-top:12px">© 2026 V-Labs Development | MIT License<br>εκκλησία του έθνους — ekklesia.gr</p>"""
 
 
-def _wrap(body: str) -> str:
-    return f'<html><body style="font-family:system-ui,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#0f172a">{_HEADER}{body}{_FOOTER}</body></html>'
+def _wrap(body: str, *, language: str = "el") -> str:
+    return f'<html lang="{language}"><body style="font-family:system-ui,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#0f172a">{_HEADER}{body}{_FOOTER}</body></html>'
 
 
 async def _brevo_post(endpoint: str, data: dict, *, track_enrollment: bool = False) -> dict | None:
@@ -97,7 +100,9 @@ async def _brevo_post(endpoint: str, data: dict, *, track_enrollment: bool = Fal
     return None
 
 
-async def contact_status(email: str, *, for_removal: bool = False) -> str:
+async def contact_status(
+    email: str, *, for_removal: bool = False, attributes: dict[str, str | bool] | None = None,
+) -> str:
     """Read membership and suppression without exposing provider data or identity."""
     if not BREVO_API_KEY:
         return "failed"
@@ -123,23 +128,33 @@ async def contact_status(email: str, *, for_removal: bool = False) -> str:
                 or not isinstance(unsubscribed, list)
                 or any(type(value) is not int for value in lists + unsubscribed)):
             return "failed"
-        return "already_present" if LIST_ID in lists else "to_add"
+        if LIST_ID not in lists:
+            return "to_add"
+        if attributes is not None:
+            saved = data.get("attributes", {})
+            if not isinstance(saved, dict) or any(
+                type(saved.get(key)) is not type(value) or saved.get(key) != value
+                for key, value in attributes.items()
+            ):
+                return "to_update"
+        return "already_present"
     except Exception:
         logger.error("[NEWSLETTER] Brevo contact lookup failed")
         return "failed"
 
 
-async def add_contact(email: str, name: str = "") -> bool:
-    status = await contact_status(email)
+async def add_contact(email: str, name: str = "", *, preferences: dict[str, Any] | None = None) -> bool:
+    attributes = preference_attributes(preferences) if preferences is not None else None
+    status = await contact_status(email, attributes=attributes) if attributes is not None else await contact_status(email)
     if status == "suppressed":
         raise ContactSuppressed()
     if status == "already_present":
         return True
-    if status != "to_add":
+    if status not in {"to_add", "to_update"}:
         raise ContactNotWritten()
     result = await _brevo_post("contacts", {
         "email": email,
-        "attributes": {"FIRSTNAME": name} if name else {},
+        "attributes": {**({"FIRSTNAME": name} if name else {}), **(attributes or {})},
         "listIds": [LIST_ID],
         "updateEnabled": True,
     }, track_enrollment=True)
@@ -227,8 +242,26 @@ async def send_welcome(email: str) -> bool:
     return await send_transactional(email, "Καλωσήρθατε στο ekklesia.gr", body)
 
 
+_MONTHLY_EN = {
+    "Μηνιαία Αναφορά": "Monthly Report",
+    "Νέα νομοσχέδια": "New bills",
+    "Ψήφοι πολιτών": "Citizen votes",
+    "Arweave αρχεία": "Arweave archives",
+    "Ψηφισμένα": "Completed votes",
+    "Νέα Νομοσχέδια": "New Bills",
+    "Επόμενες Ψηφοφορίες": "Upcoming Votes",
+    "Top Ψηφοφορίες": "Top Votes",
+    "Νομοσχέδιο": "Bill",
+    "ΝΑΙ": "YES",
+    "ΟΧΙ": "NO",
+    "Σύνολο": "Total",
+    "Αποτελέσματα ψηφοφοριών": "Vote results",
+    "Δείτε τα νομοσχέδια": "View bills",
+}
+
+
 async def send_monthly_report(db: AsyncSession) -> bool:
-    """Generate and send monthly report to all subscribers."""
+    """Send separate Greek and English digests to verified monthly audiences."""
     from models import ParliamentBill, BillStatus, CitizenVote
     threshold = small_cell_k()
 
@@ -266,7 +299,7 @@ async def send_monthly_report(db: AsyncSession) -> bool:
 
     # ── Neue Bills (Titel-Liste) ──────────────────────────────────
     new_bills_result = await db.execute(
-        select(ParliamentBill.id, ParliamentBill.title_el)
+        select(ParliamentBill.id, ParliamentBill.title_el, ParliamentBill.title_en)
         .where(ParliamentBill.created_at >= month_start, public_bill_filter())
         .order_by(ParliamentBill.created_at.desc())
         .limit(10)
@@ -275,7 +308,7 @@ async def send_monthly_report(db: AsyncSession) -> bool:
 
     # ── Nächste Abstimmungen (ACTIVE + ANNOUNCED mit vote_date) ───
     upcoming_result = await db.execute(
-        select(ParliamentBill.id, ParliamentBill.title_el, ParliamentBill.parliament_vote_date)
+        select(ParliamentBill.id, ParliamentBill.title_el, ParliamentBill.title_en, ParliamentBill.parliament_vote_date)
         .where(
             ParliamentBill.status.in_([BillStatus.ACTIVE, BillStatus.ANNOUNCED]),
             public_bill_filter(),
@@ -291,7 +324,7 @@ async def send_monthly_report(db: AsyncSession) -> bool:
     from sqlalchemy import text
     from services.bill_visibility import results_visible_raw_sql
     top_votes_result = await db.execute(text(f"""
-        SELECT b.id, b.title_el,
+        SELECT b.id, b.title_el, b.title_en,
             COUNT(*) FILTER (WHERE cv.vote='YES') as yes,
             COUNT(*) FILTER (WHERE cv.vote='NO') as no,
             COUNT(*) as total
@@ -300,7 +333,7 @@ async def send_monthly_report(db: AsyncSession) -> bool:
         WHERE cv.created_at >= :month_start
           AND b.admin_hidden IS NOT TRUE
           AND {results_visible_raw_sql('b')}
-        GROUP BY b.id, b.title_el
+        GROUP BY b.id, b.title_el, b.title_en
         ORDER BY total DESC LIMIT 5
     """), {"month_start": month_start})
     top_votes_list = top_votes_result.all()
@@ -315,80 +348,100 @@ async def send_monthly_report(db: AsyncSession) -> bool:
     # ── Build HTML ────────────────────────────────────────────────
     month_name = now.strftime("%B %Y")
 
-    # Stats grid
-    stats_html = f"""<h2 style="color:#2563eb">Μηνιαία Αναφορά — {month_name}</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:20px 0">
-<div style="background:#f1f5f9;border-radius:8px;padding:16px;text-align:center">
-<div style="font-size:28px;font-weight:900;color:#2563eb">{new_bills_count}</div>
-<div style="font-size:12px;color:#64748b">Νέα νομοσχέδια</div>
-</div>
-<div style="background:#f1f5f9;border-radius:8px;padding:16px;text-align:center">
-<div style="font-size:28px;font-weight:900;color:#22c55e">{total_votes}</div>
-<div style="font-size:12px;color:#64748b">Ψήφοι πολιτών</div>
-</div>
-<div style="background:#f1f5f9;border-radius:8px;padding:16px;text-align:center">
-<div style="font-size:28px;font-weight:900;color:#a855f7">{archived_count}</div>
-<div style="font-size:12px;color:#64748b">Arweave αρχεία</div>
-</div>
-<div style="background:#f1f5f9;border-radius:8px;padding:16px;text-align:center">
-<div style="font-size:28px;font-weight:900;color:#0f172a">{voted_count}</div>
-<div style="font-size:12px;color:#64748b">Ψηφισμένα</div>
-</div>
-</div>"""
+    def render(language: str) -> str:
+        def label(value: str) -> str:
+            return _MONTHLY_EN.get(value, value) if language == "en" else value
 
-    # New bills list
-    bills_html = ""
-    if new_bills_list:
-        bills_html = '<h3 style="color:#0f172a;margin-top:24px">Νέα Νομοσχέδια</h3><ul style="font-size:13px;line-height:2;color:#334155">'
-        for bill_id, title in new_bills_list:
-            bills_html += f'<li><a href="https://ekklesia.gr/el/bills/{bill_id}" style="color:#2563eb;text-decoration:none">{(title or "")[:80]}</a></li>'
-        bills_html += '</ul>'
+        # Stats grid
+        stats_html = f"""<h2 style="color:#2563eb">{label("Μηνιαία Αναφορά")} — {month_name}</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:20px 0">
+    <div style="background:#f1f5f9;border-radius:8px;padding:16px;text-align:center">
+    <div style="font-size:28px;font-weight:900;color:#2563eb">{new_bills_count}</div>
+    <div style="font-size:12px;color:#64748b">{label("Νέα νομοσχέδια")}</div>
+    </div>
+    <div style="background:#f1f5f9;border-radius:8px;padding:16px;text-align:center">
+    <div style="font-size:28px;font-weight:900;color:#22c55e">{total_votes}</div>
+    <div style="font-size:12px;color:#64748b">{label("Ψήφοι πολιτών")}</div>
+    </div>
+    <div style="background:#f1f5f9;border-radius:8px;padding:16px;text-align:center">
+    <div style="font-size:28px;font-weight:900;color:#a855f7">{archived_count}</div>
+    <div style="font-size:12px;color:#64748b">{label("Arweave αρχεία")}</div>
+    </div>
+    <div style="background:#f1f5f9;border-radius:8px;padding:16px;text-align:center">
+    <div style="font-size:28px;font-weight:900;color:#0f172a">{voted_count}</div>
+    <div style="font-size:12px;color:#64748b">{label("Ψηφισμένα")}</div>
+    </div>
+    </div>"""
 
-    # Upcoming votes
-    upcoming_html = ""
-    if upcoming_list:
-        upcoming_html = '<h3 style="color:#0f172a;margin-top:24px">Επόμενες Ψηφοφορίες</h3><ul style="font-size:13px;line-height:2;color:#334155">'
-        for bill_id, title, vote_date in upcoming_list:
-            date_str = vote_date.strftime("%d.%m") if vote_date else "—"
-            upcoming_html += f'<li>{date_str} — {(title or "")[:60]}</li>'
-        upcoming_html += '</ul>'
+        # New bills list
+        bills_html = ""
+        if new_bills_list:
+            bills_html = f'<h3 style="color:#0f172a;margin-top:24px">{label("Νέα Νομοσχέδια")}</h3><ul style="font-size:13px;line-height:2;color:#334155">'
+            for bill_id, title_el, title_en in new_bills_list:
+                title = html.escape((title_en if language == "en" else title_el) or label("Νομοσχέδιο"))
+                bills_html += f'<li><a href="https://ekklesia.gr/el/bills/{bill_id}" style="color:#2563eb;text-decoration:none">{title[:80]}</a></li>'
+            bills_html += '</ul>'
 
-    # Top votes
-    top_html = ""
-    if top_votes_list:
-        top_html = '<h3 style="color:#0f172a;margin-top:24px">Top Ψηφοφορίες</h3><table style="width:100%;font-size:12px;border-collapse:collapse">'
-        top_html += '<tr style="background:#f1f5f9"><th style="padding:6px;text-align:left">Νομοσχέδιο</th><th style="padding:6px">ΝΑΙ</th><th style="padding:6px">ΟΧΙ</th><th style="padding:6px">Σύνολο</th></tr>'
-        for bill_id, title, yes, no, total in top_votes_list:
-            top_html += f'<tr><td style="padding:6px">{(title or "")[:40]}</td><td style="padding:6px;text-align:center;color:#22c55e">{yes}</td><td style="padding:6px;text-align:center;color:#ef4444">{no}</td><td style="padding:6px;text-align:center;font-weight:700">{total}</td></tr>'
-        top_html += '</table>'
-    if threshold:
-        top_html = '<p><a href="https://ekklesia.gr/el/results">Αποτελέσματα ψηφοφοριών</a></p>'
+        # Upcoming votes
+        upcoming_html = ""
+        if upcoming_list:
+            upcoming_html = f'<h3 style="color:#0f172a;margin-top:24px">{label("Επόμενες Ψηφοφορίες")}</h3><ul style="font-size:13px;line-height:2;color:#334155">'
+            for bill_id, title_el, title_en, vote_date in upcoming_list:
+                title = html.escape((title_en if language == "en" else title_el) or label("Νομοσχέδιο"))
+                date_str = vote_date.strftime("%d.%m") if vote_date else "—"
+                upcoming_html += f'<li>{date_str} — {title[:60]}</li>'
+            upcoming_html += '</ul>'
 
-    body = stats_html + bills_html + upcoming_html + top_html + """
-<p style="text-align:center;margin:24px 0">
-<a href="https://ekklesia.gr/el/bills" style="display:inline-block;padding:12px 24px;background:#2563eb;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px">Δείτε τα νομοσχέδια →</a>
-</p>"""
+        # Top votes
+        top_html = ""
+        if top_votes_list:
+            top_html = f'<h3 style="color:#0f172a;margin-top:24px">{label("Top Ψηφοφορίες")}</h3><table style="width:100%;font-size:12px;border-collapse:collapse">'
+            top_html += f'<tr style="background:#f1f5f9"><th style="padding:6px;text-align:left">{label("Νομοσχέδιο")}</th><th style="padding:6px">{label("ΝΑΙ")}</th><th style="padding:6px">{label("ΟΧΙ")}</th><th style="padding:6px">{label("Σύνολο")}</th></tr>'
+            for bill_id, title_el, title_en, yes, no, total in top_votes_list:
+                title = html.escape((title_en if language == "en" else title_el) or label("Νομοσχέδιο"))
+                top_html += f'<tr><td style="padding:6px">{title[:40]}</td><td style="padding:6px;text-align:center;color:#22c55e">{yes}</td><td style="padding:6px;text-align:center;color:#ef4444">{no}</td><td style="padding:6px;text-align:center;font-weight:700">{total}</td></tr>'
+            top_html += '</table>'
+        if threshold:
+            top_html = f'<p><a href="https://ekklesia.gr/el/results">{label("Αποτελέσματα ψηφοφοριών")}</a></p>'
 
-    # Hold the same lease as reconfirmation transitions through provider dispatch.
+        body = stats_html + bills_html + upcoming_html + top_html + f"""
+    <p style="text-align:center;margin:24px 0">
+    <a href="https://ekklesia.gr/el/bills" style="display:inline-block;padding:12px 24px;background:#2563eb;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px">{label("Δείτε τα νομοσχέδια")} →</a>
+    </p>"""
+
+        body = body.replace("/el/", f"/{language}/")
+        return _wrap(body, language=language)
+
+    from services.newsletter_audience import CampaignPlan, campaign_recipients, prepare_audience
+    # Keep one lease across both language snapshots and provider dispatches.
     try:
         async with newsletter_lock() as lease:
-            if not await ensure_reconfirmations_paused():
-                return False
-            await lease.check()
-            result = await _brevo_post("emailCampaigns", {
-                "name": f"Monthly Report {month_name}",
-                "subject": f"ekklesia.gr — Μηνιαία Αναφορά {month_name}",
-                "sender": SENDER,
-                "replyTo": OPERATOR_EMAIL,
-                "type": "classic",
-                "recipients": {"listIds": [LIST_ID]},
-                "htmlContent": _wrap(body),
-            })
-            if result and result.get("id"):
+            plans = [CampaignPlan(language=language) for language in ("el", "en")]
+            audiences = [await prepare_audience(lease.store, plan) for plan in plans]
+            for plan, audience in zip(plans, audiences):
+                if not audience.selected:
+                    continue
+                await audience.check(lease.store)
                 await lease.check()
-                await _brevo_post(f"emailCampaigns/{result['id']}/sendNow", {})
-                logger.info("[NEWSLETTER] Monthly report sent — campaign %s", result["id"])
-                return True
-    except NewsletterLockUnavailable:
-        logger.warning("[NEWSLETTER] Campaign busy; retry")
+                result = await _brevo_post("emailCampaigns", {
+                    "name": f"Monthly Report {month_name} ({plan.language})",
+                    "subject": f"ekklesia.gr — {'Monthly Report' if plan.language == 'en' else 'Μηνιαία Αναφορά'} {month_name}",
+                    "sender": SENDER,
+                    "replyTo": OPERATOR_EMAIL,
+                    "type": "classic",
+                    "tag": plan.tag,
+                    "recipients": campaign_recipients(plan),
+                    "htmlContent": render(plan.language),
+                })
+                if not result or not result.get("id"):
+                    return False
+                await audience.check(lease.store)
+                await lease.check()
+                sent = await _brevo_post(f"emailCampaigns/{result['id']}/sendNow", {})
+                if sent is None:
+                    return False
+                logger.info("[NEWSLETTER] Monthly report dispatched: selected=%d", audience.counts["selected"])
+            return True
+    except Exception:
+        logger.warning("[NEWSLETTER] Campaign paused; retry")
     return False

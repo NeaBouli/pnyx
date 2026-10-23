@@ -1021,7 +1021,7 @@ async def scheduled_newsletter_reconfirm_expiry() -> None:
         report_outcome("failed")
 
 
-async def scheduled_monthly_newsletter():
+async def scheduled_monthly_newsletter() -> None:
     """Send monthly report newsletter on 1st of each month at 09:00 UTC."""
     from services.newsletter_service import send_monthly_report
     from database import AsyncSessionLocal
@@ -1033,8 +1033,8 @@ async def scheduled_monthly_newsletter():
             else:
                 logger.warning("[NEWSLETTER] Monthly report failed")
                 report_outcome("failed")
-    except Exception as e:
-        logger.error("[NEWSLETTER] Monthly report error: %s", e)
+    except Exception:
+        logger.error("[NEWSLETTER] Monthly report unavailable")
         report_outcome("failed")
 
 

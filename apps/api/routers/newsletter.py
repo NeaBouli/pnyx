@@ -484,7 +484,7 @@ async def _sync_brevo_contact(store: aioredis.Redis, email: str, name: str = "")
             return False
         not_written = False
         try:
-            added = await newsletter_service.add_contact(email, name)
+            added = await newsletter_service.add_contact(email, name, preferences=data)
         except newsletter_service.ContactSuppressed:
             await store.hdel(BREVO_ADD_UNSETTLED_KEY, email.casefold())
             await _withdraw_subscription(store, email, "provider_suppressed")
@@ -502,6 +502,9 @@ async def _sync_brevo_contact(store: aioredis.Redis, email: str, name: str = "")
         # A withdrawal may have happened while the provider request was in flight.
         if await store.hget(SUPPRESSED_KEY, email.casefold()):
             await _withdraw_subscription(store, email, "suppressed")
+            return False
+        if await store.hget(CONFIRMED_KEY, email) != raw:
+            # A preference change during the provider write must retain sync work.
             return False
         if added:
             await store.hdel(BREVO_ADD_RETRY_KEY, email)

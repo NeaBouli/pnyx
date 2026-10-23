@@ -18,6 +18,7 @@ from services import newsletter_lock
 from services.newsletter_consent import (
     CONFIRM_ONCE, READ_CONSENT_SNAPSHOT, START_RECONFIRM, CLAIM_RECONFIRM_SEND,
     CONFIRM_RECONFIRM, EXPIRE_RECONFIRM, FINISH_RECONFIRM_EXPIRY,
+    UPDATE_PREFERENCES, WITHDRAW_CONSENT,
 )
 
 
@@ -215,3 +216,38 @@ async def test_send_claim_rejects_token_at_absolute_deadline(isolated_redis):
         assert await client.hget(confirmed, email) == "invitation"
     finally:
         await client.delete(registry, suppressed, token)
+
+
+@pytest.mark.parametrize("withdraw_first", [True, False])
+async def test_preference_update_and_withdrawal_leave_no_active_consent(isolated_redis, withdraw_first):
+    client, _, confirmed = isolated_redis
+    suppressed, addition, removal, secondary = [f"{confirmed}:{suffix}" for suffix in ("suppressed", "add", "remove", "secondary")]
+    email = "consent@example.org"
+    try:
+        await client.hset(confirmed, email, "original-doi")
+        update = (UPDATE_PREFERENCES, 3, confirmed, suppressed, addition, email, email, "original-doi", "changed-preferences")
+        withdraw = (WITHDRAW_CONSENT, 5, confirmed, suppressed, addition, removal, secondary,
+                    email, "unsubscribed", "0", email)
+        operations = [withdraw, update] if withdraw_first else [update, withdraw]
+        await asyncio.gather(*[client.eval(*operation) for operation in operations])
+        assert not await client.hexists(confirmed, email)
+        assert not await client.hexists(addition, email)
+        assert await client.hget(suppressed, email) == "unsubscribed"
+        assert await client.hget(removal, email) == "1"
+    finally:
+        await client.delete(suppressed, addition, removal, secondary)
+
+
+async def test_preference_queue_failure_preserves_original_consent(isolated_redis):
+    client, _, confirmed = isolated_redis
+    suppressed, addition = f"{confirmed}:suppressed", f"{confirmed}:addition"
+    email = "consent@example.org"
+    try:
+        await client.hset(confirmed, email, "original-doi")
+        await client.set(addition, "wrong-type")
+        with pytest.raises(ResponseError, match="WRONGTYPE"):
+            await client.eval(UPDATE_PREFERENCES, 3, confirmed, suppressed, addition,
+                              email, email, "original-doi", "changed-preferences")
+        assert await client.hget(confirmed, email) == "original-doi"
+    finally:
+        await client.delete(suppressed, addition)

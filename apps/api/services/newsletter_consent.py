@@ -20,7 +20,16 @@ RECONFIRM_KEY = "newsletter:reconfirm"
 RECONFIRM_SECONDS = 30 * 86400
 MAX_READINESS_CONTACTS = 100
 TOPICS = {"new_proposals", "active_votes", "vote_results", "system_news", "breaking_news"}
+FREQUENCY_CAMPAIGNS = {"weekly": {"weekly", "monthly"}, "monthly": {"monthly"}}
 _EMAIL = TypeAdapter(EmailStr)
+
+UPDATE_PREFERENCES = """
+if redis.call('HEXISTS', KEYS[2], ARGV[2]) == 1 then return 0 end
+if redis.call('HGET', KEYS[1], ARGV[1]) ~= ARGV[3] then return 0 end
+redis.call('HSET', KEYS[3], ARGV[1], '1')
+redis.call('HSET', KEYS[1], ARGV[1], ARGV[4])
+return 1
+"""
 
 # Compare payload, retain existing consent, then consume the token. HSETNX must
 # succeed before DEL; GETDEL alone could lose proof on a subsequent write failure.
@@ -223,6 +232,26 @@ def delivery_eligible(data: dict[str, Any], now: datetime) -> bool:
             and any(topics.values()))
 
 
+def preference_attributes(data: dict[str, Any]) -> dict[str, str | bool]:
+    """Complete replacement values, including disabled topics; unknown language is Greek."""
+    frequency = data.get("frequency")
+    allowed = FREQUENCY_CAMPAIGNS.get(frequency, set()) if isinstance(frequency, str) else set()
+    topics = data.get("topics", {})
+    return {
+        "NL_LANGUAGE": "en" if data.get("language") == "en" else "el",
+        "NL_MONTHLY": "monthly" in allowed,
+        "NL_WEEKLY": "weekly" in allowed,
+        **{f"NL_{topic.upper()}": topics.get(topic) is True for topic in sorted(TOPICS)},
+    }
+
+
+def matches_campaign(data: dict[str, Any], language: str, frequency: str, topic: str | None) -> bool:
+    attributes = preference_attributes(data)
+    return (attributes["NL_LANGUAGE"] == language
+            and attributes[f"NL_{frequency.upper()}"] is True
+            and (topic is None or attributes[f"NL_{topic.upper()}"] is True))
+
+
 def classify_contact(
     email: str, raw: str, provider_status: int | None,
     provider: Any, list_id: int, now: datetime,
@@ -239,8 +268,7 @@ def classify_contact(
         return "EXCLUDE", reasons + ["invalid_preferences"]
     if not any(topics.values()):
         return "EXCLUDE", reasons + ["no_topics_selected"]
-    if (data.get("frequency") != "monthly" or data.get("language") != "el"
-            or data.get("subscriber_type") != "citizens" or not all(topics.values())):
+    if not isinstance(data.get("frequency"), str) or data["frequency"] not in FREQUENCY_CAMPAIGNS:
         reasons.append("unsupported_delivery_profile")
     if provider_status == 404:
         return "HOLD", reasons + ["provider_missing_history"]
@@ -259,8 +287,7 @@ def classify_contact(
         return "HOLD", reasons + ["provider_state_incomplete"]
     if list_id in memberships:
         return "KEEP", reasons + ["existing_list_member"]
-    # Manual campaigns share the monthly list without enforcing preferences.
-    return "HOLD", reasons + ["campaign_preferences_not_enforced"]
+    return "HOLD", reasons + ["delivery_membership_missing"]
 
 
 def readiness_summary(
@@ -275,6 +302,6 @@ def readiness_summary(
         "actions": {name: actions[name] for name in ("KEEP", "HOLD", "EXCLUDE")},
         "reasons": dict(sorted(reasons.items())),
         "delivery_ready": False,
-        "blockers": ["campaign_preferences_not_enforced", "provider_history_requires_review"]
+        "blockers": ["provider_history_requires_review"]
         + ([] if complete else ["snapshot_limit_exceeded"]),
     }

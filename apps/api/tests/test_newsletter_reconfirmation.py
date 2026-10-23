@@ -408,7 +408,7 @@ async def test_monthly_campaign_cannot_send_until_pending_contacts_are_paused(
     db = MagicMock()
     db.scalar = AsyncMock(return_value=0)
     db.execute = AsyncMock(return_value=MagicMock(all=lambda: []))
-    provider = AsyncMock(return_value={"id": 123})
+    provider = AsyncMock(return_value={"id": 123, "tag": "newsletter:v1:el:monthly:all"})
     monkeypatch.setattr(newsletter_service, "_brevo_post", provider)
     assert not await newsletter_service.send_monthly_report(db)
     provider.assert_not_awaited()
@@ -584,7 +584,7 @@ async def _campaign(kind, monkeypatch):
 
 @pytest.mark.parametrize("kind", ["admin", "monthly"])
 @pytest.mark.parametrize("transition", ["apply", "expiry"])
-async def test_campaign_cannot_dispatch_during_reconfirmation_transition(store, monkeypatch, kind, transition):
+async def test_campaign_cannot_dispatch_during_reconfirmation_transition(store, monkeypatch, campaign_support, kind, transition):
     if transition == "expiry":
         await post(dry_run=False)
         Clock.value += timedelta(days=30)
@@ -596,7 +596,7 @@ async def test_campaign_cannot_dispatch_during_reconfirmation_transition(store, 
         return True
 
     newsletter_service.remove_contact.side_effect = pause
-    provider = AsyncMock(return_value={"id": 123})
+    provider = AsyncMock(return_value={"id": 123, "tag": "newsletter:v1:el:monthly:all"})
     monkeypatch.setattr(newsletter_service, "_brevo_post", provider)
     monkeypatch.setattr(newsletter_admin, "_brevo_request", provider)
     operation = newsletter.reconfirm_legacy if transition == "apply" else newsletter.expire_reconfirmations
@@ -613,14 +613,14 @@ async def test_campaign_cannot_dispatch_during_reconfirmation_transition(store, 
 
 
 @pytest.mark.parametrize("kind", ["admin", "monthly"])
-async def test_campaign_lease_covers_snapshot_and_dispatch(store, monkeypatch, kind):
+async def test_campaign_lease_covers_snapshot_and_dispatch(store, monkeypatch, campaign_support, kind):
     entered, release = asyncio.Event(), asyncio.Event()
 
     async def dispatch(*args):
         if "sendNow" in str(args):
             entered.set()
             await release.wait()
-        return {"id": 123}
+        return {"id": 123, "tag": "newsletter:v1:el:monthly:all"}
 
     provider = AsyncMock(side_effect=dispatch)
     monkeypatch.setattr(newsletter_service, "_brevo_post", provider)
@@ -639,7 +639,7 @@ async def test_campaign_lease_covers_snapshot_and_dispatch(store, monkeypatch, k
 
 
 @pytest.mark.parametrize("kind", ["admin", "monthly"])
-async def test_campaign_rechecks_registry_after_acquiring_lease(store, monkeypatch, kind):
+async def test_campaign_rechecks_registry_after_acquiring_lease(store, monkeypatch, campaign_support, kind):
     original_set = store.set
 
     async def acquire(*args, **kwargs):
@@ -649,7 +649,7 @@ async def test_campaign_rechecks_registry_after_acquiring_lease(store, monkeypat
 
     monkeypatch.setattr(store, "set", acquire)
     newsletter_service.remove_contact.return_value = False
-    provider = AsyncMock(return_value={"id": 123})
+    provider = AsyncMock(return_value={"id": 123, "tag": "newsletter:v1:el:monthly:all"})
     monkeypatch.setattr(newsletter_service, "_brevo_post", provider)
     monkeypatch.setattr(newsletter_admin, "_brevo_request", provider)
     assert not await _campaign(kind, monkeypatch)
@@ -659,10 +659,23 @@ async def test_campaign_rechecks_registry_after_acquiring_lease(store, monkeypat
 
 async def test_lease_renews_and_never_releases_another_owner(store, monkeypatch):
     monkeypatch.setattr(newsletter_lock, "LOCK_MS", 30)
-    renewal = AsyncMock(wraps=store.eval)
+    renewed_twice = asyncio.Event()
+    evaluate = store.eval
+    renewals = 0
+
+    async def track_renewal(script, *args):
+        nonlocal renewals
+        result = await evaluate(script, *args)
+        if script == newsletter_lock.RENEW_LOCK:
+            renewals += 1
+            if renewals >= 2:
+                renewed_twice.set()
+        return result
+
+    renewal = AsyncMock(side_effect=track_renewal)
     monkeypatch.setattr(store, "eval", renewal)
     async with newsletter_lock.newsletter_lock(store) as lease:
-        await asyncio.sleep(.04)
+        await asyncio.wait_for(renewed_twice.wait(), timeout=2)
         assert store.pending[newsletter_lock.LOCK_KEY] == lease.owner
         assert sum(call.args[0] == newsletter_lock.RENEW_LOCK for call in renewal.await_args_list) >= 2
         store.pending[newsletter_lock.LOCK_KEY] = "new-owner"
@@ -713,9 +726,9 @@ async def test_campaign_preserves_fresh_alias_and_retires_stale_pending_state(st
 
 
 @pytest.mark.parametrize("kind", ["admin", "monthly"])
-async def test_campaign_store_failure_returns_sanitized_retry(store, monkeypatch, kind):
+async def test_campaign_store_failure_returns_sanitized_retry(store, monkeypatch, campaign_support, kind):
     monkeypatch.setattr(newsletter, "_get_redis", AsyncMock(side_effect=RuntimeError(EMAIL + TOKEN)))
-    provider = AsyncMock(return_value={"id": 123})
+    provider = AsyncMock(return_value={"id": 123, "tag": "newsletter:v1:el:monthly:all"})
     monkeypatch.setattr(newsletter_service, "_brevo_post", provider)
     monkeypatch.setattr(newsletter_admin, "_brevo_request", provider)
     assert not await _campaign(kind, monkeypatch)

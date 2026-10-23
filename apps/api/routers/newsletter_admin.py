@@ -8,14 +8,15 @@ import os
 import html
 import logging
 import asyncio
+import json
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import quote
 
 import httpx
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr, field_validator
 
 from dependencies import verify_admin_key
 from services.mail_policy import OPERATOR_EMAIL
@@ -25,7 +26,12 @@ from services.newsletter_consent import (
     CONFIRMED_KEY, MAX_READINESS_CONTACTS, READ_CONSENT_SNAPSHOT,
     classify_contact, parse_consent, readiness_summary,
     SUPPRESSED_KEY, BREVO_ADD_RETRY_KEY, BREVO_REMOVE_RETRY_KEY, LISTMONK_REMOVE_RETRY_KEY,
-    BREVO_ADD_UNSETTLED_KEY, delivery_eligible,
+    BREVO_ADD_UNSETTLED_KEY, delivery_eligible, has_doi_evidence,
+    TOPICS as NEWSLETTER_TOPICS, UPDATE_PREFERENCES, preference_attributes,
+)
+from services.newsletter_audience import (
+    CampaignPlan, AudienceUnavailable, campaign_plan, campaign_recipients,
+    select_audience, prepare_audience,
 )
 from services import newsletter_service
 from routers.newsletter import NewsletterRoute
@@ -58,24 +64,26 @@ def _sanitize_html(raw: str) -> str:
     return raw
 
 
-async def _brevo_request(method: str, endpoint: str, data: dict = None) -> dict:
+async def _brevo_request(method: str, endpoint: str, data: dict | None = None) -> dict:
     if not BREVO_API_KEY:
-        raise HTTPException(503, "BREVO_API_KEY nicht konfiguriert")
-    import httpx
-    async with httpx.AsyncClient(timeout=15) as client:
-        if method == "POST":
-            r = await client.post(f"{BREVO_API}/{endpoint}",
-                                  headers={"api-key": BREVO_API_KEY, "Content-Type": "application/json"},
-                                  json=data)
-        elif method == "GET":
-            r = await client.get(f"{BREVO_API}/{endpoint}",
-                                 headers={"api-key": BREVO_API_KEY})
-        else:
-            raise HTTPException(400, f"Unsupported method: {method}")
-        if r.status_code >= 400:
-            logger.warning("[NEWSLETTER] Brevo %s %s → %d: %s", method, endpoint, r.status_code, r.text[:200])
-            raise HTTPException(r.status_code, f"Brevo error: {r.text[:200]}")
-        return r.json()
+        raise HTTPException(503, "Newsletter provider unavailable; retry")
+    if method not in {"POST", "GET", "PUT"}:
+        raise HTTPException(400, "Unsupported newsletter operation")
+    try:
+        async with httpx.AsyncClient(timeout=15, follow_redirects=False) as client:
+            response = await client.request(
+                method, f"{BREVO_API}/{endpoint}",
+                headers={"api-key": BREVO_API_KEY}, json=data,
+            )
+        if not 200 <= response.status_code < 300:
+            raise ValueError()
+        result = response.json() if response.text else {}
+        if not isinstance(result, dict):
+            raise ValueError()
+        return result
+    except Exception:
+        logger.warning("[NEWSLETTER] Provider request unavailable")
+        raise HTTPException(503, "Newsletter provider unavailable; retry") from None
 
 
 # ─── Templates ───────────────────────────────────────────────────────────────
@@ -85,7 +93,7 @@ from services.newsletter_service import _HEADER, _FOOTER, _wrap
 
 # ─── Schemas ─────────────────────────────────────────────────────────────────
 
-class DraftRequest(BaseModel):
+class DraftRequest(CampaignPlan):
     subject: str = Field(..., min_length=3, max_length=200)
     html_content: str = Field(..., min_length=10)
     name: str = Field(None, max_length=100, description="Campaign name (optional, auto-generated if empty)")
@@ -101,7 +109,61 @@ class PreviewRequest(BaseModel):
     html_content: str
 
 
+class PreferencesRequest(BaseModel):
+    email: EmailStr
+    language: Literal["el", "en"]
+    frequency: Literal["monthly", "weekly"]
+    topics: dict[str, bool]
+
+    @field_validator("topics", mode="before")
+    @classmethod
+    def validate_topics(cls, value: Any) -> dict[str, bool]:
+        if (not isinstance(value, dict) or set(value) != NEWSLETTER_TOPICS
+                or any(type(enabled) is not bool for enabled in value.values())):
+            raise ValueError("Invalid newsletter preferences")
+        return value
+
+
 # ─── Endpoints ───────────────────────────────────────────────────────────────
+
+@router.post("/audience")
+async def newsletter_audience(req: CampaignPlan, _auth: bool = Depends(verify_admin_key)) -> dict[str, int]:
+    """Read-only audience estimate for a plan; no provider or Redis writes."""
+    from routers.newsletter import _get_redis
+    try:
+        store = await _get_redis()
+        audience = await select_audience(store, req)
+        return audience.counts
+    except Exception:
+        raise HTTPException(503, "Newsletter audience unavailable; retry") from None
+
+
+@router.put("/preferences")
+async def newsletter_preferences(req: PreferencesRequest, _auth: bool = Depends(verify_admin_key)) -> dict[str, int]:
+    """Operator update of existing DOI consent; suppression and evidence are preserved."""
+    from routers.newsletter import _get_redis, _sync_brevo_contact, _remove_ineligible_contact
+    try:
+        store = await _get_redis()
+        async with newsletter_lock(store):
+            aliases = [email for email in await store.hkeys(CONFIRMED_KEY) if email.casefold() == req.email.casefold()]
+            if len(aliases) != 1:
+                return {"updated": 0, "synced": 0, "failed": 1}
+            email = aliases[0]
+            raw = await store.hget(CONFIRMED_KEY, email)
+            data = parse_consent(email, raw)
+            if data is None or not has_doi_evidence(data, datetime.now(timezone.utc)) or data.get("consent_state"):
+                return {"updated": 0, "synced": 0, "failed": 1}
+            data.update(language=req.language, frequency=req.frequency, topics=req.topics)
+            updated = await store.eval(UPDATE_PREFERENCES, 3, CONFIRMED_KEY, SUPPRESSED_KEY,
+                                       BREVO_ADD_RETRY_KEY, email, email.casefold(), raw, json.dumps(data))
+            if updated != 1:
+                return {"updated": 0, "synced": 0, "failed": 1}
+            synced = (await _sync_brevo_contact(store, email, data.get("name", ""))
+                      if any(req.topics.values()) else await _remove_ineligible_contact(store, email))
+            return {"updated": 1, "synced": int(synced), "failed": int(not synced)}
+    except Exception:
+        raise HTTPException(503, "Newsletter preferences unavailable; retry") from None
+
 
 @router.post("/reconfirm")
 async def newsletter_reconfirm(
@@ -164,7 +226,7 @@ async def newsletter_backfill(dry_run: bool = True, _auth: bool = Depends(verify
                 if not dry_run and not await _remove_ineligible_contact(store, email):
                     counts["failed"] += 1
                 continue
-            status = await newsletter_service.contact_status(email)
+            status = await newsletter_service.contact_status(email, attributes=preference_attributes(data))
             # Recheck even an existing member against withdrawal during the GET.
             if await store.hget(CONFIRMED_KEY, email) != raw or await store.hget(SUPPRESSED_KEY, email.casefold()):
                 counts["failed"] += 1
@@ -179,7 +241,7 @@ async def newsletter_backfill(dry_run: bool = True, _auth: bool = Depends(verify
                     await store.hdel(BREVO_ADD_RETRY_KEY, email)
                     if await store.hget(BREVO_ADD_UNSETTLED_KEY, email.casefold()) == "uncertain":
                         await store.hdel(BREVO_ADD_UNSETTLED_KEY, email.casefold())
-            elif status == "to_add":
+            elif status in {"to_add", "to_update"}:
                 # Recheck after the provider read: never enroll a withdrawn snapshot.
                 if await store.hget(CONFIRMED_KEY, email) != raw or await store.hget(SUPPRESSED_KEY, email.casefold()):
                     counts["failed"] += 1
@@ -305,18 +367,23 @@ async def newsletter_create_draft(req: DraftRequest, _auth: bool = Depends(verif
     from datetime import datetime, timezone
     name = req.name or f"ekklesia — {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')}"
 
+    try:
+        recipients = campaign_recipients(req)
+    except AudienceUnavailable:
+        raise HTTPException(503, "Newsletter audience unavailable; retry") from None
     result = await _brevo_request("POST", "emailCampaigns", {
         "name": name,
         "subject": req.subject,
         "sender": SENDER,
         "replyTo": OPERATOR_EMAIL,
         "type": "classic",
-        "recipients": {"listIds": [LIST_ID]},
+        "recipients": recipients,
+        "tag": req.tag,
         "htmlContent": wrapped,
     })
 
     campaign_id = result.get("id")
-    logger.info("[NEWSLETTER] Draft created: %s — %s", campaign_id, req.subject)
+    logger.info("[NEWSLETTER] Draft created")
 
     return {
         "campaign_id": campaign_id,
@@ -329,33 +396,31 @@ async def newsletter_create_draft(req: DraftRequest, _auth: bool = Depends(verif
 
 
 @router.post("/send")
-async def newsletter_send(req: SendRequest, _auth: bool = Depends(verify_admin_key)):
+async def newsletter_send(req: SendRequest, _auth: bool = Depends(verify_admin_key)) -> dict[str, int]:
     """Send a drafted campaign — requires confirm=true. Cross-publishes to Telegram (non-blocking)."""
     if not req.confirm:
-        raise HTTPException(400, "Bestätigung erforderlich: confirm=true")
-
-    # Fetch campaign subject from Brevo (source of truth, not frontend)
-    subject = "Newsletter ekklesia.gr"
-    try:
-        campaign = await _brevo_request("GET", f"emailCampaigns/{req.campaign_id}")
-        subject = campaign.get("subject") or campaign.get("name") or subject
-    except Exception as e:
-        logger.warning("[NEWSLETTER] Could not fetch campaign %d details: %s", req.campaign_id, e)
+        raise HTTPException(400, "Confirmation required: confirm=true")
 
     try:
         async with newsletter_lock() as lease:
-            if not await newsletter_service.ensure_reconfirmations_paused():
-                raise HTTPException(503, "Newsletter campaign paused; retry")
+            campaign = await _brevo_request("GET", f"emailCampaigns/{req.campaign_id}")
+            plan = campaign_plan(campaign.get("tag"))
+            audience = await prepare_audience(lease.store, plan)
+            if not audience.selected:
+                return {"selected": 0, "sent": 0}
+            # Replace the draft audience immediately before dispatch.
+            await _brevo_request("PUT", f"emailCampaigns/{req.campaign_id}", {"recipients": campaign_recipients(plan)})
+            await audience.check(lease.store)
             await lease.check()
             await _brevo_request("POST", f"emailCampaigns/{req.campaign_id}/sendNow", {})
-    except NewsletterLockUnavailable:
+    except Exception:
         raise HTTPException(503, "Newsletter campaign paused; retry") from None
     logger.info("[NEWSLETTER] Campaign %d sent", req.campaign_id)
 
     # NEA-263: Cross-publish to Telegram (non-blocking)
     tg_sent = False
     try:
-        safe_subject = html.escape(subject)
+        safe_subject = html.escape(campaign.get("subject") or "Newsletter ekklesia.gr")
         tg_msg = (
             f"<b>📧 Νέο Newsletter</b>\n\n"
             f"{safe_subject}\n\n"
@@ -366,12 +431,7 @@ async def newsletter_send(req: SendRequest, _auth: bool = Depends(verify_admin_k
             logger.info("[NEWSLETTER] Telegram cross-publish OK for campaign %d", req.campaign_id)
         else:
             logger.warning("[NEWSLETTER] Telegram cross-publish failed for campaign %d", req.campaign_id)
-    except Exception as e:
-        logger.warning("[NEWSLETTER] Telegram error (non-blocking): %s", e)
+    except Exception:
+        logger.warning("[NEWSLETTER] Telegram cross-publish unavailable")
 
-    return {
-        "campaign_id": req.campaign_id,
-        "status": "sent",
-        "message": "Newsletter wurde gesendet.",
-        "telegram_sent": tg_sent,
-    }
+    return {"selected": audience.counts["selected"], "sent": audience.counts["selected"], "telegram_sent": int(tg_sent)}

@@ -370,7 +370,7 @@ async def test_future_public_telegram_result_notification_suppresses_small_total
 
 
 @pytest.mark.asyncio
-async def test_future_public_newsletter_does_not_bypass_result_suppression(monkeypatch):
+async def test_future_public_newsletter_does_not_bypass_result_suppression(monkeypatch, campaign_support):
     from services import newsletter_service
     monkeypatch.setattr(newsletter_service, "ensure_reconfirmations_paused", AsyncMock(return_value=True))
     from routers import newsletter

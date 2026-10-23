@@ -101,7 +101,7 @@ async def test_send_transactional_reply_to() -> None:
     assert payload["to"] == [{"email": "user@example.org"}]
 
 
-async def test_monthly_report_campaign_reply_to(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_monthly_report_campaign_reply_to(monkeypatch: pytest.MonkeyPatch, campaign_support) -> None:
     from routers import newsletter
     from tests.test_newsletter_delivery_sync import MemoryRedis
     monkeypatch.setattr(newsletter, "_get_redis", AsyncMock(return_value=MemoryRedis()))
@@ -130,12 +130,12 @@ async def test_monthly_report_campaign_reply_to(monkeypatch: pytest.MonkeyPatch)
     assert endpoint == "emailCampaigns"
     assert payload["replyTo"] == OPERATOR_EMAIL
     assert payload["sender"] == newsletter_service.SENDER
-    assert payload["recipients"] == {"listIds": [newsletter_service.LIST_ID]}
+    assert payload["recipients"] == {"segmentIds": [1]}
     # immediate-send behavior preserved
     assert calls[1][0] == "emailCampaigns/123/sendNow"
 
 
-async def test_admin_draft_campaign_reply_to() -> None:
+async def test_admin_draft_campaign_reply_to(campaign_support) -> None:
     from routers import newsletter_admin
 
     captured = {}
@@ -156,7 +156,7 @@ async def test_admin_draft_campaign_reply_to() -> None:
     payload = captured["data"]
     assert payload["replyTo"] == OPERATOR_EMAIL
     assert payload["sender"] == newsletter_admin.SENDER
-    assert payload["recipients"] == {"listIds": [newsletter_admin.LIST_ID]}
+    assert payload["recipients"] == {"segmentIds": [1]}
 
 
 def test_contact_fallback_recipient_and_env_override(monkeypatch: pytest.MonkeyPatch) -> None:

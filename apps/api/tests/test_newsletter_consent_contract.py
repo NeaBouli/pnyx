@@ -148,15 +148,15 @@ async def test_subscribe_then_confirm_preserves_schema2_with_delivery_handoff(
     }, 2, confirmed_at)
     assert decision[0] == "HOLD"
     assert "missing_confirmation_evidence" not in decision[1]
-    assert "campaign_preferences_not_enforced" in decision[1]
-    assert ("unsupported_delivery_profile" in decision[1]) is (frequency == "weekly")
+    assert "delivery_membership_missing" in decision[1]
+    assert "unsupported_delivery_profile" not in decision[1]
     summary = readiness_summary([decision], 1, True)
     assert summary["proposed_writes"] == 0
     assert summary["delivery_ready"] is False
     # Confirmation records the click but never sends another message or directly mutates consent.
     factory.assert_called_once_with(timeout=10.0)
     assert consent_redis.eval.await_args.args[0] == QUEUE_BREVO_ADD
-    newsletter.newsletter_service.add_contact.assert_awaited_once_with("schema2@example.org", "Synthetic")
+    newsletter.newsletter_service.add_contact.assert_awaited_once_with("schema2@example.org", "Synthetic", preferences=confirmed)
     consent_redis.delete.assert_not_awaited()
 
 
