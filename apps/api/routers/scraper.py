@@ -28,6 +28,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import datetime
 
+from services.representation_cache import commit_and_invalidate_representation
 from database import get_db
 from rate_limit import limiter
 from models import ParliamentBill, BillStatus
@@ -814,7 +815,7 @@ async def fetch_and_store(
         bill, "summary_short_el", summaries.get("summary_short_el")
     )
     db.add(bill)
-    await db.commit()
+    await commit_and_invalidate_representation(db)
 
     return {
         "success": True, "bill_id": bill_id,
@@ -1154,6 +1155,6 @@ async def import_parliament_bills(
         db.add(bill)
         imported += 1
 
-    await db.commit()
+    await commit_and_invalidate_representation(db)
     logger.info(f"[MOD-10] Import: {imported} new, {updated} updated, {skipped} skipped")
     return {"success": True, "imported": imported, "updated": updated, "skipped": skipped}

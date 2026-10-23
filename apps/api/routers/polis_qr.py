@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import redis.asyncio as aioredis
 
+from services.representation_cache import commit_and_invalidate_representation
 from database import get_db
 from ip_utils import hashed_rate_subject, redis_fixed_window_limit
 from rate_limit import limiter
@@ -406,7 +407,7 @@ async def qr_web_vote(req: QRVoteRequest, db: AsyncSession = Depends(get_db), re
             )
             db.add(new_vote)
             msg = "Vote submitted via QR session."
-            await db.commit()
+            await commit_and_invalidate_representation(db)
     except IntegrityError:
         await db.rollback()
         await _restore_authenticated_session(r, session_key)
@@ -511,7 +512,7 @@ async def qr_web_consensus(req: QRConsensusRequest, db: AsyncSession = Depends(g
             VALUES (:nh, :econ, :soc, 'consensus', :bill_id)
         """), {"nh": nullifier_hash, "econ": weight * 0.05, "soc": 0.0, "bill_id": req.bill_id})
 
-        await db.commit()
+        await commit_and_invalidate_representation(db)
     except Exception:
         await db.rollback()
         await _restore_authenticated_session(r, session_key)

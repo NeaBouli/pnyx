@@ -507,6 +507,9 @@ async def main() -> None:
         print("ERROR: DATABASE_URL not set", file=sys.stderr)
         sys.exit(1)
 
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "apps", "api"))
+    from services.representation_cache import invalidate_representation_cache
+
     import asyncpg
     conn = await asyncpg.connect(db_url)
 
@@ -632,6 +635,7 @@ async def main() -> None:
                         official_text,
                         bill_id,
                     )
+                    await invalidate_representation_cache()
                 else:
                     await conn.execute(
                         """
@@ -644,6 +648,7 @@ async def main() -> None:
                         official_text,
                         bill_id,
                     )
+                    await invalidate_representation_cache()
                 print(f"{bill_id}: DB updated")
             else:
                 print(f"{bill_id}: dry-run only")

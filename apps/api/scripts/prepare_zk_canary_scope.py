@@ -16,6 +16,7 @@ from typing import Any
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from services.representation_cache import commit_and_invalidate_representation
 from database import AsyncSessionLocal  # noqa: E402
 from models import BillStatus, GovernanceLevel, ParliamentBill  # noqa: E402
 
@@ -91,7 +92,7 @@ async def prepare_canary_scope(*, bill_id: str, apply: bool) -> dict[str, Any]:
             if apply:
                 _apply_values(existing, values)
                 existing.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
-                await db.commit()
+                await commit_and_invalidate_representation(db)
             return {
                 "bill_id": bill_id,
                 "vote_scope_id": f"bill:{bill_id}",
@@ -104,7 +105,7 @@ async def prepare_canary_scope(*, bill_id: str, apply: bool) -> dict[str, Any]:
             bill = ParliamentBill()
             _apply_values(bill, values)
             db.add(bill)
-            await db.commit()
+            await commit_and_invalidate_representation(db)
 
         return {
             "bill_id": bill_id,

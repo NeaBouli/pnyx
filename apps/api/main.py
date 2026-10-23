@@ -517,6 +517,7 @@ async def scheduled_scrape():
     """Scrape parliament bills every 24 hours (MOD-03 cron + MOD-10 scraper).
     Fetches from hellenicparliament.gr API and upserts new bills into DB.
     """
+    from services.representation_cache import commit_and_invalidate_representation
     from routers.scraper import prefer_scraped_title, scrape_parliament_bills
     from services.scraper_state import record_run, record_success, record_failure, is_circuit_open
     from services.content_provenance import apply_generated_content, record_generated_content
@@ -635,7 +636,7 @@ async def scheduled_scrape():
                 inserted_notifications.append(b)
 
             if inserted > 0 or updated > 0:
-                await db.commit()
+                await commit_and_invalidate_representation(db)
                 logger.info("[MOD-03] Upserted %d new, updated %d existing bills into DB", inserted, updated)
                 # Notify community about new bills
                 try:
@@ -1040,6 +1041,7 @@ async def scheduled_monthly_newsletter():
 
 async def scheduled_completeness_check():
     """Check PARLIAMENT_VOTED bills for missing party_votes/summary and re-scrape."""
+    from services.representation_cache import commit_and_invalidate_representation
     from services.scraper_state import record_run, record_success, record_failure
     from database import AsyncSessionLocal
     name = "completeness_check"
@@ -1125,7 +1127,7 @@ async def scheduled_completeness_check():
                 if not bill.party_votes_parliament:
                     logger.info("[COMPLETENESS] Parliament party votes missing; awaiting admin input")
 
-            await db.commit()
+            await commit_and_invalidate_representation(db)
         await record_success(
             name,
             outcome="degraded" if text_errors else "clean",

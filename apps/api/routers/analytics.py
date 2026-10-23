@@ -7,14 +7,21 @@ k-Anonymity: Demografische Daten nur wenn Gruppe >= 10 Stimmen.
 
 @ai-anchor MOD06_ANALYTICS
 """
+import asyncio
+import json
 import logging
 from datetime import datetime, timezone, timedelta
+from time import monotonic
 from typing import Optional
+import redis.asyncio as aioredis
+from redis.exceptions import RedisError
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import DateTime, String, cast, select, func, and_, extract, Integer, union_all
+from sqlalchemy import DateTime, String, cast, select, func, and_, extract, Integer, union_all, text
 
 from database import get_db
+from config import settings
+from services.representation_cache import REPRESENTATION_CACHE_PREFIX
 from services.small_cell import (
     small_cell_k, suppress_public_cells, suppress_public_series,
 )
@@ -22,6 +29,7 @@ from models import ParliamentBill, CitizenVote, BillStatus, VoteChoice, ZkVoteRe
 from services.bill_visibility import (
     is_public_bill,
     public_bill_filter,
+    public_bill_raw_sql,
     public_bill_with_demo_filter,
     results_hidden,
     results_visible_filter,
@@ -38,6 +46,54 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/analytics", tags=["MOD-06 Analytics"])
 
 K_ANONYMITY_MIN = 10
+REPRESENTATION_CACHE_TTL = 30
+
+
+def representation_query() -> tuple[str, dict[str, str]]:
+    """Group each vote source once; join only bills with votes, using existing PKs.
+
+    The raw visibility helper also checks admin_hidden. Restrict its sensitive
+    text checks to DIAVGEIA, matching public_bill_filter(). No identity columns
+    or full bill objects are selected.
+    """
+    public_guard, params = public_bill_raw_sql("b")
+    params.update(voted="PARLIAMENT_VOTED", open_end="OPEN_END", diavgeia="DIAVGEIA",
+                  bill_scope="bill:%", yes="YES", no="NO", abstain="ABSTAIN", unknown="UNKNOWN")
+    choices = ("yes", "no", "abstain", "unknown")
+    # Group by the indexed bill/scope alone. Grouping by choice as well would
+    # require sorting the full vote populations on databases using these indexes.
+    tier1_columns = ", ".join(
+        f"COUNT(*) FILTER (WHERE CAST(vote AS TEXT) = :{choice}) AS tier1_{choice}, 0 AS zk_{choice}"
+        for choice in choices
+    )
+    zk_columns = ", ".join(
+        f"0 AS tier1_{choice}, COUNT(*) FILTER (WHERE vote_commitment = :{choice}) AS zk_{choice}"
+        for choice in choices
+    )
+    columns = ", ".join(
+        f"SUM({source}_{choice}) AS {source}_{choice}"
+        for source in ("tier1", "zk") for choice in choices
+    )
+    return f"""
+        WITH source_totals AS (
+            SELECT bill_id, {tier1_columns}
+            FROM citizen_votes GROUP BY bill_id
+            UNION ALL
+            SELECT substr(vote_scope_id, 6) AS bill_id, {zk_columns}
+            FROM zk_vote_receipts
+            WHERE vote_scope_id LIKE :bill_scope
+              AND vote_commitment IN (:yes, :no, :abstain, :unknown)
+            GROUP BY vote_scope_id
+        ), totals AS (
+            SELECT bill_id, {columns} FROM source_totals GROUP BY bill_id
+        )
+        SELECT b.id, b.title_el, b.source, b.party_votes_parliament, t.*
+        FROM totals t JOIN parliament_bills b ON b.id = t.bill_id
+        WHERE b.status IN (:voted, :open_end)
+          AND COALESCE(b.admin_hidden, FALSE) = FALSE
+          AND (b.source <> :diavgeia OR ({public_guard}))
+        ORDER BY b.id
+    """, params
 
 
 async def compute_divergence(
@@ -430,24 +486,22 @@ async def compute_cumulative_representation(db: AsyncSession) -> dict:
     Berechnet über ALLE Bills mit Status PARLIAMENT_VOTED oder OPEN_END
     die mindestens 1 Citizen-Vote haben.
     """
-    # Alle Bills mit Votes
-    bills_result = await db.execute(
-        select(ParliamentBill).where(
-            ParliamentBill.status.in_([BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END]),
-            public_bill_filter(),
-        )
-    )
-    bills = bills_result.scalars().all()
+    sql, params = representation_query()
+    rows = (await db.execute(text(sql), params)).mappings().all()
 
-    scores = []
-    bill_details = []
+    scores: list[float] = []
+    bill_details: list[dict] = []
     total_citizen_votes = 0
 
-    for bill in bills:
-        totals = await aggregate_bill_vote_totals(
-            db,
-            bill.id,
-            include_zk=include_zk_for_bill(bill),
+    for row in rows:
+        choices = ("yes", "no", "abstain", "unknown")
+        tier1 = tuple(int(row[f"tier1_{choice}"]) for choice in choices)
+        zk = tuple(int(row[f"zk_{choice}"]) if (row["source"] or "PARLIAMENT") == "PARLIAMENT"
+                   else 0 for choice in choices)
+        totals = VoteTotals(
+            *(tier1[i] + zk[i] for i in range(4)),
+            tier1_total=sum(tier1), zk_total=sum(zk),
+            sources=tuple(counts for counts in (tier1, zk) if sum(counts)),
         )
         total = totals.total
 
@@ -458,14 +512,18 @@ async def compute_cumulative_representation(db: AsyncSession) -> dict:
         if totals.publishable:
             total_citizen_votes += total
 
-        # Compute divergence for this bill
-        div_score = await compute_divergence(db, bill.id, bill, totals)
-        if div_score is not None:
+        party_votes = row["party_votes_parliament"]
+        if isinstance(party_votes, str):
+            party_votes = json.loads(party_votes)
+        if total >= K_ANONYMITY_MIN and party_votes and totals.publishable:
+            parl_yes = sum(v in ("ΝΑΙ", "YES") for v in party_votes.values())
+            parl_no = sum(v in ("ΟΧΙ", "NO") for v in party_votes.values())
+            div_score = round(abs(totals.yes / total - (1.0 if parl_yes >= parl_no else 0.0)), 3)
             scores.append(div_score)
             representation = round((1.0 - div_score) * 100, 1)
             bill_details.append({
-                "bill_id": bill.id,
-                "title_el": bill.title_el[:60] if bill.title_el else "",
+                "bill_id": row["id"],
+                "title_el": (row["title_el"] or "")[:60],
                 "citizen_votes": total,
                 "divergence": round(div_score * 100, 1),
                 "representation": representation,
@@ -508,8 +566,41 @@ async def compute_cumulative_representation(db: AsyncSession) -> dict:
 
 
 @router.get("/representation")
-async def cumulative_representation(db: AsyncSession = Depends(get_db)):
-    return await compute_cumulative_representation(db)
+async def cumulative_representation(db: AsyncSession = Depends(get_db)) -> dict:
+    # Policy changes never reuse a less restrictive aggregate. Expiry bounds
+    # vote/metadata staleness to 30s from query start, including empty results;
+    # hits don't renew it and slow fills don't get a fresh TTL.
+    key = f"{REPRESENTATION_CACHE_PREFIX}{small_cell_k()}"
+    async with aioredis.from_url(
+        settings.redis_url, decode_responses=True,
+        socket_connect_timeout=0.05, socket_timeout=0.05,
+    ) as cache:
+        available = True
+        try:
+            async with asyncio.timeout(0.1):
+                raw = await cache.get(key)
+            if raw:
+                cached = json.loads(raw)
+                if (isinstance(cached, dict) and "cumulative_representation" in cached
+                        and isinstance(cached.get("bills"), list)):
+                    return cached
+        except (RedisError, OSError):
+            available = False
+            logger.warning("Representation cache read unavailable")
+        except (ValueError, TypeError):
+            logger.warning("Representation cache entry invalid")
+
+        expires_at = monotonic() + REPRESENTATION_CACHE_TTL
+        result = await compute_cumulative_representation(db)
+        # Round down: a fractional remainder must not extend the visibility bound.
+        ttl = int(expires_at - monotonic())
+        if available and ttl > 0:
+            try:
+                async with asyncio.timeout(0.1):
+                    await cache.setex(key, ttl, json.dumps(result))
+            except (RedisError, OSError):
+                logger.warning("Representation cache write unavailable")
+        return result
 
 
 @router.get("/info")

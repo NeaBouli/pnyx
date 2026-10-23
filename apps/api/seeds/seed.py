@@ -11,6 +11,7 @@ from datetime import datetime
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from services.representation_cache import commit_and_invalidate_representation
 from models import Base, Party, Statement, ParliamentBill, BillStatus
 from config import settings
 
@@ -53,7 +54,7 @@ async def seed():
                 )
                 session.add(bill)
 
-        await session.commit()
+        await commit_and_invalidate_representation(session)
         print("✅ Seed abgeschlossen:")
         print("   8 Parteien | 38 Thesen | 3 Gesetzentwürfe")
 

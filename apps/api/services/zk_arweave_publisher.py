@@ -15,6 +15,7 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from services.representation_cache import commit_and_invalidate_representation
 from models import BillStatus, ParliamentBill, ZkMerkleRoot, ZkVoteReceipt
 from services.bill_visibility import is_public_bill, results_hidden, results_visible_filter
 from services.zk_arweave_payload import build_zk_vote_arweave_record
@@ -169,7 +170,7 @@ async def publish_pending_zk_receipts_for_scope(
         stats.tx_ids.append(tx_id)
 
     if stats.published:
-        await db.commit()
+        await commit_and_invalidate_representation(db)
     return stats
 
 

@@ -11,6 +11,7 @@ from urllib.parse import urlsplit
 
 import httpx
 
+from services.representation_cache import commit_and_invalidate_representation
 from services.scraper_http import HostCooldown, SCRAPER_HTTP_HOOKS, host_limiter
 from services.parliament_access import USER_AGENT, RobotsDisallowed, is_parliament
 
@@ -597,7 +598,7 @@ async def enrich_bill_with_text(bill_id: str, db, redis=None) -> dict:
         return {"success": False, "skipped": True, "error": "Text enrichment deferred; source link retained"}
     if text and len(text) >= MIN_TEXT_LENGTH:
         bill.summary_long_el = _merge_text_with_existing_document_block(text, bill.summary_long_el)
-        await db.commit()
+        await commit_and_invalidate_representation(db)
         if redis:
             try:
                 await redis.delete(f"bill_summary:{bill_id}:el")
@@ -647,6 +648,6 @@ async def enrich_all_bills(db) -> dict:
         else:
             stats["failed"] += 1
 
-    await db.commit()
+    await commit_and_invalidate_representation(db)
     logger.info("[ENRICH-ALL] %s", stats)
     return stats

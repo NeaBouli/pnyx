@@ -10,6 +10,7 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
+from services.representation_cache import commit_and_invalidate_representation
 from models import DiavgeiaDecision, DimosDiavgeiaOrg, ParliamentBill, BillStatus, GovernanceLevel
 from services.diavgeia_client import DiavgeiaClient, parse_timestamp
 from services.diavgeia_org_lookup import get_label as get_org_label
@@ -374,7 +375,7 @@ async def convert_decisions_to_bills(session: AsyncSession) -> dict:
             logger.warning("[NEA-199] Conversion error=%s", type(e).__name__)
 
     if created > 0 or scope_synced > 0:
-        await session.commit()
+        await commit_and_invalidate_representation(session)
 
     stats = {
         "created": created,
@@ -405,5 +406,5 @@ async def backfill_diavgeia_bill_dates(session: AsyncSession) -> int:
     """))
     rows = result.fetchall()
     if rows:
-        await session.commit()
+        await commit_and_invalidate_representation(session)
     return len(rows)

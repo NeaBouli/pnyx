@@ -27,13 +27,16 @@ class _Result:
     def all(self):
         return self._values
 
+    def mappings(self):
+        return self
+
 
 class _Db:
     def __init__(self, *, bills=None, scalar_values=None):
         self._bills = bills or []
         self._scalar_values = list(scalar_values or [])
 
-    async def execute(self, _statement):
+    async def execute(self, _statement, _params=None):
         return _Result(self._bills)
 
     async def scalar(self, _statement):
@@ -67,13 +70,11 @@ async def test_divergence_uses_combined_tier1_and_zk_total():
 
 @pytest.mark.asyncio
 async def test_cumulative_representation_includes_zk_votes(monkeypatch):
-    async def aggregate(_db, bill_id, *, include_zk):
-        assert bill_id == "GR-ZK-1"
-        assert include_zk is True
-        return VoteTotals(yes=8, no=2, abstain=0, unknown=0, tier1_total=6, zk_total=4)
-
-    monkeypatch.setattr(analytics, "aggregate_bill_vote_totals", aggregate)
-    result = await analytics.compute_cumulative_representation(_Db(bills=[_bill()]))
+    row = dict(id="GR-ZK-1", title_el="Δοκιμή", source="PARLIAMENT",
+               party_votes_parliament={"A": "YES", "B": "YES"},
+               tier1_yes=4, tier1_no=2, tier1_abstain=0, tier1_unknown=0,
+               zk_yes=4, zk_no=0, zk_abstain=0, zk_unknown=0)
+    result = await analytics.compute_cumulative_representation(_Db(bills=[row]))
 
     assert result["total_citizen_votes"] == 10
     assert result["bills"][0]["citizen_votes"] == 10

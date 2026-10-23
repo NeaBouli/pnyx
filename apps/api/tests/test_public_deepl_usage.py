@@ -130,5 +130,8 @@ def test_first_party_consumers_use_public_deepl_usage_path():
             if rel.endswith(".html")
             else (REPO_ROOT / rel).read_text(encoding="utf-8")
         )
+        if rel == "apps/dashboard/src/app/(dashboard)/page.tsx":
+            # Overview requests are defined in its shared widget loader.
+            text += (REPO_ROOT / "apps/dashboard/src/lib/overview.ts").read_text(encoding="utf-8")
         assert "admin/deepl/usage" not in text, rel
         assert "public/deepl/usage" in text, rel

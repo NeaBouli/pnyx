@@ -16,6 +16,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
+from services.representation_cache import commit_and_invalidate_representation
 from database import get_db
 from rate_limit import limiter
 from services.small_cell import small_cell_k
@@ -1084,7 +1085,7 @@ async def accept_zk_vote(req: ZkVoteRequest, db: AsyncSession = Depends(get_db),
     )
     db.add(receipt)
     try:
-        await db.commit()
+        await commit_and_invalidate_representation(db)
         await db.refresh(receipt)
     except IntegrityError as exc:
         await db.rollback()

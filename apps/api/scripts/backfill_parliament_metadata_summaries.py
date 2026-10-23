@@ -122,6 +122,9 @@ async def fetch_candidates(conn: Any, *, limit: int, bill_id: str | None) -> lis
 
 
 async def apply_update(conn: Any, row: Any, summary: str, pill: str) -> str:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from services.representation_cache import invalidate_representation_cache
+
     result = await conn.execute(
         """
         UPDATE parliament_bills
@@ -145,6 +148,7 @@ async def apply_update(conn: Any, row: Any, summary: str, pill: str) -> str:
         pill,
         row["id"],
     )
+    await invalidate_representation_cache()
     return result
 
 
