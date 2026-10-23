@@ -64,6 +64,21 @@ describe("ResultsClient first-page SSR seed", () => {
     expect(titles()).toEqual(["Title NONE", "Title HIGH", "Title LOW"]);
   });
 
+  it.each(["el", "en"])("attributes Parliament results in %s with independent originals and full titles", async locale => {
+    context.locale = locale;
+    const imported = { ...result("IMPORTED", 20, 0.5), source: "PARLIAMENT", created_at: "2026-01-01T23:30:00", parliament_url: "https://www.hellenicparliament.gr/bill", title_el: "*Official* _title_ ".repeat(30) };
+    const local = { ...result("ADMIN", 30, 0.2), source: "PARLIAMENT" };
+    const { errors } = await serverThenHydrate([imported, local]);
+    expect(errors).toEqual([]);
+    const cards = container.querySelectorAll("article");
+    expect(cards[0].querySelector("time")).toBeNull();
+    expect(cards[1].querySelector("time")?.textContent).toBe("02/01/2026");
+    const original = cards[1].querySelector<HTMLAnchorElement>('a[target="_blank"]')!;
+    expect(original.href).toBe(imported.parliament_url);
+    expect(original.parentElement?.closest("a")).toBeNull();
+    expect(cards[1].querySelector("h2")?.textContent).toBe(locale === "el" ? imported.title_el : imported.title_en);
+  });
+
   it("keeps local filter and sort controls working on seeded data", async () => {
     await serverThenHydrate(SEED);
     const high = [...container.querySelectorAll("button")].find((node) => node.textContent === "High divergence")!;

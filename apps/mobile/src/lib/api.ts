@@ -166,6 +166,7 @@ export interface Bill {
   official_source_url?: string | null;
   source?: string | null;
   source_last_success?: string | null;
+  created_at?: string | null;
   source_blocked?: boolean;
   source_stale?: boolean;
   diavgeia_ada?: string | null;
@@ -416,6 +417,8 @@ export async function fetchVoteStatus(
 }
 
 export interface BillResults {
+  created_at?: string | null;
+  source_last_success?: string | null;
   bill_id: string;
   title_el: string;
   status: string;

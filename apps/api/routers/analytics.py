@@ -25,6 +25,7 @@ from services.representation_cache import REPRESENTATION_CACHE_PREFIX
 from services.small_cell import (
     small_cell_k, suppress_public_cells, suppress_public_series,
 )
+from services.source_links import parliament_attribution_fields
 from models import ParliamentBill, CitizenVote, BillStatus, VoteChoice, ZkVoteReceipt
 from services.bill_visibility import (
     is_public_bill,
@@ -87,7 +88,7 @@ def representation_query() -> tuple[str, dict[str, str]]:
         ), totals AS (
             SELECT bill_id, {columns} FROM source_totals GROUP BY bill_id
         )
-        SELECT b.id, b.title_el, b.source, b.party_votes_parliament, t.*
+        SELECT b.id, b.title_el, b.source, b.parliament_url, b.created_at, b.party_votes_parliament, t.*
         FROM totals t JOIN parliament_bills b ON b.id = t.bill_id
         WHERE b.status IN (:voted, :open_end)
           AND COALESCE(b.admin_hidden, FALSE) = FALSE
@@ -225,8 +226,9 @@ async def divergence_trends(
         parl_no  = sum(1 for v in (bill.party_votes_parliament or {}).values() if v in ("ΟΧΙ", "NO"))
 
         trends.append({
+            **parliament_attribution_fields(bill),
             "bill_id":          bill.id,
-            "title_el":         bill.title_el[:80],
+            "title_el":         bill.title_el,
             "date":             bill.parliament_vote_date.isoformat() if bill.parliament_vote_date else None,
             "divergence_score": score,
             "divergence_label": "high" if score > 0.4 else "medium" if score > 0.2 else "low",
@@ -384,6 +386,7 @@ async def top_divergence(
         parl_no  = sum(1 for v in (bill.party_votes_parliament or {}).values() if v in ("ΟΧΙ", "NO"))
 
         ranked.append({
+            **parliament_attribution_fields(bill),
             "bill_id":          bill.id,
             "title_el":         bill.title_el,
             "divergence_score": score,
@@ -457,7 +460,8 @@ async def bill_analytics(bill_id: str, db: AsyncSession = Depends(get_db)):
             ]
 
     return {
-        "bill_id": bill_id, "title_el": bill.title_el, "status": bill.status.value,
+        **parliament_attribution_fields(bill),
+        "bill_id": bill.id, "title_el": bill.title_el, "status": bill.status.value,
         "votes": suppress_public_cells({"yes": yes, "no": no, "abstain": abstain, "unknown": unknown, "total": total,
                   "tier1_total": totals.tier1_total, "zk_total": totals.zk_total,
                   "yes_pct": pct(yes), "no_pct": pct(no), "abstain_pct": pct(abstain),
@@ -522,8 +526,9 @@ async def compute_cumulative_representation(db: AsyncSession) -> dict:
             scores.append(div_score)
             representation = round((1.0 - div_score) * 100, 1)
             bill_details.append({
+                **parliament_attribution_fields(row),
                 "bill_id": row["id"],
-                "title_el": (row["title_el"] or "")[:60],
+                "title_el": row["title_el"] or "",
                 "citizen_votes": total,
                 "divergence": round(div_score * 100, 1),
                 "representation": representation,

@@ -13,7 +13,7 @@ const PARLIAMENT_BOILERPLATE_PATTERNS = [
   "Εμφανίζονται τα ψηφισθέντα",
 ];
 
-export function cleanOfficialText(value?: string | null): string {
+export function cleanOfficialText(value?: string | null, preserveContent = false): string {
   if (!value?.trim() || value.includes("[unknown:")) return "";
 
   const text = value.trim();
@@ -30,5 +30,5 @@ export function cleanOfficialText(value?: string | null): string {
     return documentBlockIndex >= 0 ? text.slice(documentBlockIndex).trim() : "";
   }
 
-  return text;
+  return preserveContent ? value! : text;
 }

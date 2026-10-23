@@ -71,9 +71,9 @@ Only inert JSON-LD remains. No executable inline items, empty placeholders, stri
 | `docs/bot.html:26` | JSON-LD data | Retain inline for SEO; inert under script-src. |
 | `docs/community.html:40` | JSON-LD data | Retain inline for SEO; inert under script-src. |
 | `docs/govgr-dimos.html:32` | JSON-LD data | Retain inline for SEO; inert under script-src. |
-| `docs/index.html:414` | JSON-LD data | Retain inline for SEO; inert under script-src. |
-| `docs/index.html:448` | JSON-LD data | Retain inline for SEO; inert under script-src. |
-| `docs/index.html:458` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/index.html:418` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/index.html:452` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/index.html:462` | JSON-LD data | Retain inline for SEO; inert under script-src. |
 | `docs/legal.html:26` | JSON-LD data | Retain inline for SEO; inert under script-src. |
 | `docs/municipality/article.html:24` | JSON-LD data | Retain inline for SEO; inert under script-src. |
 | `docs/municipality/index.html:24` | JSON-LD data | Retain inline for SEO; inert under script-src. |
@@ -107,15 +107,15 @@ Only inert JSON-LD remains. No executable inline items, empty placeholders, stri
 | `docs/assets/js/community-tabs.js` | `a1020a98520fad523cdfaa00a63933cf173eb401f98a3222d0d9b8e0ade71f7f` |
 | `docs/assets/js/demo-admin.js` | `1e2db56d71adaa48de5ba3972b2ae72184ba7c1633ca76a8d0d179374ce75364` |
 | `docs/assets/js/demo-bills.js` | `ebaf37f97ca68bd1a0ba9484dc1f064aed295972e1023f49b16c38db691e469a` |
-| `docs/assets/js/embed-results.js` | `2df21f116ee751f5a6101910187902df374901bae5de1d53ae525834d43fc2a1` |
-| `docs/assets/js/embed-ui.js` | `00dd264e3d4e22b1ff0269f1d607193751720b318027fd20f0e60969f0a98bc3` |
-| `docs/assets/js/embed-vote.js` | `d082b97ec07b61d22d4c1aa66e2b907808fdc2e376bc9f463eb1da2c6b3af5d7` |
+| `docs/assets/js/embed-results.js` | `81ae54ed15d517880012f7ac7ea87ed935ec63d3c233cbe88fb4996b084bf7f2` |
+| `docs/assets/js/embed-ui.js` | `d386c127213ddefdef2d73c5c7dddf63d041e9ff90e0ee926f63c9124cb9bbc3` |
+| `docs/assets/js/embed-vote.js` | `660e46c24691465216a2b72456068b67fe93817f0672f86183a03ffba8a63be3` |
 | `docs/assets/js/events.js` | `ebcc4436e5b94be0263719f3c110d344aecbf8ecb168ea2564758743f7b6b97a` |
 | `docs/assets/js/govgr-dimos.js` | `b3797f416e307b94fa946ad7910cb0a2a7faa9419500b5abf7dad91e350b6cd9` |
 | `docs/assets/js/landing-chat.js` | `213091827168f7076f0d0bfa29a1f009d18ff2ae3ea88ad8742198d45fa7ffee` |
-| `docs/assets/js/landing-comparison.js` | `2d2fbe06400ef46b59e5044c0c1faeac986710cf04f7f27fbcda06d41826247f` |
+| `docs/assets/js/landing-comparison.js` | `48d9a11d784dee8e7420c6586a72737ca7c7ba72358ea77be710c5d6550a6b7a` |
 | `docs/assets/js/landing-cplm.js` | `3b3cc40c0cad6c65fabb6d655dbb3ec1199d8478c39b7eff4d4a1a5913484b4e` |
-| `docs/assets/js/landing-cycle.js` | `f0758af21846772ff7a7512a8f70c115aa862b92b90d187ffa2cb901dc36d353` |
+| `docs/assets/js/landing-cycle.js` | `ee60bde57f02de5b592dc38c9dcc942b739dd2345669557a47fe5261319626b4` |
 | `docs/assets/js/landing-language.js` | `fc576345c5a0bea6943933e5fa885fac906450d6ded5256f78e8d827f7131779` |
 | `docs/assets/js/landing-legal.js` | `d5dc177aa0f9ca9460ba46af7048c880db44ca97d75f9d28e2c57789caf8fc01` |
 | `docs/assets/js/landing-newsletter.js` | `b3952f0d61caf8dc2f703132221c5526bc9ea7e09176d5598c15c838ec857110` |
@@ -144,7 +144,7 @@ Only inert JSON-LD remains. No executable inline items, empty placeholders, stri
 
 ## Next.js nonce and rendering
 
-Source scan of 45 production files: **0 Inline scripts**, **0 next/script elements**, **0 beforeInteractive**, **1 dangerouslySetInnerHTML**, **0 String handlers**, **0 javascript: URLs**.
+Source scan of 47 production files: **0 Inline scripts**, **0 next/script elements**, **0 beforeInteractive**, **1 dangerouslySetInnerHTML**, **0 String handlers**, **0 javascript: URLs**.
 
 Next 16 uses src/proxy.ts. A fresh 256-bit Web Crypto nonce replaces untrusted request nonce/CSP values. The request Content-Security-Policy and x-nonce reach Next through next-intl's request-header overrides. Next automatically nonces bootstrap, Flight and streaming scripts from that request policy (verified against the locally installed Next renderer). No authored Script/inline script components exist. Future authored Script components must read x-nonce with await headers() and pass nonce explicitly.
 

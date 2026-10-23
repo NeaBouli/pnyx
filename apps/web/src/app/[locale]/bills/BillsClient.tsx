@@ -7,6 +7,8 @@ import Link from "next/link";
 import { ekklesia, municipal, Bill, BillQueryParams } from "@/lib/api";
 import { BILLS_PAGE_SIZE, type InitialBills } from "@/lib/initial-data";
 import ParliamentFreshness from "@/components/ParliamentFreshness";
+import { hasParliamentProvenance } from "@/lib/parliament-source";
+import ParliamentAttribution from "@/components/ParliamentAttribution";
 import StatusBadge from "@/components/StatusBadge";
 import RelevanceButtons from "@/components/RelevanceButtons";
 
@@ -317,10 +319,9 @@ export default function BillsClient({ initial }: { initial: InitialBills | null 
         {/* Bills List */}
         <div className="space-y-4">
           {paginated.map(bill => (
-            <Link
+            <article
               key={bill.id}
-              href={`bills/${bill.id}`}
-              className="block bg-white rounded-2xl p-6 border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all group"
+              className="relative block bg-white rounded-2xl p-6 border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all group"
             >
               <div className="flex justify-between items-start gap-4 mb-3">
                 <div className="flex items-center gap-2">
@@ -335,14 +336,22 @@ export default function BillsClient({ initial }: { initial: InitialBills | null 
               </div>
 
               <h2 className="font-semibold text-lg text-gray-900 mb-2 group-hover:text-blue-700 transition-colors leading-snug">
-                {bill[titleKey as keyof Bill] as string || bill.title_el}
+                <Link href={`bills/${bill.id}`} className="after:absolute after:inset-0 after:rounded-2xl">
+                  {bill[titleKey as keyof Bill] as string || bill.title_el}
+                </Link>
               </h2>
-              <ParliamentFreshness bill={bill} locale={locale} />
+              <ParliamentAttribution bill={bill} locale={locale} />
+              {hasParliamentProvenance(bill) && <ParliamentFreshness bill={bill} locale={locale} />}
 
               {(bill[shortKey as keyof Bill] || bill[pillKey as keyof Bill]) && (
-                <p className="text-gray-500 text-sm leading-relaxed">
-                  {(bill[shortKey as keyof Bill] || bill[pillKey as keyof Bill]) as string}
-                </p>
+                <div className={hasParliamentProvenance(bill) ? "border-t border-gray-200 pt-3 mt-3" : undefined}>
+                  {hasParliamentProvenance(bill) && <p className="text-xs font-semibold text-gray-600 mb-1">
+                    {isEl ? "Σύνοψη — ekklesia" : "Summary — ekklesia"}
+                  </p>}
+                  <p className="text-gray-500 text-sm leading-relaxed">
+                    {(bill[shortKey as keyof Bill] || bill[pillKey as keyof Bill]) as string}
+                  </p>
+                </div>
               )}
 
               {bill.categories && (
@@ -362,7 +371,7 @@ export default function BillsClient({ initial }: { initial: InitialBills | null 
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 bg-purple-50 border border-purple-300 rounded-lg text-xs font-bold text-purple-700 hover:bg-purple-100 transition-colors"
+                  className="relative z-10 inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 bg-purple-50 border border-purple-300 rounded-lg text-xs font-bold text-purple-700 hover:bg-purple-100 transition-colors"
                 >
                   ⛓ Arweave: {bill.arweave_tx_id.substring(0, 12)}…
                 </a>
@@ -380,14 +389,14 @@ export default function BillsClient({ initial }: { initial: InitialBills | null 
               )}
 
               <div className="flex items-center justify-between mt-4">
-                <div onClick={(e) => e.preventDefault()}>
+                <div className="relative z-10">
                   <RelevanceButtons billId={bill.id} initialScore={bill.relevance_score ?? 0} locale={locale} compact />
                 </div>
-                <span className="text-blue-600 text-sm font-semibold group-hover:text-blue-700">
+                <Link href={`bills/${bill.id}`} className="relative z-10 text-blue-600 text-sm font-semibold group-hover:text-blue-700">
                   {isEl ? "Λεπτομέρειες →" : "Details →"}
-                </span>
+                </Link>
               </div>
-            </Link>
+            </article>
           ))}
         </div>
 

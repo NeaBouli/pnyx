@@ -28,7 +28,7 @@ from models import (
     CitizenVote, VoteChoice, IdentityRecord, KeyStatus,
     ParliamentBill, BillStatus, BillRelevanceVote, GovernanceLevel, ZkVoteReceipt
 )
-from services.source_links import official_source_url
+from services.source_links import official_source_url, parliament_attribution_fields
 from services.bill_visibility import (
     is_public_bill,
     public_bill_filter,
@@ -315,6 +315,8 @@ class BillResults(BaseModel):
     ai_summary_reviewed: bool = False
     parliament_url:   str | None = None
     official_source_url: str | None = None
+    created_at: str | None = None
+    source_last_success: str | None = None
     diavgeia_ada:     str | None = None
     total_votes:      int | None
     tier1_vote_count: int | None = 0
@@ -1093,6 +1095,7 @@ async def get_latest_result(db: AsyncSession = Depends(get_db)):
         return {"bill_id": None, "total_votes": 0}
 
     published = suppress_public_cells({
+        **parliament_attribution_fields(bill),
         "bill_id": bill.id,
         "title_el": bill.title_el,
         "title_en": bill.title_en,
@@ -1130,7 +1133,7 @@ async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
         SELECT
             b.id,
             b.title_el,
-            b.title_en,
+            b.title_en, b.source, b.parliament_url, b.created_at,
             b.status::text AS status,
             b.governance_level::text AS governance_level,
             (COALESCE(tier.total_votes, 0) + COALESCE(zk.total_votes, 0))::int AS total_votes,
@@ -1188,6 +1191,7 @@ async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
         abstain = row["abstain_count"] or 0
         unknown = row["unknown_count"] or 0
         published = suppress_public_cells({
+            **parliament_attribution_fields(row),
             "bill_id": row["id"],
             "title_el": row["title_el"],
             "title_en": row["title_en"],
@@ -1234,6 +1238,7 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
         return publish_bill_results(BillResults(
             bill_id=bill_id, title_el=bill.title_el, status=bill.status.value,
             source=bill.source or "PARLIAMENT",
+            created_at=parliament_attribution_fields(bill)["created_at"],
             pill_el=bill.pill_el,
             summary_short_el=bill.summary_short_el,
             summary_long_el=bill.summary_long_el,
@@ -1279,6 +1284,7 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
         title_el=bill.title_el,
         status=bill.status.value,
         source=bill.source or "PARLIAMENT",
+        created_at=parliament_attribution_fields(bill)["created_at"],
         pill_el=bill.pill_el,
         summary_short_el=bill.summary_short_el,
         summary_long_el=bill.summary_long_el,

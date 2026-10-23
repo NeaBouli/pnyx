@@ -5,12 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import BillDetailPage from "./page";
 import { RequestTimeoutError, requestTimeoutMessage } from "@/lib/request-deadline";
 
-const context = vi.hoisted(() => ({ locale: "en", hasSigner: true, submit: vi.fn() }));
+const context = vi.hoisted(() => ({ locale: "en", hasSigner: true, submit: vi.fn(), bill: {} as Record<string, unknown> }));
 vi.mock("next-intl", () => ({ useLocale: () => context.locale }));
 vi.mock("next/link", () => ({ default: ({ children }: { children: React.ReactNode }) => <span>{children}</span> }));
 vi.mock("@/lib/api", () => ({
   ekklesia: {
-    getBill: async () => ({ data: { id: "GR-9133", title_el: "Δοκιμή", status: "WINDOW_24H" } }),
+    getBill: async () => ({ data: { id: "GR-9133", title_el: "Δοκιμή", status: "WINDOW_24H", ...context.bill } }),
     getResults: async () => ({ data: null }),
   },
   submitSignedVote: context.submit,
@@ -34,6 +34,8 @@ describe("bill correction feedback", () => {
   beforeEach(() => {
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     context.hasSigner = true;
+    context.locale = "en";
+    context.bill = {};
     context.submit.mockReset();
     container = document.createElement("div");
     document.body.appendChild(container);
@@ -59,6 +61,47 @@ describe("bill correction feedback", () => {
     expect(button).toBeDefined();
     await act(async () => button!.click());
   }
+
+  it.each(["el", "en"].flatMap(locale => ["PARLIAMENT", "DIAVGEIA", "UNKNOWN"].map(source => [locale, source]))) (
+    "renders %s bill detail for %s with the correct source and separate editorial content", async (locale, source) => {
+      context.locale = locale;
+      context.bill = {
+        source, title_el: "Αυθεντικός_τίτλος * Α", title_en: "Original_title * A",
+        summary_short_el: "Η δική μας σύνοψη", summary_short_en: "Our summary", analysis_el: "Η δική μας ανάλυση",
+        summary_long_el: source === "PARLIAMENT"
+          ? "  Επίσημο_κείμενο * ακριβές — https://example.gr/\n\n".repeat(50)
+            + "### Πλήρη έγγραφα\n- [PDF](https://www.hellenicparliament.gr/a.pdf)\n"
+          : "Επίσημο_κείμενο * ακριβές — https://example.gr/",
+        source_last_success: null, created_at: "2026-01-01T23:30:00",
+        parliament_url: source === "PARLIAMENT" ? "https://www.hellenicparliament.gr/bill/fallback" : null,
+        official_source_url: source === "DIAVGEIA" ? "https://diavgeia.gov.gr/decision/123" : null,
+      };
+      const params = Promise.resolve({ id: "GR-9133" });
+      await act(async () => root.render(<Suspense><BillDetailPage params={params} /></Suspense>));
+      expect(container.querySelector("h1")?.textContent).toBe(locale === "el" ? context.bill.title_el : context.bill.title_en);
+      const link = container.querySelector<HTMLAnchorElement>('a[rel="noopener external"]');
+      if (source === "PARLIAMENT") {
+        expect(container.textContent).toContain(locale === "el"
+          ? "Αναδημοσίευση από τη διαδικτυακή πύλη της Βουλής των Ελλήνων"
+          : "Republished from the website of the Hellenic Parliament");
+        expect(container.textContent).toContain((locale === "el" ? "Ημερομηνία: " : "Date: ") + "02/01/2026");
+        expect(container.textContent).toContain(locale === "el" ? "Σύνοψη — ekklesia" : "Summary — ekklesia");
+        expect(link?.href).toBe(context.bill.parliament_url);
+        expect(link?.textContent).toBe(locale === "el" ? "Πρωτότυπο" : "Original");
+        expect(link?.target).toBe("_blank");
+      } else {
+        expect(link).toBeNull();
+        expect(container.textContent).not.toContain("Αναδημοσίευση");
+        expect(container.textContent).not.toContain("Republished");
+        if (source === "DIAVGEIA") expect(container.textContent).toContain(locale === "el" ? "Επίσημο κείμενο στη Διαύγεια" : "Official Diavgeia text");
+      }
+      const analysis = [...container.querySelectorAll("button")].find(node => node.textContent === (locale === "el" ? "Ανάλυση" : "Analysis"))!;
+      await act(async () => analysis.click());
+      expect(container.textContent).toContain(context.bill.summary_long_el);
+      if (source === "PARLIAMENT") {
+        expect(container.textContent).toContain(locale === "el" ? "Ανάλυση — ekklesia" : "Analysis — ekklesia");
+      }
+    });
 
   it.each(["el", "en"])("shows the used correction message in %s after /correct returns 409", async language => {
     context.submit.mockResolvedValue({

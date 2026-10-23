@@ -19,6 +19,8 @@ import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
 import { fetchResults, type BillResults } from "../lib/api";
 import { colors } from "../theme";
+import ParliamentAttribution from "../components/ParliamentAttribution";
+import { hasParliamentProvenance } from "../lib/parliament-source";
 import { publicVoteCount, publicVoteShare } from "../lib/results-display";
 
 type Props = StackScreenProps<RootStackParams, "Result">;
@@ -98,7 +100,8 @@ export default function ResultScreen({ route }: Props) {
   const isHidden = data.results_hidden || (data.status === "ACTIVE" && data.total_votes === 0);
   const summary = readableText(data.summary_short_el) ? data.summary_short_el : readableText(data.pill_el) ? data.pill_el : "";
   const analysis = readableText(data.analysis_el) ? data.analysis_el : "";
-  const officialText = cleanOfficialText(data.summary_long_el);
+  const parliamentContent = hasParliamentProvenance(data);
+  const officialText = cleanOfficialText(data.summary_long_el, parliamentContent);
   const officialDocs = officialDocumentLinks(data.summary_long_el);
   const { url: sourceUrl, kind: sourceKind } = resolveSource(data.official_source_url, data.forum_topic_url);
   const summaryFallback = sourceUrl
@@ -115,15 +118,16 @@ export default function ResultScreen({ route }: Props) {
       }
     >
       <Text style={styles.title}>{data.title_el}</Text>
+      <ParliamentAttribution bill={data} />
 
       <View style={styles.summaryCard}>
-        <Text style={styles.summaryTitle}>{summaryLabel}</Text>
+        <Text style={styles.summaryTitle}>{summaryLabel}{parliamentContent ? " — ekklesia" : ""}</Text>
         <Text style={styles.summaryText}>
           {summaryText}
         </Text>
         {analysis ? (
           <>
-            <Text style={[styles.summaryTitle, { marginTop: 12 }]}>Ανάλυση</Text>
+            <Text style={[styles.summaryTitle, { marginTop: 12 }]}>Ανάλυση{parliamentContent ? " — ekklesia" : ""}</Text>
             <Text style={styles.summaryText}>{analysis}</Text>
           </>
         ) : null}
@@ -162,7 +166,7 @@ export default function ResultScreen({ route }: Props) {
           </View>
           <Text style={styles.sourceArrow}>↗</Text>
         </TouchableOpacity>
-      ) : data.source === "PARLIAMENT" ? (
+      ) : parliamentContent ? (
         <View style={styles.sourceCard}>
           <Text style={styles.sourceIcon}>🏛️</Text>
           <View style={{ flex: 1 }}>

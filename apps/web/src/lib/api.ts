@@ -128,6 +128,7 @@ export interface Bill {
   official_source_url?: string | null;
   source?: string | null;
   source_last_success?: string | null;
+  created_at?: string | null;
   source_blocked?: boolean;
   source_stale?: boolean;
   diavgeia_ada?: string | null;
@@ -148,6 +149,8 @@ export interface DivergenceResult {
 }
 
 export interface BillResults {
+  created_at?: string | null;
+  source_last_success?: string | null;
   bill_id: string;
   title_el: string;
   status: string;
@@ -169,7 +172,7 @@ export interface BillResults {
   suppression_k?: number;
 }
 
-export interface PublishedResult {
+export interface PublishedResult extends Pick<Bill, "source" | "source_last_success" | "created_at" | "official_source_url" | "parliament_url"> {
   bill_id: string;
   title_el: string;
   title_en: string;

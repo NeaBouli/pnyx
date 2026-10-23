@@ -94,6 +94,7 @@ class BillDetail(BaseModel):
     ai_summary_reviewed:    bool
     source:                 str | None = "PARLIAMENT"
     source_last_success:    str | None = None
+    created_at:             str | None = None
     source_blocked:         bool = False
     source_stale:           bool = True
     diavgeia_ada:           str | None = None
@@ -344,6 +345,7 @@ async def get_trending(
     return [BillSummary(
         **bill_freshness(freshness, row[0].source),
         source=row[0].source or "PARLIAMENT",
+        created_at=row[0].created_at.isoformat() if row[0].created_at else None,
         id=row[0].id,
         title_el=row[0].title_el,
         title_en=row[0].title_en,
@@ -390,6 +392,7 @@ async def get_bill(bill_id: str, db: AsyncSession = Depends(get_db)):
         summary_short_en=bill.summary_short_en,
         summary_long_el=bill.summary_long_el,
         summary_long_en=bill.summary_long_en,
+        created_at=bill.created_at.isoformat() if bill.created_at else None,
         analysis_el=getattr(bill, "analysis_el", None),
         categories=bill.categories,
         party_votes_parliament=bill.party_votes_parliament,

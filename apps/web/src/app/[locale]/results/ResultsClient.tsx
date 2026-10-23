@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocale } from "next-intl";
 import Link from "next/link";
+import ParliamentAttribution from "@/components/ParliamentAttribution";
 import { ekklesia, type PublishedResult } from "@/lib/api";
 
 type ResultFilter = "all" | "diverge" | "moderate" | "converge";
@@ -115,12 +116,13 @@ export default function ResultsClient({ initial }: { initial: PublishedResult[] 
             const score = scoreOf(result);
             const title = !isEl && result.title_en ? result.title_en : result.title_el;
             return (
-              <Link key={result.bill_id} href={`/${locale}/bills/${result.bill_id}`}
-                className="block rounded-lg border border-gray-200 bg-white p-5 transition-colors hover:border-blue-400">
+              <article key={result.bill_id}
+                className="relative block rounded-lg border border-gray-200 bg-white p-5 transition-colors hover:border-blue-400">
                 <div className="flex items-start justify-between gap-4">
-                  <h2 className="font-bold leading-snug text-gray-900">{title}</h2>
+                  <h2 className="font-bold leading-snug text-gray-900"><Link href={`/${locale}/bills/${result.bill_id}`} className="after:absolute after:inset-0">{title}</Link></h2>
                   <span className="shrink-0 text-sm font-bold text-blue-700">{result.citizen_total ?? `< ${result.suppression_k ?? 10}`} {isEl ? "ψήφοι" : "votes"}</span>
                 </div>
+                <ParliamentAttribution bill={result} locale={locale} />
                 <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
                   <div><span className="text-gray-500">{isEl ? "Υπέρ" : "Yes"}</span><strong className="ml-2 text-green-700">{result.yes_pct === null ? "—" : `${result.yes_pct}%`}</strong></div>
                   <div><span className="text-gray-500">{isEl ? "Κατά" : "No"}</span><strong className="ml-2 text-red-700">{result.no_pct === null ? "—" : `${result.no_pct}%`}</strong></div>
@@ -132,7 +134,7 @@ export default function ResultsClient({ initial }: { initial: PublishedResult[] 
                 <p className="mt-3 text-xs text-gray-500">
                   {score === null ? (isEl ? "Δεν υπάρχει ακόμη κοινοβουλευτικό αποτέλεσμα για σύγκριση." : "No parliamentary result is available for comparison yet.") : `${isEl ? "Απόκλιση" : "Divergence"}: ${Math.round(score * 100)}%`}
                 </p>
-              </Link>
+              </article>
             );
           })}
         </div>

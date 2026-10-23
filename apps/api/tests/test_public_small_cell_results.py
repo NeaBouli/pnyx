@@ -312,7 +312,7 @@ async def test_public_turnout_counters_exclude_below_threshold_bills(monkeypatch
     try:
         async with engine.begin() as connection:
             await connection.execute(text("""CREATE TABLE parliament_bills (
-                id TEXT PRIMARY KEY, title_el TEXT, summary_short_el TEXT, summary_long_el TEXT,
+                id TEXT PRIMARY KEY, title_el TEXT, parliament_url TEXT, created_at TEXT, summary_short_el TEXT, summary_long_el TEXT,
                 source TEXT, status TEXT, results_visibility TEXT, admin_hidden BOOLEAN)"""))
             await connection.execute(text("""CREATE TABLE citizen_votes (
                 id INTEGER PRIMARY KEY, bill_id TEXT, vote TEXT, created_at DATETIME)"""))
@@ -391,10 +391,11 @@ async def test_future_public_newsletter_does_not_bypass_result_suppression(monke
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("raw", [None, "0", "invalid", "-1"])
-async def test_flag_off_http_results_match_origin_main_bytes(monkeypatch, raw):
-    """Bytes captured from main 7e9dba6cc19a5b2e6d329d49c622b454386b0a1a.
+async def test_flag_off_http_results_preserve_main_values_with_attribution_dates(monkeypatch, raw):
+    """Values captured from main 7e9dba6cc19a5b2e6d329d49c622b454386b0a1a.
 
-    The committed fixture keeps shallow CI checkouts independent of git refs.
+    The fixture keeps shallow CI checkouts independent of git refs. Attribution
+    dates are intentionally additive; vote visibility and counts remain unchanged.
     """
     from pathlib import Path
     if raw is None:
@@ -409,7 +410,11 @@ async def test_flag_off_http_results_match_origin_main_bytes(monkeypatch, raw):
         response = await client.get("/api/v1/vote/GR-PRIVACY/results")
     assert response.status_code == 200
     expected = Path(__file__).with_name("fixtures").joinpath("public_results_main.json").read_bytes()
-    assert response.content == expected
+    import json
+    payload = response.json()
+    assert payload.pop("created_at") is None
+    assert payload.pop("source_last_success") is None
+    assert payload == json.loads(expected)
     assert "suppressed" not in response.json() and "suppression_k" not in response.json()
 
 
@@ -569,7 +574,7 @@ async def test_exact_reproductions_execute_real_public_aggregate_sql(scenario):
     try:
         async with engine.begin() as connection:
             for sql in [
-                "CREATE TABLE parliament_bills (id TEXT PRIMARY KEY, title_el TEXT, summary_short_el TEXT, summary_long_el TEXT, source TEXT, status TEXT, results_visibility TEXT, admin_hidden BOOLEAN)",
+                "CREATE TABLE parliament_bills (id TEXT PRIMARY KEY, title_el TEXT, parliament_url TEXT, created_at TEXT, summary_short_el TEXT, summary_long_el TEXT, source TEXT, status TEXT, results_visibility TEXT, admin_hidden BOOLEAN)",
                 "CREATE TABLE citizen_votes (id INTEGER PRIMARY KEY, bill_id TEXT, vote TEXT, created_at DATETIME)",
                 "CREATE TABLE zk_vote_receipts (id INTEGER PRIMARY KEY, vote_scope_id TEXT, vote_commitment TEXT, created_at DATETIME)",
                 "INSERT INTO parliament_bills (id,source,status,results_visibility,admin_hidden) VALUES ('SAFE','PARLIAMENT','OPEN_END','ALWAYS',0),('SMALL','PARLIAMENT','OPEN_END','ALWAYS',0)",
@@ -704,3 +709,23 @@ async def test_milestone_total_alone_cannot_authorize_a_suppressed_bill(monkeypa
     monkeypatch.setenv('PUBLIC_RESULTS_MIN_COUNT', '0')
     await notifications.publish_vote_milestone('GR-PRIVACY', 100)
     assert len(published) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('hidden', [True, False])
+async def test_mobile_results_keep_attribution_dates_and_complete_official_content(monkeypatch, hidden):
+    from datetime import datetime
+    bill = bill_fixture()
+    bill.created_at = datetime(2026, 1, 1, 23, 30)
+    bill.parliament_url = 'https://www.hellenicparliament.gr/bill'
+    bill.summary_long_el = ('  Άρθρο 1 — *πλήρες κείμενο*\n\n' * 100
+                            + '### Πλήρη έγγραφα\n- [PDF](https://www.hellenicparliament.gr/a.pdf)\n')
+    if hidden:
+        bill.status = BillStatus.ACTIVE
+        bill.results_visibility = 'HIDDEN'
+    aggregate(monkeypatch, voting, [10, 10, 10, 10])
+    result = await voting.get_results(bill.id, db=Db(rows=[[bill]]))
+    assert result.created_at == '2026-01-01T23:30:00'
+    assert result.parliament_url == bill.parliament_url
+    assert result.summary_long_el == bill.summary_long_el
+    assert result.results_hidden is hidden

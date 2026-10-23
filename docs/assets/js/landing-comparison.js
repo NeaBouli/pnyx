@@ -167,6 +167,11 @@
         if (d.last_bill && lastBill) {
           lastBill.style.display = "block";
           if (lastTitle) lastTitle.textContent = d.last_bill.title_el;
+          var attribution = document.getElementById("repLastTitleAttribution");
+          if (attribution && window.EmbedUI) {
+            attribution.replaceChildren();
+            EmbedUI.parliamentAttribution(attribution, d.last_bill, document.documentElement.lang !== "en");
+          }
           if (lastStats) lastStats.textContent = d.last_bill.citizen_votes + " ψήφοι · Απόκλιση " + d.last_bill.divergence + "% · Αντιπρ. " + d.last_bill.representation + "%";
         }
       })

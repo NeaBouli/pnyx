@@ -133,8 +133,8 @@ function stripOfficialDocumentBlock(value: string): string {
   return output.join("\n");
 }
 
-export function cleanOfficialText(value?: string | null): string {
-  if (!value || !value.trim() || value.includes("[unknown:") || isOfficialDocumentBlockOnly(value)) {
+export function cleanOfficialText(value?: string | null, preserveContent = false): string {
+  if (!value || !value.trim() || value.includes("[unknown:") || (!preserveContent && isOfficialDocumentBlockOnly(value))) {
     return "";
   }
   const withoutDocumentBlock = stripOfficialDocumentBlock(String(value));
@@ -172,7 +172,7 @@ export function cleanOfficialText(value?: string | null): string {
   if (cleaned.startsWith("Αναζήτηση Τίτλος")) {
     return "";
   }
-  return cleaned.slice(0, 1400);
+  return preserveContent ? value : cleaned.slice(0, 1400);
 }
 
 // ─── 24h Correction Banner ─────────────────────────────────────────────────

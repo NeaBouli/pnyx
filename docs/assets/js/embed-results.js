@@ -23,6 +23,7 @@ function render(b,vr){
   widget.replaceChildren();
   var v = EmbedUI.votes(vr);
   EmbedUI.node(widget, 'div', 'title', b.title_el || b.title_en || billId);
+  var parliamentContent = EmbedUI.parliamentAttribution(widget, b, el);
   if (v.hasShares) {
     [[el?'ΝΑΙ':'YES', 'yes', v.yes, v.yesPct, '#22c55e'],
      [el?'ΟΧΙ':'NO', 'no', v.no, v.noPct, '#ef4444'],

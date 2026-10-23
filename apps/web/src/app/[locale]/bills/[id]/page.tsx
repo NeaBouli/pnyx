@@ -7,6 +7,8 @@ import { ekklesia, Bill, BillResults, submitSignedVote } from "@/lib/api";
 import { withSigner } from "@/lib/keystore";
 import { RequestTimeoutError, requestTimeoutMessage } from "@/lib/request-deadline";
 import ParliamentFreshness from "@/components/ParliamentFreshness";
+import { hasParliamentProvenance } from "@/lib/parliament-source";
+import ParliamentAttribution from "@/components/ParliamentAttribution";
 import StatusBadge from "@/components/StatusBadge";
 import RelevanceButtons from "@/components/RelevanceButtons";
 import BillResultReport from "@/components/BillResultReport";
@@ -183,7 +185,8 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
 
   const canVote = VOTABLE.includes(bill.status);
   const officialUrl = bill.official_source_url || undefined;
-  const officialText = cleanOfficialText(bill.summary_long_el);
+  const parliamentContent = hasParliamentProvenance(bill);
+  const officialText = cleanOfficialText(bill.summary_long_el, parliamentContent);
   const hasAnalysis = readableText(bill.analysis_el);
   const hasOfficialContent = Boolean(officialText);
   const longTabLabel = hasAnalysis
@@ -276,7 +279,8 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
           {bill[titleKey as keyof Bill] as string || bill.title_el}
         </h1>
 
-        <ParliamentFreshness bill={bill} locale={locale} />
+        <ParliamentAttribution bill={bill} locale={locale} />
+        {hasParliamentProvenance(bill) && <ParliamentFreshness bill={bill} locale={locale} />}
 
         {/* Categories */}
         {bill.categories && (
@@ -319,13 +323,23 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
             )}
           </div>
           {expanded === "short" ? (
-            <p className="text-gray-700 leading-relaxed">
-              {bill[shortKey as keyof Bill] as string || bill.pill_el || (locale === "el" ? "Δεν υπάρχει ακόμα ελεγμένη σύνοψη για αυτή την πράξη. Δείτε το επίσημο κείμενο στην πηγή." : "No reviewed summary is available yet. See the official source text.")}
-            </p>
+            <div>
+              {parliamentContent && <p className="text-xs font-semibold text-gray-600 mb-2">
+                {locale === "el" ? "Σύνοψη — ekklesia" : "Summary — ekklesia"}
+              </p>}
+              <p className="text-gray-700 leading-relaxed">
+                {bill[shortKey as keyof Bill] as string || bill.pill_el || (locale === "el" ? "Δεν υπάρχει ακόμα ελεγμένη σύνοψη για αυτή την πράξη. Δείτε το επίσημο κείμενο στην πηγή." : "No reviewed summary is available yet. See the official source text.")}
+              </p>
+            </div>
           ) : (
             <div className="text-gray-700 leading-relaxed">
               {hasAnalysis ? (
-                <p>{bill.analysis_el}</p>
+                <div>
+                  {parliamentContent && <p className="text-xs font-semibold text-gray-600 mb-2">
+                    {locale === "el" ? "Ανάλυση — ekklesia" : "Analysis — ekklesia"}
+                  </p>}
+                  <p>{bill.analysis_el}</p>
+                </div>
               ) : hasOfficialContent ? (
                 <p className="text-gray-500">
                   {locale === "el"
@@ -345,7 +359,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
                     {locale === "el" ? "Επίσημο κείμενο και έγγραφα" : "Official text and documents"}
                   </h2>
                   <div className="text-gray-700 leading-relaxed space-y-1 whitespace-pre-wrap">
-                    {officialText.split("\n").map(renderOfficialLine)}
+                    {parliamentContent ? officialText : officialText.split("\n").map(renderOfficialLine)}
                   </div>
                 </div>
               )}

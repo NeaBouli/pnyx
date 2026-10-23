@@ -31,3 +31,9 @@ You don't have permission to access "/" on this server. Reference #18.63c7cf17
     expect(cleanOfficialText(value)).toBe(value);
   });
 });
+
+it("preserves Parliament content byte for byte, including document links and text beyond a preview", () => {
+  const original = "  Άρθρο 1 — *κείμενο* _υπογράμμιση_\n\n".repeat(80)
+    + "### Πλήρη έγγραφα\n- [PDF](https://www.hellenicparliament.gr/a.pdf)\n";
+  expect(cleanOfficialText(original, true)).toBe(original);
+});
