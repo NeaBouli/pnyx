@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
 from database import get_db
+from services.source_links import parliament_attribution_fields
 from models import ParliamentBill, CitizenVote, Party, BillStatus, VoteChoice
 from services.bill_visibility import is_public_bill, public_bill_filter, results_hidden
 from services.small_cell import small_cell_k, suppress_public_cells
@@ -110,7 +111,8 @@ async def party_comparison(party_abbr: str, db: AsyncSession = Depends(get_db)):
         else:     disagree += 1
 
         comparisons.append({
-            "bill_id": bill.id, "title_el": bill.title_el[:100],
+            **parliament_attribution_fields(bill),
+            "bill_id": bill.id, "title_el": bill.title_el,
             "date": bill.parliament_vote_date.isoformat() if bill.parliament_vote_date else None,
             "party_vote": party_vote, "citizen_majority": majority,
             "citizen_yes_pct": round(yes / total * 100, 1),
@@ -229,7 +231,8 @@ async def bill_party_breakdown(bill_id: str, db: AsyncSession = Depends(get_db))
     if small_cell_k() and majority is None:
         citizen_votes.update(yes=None, no=None, yes_pct=None, suppressed=True)
     return {
-        "bill_id": bill_id, "title_el": bill.title_el, "status": bill.status.value,
+        **parliament_attribution_fields(bill),
+        "bill_id": bill.id, "title_el": bill.title_el, "status": bill.status.value,
         "citizen_votes": citizen_votes,
         "party_votes": breakdown,
         "results_hidden": hidden,

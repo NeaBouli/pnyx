@@ -54,7 +54,8 @@ async def test_bill_list_detail_and_public_source_freshness_serialize_real_state
                           source="PARLIAMENT", ai_summary_reviewed=False,
                           created_at=datetime(2026, 1, 1, 23, 30))
     db = SimpleNamespace(execute=AsyncMock(return_value=SimpleNamespace(
-        scalars=lambda: SimpleNamespace(all=lambda: [bill]), scalar_one_or_none=lambda: bill)))
+        scalars=lambda: SimpleNamespace(all=lambda: [bill]), scalar_one_or_none=lambda: bill,
+        all=lambda: [(bill, 5)])))
     app = FastAPI()
     app.include_router(parliament.router)
     app.dependency_overrides[get_db] = lambda: db
@@ -64,7 +65,7 @@ async def test_bill_list_detail_and_public_source_freshness_serialize_real_state
         assert sources["PARLIAMENT"]["source_blocked"] is True
         assert sources["PARLIAMENT"]["stale"] is True
         assert sources["DIAVGEIA"]["stale"] is True
-        for path in ("/api/v1/bills", "/api/v1/bills/GR-actual"):
+        for path in ("/api/v1/bills", "/api/v1/bills/trending", "/api/v1/bills/GR-actual"):
             response = await client.get(path)
             assert response.status_code == 200, response.text
             payload = response.json()

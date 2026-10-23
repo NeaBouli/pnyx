@@ -24,7 +24,7 @@ vi.mock("@/lib/api", () => ({
 
 function bill(id: string, status = "ACTIVE"): Bill {
   return {
-    id, title_el: `Τίτλος ${id}`, title_en: `Title ${id}`, pill_el: null, pill_en: null,
+    id, parliament_url: "https://www.hellenicparliament.gr/bill", title_el: `Τίτλος ${id}`, title_en: `Title ${id}`, pill_el: null, pill_en: null,
     summary_short_el: null, summary_short_en: null, summary_long_el: null, summary_long_en: null,
     categories: null, party_votes_parliament: null, status, parliament_vote_date: null,
   };
@@ -104,15 +104,24 @@ describe("BillsClient first-page SSR seed", () => {
   it.each(["el", "en"])("hydrates attribution only on Parliament cards in %s, with independent external links", async locale => {
     context.locale = locale;
     const rows = ["PARLIAMENT", "DIAVGEIA", "UNKNOWN"].map(source => ({
-      ...bill(source), source, title_el: `Αυθεντικός_τίτλος * ${source}`,
+      ...bill(source), source, parliament_url: source === "PARLIAMENT" ? "https://www.hellenicparliament.gr/bill" : null, title_el: `Αυθεντικός_τίτλος * ${source}`,
       summary_short_el: "Η δική μας σύνοψη", summary_short_en: "Our summary",
       source_last_success: "2026-07-16T21:30:00Z", created_at: "2026-01-01T00:00:00Z",
-      official_source_url: "https://www.hellenicparliament.gr/bill/123",
+      official_source_url: source === "PARLIAMENT" ? "https://www.hellenicparliament.gr/bill/123" : "https://diavgeia.gov.gr/decision/123",
     }));
     const { errors } = await serverThenHydrate({ status: "", bills: rows });
     expect(errors).toEqual([]);
     const cards = [...container.querySelectorAll("article")];
     expect(cards).toHaveLength(3);
+    // A stretched anchor covers summary, badges and background for every source.
+    for (const card of cards) {
+      const cardLink = card.querySelector("h2 a")!;
+      expect(cardLink.classList.contains("after:inset-0")).toBe(true);
+      expect(cardLink.classList.contains("after:absolute")).toBe(true);
+      expect(card.classList.contains("relative")).toBe(true);
+      expect(cardLink.querySelector("a, button")).toBeNull();
+      expect(card.querySelector("[data-relevance]")?.parentElement?.classList.contains("z-10")).toBe(true);
+    }
     expect(cards[0].querySelector("h2")?.textContent).toBe(locale === "el" ? rows[0].title_el : rows[0].title_en);
     expect(cards[0].textContent).toContain(locale === "el"
       ? "Αναδημοσίευση από τη διαδικτυακή πύλη της Βουλής των Ελλήνων"
@@ -123,6 +132,7 @@ describe("BillsClient first-page SSR seed", () => {
     expect(link.textContent).toBe(locale === "el" ? "Πρωτότυπο" : "Original");
     expect(link.href).toBe(rows[0].official_source_url);
     expect(link.target).toBe("_blank");
+    expect(link.classList.contains("z-10")).toBe(true);
     expect(link.parentElement?.closest("a")).toBeNull();
     expect(cards[1].textContent).toContain("ΔΙΑΥΓΕΙΑ");
     for (const card of cards.slice(1)) {

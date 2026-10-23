@@ -4,6 +4,7 @@ import { URL } from "node:url";
 import ts from "typescript";
 import { describe, expect, it, vi } from "vitest";
 import { colors } from "../theme";
+import * as parliamentSource from "../lib/parliament-source";
 import * as sourceResolver from "../lib/source-resolver";
 import * as voteSuccess from "../lib/vote-success";
 import * as zkPilotError from "../lib/zkPilotError";
@@ -150,6 +151,7 @@ function loadScreen(owner: string, deps: {
     if (id === "../lib/zkPilotError") return zkPilotError;
     if (id === "../lib/vote-marks") return { recordVoteMark: vi.fn(), syncVoteMark: deps.syncVoteMark };
     if (id === "../lib/vote-success") return voteSuccess;
+    if (id === "../lib/parliament-source") return parliamentSource;
     if (id === "../lib/source-resolver") return sourceResolver;
     if (id === "../lib/source-freshness") return { parliamentFreshness };
     if (id === "../components/ParliamentAttribution") {
@@ -263,7 +265,7 @@ describe("VoteScreen source attribution", () => {
     }, {
       source, title_el: "Αυθεντικός τίτλος — * Α", summary_short_el: "Η δική μας σύνοψη",
       analysis_el: "Η δική μας ανάλυση", summary_long_el: officialText,
-      official_source_url: "https://www.hellenicparliament.gr/bill/123", source_last_success: null,
+      official_source_url: source === "PARLIAMENT" ? "https://www.hellenicparliament.gr/bill/123" : "https://diavgeia.gov.gr/decision/123", source_last_success: null,
       created_at: "2026-01-01T23:30:00",
     });
     await flush();

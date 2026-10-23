@@ -122,7 +122,11 @@ function render(b,vr){
   var sl = {ACTIVE:el?'Ανοιχτή':'Active', ANNOUNCED:el?'Ανακοινώθηκε':'Announced', PARLIAMENT_VOTED:el?'Ψηφίστηκε':'Voted', OPEN_END:el?'Αρχείο':'Archive', WINDOW_24H:el?'24ω':'24h'};
   EmbedUI.node(widget, 'span', 'status ' + (sc[st] || 'status-announced'), sl[st] || st);
   EmbedUI.node(widget, 'div', 'title', b.title_el || b.title_en || billId);
-  if (b.pill_el) EmbedUI.node(widget, 'div', 'pill', b.pill_el);
+  var parliamentContent = EmbedUI.parliamentAttribution(widget, b, el);
+  if (b.pill_el) {
+    if (parliamentContent) EmbedUI.node(widget, 'div', 'pill', el ? 'Σύνοψη — ekklesia' : 'Summary — ekklesia');
+    EmbedUI.node(widget, 'div', 'pill', b.pill_el);
+  }
   if (st === 'ACTIVE' || st === 'WINDOW_24H') {
     EmbedUI.node(widget, 'div', 'auth-bar', el?'🔐 Σκανάρετε το QR code με την εφαρμογή ekklesia.gr για ταυτοποίηση':'🔐 Scan the QR code with the ekklesia.gr app to authenticate').id = 'auth-bar';
     var qr = EmbedUI.node(widget, 'iframe', 'qr-frame');

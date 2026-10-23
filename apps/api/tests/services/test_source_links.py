@@ -51,3 +51,19 @@ def test_diavgeia_without_ada_does_not_use_doc_fallback():
     b = bill(source="DIAVGEIA", parliament_url="https://diavgeia.gov.gr/doc/UNKNOWN")
 
     assert official_source_url(b) is None
+
+
+def test_attribution_fields_preserve_provenance_date_and_do_not_invent_local_origins():
+    from datetime import datetime
+    from types import SimpleNamespace
+    from services.source_links import parliament_attribution_fields
+
+    imported = SimpleNamespace(source='PARLIAMENT', parliament_url='https://www.hellenicparliament.gr/bill',
+                               created_at=datetime(2026, 1, 1, 23, 30), summary_long_el=None)
+    assert parliament_attribution_fields(imported) == {
+        'source': 'PARLIAMENT', 'parliament_url': imported.parliament_url,
+        'official_source_url': None, 'created_at': '2026-01-01T23:30:00',
+    }
+    local = SimpleNamespace(source='LOCAL', parliament_url=None, created_at=None, summary_long_el=None)
+    assert parliament_attribution_fields(local)['parliament_url'] is None
+    assert parliament_attribution_fields(local)['created_at'] is None

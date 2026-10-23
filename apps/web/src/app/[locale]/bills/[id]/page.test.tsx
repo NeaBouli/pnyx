@@ -68,9 +68,12 @@ describe("bill correction feedback", () => {
       context.bill = {
         source, title_el: "Αυθεντικός_τίτλος * Α", title_en: "Original_title * A",
         summary_short_el: "Η δική μας σύνοψη", summary_short_en: "Our summary", analysis_el: "Η δική μας ανάλυση",
-        summary_long_el: "Επίσημο_κείμενο * ακριβές — https://example.gr/",
+        summary_long_el: source === "PARLIAMENT"
+          ? "  Επίσημο_κείμενο * ακριβές — https://example.gr/\n\n".repeat(50)
+            + "### Πλήρη έγγραφα\n- [PDF](https://www.hellenicparliament.gr/a.pdf)\n"
+          : "Επίσημο_κείμενο * ακριβές — https://example.gr/",
         source_last_success: null, created_at: "2026-01-01T23:30:00",
-        parliament_url: "https://www.hellenicparliament.gr/bill/fallback",
+        parliament_url: source === "PARLIAMENT" ? "https://www.hellenicparliament.gr/bill/fallback" : null,
         official_source_url: source === "DIAVGEIA" ? "https://diavgeia.gov.gr/decision/123" : null,
       };
       const params = Promise.resolve({ id: "GR-9133" });

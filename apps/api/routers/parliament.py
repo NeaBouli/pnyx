@@ -345,6 +345,7 @@ async def get_trending(
     return [BillSummary(
         **bill_freshness(freshness, row[0].source),
         source=row[0].source or "PARLIAMENT",
+        created_at=row[0].created_at.isoformat() if row[0].created_at else None,
         id=row[0].id,
         title_el=row[0].title_el,
         title_en=row[0].title_en,
@@ -665,6 +666,7 @@ async def create_bill(
         vote_date = datetime.fromisoformat(req.parliament_vote_date)
 
     bill = ParliamentBill(
+        source="LOCAL",
         id=req.id,
         title_el=req.title_el,
         title_en=req.title_en,

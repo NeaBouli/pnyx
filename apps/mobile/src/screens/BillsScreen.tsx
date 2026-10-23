@@ -11,6 +11,8 @@ import { isVerified } from "../lib/crypto-native";
 import { loadVoteMarks, tileVoteLabel, type VoteMarks } from "../lib/vote-marks";
 import type { RootStackParams } from "../navigation";
 import { colors } from "../theme";
+import ParliamentAttribution from "../components/ParliamentAttribution";
+import { hasParliamentProvenance } from "../lib/parliament-source";
 
 const FORUM_BASE = "https://pnyx.ekklesia.gr/t/";
 const PAGE_SIZE = 10;
@@ -266,15 +268,19 @@ export default function BillsScreen() {
             <View style={[s.dot, { backgroundColor: STATUS_COLORS[item.status] ?? colors.textTertiary }]} />
             <View style={s.cardContent}>
               <Text style={s.cardTitle}>{item.title_el}</Text>
+              <ParliamentAttribution bill={item} />
               {(() => {
-                const freshness = parliamentFreshness(item);
+                const freshness = hasParliamentProvenance(item) ? parliamentFreshness(item) : null;
                 return freshness && <View>
                   <Text style={s.cardPill}>{freshness.updated}</Text>
                   {freshness.notice && <Text style={s.cardPill}>{freshness.notice}</Text>}
                 </View>;
               })()}
               {readableText(item.summary_short_el || item.pill_el) && (
-                <Text style={s.cardPill} numberOfLines={3}>{item.summary_short_el || item.pill_el}</Text>
+                <View>
+                  {hasParliamentProvenance(item) && <Text style={s.cardPill}>Σύνοψη — ekklesia</Text>}
+                  <Text style={s.cardPill} numberOfLines={3}>{item.summary_short_el || item.pill_el}</Text>
+                </View>
               )}
               <View style={s.cardFooter}>
                 <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>

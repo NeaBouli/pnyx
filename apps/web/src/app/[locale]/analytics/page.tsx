@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useLocale } from "next-intl";
 import Link from "next/link";
+import ParliamentAttribution from "@/components/ParliamentAttribution";
 import { analytics, exportUrls } from "@/lib/api";
 
 export default function AnalyticsPage() {
@@ -73,25 +74,26 @@ export default function AnalyticsPage() {
             <h2 className="text-xl font-bold text-gray-900 mb-4">{el("Υψηλότερη Απόκλιση", "Highest Divergence")}</h2>
             <div className="space-y-3 mb-8">
               {topDiv.map((item: any, i: number) => (
-                <Link key={item.bill_id} href={`bills/${item.bill_id}`}
-                  className="block bg-white rounded-xl p-4 border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all">
+                <div key={item.bill_id}
+                  className="relative block bg-white rounded-xl p-4 border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all">
                   <div className="flex justify-between items-start gap-2">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <span className="text-gray-400 font-bold w-6 text-sm">#{i + 1}</span>
-                      <p className="font-semibold text-sm text-gray-900 truncate">{item.title_el}</p>
+                      <p className="font-semibold text-sm text-gray-900"><Link href={`bills/${item.bill_id}`} className="after:absolute after:inset-0">{item.title_el}</Link></p>
                     </div>
                     <span className={`text-xl font-black flex-shrink-0 ${
                       item.divergence_score > 0.4 ? "text-red-600" :
                       item.divergence_score > 0.2 ? "text-yellow-600" : "text-green-600"
                     }`}>{item.divergence_pct}%</span>
                   </div>
+                  <ParliamentAttribution bill={item} locale={locale} />
                   <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div className={`h-full rounded-full ${
                       item.divergence_score > 0.4 ? "bg-red-500" :
                       item.divergence_score > 0.2 ? "bg-yellow-500" : "bg-green-500"
                     }`} style={{ width: `${item.divergence_pct}%` }} />
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           </>

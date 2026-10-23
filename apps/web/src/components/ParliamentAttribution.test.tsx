@@ -16,6 +16,8 @@ function render(overrides = {}, locale = "el") {
   return container;
 }
 
+const NEGATIVE = ["http://www.hellenicparliament.gr/bill/123", "https://evil.example/", "https://www.hellenicparliament.gr@evil.example/", "https://evil.example@www.hellenicparliament.gr/", "https://user:pass@www.hellenicparliament.gr/", "https://www.hellenicparliament.gr:443/", "https://www.hellenicparliament.gr:444/", "https://www.hellenicparliament.gr.evil.example/", "https://www.hellenicparliament.gr./", "//www.hellenicparliament.gr/", "javascript:alert(1)", "not a url", "https://www.hellenicparliament.gr\\@evil.example/", "https://www.hellenicparliament.gr\n.evil.example/"];
+
 describe.each(["el", "en"])("Parliament attribution in %s", (locale) => {
   it("renders the exact attribution, Athens date and accessible external original link", () => {
     const node = render({}, locale);
@@ -39,16 +41,30 @@ describe.each(["el", "en"])("Parliament attribution in %s", (locale) => {
   });
 
   it.each(["DIAVGEIA", "UNKNOWN", null, undefined, ""])("does not attribute source %s to Parliament", (source) => {
-    expect(render({ source }, locale).innerHTML).toBe("");
+    expect(render({ source, official_source_url: null, parliament_url: null }, locale).innerHTML).toBe("");
   });
 
   it("does not invent a date or a link for incomplete data", () => {
-    const node = render({ source_last_success: null, created_at: null, official_source_url: null, parliament_url: null }, locale);
+    const node = render({ source_last_success: null, created_at: null, official_source_url: null, parliament_url: "http://hellenicparliament.gr/bill" }, locale);
     expect(node.textContent).toContain(locale === "el" ? "Ημερομηνία: Μη διαθέσιμη" : "Date: Unavailable");
     expect(node.querySelector("time, a")).toBeNull();
   });
 
   it("rejects an executable source link", () => {
     expect(render({ official_source_url: "javascript:alert(1)" }, locale).querySelector("a")).toBeNull();
+  });
+
+  it("does not attribute a legacy admin proposal merely because source defaulted to PARLIAMENT", () => {
+    expect(render({ source: "PARLIAMENT", official_source_url: null, parliament_url: null }, locale).innerHTML).toBe("");
+  });
+  it.each(["https://hellenicparliament.gr/bill", "https://www.hellenicparliament.gr/bill"])("classifies an imported bill or official URL %s without relying on source", url => {
+    const node = render({ source: "LOCAL", parliament_url: url, official_source_url: null }, locale);
+    expect(node.querySelector("a")?.href).toBe(url);
+    expect(node.textContent).toContain(locale === "el" ? "Αναδημοσίευση" : "Republished");
+  });
+  it.each(NEGATIVE)("omits unsafe Original %s but retains the text attribution", official_source_url => {
+    const node = render({ official_source_url }, locale);
+    expect(node.querySelector("a")).toBeNull();
+    expect(node.textContent).toContain(locale === "el" ? "Αναδημοσίευση" : "Republished");
   });
 });

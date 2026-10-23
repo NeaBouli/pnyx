@@ -1,5 +1,6 @@
 import React from "react";
 import { Linking, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { hasParliamentProvenance, parliamentOriginalUrl } from "../lib/parliament-source";
 import type { Bill } from "../lib/api";
 import { colors } from "../theme";
 
@@ -7,7 +8,7 @@ export type AttributionBill = Pick<Bill,
   "source" | "source_last_success" | "created_at" | "official_source_url" | "parliament_url">;
 
 export default function ParliamentAttribution({ bill, locale = "el" }: { bill: AttributionBill; locale?: string }) {
-  if (bill.source !== "PARLIAMENT") return null;
+  if (!hasParliamentProvenance(bill)) return null;
   const el = locale === "el";
   // The API's legacy naive timestamps are UTC, irrespective of the reader's timezone.
   const date = [bill.source_last_success, bill.created_at].flatMap((value) => {
@@ -15,7 +16,7 @@ export default function ParliamentAttribution({ bill, locale = "el" }: { bill: A
     const parsed = new Date(value.includes("T") && !/(Z|[+-]\d{2}:?\d{2})$/i.test(value) ? `${value}Z` : value);
     return Number.isFinite(parsed.getTime()) ? [parsed] : [];
   })[0];
-  const url = bill.official_source_url || bill.parliament_url;
+  const url = parliamentOriginalUrl(bill);
   return (
     <View style={styles.container}>
       <Text style={styles.text}>{el ? "Αναδημοσίευση από τη διαδικτυακή πύλη της Βουλής των Ελλήνων"
@@ -26,7 +27,7 @@ export default function ParliamentAttribution({ bill, locale = "el" }: { bill: A
           timeZone: "Europe/Athens", day: "2-digit", month: "2-digit", year: "numeric",
         }) : (el ? "Μη διαθέσιμη" : "Unavailable")}
       </Text>
-      {url && /^https?:\/\//i.test(url) && <TouchableOpacity accessibilityRole="link"
+      {url && <TouchableOpacity accessibilityRole="link"
         accessibilityHint={el ? "Ανοίγει στο πρόγραμμα περιήγησης" : "Opens in your browser"}
         onPress={(event) => { event.stopPropagation(); void Linking.openURL(url); }} style={styles.linkTarget}>
         <Text style={styles.link}>{el ? "Πρωτότυπο" : "Original"}</Text>

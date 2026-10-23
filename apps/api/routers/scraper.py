@@ -800,7 +800,7 @@ async def fetch_and_store(
     summaries = await generate_summaries(text, title_el)
 
     bill = ParliamentBill(
-        id=bill_id, title_el=title_el,
+        id=bill_id, title_el=title_el, parliament_url=url,
         title_en=summaries.get("pill_en", "")[:200],
         pill_el=summaries.get("pill_el"), pill_en=summaries.get("pill_en"),
         summary_short_el=summaries.get("summary_short_el"),

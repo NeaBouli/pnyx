@@ -50,6 +50,11 @@
     var electorate=9810040;
     var participation=total/electorate*100;
     setLiveText("latestBillTitle",titleEl,titleEn);
+    var attribution = document.getElementById("latestBillTitleAttribution");
+    if (attribution && window.EmbedUI) {
+      attribution.replaceChildren();
+      EmbedUI.parliamentAttribution(attribution, data, currentLang !== "en");
+    }
     setLiveText("latestBillStatus",statusEl,statusEn);
     setLiveText("demoYesLabel",(yes==null?"—":yes+"%")+" Υπέρ",(yes==null?"—":yes+"%")+" Yes");
     setLiveText("demoNoLabel",(no==null?"—":no+"%")+" Κατά",(no==null?"—":no+"%")+" No");
@@ -171,7 +176,15 @@
       '<span class="t-meta">' + escapeHtml(meta) + '</span>' +
       (hasShares ? '<div class="t-bar"><div class="t-fill" style="width:' + Math.max(0, Math.min(100, yesPct)) + '%"></div></div>' : '') +
       '<div class="t-converge">' + escapeHtml(result) + '</div>';
-    return a;
+    var card = document.createElement("div");
+    card.className = a.className;
+    a.className = "";
+    a.style.display = "block";
+    a.style.color = "inherit";
+    a.style.textDecoration = "none";
+    card.appendChild(a);
+    if (window.EmbedUI) EmbedUI.parliamentAttribution(card, b, lang !== "en");
+    return card;
   }
 
   function escapeHtml(value) {
@@ -252,7 +265,8 @@
         bills.push({
           bill_id: billId,
           title_el: b.title_el,
-          title_en: b.title_en,
+          title_en: b.title_en, source: b.source, parliament_url: b.parliament_url,
+          official_source_url: b.official_source_url, created_at: b.created_at, source_last_success: b.source_last_success,
           status: "WINDOW_24H",
           governance_level: b.governance_level,
           total_votes: null

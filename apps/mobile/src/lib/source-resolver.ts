@@ -134,7 +134,7 @@ function stripOfficialDocumentBlock(value: string): string {
 }
 
 export function cleanOfficialText(value?: string | null, preserveContent = false): string {
-  if (!value || !value.trim() || value.includes("[unknown:") || isOfficialDocumentBlockOnly(value)) {
+  if (!value || !value.trim() || value.includes("[unknown:") || (!preserveContent && isOfficialDocumentBlockOnly(value))) {
     return "";
   }
   const withoutDocumentBlock = stripOfficialDocumentBlock(String(value));
@@ -172,7 +172,7 @@ export function cleanOfficialText(value?: string | null, preserveContent = false
   if (cleaned.startsWith("Αναζήτηση Τίτλος")) {
     return "";
   }
-  return preserveContent ? withoutDocumentBlock : cleaned.slice(0, 1400);
+  return preserveContent ? value : cleaned.slice(0, 1400);
 }
 
 // ─── 24h Correction Banner ─────────────────────────────────────────────────

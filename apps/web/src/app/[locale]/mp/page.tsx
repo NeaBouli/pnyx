@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useLocale } from "next-intl";
 import Link from "next/link";
+import ParliamentAttribution from "@/components/ParliamentAttribution";
 import { mp } from "@/lib/api";
 
 export default function MPPage() {
@@ -93,13 +94,14 @@ export default function MPPage() {
             </div>
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {(detail.comparisons || []).map((c: any) => (
-                <Link key={c.bill_id} href={`bills/${c.bill_id}`}
-                  className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                <div key={c.bill_id}
+                  className="relative p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
                   <span className={`text-lg flex-shrink-0 ${c.match ? "text-green-600" : "text-red-600"}`}>
                     {c.match ? "✓" : "✗"}
                   </span>
-                  <span className="text-sm text-gray-900 flex-1 truncate">{c.title_el}</span>
-                </Link>
+                  <Link href={`bills/${c.bill_id}`} className="text-sm text-gray-900 after:absolute after:inset-0">{c.title_el}</Link>
+                  <ParliamentAttribution bill={c} locale={locale} />
+                </div>
               ))}
             </div>
           </div>

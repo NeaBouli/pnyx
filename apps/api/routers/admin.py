@@ -177,6 +177,7 @@ async def admin_create_bill(req: BillCreateRequest, _key=Depends(verify_admin), 
         vote_date = date.fromisoformat(req.parliament_vote_date)
 
     bill = ParliamentBill(
+        source="LOCAL",
         id=req.id, title_el=req.title_el, title_en=req.title_en,
         pill_el=req.pill_el, pill_en=req.pill_en,
         summary_short_el=req.summary_short_el, summary_short_en=req.summary_short_en,

@@ -6,6 +6,8 @@ import { fetchTrending } from "../lib/api";
 import { parliamentFreshness } from "../lib/source-freshness";
 import type { RootStackParams } from "../navigation";
 import { colors } from "../theme";
+import ParliamentAttribution from "../components/ParliamentAttribution";
+import { hasParliamentProvenance } from "../lib/parliament-source";
 
 type Nav = StackNavigationProp<RootStackParams, "Tabs">;
 
@@ -40,15 +42,19 @@ export default function TrendingScreen() {
         <TouchableOpacity style={s.card} onPress={() => nav.navigate("Vote", { billId: item.id, billTitle: item.title_el })}>
           <View style={s.rank}><Text style={s.rankText}>{index + 1}</Text></View>
           <View style={s.content}>
-            <Text style={s.title} numberOfLines={2}>{item.title_el}</Text>
+            <Text style={s.title}>{item.title_el}</Text>
+            <ParliamentAttribution bill={item} />
             {(() => {
-              const freshness = parliamentFreshness(item);
+              const freshness = hasParliamentProvenance(item) ? parliamentFreshness(item) : null;
               return freshness && <View>
                 <Text style={s.pill}>{freshness.updated}</Text>
                 {freshness.notice && <Text style={s.pill}>{freshness.notice}</Text>}
               </View>;
             })()}
-            {item.pill_el && <Text style={s.pill} numberOfLines={1}>{item.pill_el}</Text>}
+            {item.pill_el && <View>
+              {hasParliamentProvenance(item) && <Text style={s.pill}>Σύνοψη — ekklesia</Text>}
+              <Text style={s.pill} numberOfLines={1}>{item.pill_el}</Text>
+            </View>}
             <View style={s.footer}>
               <Text style={s.status}>{item.status}</Text>
               {(item.relevance_score ?? 0) > 0 && <Text style={s.score}>▲ {item.relevance_score}</Text>}

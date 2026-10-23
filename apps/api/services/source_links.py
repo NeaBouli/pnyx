@@ -32,3 +32,14 @@ def official_source_url(bill: Any) -> str | None:
         return candidate
 
     return None
+
+
+def parliament_attribution_fields(bill: Any) -> dict:
+    """Carry per-bill provenance and its republication date into public projections."""
+    created_at = _get(bill, "created_at")
+    return {
+        "source": _get(bill, "source"),
+        "parliament_url": _get(bill, "parliament_url"),
+        "official_source_url": official_source_url(bill),
+        "created_at": created_at.isoformat() if created_at else None,
+    }

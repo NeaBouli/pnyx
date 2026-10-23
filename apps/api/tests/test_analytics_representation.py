@@ -77,7 +77,7 @@ async def db() -> AsyncIterator[AsyncSession]:
     try:
         async with engine.begin() as conn:
             for sql in (
-                "CREATE TABLE parliament_bills (id TEXT PRIMARY KEY, title_el TEXT, source TEXT, status TEXT, admin_hidden BOOLEAN, summary_short_el TEXT, summary_long_el TEXT, party_votes_parliament TEXT)",
+                "CREATE TABLE parliament_bills (id TEXT PRIMARY KEY, title_el TEXT, parliament_url TEXT, created_at TEXT, source TEXT, status TEXT, admin_hidden BOOLEAN, summary_short_el TEXT, summary_long_el TEXT, party_votes_parliament TEXT)",
                 "CREATE TABLE citizen_votes (bill_id TEXT, vote TEXT)",
                 "CREATE INDEX idx_votes_bill ON citizen_votes (bill_id)",
                 "CREATE TABLE zk_vote_receipts (vote_scope_id TEXT, vote_commitment TEXT)",
@@ -142,6 +142,12 @@ async def test_endpoint_contract_combines_sources_and_preserves_rounding(
     response = await client.get("/api/v1/analytics/representation")
     assert response.status_code == 200
     result = response.json()
+    assert json.loads(cache.writes[0][2]) == result
+    for projected in result["bills"] + [result["last_bill"]]:
+        assert projected.pop("source") == "PARLIAMENT"
+        assert projected.pop("parliament_url") is None
+        assert projected.pop("official_source_url") is None
+        assert projected.pop("created_at") is None
     assert result == {
         "cumulative_representation": 86.1, "cumulative_divergence": 13.9,
         "bills_analyzed": 2, "total_citizen_votes": 24,
@@ -149,13 +155,12 @@ async def test_endpoint_contract_combines_sources_and_preserves_rounding(
         "last_bill": {"bill_id": "B", "title_el": "Δοκιμή", "citizen_votes": 13,
                       "divergence": 7.7, "representation": 92.3},
         "bills": [
-            {"bill_id": "A", "title_el": "T" * 60, "citizen_votes": 10,
+            {"bill_id": "A", "title_el": "T" * 80, "citizen_votes": 10,
              "divergence": 20.0, "representation": 80.0},
             {"bill_id": "B", "title_el": "Δοκιμή", "citizen_votes": 13,
              "divergence": 7.7, "representation": 92.3},
         ],
     }
-    assert json.loads(cache.writes[0][2]) == result
     assert not any(term in cache.writes[0][2] for term in ("nullifier", "phone", "commitment", "identity"))
 
 

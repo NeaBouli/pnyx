@@ -28,6 +28,7 @@ import type { ZkServerStatus } from "../lib/zkSemaphoreCore";
 import { formatZkPilotErrorMessage } from "../lib/zkPilotError";
 import { recordVoteMark, syncVoteMark } from "../lib/vote-marks";
 import { voteSuccessDialog } from "../lib/vote-success";
+import { hasParliamentProvenance } from "../lib/parliament-source";
 import ParliamentAttribution, { type AttributionBill } from "../components/ParliamentAttribution";
 import { parliamentFreshness } from "../lib/source-freshness";
 
@@ -146,7 +147,7 @@ export default function VoteScreen({ route, navigation }: Props) {
           setSourceKind(resolved.kind);
           if (readableText(d.summary_short_el)) setSummary(d.summary_short_el);
           if (readableText(d.analysis_el)) setAnalysis(d.analysis_el);
-          setOfficialText(cleanOfficialText(d.summary_long_el, source === "PARLIAMENT"));
+          setOfficialText(cleanOfficialText(d.summary_long_el, hasParliamentProvenance(d)));
           setOfficialDocs(officialDocumentLinks(d.summary_long_el));
         }
         const nullifier = await loadNullifier();
@@ -445,7 +446,8 @@ export default function VoteScreen({ route, navigation }: Props) {
     : "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα.";
   const summaryText = summary || (canUsePillAsSummary ? billPill : "") || summaryFallback;
   const summaryLabel = summarySectionLabel(billSource, summaryText);
-  const freshness = sourceBill ? parliamentFreshness(sourceBill) : null;
+  const parliamentContent = sourceBill && hasParliamentProvenance(sourceBill);
+  const freshness = sourceBill && parliamentContent ? parliamentFreshness(sourceBill) : null;
   const statusNotice = billLoaded && !showVoteControls ? votingStatusNotice(billStatus, billSource) : null;
   const showPublicZkVoting = canShowPublicZkVoting({
     serverStatus: zkStatus,
@@ -502,7 +504,7 @@ export default function VoteScreen({ route, navigation }: Props) {
           </View>
           <Text style={{ color: "#93c5fd", fontSize: 12 }}>↗</Text>
         </TouchableOpacity>
-      ) : billLoaded && billSource === "PARLIAMENT" ? (
+      ) : billLoaded && parliamentContent ? (
         <View style={{ backgroundColor: "#f8fafc", borderRadius: 10, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: "#e2e8f0", flexDirection: "row", alignItems: "center" }}>
           <Text style={{ fontSize: 14, marginRight: 8 }}>🏛️</Text>
           <View style={{ flex: 1 }}>
@@ -518,7 +520,7 @@ export default function VoteScreen({ route, navigation }: Props) {
       ) : summaryText || analysis || officialText || officialDocs.length > 0 || billLoaded ? (
         <View style={{ backgroundColor: "#eff6ff", borderRadius: 12, padding: 14, marginBottom: 16 }}>
           <Text style={{ fontWeight: "700", color: "#1e40af", fontSize: 13, marginBottom: 6 }}>
-            {summaryLabel}{billSource === "PARLIAMENT" ? " — ekklesia" : ""}
+            {summaryLabel}{parliamentContent ? " — ekklesia" : ""}
           </Text>
           <Text style={{ color: "#374151", fontSize: 13, lineHeight: 20 }}>
             {summaryText.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/).map((part, i) => {
@@ -532,13 +534,13 @@ export default function VoteScreen({ route, navigation }: Props) {
           {analysis ? (
             <>
               <Text style={{ fontWeight: "700", color: "#1e40af", fontSize: 13, marginTop: 12, marginBottom: 6 }}>
-                Ανάλυση{billSource === "PARLIAMENT" ? " — ekklesia" : ""}
+                Ανάλυση{parliamentContent ? " — ekklesia" : ""}
               </Text>
               <Text style={{ color: "#374151", fontSize: 13, lineHeight: 20 }}>{analysis}</Text>
             </>
           ) : null}
           {officialText ? (
-            <View style={billSource === "PARLIAMENT" ? styles.officialSection : undefined}>
+            <View style={parliamentContent ? styles.officialSection : undefined}>
               <Text style={{ fontWeight: "700", color: "#1e40af", fontSize: 13, marginTop: 12, marginBottom: 6 }}>
                 Επίσημο κείμενο
               </Text>

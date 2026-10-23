@@ -96,3 +96,16 @@ async def test_get_all_results_uses_canonical_divergence_and_counts_unknown():
     assert rows[0]["citizen_total"] == 2
     assert rows[0]["parliament_result"] == "REJECTED"
     assert rows[0]["divergence_score"] == 0.5
+
+
+@pytest.mark.asyncio
+async def test_published_results_keep_parliament_provenance_and_source_date():
+    bill = _bill('imported')
+    bill.source = 'PARLIAMENT'
+    bill.parliament_url = 'https://www.hellenicparliament.gr/bill'
+    bill.created_at = datetime(2026, 1, 1, 23, 30)
+    bill.title_el = '*Official title* ' * 30
+    rows = await get_all_results(_Session([bill], []))
+    assert rows[0]['created_at'] == '2026-01-01T23:30:00'
+    assert rows[0]['parliament_url'] == bill.parliament_url
+    assert rows[0]['title_el'] == bill.title_el

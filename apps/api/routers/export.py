@@ -19,6 +19,7 @@ from sqlalchemy import select, func
 
 from database import get_db
 from rate_limit import limiter
+from services.source_links import parliament_attribution_fields
 from models import ParliamentBill, CitizenVote, BillStatus, VoteChoice, Party
 from services.bill_visibility import public_bill_filter, results_hidden
 from services.small_cell import small_cell_k, suppress_public_cells
@@ -80,6 +81,7 @@ async def get_all_results(db: AsyncSession, min_votes: int = 0) -> list[dict]:
             )
 
         rows.append(suppress_public_cells({
+            **parliament_attribution_fields(bill),
             "bill_id":              bill.id,
             "title_el":             bill.title_el,
             "title_en":             bill.title_en or "",

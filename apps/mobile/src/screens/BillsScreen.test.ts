@@ -7,6 +7,7 @@ import { mergeBillsUnique, prioritizeBillsPage } from "../lib/bill-feed";
 import { availableGeographicFilters, scopedBillQuery } from "../lib/bill-scope";
 import { tileVoteLabel, type VoteMarks } from "../lib/vote-marks";
 import { parliamentFreshness } from "../lib/source-freshness";
+import { hasParliamentProvenance } from "../lib/parliament-source";
 import { colors } from "../theme";
 
 vi.mock("expo-secure-store", () => {
@@ -15,7 +16,7 @@ vi.mock("expo-secure-store", () => {
 });
 
 type El = { type: unknown; props: Record<string, any> };
-type Bill = { id: string; title_el: string; status: string; source: string };
+type Bill = { parliament_url?: string | null; id: string; title_el: string; status: string; source: string };
 type Effect = { deps?: unknown[]; cleanup?: unknown };
 type FocusEffect = { fn: () => unknown; cleanup?: unknown };
 const LOAD_ERROR = "Δεν ήταν δυνατή η φόρτωση των ψηφοφοριών. Δοκιμάστε ξανά.";
@@ -176,6 +177,8 @@ function loadScreen(voteState: {
     "../lib/crypto-native": { isVerified },
     "../lib/vote-marks": { loadVoteMarks, tileVoteLabel: label },
     "../theme": { colors },
+    "../components/ParliamentAttribution": { __esModule: true, default: "ParliamentAttribution" },
+    "../lib/parliament-source": { hasParliamentProvenance },
     "expo-secure-store": { getItemAsync: unexpected, setItemAsync: unexpected, deleteItemAsync: unexpected },
   };
   const source = readFileSync(new URL("./BillsScreen.tsx", import.meta.url), "utf8");
@@ -252,7 +255,7 @@ function errorButtons(screen: Screen): El[] {
 }
 
 function bill(id: string): Bill {
-  return { id, title_el: `Fixture bill ${id}`, status: "ACTIVE", source: "PARLIAMENT" };
+  return { id, parliament_url: "https://www.hellenicparliament.gr/bill", title_el: `Fixture bill ${id}`, status: "ACTIVE", source: "PARLIAMENT" };
 }
 
 function finishMixed(screen: Screen, start: number, items: Bill[]) {
@@ -467,4 +470,14 @@ describe("BillsScreen vote snapshot focus lifecycle", () => {
     expect(cardTexts(screen)).toEqual(before);
     expect(screen.tileVoteLabel).toHaveBeenLastCalledWith("ACTIVE", undefined, false);
   });
+});
+
+it("passes complete provenance to attribution and labels the editorial summary on bill tiles", async () => {
+  const original = { ...bill("imported"), parliament_url: "https://www.hellenicparliament.gr/bill", created_at: "2026-01-01T00:00:00Z", summary_short_el: "Our summary" };
+  const screen = await initialList([original]);
+  const tree = list(screen).props.renderItem({ item: original });
+  expect(findAll(tree, "ParliamentAttribution")[0].props.bill).toBe(original);
+  expect(text(tree)).toContain("Σύνοψη — ekklesia");
+  const local = { ...original, parliament_url: null };
+  expect(text(list(screen).props.renderItem({ item: local }))).not.toContain("Σύνοψη — ekklesia");
 });
