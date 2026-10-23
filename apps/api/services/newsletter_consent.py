@@ -10,6 +10,7 @@ from pydantic import EmailStr, TypeAdapter
 
 CONFIRMED_KEY = "newsletter:confirmed"
 SUPPRESSED_KEY = "newsletter:suppressed"
+WITHDRAWAL_PENDING_KEY = "newsletter:withdrawal_pending"
 BREVO_ADD_RETRY_KEY = "newsletter:brevo:add_retry"
 BREVO_ADD_UNSETTLED_KEY = "newsletter:brevo:add_unsettled"
 BREVO_REMOVE_RETRY_KEY = "newsletter:brevo:remove_retry"
@@ -226,7 +227,7 @@ def has_doi_evidence(data: dict[str, Any], now: datetime) -> bool:
 
 def delivery_eligible(data: dict[str, Any], now: datetime) -> bool:
     topics = data.get("topics")
-    return (data.get("consent_state") != "reconfirm_pending"
+    return (data.get("consent_state") is None
             and has_doi_evidence(data, now) and isinstance(topics, dict)
             and set(topics) == TOPICS and all(type(v) is bool for v in topics.values())
             and any(topics.values()))

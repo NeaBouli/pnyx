@@ -39,6 +39,10 @@ class Provider:
         self.writes: list[httpx.Request] = []
         self.extra: list[dict[str, Any]] = []
         self.fail_send = False
+        self.lists = {newsletter_service.LIST_ID: {"id": newsletter_service.LIST_ID, "name": "Enrollment", "folderId": 1}}
+        self.deleted = []
+        self.delivered = []
+        self.next_list_id = 100
 
     def enroll(self, data: dict[str, Any], **changes: Any) -> None:
         email = data["email"]
@@ -52,23 +56,39 @@ class Provider:
         body = json.loads(request.content) if request.content else {}
         if request.method != "GET":
             self.writes.append(request)
+        if path == "contacts/lists":
+            if request.method == "POST":
+                self.next_list_id += 1
+                list_id = self.next_list_id
+                self.lists[list_id] = {"id": list_id, **body}
+                return httpx.Response(201, json={"id": list_id})
+            offset = int(request.url.params["offset"])
+            return httpx.Response(200, json={"lists": list(self.lists.values())[offset:offset + 500], "count": len(self.lists)})
+        if path.startswith("contacts/lists/"):
+            list_id = int(path.split("/")[2])
+            if request.method == "DELETE":
+                self.lists.pop(list_id, None)
+                self.deleted.append(list_id)
+                for contact in self.contacts.values():
+                    contact["listIds"] = [value for value in contact["listIds"] if value != list_id]
+                return httpx.Response(204)
+            if path.endswith("/contacts/add") or path.endswith("/contacts/remove"):
+                assert 0 < len(body["emails"]) <= 150
+                for email in body["emails"]:
+                    contact = self.contacts[email.casefold()]
+                    if path.endswith("/add"):
+                        contact["listIds"] = sorted(set(contact["listIds"] + [list_id]))
+                    else:
+                        contact["listIds"] = [value for value in contact["listIds"] if value != list_id]
+                return httpx.Response(201, json={"contacts": {"success": body["emails"], "failure": []}})
+            if path.endswith("/contacts"):
+                contacts = [contact for contact in [*self.contacts.values(), *self.extra] if list_id in contact["listIds"]]
+                offset = int(request.url.params["offset"])
+                return httpx.Response(200, json={"contacts": contacts[offset:offset + 500], "count": len(contacts)})
+            return httpx.Response(200, json=self.lists[list_id])
         if request.method == "GET" and path.startswith("contacts/"):
             contact = self.contacts.get(path.removeprefix("contacts/").casefold())
             return httpx.Response(200, json=contact) if contact else httpx.Response(404)
-        if request.method == "GET" and path == "contacts":
-            segment = int(request.url.params["segmentId"])
-            key = next(key for key, value in SEGMENTS.items() if value == segment)
-            language, frequency, topic = key.split(":")
-            contacts = []
-            for contact in [*self.contacts.values(), *self.extra]:
-                attributes = contact["attributes"]
-                if (attributes.get("NL_LANGUAGE") == language and attributes.get(f"NL_{frequency.upper()}") is True
-                        and newsletter_service.LIST_ID in contact["listIds"]
-                        and any(attributes.get(f"NL_{name.upper()}") is True for name in TOPICS)
-                        and (topic == "all" or attributes.get(f"NL_{topic.upper()}") is True)):
-                    contacts.append(contact)
-            offset = int(request.url.params["offset"])
-            return httpx.Response(200, json={"contacts": contacts[offset:offset + 500], "count": len(contacts)})
         if path == "contacts" and request.method == "POST":
             email = body["email"].casefold()
             contact = self.contacts.setdefault(email, {"email": body["email"], "emailBlacklisted": False,
@@ -76,10 +96,6 @@ class Provider:
             contact["attributes"].update(body["attributes"])
             contact["listIds"] = list(set(contact["listIds"] + body["listIds"]))
             return httpx.Response(204)
-        if path.endswith("/contacts/remove"):
-            for email in body["emails"]:
-                self.contacts[email.casefold()]["listIds"] = []
-            return httpx.Response(201, json={"contacts": {"success": body["emails"], "failure": []}})
         if path == "emailCampaigns":
             campaign_id = len(self.campaigns) + 1
             self.campaigns[campaign_id] = dict(body)
@@ -89,12 +105,21 @@ class Provider:
             if path.endswith("/sendNow"):
                 if self.fail_send:
                     return httpx.Response(500, json={"message": EMAIL + " private-token"})
-                self.sent.append(dict(self.campaigns[campaign_id]))
+                campaign = dict(self.campaigns[campaign_id])
+                assert set(campaign["recipients"]) == {"listIds"}
+                assert newsletter_service.LIST_ID not in campaign["recipients"]["listIds"]
+                self.delivered.append({email for email, contact in self.contacts.items()
+                                       if set(campaign["recipients"]["listIds"]).intersection(contact["listIds"])})
+                self.sent.append(campaign)
                 return httpx.Response(204)
             if request.method == "PUT":
                 self.campaigns[campaign_id].update(body)
                 return httpx.Response(204)
-            return httpx.Response(200, json=self.campaigns[campaign_id])
+            campaign = dict(self.campaigns[campaign_id])
+            if "recipients" in campaign:
+                campaign["recipients"] = {({"listIds": "lists", "segmentIds": "segments"}.get(key, key)): value
+                                          for key, value in campaign["recipients"].items()}
+            return httpx.Response(200, json=campaign)
         raise AssertionError(f"Unexpected mock operation: {request.method}")
 
 
@@ -193,7 +218,8 @@ async def test_send_paths_honor_language_frequency_and_topic_eligibility(store, 
         expected = {"fixture0@example.org", "fixture2@example.org"} if plan.language == "el" else (
             {"fixture1@example.org", "fixture3@example.org"} if kind == "monthly" else {"fixture1@example.org"})
         assert selected.selected == expected
-        assert campaign["recipients"] == {"segmentIds": [SEGMENTS[plan.key]]}
+        assert set(campaign["recipients"]) == {"listIds"}
+        assert provider.delivered[provider.sent.index(campaign)] == expected
 
 
 @pytest.mark.parametrize("language", ["el", "en"])
@@ -204,7 +230,8 @@ async def test_admin_plan_matrix(store, provider, language, frequency, topic):
                                  topics={name: topic is None or name == topic for name in TOPICS}))
     result = await admin_send(CampaignPlan(language=language, frequency=frequency, topic=topic))
     assert result["selected"] == result["sent"] == 1
-    assert provider.sent[0]["recipients"] == {"segmentIds": [SEGMENTS[f"{language}:{frequency}:{topic or 'all'}"]]}
+    assert provider.delivered == [{EMAIL}]
+    assert provider.deleted == provider.sent[0]["recipients"]["listIds"]
 
 
 async def test_audience_endpoint_is_admin_read_only_counts_and_current_preferences(store, provider):
@@ -222,20 +249,9 @@ async def test_audience_endpoint_is_admin_read_only_counts_and_current_preferenc
 
 
 @pytest.mark.parametrize("kind", ["monthly", "admin"])
-@pytest.mark.parametrize("problem", ["extra_member", "stale_attributes", "suppression_retry", "missing_config", "provider_failure"])
-async def test_send_paths_fail_closed_without_private_errors(store, provider, monkeypatch, caplog, kind, problem):
+async def test_provider_lookup_failure_aborts_without_private_errors(store, provider, monkeypatch, caplog, kind):
     save(store, provider, consent())
-    if problem == "extra_member":
-        provider.enroll(consent("unknown@example.org"))
-    elif problem == "stale_attributes":
-        provider.contacts[EMAIL]["attributes"]["NL_LANGUAGE"] = "en"
-    elif problem == "suppression_retry":
-        store.hashes[BREVO_REMOVE_RETRY_KEY][EMAIL] = "1"
-        monkeypatch.setattr(newsletter_service, "remove_contact", AsyncMock(return_value=False))
-    elif problem == "missing_config":
-        monkeypatch.delenv("BREVO_NEWSLETTER_SEGMENTS")
-    else:
-        monkeypatch.setattr(newsletter_service, "contact_status", AsyncMock(return_value="failed"))
+    monkeypatch.setattr(newsletter_service, "contact_status", AsyncMock(return_value="failed"))
     if kind == "monthly":
         assert not await newsletter_service.send_monthly_report(db())
     else:
@@ -311,7 +327,7 @@ async def test_provider_error_is_redacted_and_send_failure_is_not_success(store,
     assert not await newsletter_service.send_monthly_report(db())
 
 
-async def test_segment_pagination_and_unknown_language(store, provider):
+async def test_unknown_language_uses_greek_for_large_audience(store, provider):
     for index in range(501):
         save(store, provider, consent(f"fixture{index}@example.org", language=None))
     audience = await newsletter_audience.prepare_audience(store, CampaignPlan())
@@ -319,7 +335,7 @@ async def test_segment_pagination_and_unknown_language(store, provider):
 
 
 @pytest.mark.parametrize("raw", ["{}", "[]", "null", '{"el:monthly:all":true}', '{"el:monthly:all":0}'])
-def test_segment_configuration_is_required_and_strict(monkeypatch, raw):
+def test_legacy_segment_parser_remains_strict(monkeypatch, raw):
     monkeypatch.setenv("BREVO_NEWSLETTER_SEGMENTS", raw)
     with pytest.raises(AudienceUnavailable):
         newsletter_audience.campaign_recipients(CampaignPlan())
@@ -376,7 +392,8 @@ async def test_admin_send_rejects_unplanned_draft_and_overwrites_shared_list_rec
     assert not provider.sent
     provider.campaigns[1]["tag"] = CampaignPlan().tag
     assert (await newsletter_admin.newsletter_send(request, _auth=True))["sent"] == 1
-    assert provider.sent[0]["recipients"] == {"segmentIds": [SEGMENTS[CampaignPlan().key]]}
+    assert provider.delivered == [{EMAIL}]
+    assert provider.deleted == provider.sent[0]["recipients"]["listIds"]
 
 
 @pytest.mark.parametrize("path,body", [
@@ -404,7 +421,7 @@ async def test_audience_excludes_alias_conflicts_and_counts_failed_provider_stat
     store.hashes[CONFIRMED_KEY][alias] = json.dumps(consent(alias, language="en"))
     save(store, provider, consent("stale@example.org"), attributes={})
     audience = await newsletter_audience.select_audience(store, CampaignPlan())
-    assert audience.counts == {"selected": 0, "excluded": 0, "failed": 3}
+    assert audience.counts == {"selected": 1, "excluded": 0, "failed": 2}
 
 
 async def test_monthly_english_titles_and_labels_are_localized_and_escaped(store, provider, monkeypatch):
@@ -470,11 +487,11 @@ async def test_withdrawal_at_final_lease_renewal_blocks_send_even_when_removal_f
             await newsletter._withdraw_subscription(store, EMAIL, "unsubscribed")
 
     monkeypatch.setattr(NewsletterLease, "check", renew)
-    await blocked_dispatch(kind, "unsettled_provider_writes")
+    await blocked_dispatch(kind, "audience_mismatch")
     assert withdrawn and EMAIL in store.hashes[SUPPRESSED_KEY]
     assert newsletter_service.LIST_ID in provider.contacts[EMAIL]["listIds"]
     assert not provider.sent
-    assert "reason=unsettled_provider_writes" in caplog.text
+    assert "reason=audience_mismatch" in caplog.text
 
 
 @pytest.mark.parametrize("kind", ["admin", "monthly"])
@@ -488,7 +505,7 @@ async def test_withdrawal_at_final_lease_renewal_blocks_send_even_when_removal_f
     (LISTMONK_REMOVE_RETRY_KEY, "1"),
 ])
 @pytest.mark.parametrize("stage", ["initial", "final"])
-async def test_any_unsettled_provider_write_blocks_both_send_paths(store, provider, monkeypatch, kind, key, value, stage):
+async def test_unsettled_enrollment_writes_cannot_expand_campaign_lists(store, provider, monkeypatch, kind, key, value, stage):
     seed_campaign(store, provider)
     # Even an excluded contact's older write can change segment membership later.
     save(store, provider, consent("older-sync@example.org", language="en"))
@@ -506,13 +523,13 @@ async def test_any_unsettled_provider_write_blocks_both_send_paths(store, provid
                 store.hashes[key]["older-sync@example.org"] = value
 
         monkeypatch.setattr(NewsletterLease, "check", renew)
-    await blocked_dispatch(kind, "unsettled_provider_writes")
-    assert not provider.sent
+    await dispatch(kind)
+    assert provider.delivered[0] == {EMAIL}
     assert store.hashes[key] == {"older-sync@example.org": value}
 
 
 @pytest.mark.parametrize("kind", ["admin", "monthly"])
-async def test_final_authorization_rechecks_provider_membership_after_renewal(store, provider, monkeypatch, kind):
+async def test_late_attribute_commit_cannot_expand_campaign_list(store, provider, monkeypatch, kind):
     from services.newsletter_lock import NewsletterLease
 
     seed_campaign(store, provider)
@@ -528,10 +545,9 @@ async def test_final_authorization_rechecks_provider_membership_after_renewal(st
             provider.contacts["older-sync@example.org"]["attributes"]["NL_LANGUAGE"] = "el"
 
     monkeypatch.setattr(NewsletterLease, "check", renew)
-    detail = await blocked_dispatch(kind, "audience_mismatch")
-    if detail:
-        assert detail == {"reason": "audience_mismatch", "selected": 1, "excluded": 1, "failed": 0, "provider": 2}
-    assert not provider.sent
+    await dispatch(kind)
+    assert provider.delivered[0] == {EMAIL}
+
 
 
 @pytest.mark.parametrize("kind", ["admin", "monthly"])
@@ -614,8 +630,8 @@ async def test_inflight_preference_sync_blocks_campaign_and_retains_stale_write_
         release.set()
         assert not await asyncio.wait_for(task, 2)
     assert store.hashes[BREVO_ADD_RETRY_KEY]
-    await blocked_dispatch(kind, "unsettled_provider_writes")
-    assert not provider.sent
+    await dispatch(kind)
+    assert provider.delivered[0] == {EMAIL}
 
 
 @pytest.mark.parametrize("key", ["en:weekly:all", "en:weekly:active_votes", "el:monthly:unknown", "xx:weekly:all", EMAIL])
@@ -635,29 +651,17 @@ def test_unknown_segment_key_is_rejected_even_with_valid_id(monkeypatch, key):
 
 
 @pytest.mark.parametrize("kind", ["audience", "admin", "monthly"])
-@pytest.mark.parametrize("raw,reason", [
-    (None, "segments_not_configured"), ("", "segments_not_configured"),
-    ("{}", "segments_not_configured"), ("private-malformed-config", "segments_invalid"),
-    (json.dumps({"el:monthly:all": 1, "en:weekly:all": "private-value"}), "segments_invalid"),
-    (json.dumps({"el:monthly:all": 1, EMAIL: 987654321}), "segments_invalid"),
-])
-async def test_configuration_diagnosis_has_fixed_reason_and_counts_only(store, provider, monkeypatch, caplog, kind, raw, reason):
+@pytest.mark.parametrize("raw", [None, "", "{}", "private-malformed-config", '{"unknown":true}'])
+async def test_legacy_segment_config_is_not_required_for_dispatch(store, provider, monkeypatch, caplog, kind, raw):
     seed_campaign(store, provider)
-    save(store, provider, consent("excluded@example.org", language="en"))
     if raw is None:
         monkeypatch.delenv("BREVO_NEWSLETTER_SEGMENTS")
     else:
         monkeypatch.setenv("BREVO_NEWSLETTER_SEGMENTS", raw)
-    if kind == "monthly":
-        assert not await dispatch(kind)
+    if kind == "audience":
+        assert (await newsletter_admin.newsletter_audience(CampaignPlan(), _auth=True))["selected"] == 1
+        assert not provider.writes
     else:
-        async with HTTP_CLIENT(transport=httpx.ASGITransport(app=application()), base_url="http://test") as client:
-            response = await client.post(f"/api/v1/admin/newsletter/{'audience' if kind == 'audience' else 'send'}",
-                                         headers=AUTH, json={} if kind == "audience" else {"campaign_id": 1, "confirm": True})
-        assert response.status_code == 503
-        assert response.json() == {"detail": {"reason": reason, "selected": 1, "excluded": 1, "failed": 0, "provider": 0}}
-        assert EMAIL not in response.text
-    assert f"reason={reason} selected=1 excluded=1 failed=0 provider=0" in caplog.text
-    assert all(value not in caplog.text for value in (EMAIL, "excluded@example.org", "private-value", "private-malformed-config", "987654321"))
-    assert not provider.sent
-    assert not provider.writes
+        await dispatch(kind)
+        assert provider.delivered == [{EMAIL}]
+    assert EMAIL not in caplog.text and "private-malformed-config" not in caplog.text

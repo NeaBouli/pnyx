@@ -1021,6 +1021,18 @@ async def scheduled_newsletter_reconfirm_expiry() -> None:
         report_outcome("failed")
 
 
+async def scheduled_newsletter_list_cleanup() -> None:
+    """Remove isolated campaign lists left behind for more than 24 hours."""
+    from services.newsletter_dispatch import cleanup_temporary_campaign_lists
+    try:
+        counts = await cleanup_temporary_campaign_lists()
+        if counts["failed"]:
+            report_outcome("failed")
+    except Exception:
+        logger.error("[NEWSLETTER] Temporary list cleanup unavailable")
+        report_outcome("failed")
+
+
 async def scheduled_monthly_newsletter() -> None:
     """Send monthly report newsletter on 1st of each month at 09:00 UTC."""
     from services.newsletter_service import send_monthly_report
@@ -1208,6 +1220,7 @@ async def lifespan(app):
     await add_persisted_interval_job(scheduler, scheduled_greek_topics, hours=6, name="greek_topics")
     add_observed_job(scheduler, scheduled_monthly_newsletter, CronTrigger(day=1, hour=9, minute=0), name="monthly_newsletter")
     add_observed_job(scheduler, scheduled_newsletter_reconfirm_expiry, CronTrigger(minute=0, timezone="UTC"), name="newsletter_reconfirm_expiry")
+    add_observed_job(scheduler, scheduled_newsletter_list_cleanup, CronTrigger(minute=15, timezone="UTC"), name="newsletter_list_cleanup")
     await initialize_job_states(scheduler)
     install_schedule_listener(scheduler)
     scheduler.start()

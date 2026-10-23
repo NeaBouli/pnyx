@@ -7,15 +7,13 @@ from collections import Counter
 from datetime import datetime, timezone
 from typing import Literal
 
-import httpx
 from pydantic import BaseModel
 from redis.asyncio import Redis
 
 from services import newsletter_service
 from services.newsletter_consent import (
-    CONFIRMED_KEY, SUPPRESSED_KEY, BREVO_REMOVE_RETRY_KEY, LISTMONK_REMOVE_RETRY_KEY,
-    BREVO_ADD_RETRY_KEY, BREVO_ADD_UNSETTLED_KEY, LISTMONK_ADD_UNSETTLED_KEY, TOPICS,
-    delivery_eligible, matches_campaign, parse_consent, preference_attributes,
+    CONFIRMED_KEY, SUPPRESSED_KEY, WITHDRAWAL_PENDING_KEY, RECONFIRM_KEY, TOPICS,
+    delivery_eligible, matches_campaign, parse_consent,
 )
 
 logger = logging.getLogger(__name__)
@@ -36,7 +34,7 @@ class CampaignPlan(BaseModel):
 
 
 class AudienceUnavailable(Exception):
-    """No provider dispatch is authorized when consent or segment state is unknown."""
+    """No provider dispatch is authorized when consent or isolated list state is unknown."""
 
     def __init__(self, reason: str = "audience_unavailable", counts: dict[str, int] | None = None):
         self.reason = reason
@@ -68,7 +66,7 @@ def campaign_plan(tag: object) -> CampaignPlan:
 
 
 def campaign_recipients(plan: CampaignPlan) -> dict[str, list[int]]:
-    """Never combine listIds with segmentIds: that would broaden the audience."""
+    """Legacy display configuration only. Dispatch never calls this parser."""
     raw = os.getenv("BREVO_NEWSLETTER_SEGMENTS", "")
     if not raw.strip():
         raise AudienceUnavailable("segments_not_configured")
@@ -99,19 +97,22 @@ class Audience:
         if (await store.hgetall(CONFIRMED_KEY) != self.records
                 or await store.hgetall(SUPPRESSED_KEY) != self.suppressed):
             raise AudienceUnavailable("audience_mismatch", self.counts)
-        await check_provider_writes(store, self.counts)
-
-
-async def check_provider_writes(store: Redis, counts: dict[str, int]) -> None:
-    for key in (BREVO_ADD_RETRY_KEY, BREVO_ADD_UNSETTLED_KEY, LISTMONK_ADD_UNSETTLED_KEY,
-                BREVO_REMOVE_RETRY_KEY, LISTMONK_REMOVE_RETRY_KEY):
-        if await store.hgetall(key):
-            raise AudienceUnavailable("unsettled_provider_writes", counts)
+        if self.selected.intersection(email.casefold() for email in await store.hgetall(RECONFIRM_KEY)):
+            raise AudienceUnavailable("audience_mismatch", self.counts)
+        # Keep withdrawal intent as the last store read before handing off to sendNow.
+        pending = await store.hgetall(WITHDRAWAL_PENDING_KEY)
+        if self.selected.intersection(email.casefold() for email in pending):
+            raise AudienceUnavailable("withdrawal_pending", self.counts)
 
 
 async def select_audience(store: Redis, plan: CampaignPlan) -> Audience:
     records = await store.hgetall(CONFIRMED_KEY)
     suppressed = await store.hgetall(SUPPRESSED_KEY)
+    blocked = {email.casefold() for email in suppressed}
+    blocked.update(email.casefold() for email in await store.hgetall(WITHDRAWAL_PENDING_KEY))
+    blocked.update(email.casefold() for email in await store.hgetall(RECONFIRM_KEY))
+    if len(records) > 10_000:
+        raise AudienceUnavailable("audience_limit_exceeded")
     counts = {"selected": 0, "excluded": 0, "failed": 0}
     selected: set[str] = set()
     aliases = Counter(email.casefold() for email in records)
@@ -121,12 +122,12 @@ async def select_audience(store: Redis, plan: CampaignPlan) -> Audience:
             counts["failed"] += 1
             continue
         data = parse_consent(email, raw, now)
-        if (email.casefold() in suppressed or data is None or not delivery_eligible(data, now)
+        if (email.casefold() in blocked or data is None or not delivery_eligible(data, now)
                 or not matches_campaign(data, plan.language, plan.frequency, plan.topic)):
             counts["excluded"] += 1
             continue
-        status = await newsletter_service.contact_status(email, attributes=preference_attributes(data))
-        if status == "already_present":
+        status = await newsletter_service.contact_status(email)
+        if status in {"already_present", "to_add", "to_update"}:
             selected.add(email.casefold())
         elif status == "suppressed":
             counts["excluded"] += 1
@@ -136,55 +137,13 @@ async def select_audience(store: Redis, plan: CampaignPlan) -> Audience:
     return Audience(records, suppressed, selected, counts)
 
 
-async def _segment_members(segment: int) -> set[str]:
-    """Read every page, bounded to 10,000 members; never log provider responses."""
-    if not newsletter_service.BREVO_API_KEY:
-        raise AudienceUnavailable()
-    members: set[str] = set()
-    async with httpx.AsyncClient(timeout=15, follow_redirects=False) as client:
-        for offset in range(0, 10_000, 500):
-            response = await client.get(
-                f"{newsletter_service.BREVO_API}/contacts",
-                headers={"api-key": newsletter_service.BREVO_API_KEY},
-                params={"segmentId": segment, "limit": 500, "offset": offset, "sort": "asc"},
-            )
-            if response.status_code != 200:
-                raise AudienceUnavailable()
-            payload = response.json()
-            contacts, count = payload["contacts"], payload["count"]
-            if not isinstance(contacts, list) or type(count) is not int or not 0 <= count <= 10_000:
-                raise AudienceUnavailable()
-            for contact in contacts:
-                if contact.get("emailBlacklisted") is True:
-                    continue
-                email = contact.get("email")
-                lists, unsubscribed = contact.get("listIds"), contact.get("listUnsubscribed", [])
-                if (not isinstance(email, str) or contact.get("emailBlacklisted") is not False
-                        or not isinstance(lists, list) or not isinstance(unsubscribed, list)
-                        or any(type(value) is not int for value in lists + unsubscribed)):
-                    raise AudienceUnavailable()
-                if newsletter_service.LIST_ID in unsubscribed:
-                    continue
-                if newsletter_service.LIST_ID not in lists:
-                    raise AudienceUnavailable()
-                members.add(email.casefold())
-            if offset + len(contacts) >= count:
-                return members
-            if len(contacts) != 500:
-                raise AudienceUnavailable()
-    raise AudienceUnavailable()
-
-
 async def audit_audience(store: Redis, plan: CampaignPlan) -> Audience:
     """Read-only diagnosis, also used by the final dispatch authorization."""
     audience = None
     try:
         audience = await select_audience(store, plan)
-        recipients = campaign_recipients(plan)
-        await check_provider_writes(store, audience.counts)
-        members = await _segment_members(recipients["segmentIds"][0])
-        audience.counts["provider"] = len(members)
-        if audience.counts["failed"] or members != audience.selected:
+        audience.counts["provider"] = len(audience.selected)
+        if audience.counts["failed"]:
             raise AudienceUnavailable("audience_mismatch", audience.counts)
         await audience.check(store)
         return audience
@@ -198,19 +157,16 @@ async def audit_audience(store: Redis, plan: CampaignPlan) -> Audience:
 
 async def prepare_audience(store: Redis, plan: CampaignPlan) -> Audience:
     """Caller holds the campaign lease through preparation and dispatch."""
-    if not await newsletter_service.ensure_reconfirmations_paused():
-        raise AudienceUnavailable("unsettled_provider_writes")
     return await audit_audience(store, plan)
 
 
-async def authorize_dispatch(lease, plan: CampaignPlan, previous: Audience) -> Audience:
-    """Renew first, then reread consent and provider membership under that lease.
-
-    The caller must invoke sendNow next, before releasing the lease. Every
-    withdrawal and delivery write uses this same lock, including child tasks.
-    """
+async def authorize_dispatch(lease, plan: CampaignPlan, previous: Audience, target) -> Audience:
+    """Verify the isolated target and current consent immediately before sendNow."""
     await lease.check()
     audience = await audit_audience(lease.store, plan)
     if audience.selected != previous.selected:
         raise AudienceUnavailable("audience_mismatch", audience.counts)
+    await target.verify(audience)
+    await lease.check()
+    await audience.check(lease.store)
     return audience

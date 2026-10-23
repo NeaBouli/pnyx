@@ -385,22 +385,23 @@ def test_sentry_scrubs_reconfirmation_links_and_bearer_tokens(hook: str) -> None
     assert EMAIL not in repr(result) and TOKEN not in repr(result)
 
 
-async def test_admin_campaign_cannot_send_until_pending_contacts_are_paused(
+async def test_admin_campaign_excludes_pending_contacts_even_when_pause_failed(
     store: ReconfirmRedis, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     await post(dry_run=False)
     newsletter_service.remove_contact.return_value = False
-    provider = AsyncMock(return_value={"subject": "Fixture"})
+    provider = AsyncMock(return_value={"subject": "Fixture", "tag": "newsletter:v1:el:monthly:all"})
     monkeypatch.setattr(newsletter_admin, "_brevo_request", provider)
     app = FastAPI()
     app.include_router(newsletter_admin.router)
     async with HTTP_CLIENT(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post("/api/v1/admin/newsletter/send", json={"campaign_id": 123, "confirm": True}, headers=AUTH)
-    assert response.status_code == 503
+    assert response.status_code == 200
+    assert response.json()["sent"] == 0
     assert [call.args[0] for call in provider.await_args_list] == ["GET"]
 
 
-async def test_monthly_campaign_cannot_send_until_pending_contacts_are_paused(
+async def test_monthly_campaign_excludes_pending_contacts_even_when_pause_failed(
     store: ReconfirmRedis, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     await post(dry_run=False)
@@ -410,7 +411,7 @@ async def test_monthly_campaign_cannot_send_until_pending_contacts_are_paused(
     db.execute = AsyncMock(return_value=MagicMock(all=lambda: []))
     provider = AsyncMock(return_value={"id": 123, "tag": "newsletter:v1:el:monthly:all"})
     monkeypatch.setattr(newsletter_service, "_brevo_post", provider)
-    assert not await newsletter_service.send_monthly_report(db)
+    assert await newsletter_service.send_monthly_report(db)
     provider.assert_not_awaited()
 
 
@@ -645,7 +646,7 @@ async def test_campaign_rechecks_registry_after_acquiring_lease(store, monkeypat
 
     async def acquire(*args, **kwargs):
         result = await original_set(*args, **kwargs)
-        store.hashes[RECONFIRM_KEY][EMAIL.casefold()] = json.dumps(legacy(consent_state="reconfirm_pending"))
+        store.hashes[RECONFIRM_KEY]["campaign-fixture@example.org"] = json.dumps(legacy(consent_state="reconfirm_pending"))
         return result
 
     monkeypatch.setattr(store, "set", acquire)
@@ -653,8 +654,8 @@ async def test_campaign_rechecks_registry_after_acquiring_lease(store, monkeypat
     provider = AsyncMock(return_value={"id": 123, "tag": "newsletter:v1:el:monthly:all"})
     monkeypatch.setattr(newsletter_service, "_brevo_post", provider)
     monkeypatch.setattr(newsletter_admin, "_brevo_request", provider)
-    assert not await _campaign(kind, monkeypatch)
-    newsletter_service.remove_contact.assert_awaited_once()
+    assert await _campaign(kind, monkeypatch)
+    newsletter_service.remove_contact.assert_not_awaited()
     assert all("sendNow" not in str(call) for call in provider.await_args_list)
 
 

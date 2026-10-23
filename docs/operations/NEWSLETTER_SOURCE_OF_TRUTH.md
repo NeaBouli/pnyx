@@ -6,8 +6,8 @@ are not consent. Confirmation preserves the requested preferences and DOI
 evidence; backfill never invents timestamps or changes that evidence.
 
 Brevo is the campaign delivery provider. Contact enrollment uses `BREVO_LIST_ID`,
-with the existing list default. Monthly reports and admin campaigns target
-preference segments within that list, never the unfiltered list.
+with the existing list default. Monthly reports and admin campaigns each target a fresh temporary list built
+from authoritative Redis consent under the shared newsletter lock.
 `BREVO_API_KEY` remains server-side. Listmonk is an optional secondary provider.
 List membership does not replace consent or override provider suppression.
 
@@ -64,10 +64,13 @@ flowchart LR
     Add --> Brevo[Configured Brevo campaign list]
     Preferences[Admin preference update] --> Consent
     Consent --> Attributes[Brevo preference attributes]
-    Attributes --> Segments[Configured preference segments]
-    Segments --> Gate[Compare with eligible local consent]
-    Gate --> Monthly[Monthly campaigns: el and en]
-    Gate --> Admin[Planned admin campaign]
+    Consent --> Gate[Select eligible unsuppressed consent under shared lock]
+    Gate --> Temporary[Fresh campaign list with verified exact membership]
+    Temporary --> Monthly[Monthly campaigns: el and en]
+    Temporary --> Admin[Planned admin campaign]
+    Monthly --> Cleanup[Delete list after send acceptance]
+    Admin --> Cleanup
+    Attributes --> Display[Provider display only]
     Withdraw[Authenticated withdrawal] --> Suppression[Redis suppression and removal retries]
     Suppression --> Unlink[Brevo list unlink]
     Suppression --> Blocklist[Listmonk blocklist when configured]
@@ -113,7 +116,9 @@ After an uncertain add, backfill must observe the Brevo membership or Listmonk
 contact and acknowledge its removal/blocklisting before clearing removal work.
 Listmonk's bulk blocklist success alone cannot establish that a contact exists.
 For an eligible, unsuppressed Brevo contact,
-observing membership reconciles the original addition without sending another.
+matching current attributes can retire display sync work without another write.
+This is not evidence that a specific historical request settled, and none of
+these markers or provider attributes authorize campaign dispatch.
 Repeated absence retains the work for later backfills; a process crash leaving
 `pending`, or a failed write that never commits, requires operator reconciliation
 with provider evidence before clearing the unsettled marker. No elapsed-time
@@ -218,23 +223,71 @@ This documents the implemented handoff, superseding the historical no-writer
 inventory in [the delivery audit](newsletter-delivery-audit.md). Campaign
 content remains separate work.
 
-Campaign audience preferences (#667)
------------------------------------
+Campaign dispatch and preferences (#667, #683)
+--------------------------------------------
 
-The integration uses provider-side segments on the existing campaign list. Brevo
-accepts `recipients.segmentIds`; its public API lists existing segments but does
-not create their conditions. Operators configure segments in Brevo and supply
-their IDs through `BREVO_NEWSLETTER_SEGMENTS`. No additional lists, dependencies,
-database tables or background sync jobs are introduced. See the official
-[campaign API](https://developers.brevo.com/reference/create-email-campaign),
-[segment listing](https://developers.brevo.com/reference/get-segments) and
-[segment contact query](https://developers.brevo.com/reference/get-contacts).
+Redis consent authorizes campaigns. Provider segments, attributes and enrollment
+list membership do not authorize sending. Under the shared renewable newsletter
+lock, each send computes eligible identities from DOI evidence, suppression,
+withdrawal intent, reconfirmation state, language, cadence and topics. Native
+provider suppression is also respected; failed provider lookups abort dispatch.
+An eligible contact need not already belong to the enrollment list. A missing
+provider contact will fail the temporary-list add and abort the campaign.
 
-Before enabling campaigns, create these normal contact attributes in Brevo:
-`NL_LANGUAGE` (text), `NL_MONTHLY` and `NL_WEEKLY` (boolean), and boolean
-`NL_NEW_PROPOSALS`, `NL_ACTIVE_VOTES`, `NL_VOTE_RESULTS`, `NL_SYSTEM_NEWS`,
-`NL_BREAKING_NEWS`. Attribute creation is an operator setup step, not a startup
-write. [Brevo attribute API](https://developers.brevo.com/reference/create-attribute).
+Both admin and monthly sends create a unique empty static Brevo list in the
+same folder as `BREVO_LIST_ID`. The name is
+`newsletter-tmp-v1-<UTC epoch seconds>-<random UUID hex>`. Only the campaign
+preparation code writes these lists. Preference syncs and withdrawal cleanup
+continue to use the enrollment list and cannot add anyone to a temporary list.
+Adds use at most 150 addresses per request and are idempotent. Every member page
+is read and the raw set and count must exactly match the authorized identities;
+extra, missing, duplicate or malformed members abort the send. The campaign is
+also read back to verify it targets only that list, with no residual segments
+or other recipient filters. The bound is
+10,000 local consent records and 10,000 members per temporary list.
+
+The lock is held through list preparation, campaign targeting, final consent,
+list and lease checks, `sendNow`, and deletion. A queued withdrawal records
+`newsletter:withdrawal_pending` before attempting the lock. If it concerns a
+selected identity before dispatch, the send aborts and deletes its temporary
+list. The withdrawal request receives a retry response on contention; the
+intent persists until durable suppression succeeds. Never clear this intent to
+unblock a campaign: retry the withdrawal instead. Withdrawal persistence and
+ordinary preference writes remain serialized by the same lock. Once `sendNow`
+has started, mail accepted by the provider cannot be recalled.
+
+Failures before dispatch abort and attempt deletion in `finally`. Send rejection
+or timeout also attempts deletion and returns failure; the code never retries an
+uncertain send automatically. Successful provider acceptance is followed by
+list deletion without deleting contacts or suppression history. A deletion
+failure after acceptance is logged as counts, without reporting the send as
+failed or sending it again. Provider acceptance is the boundary specified by
+this integration; these tests use a mocked provider and do not prove downstream
+Brevo delivery timing.
+
+The observed scheduler job `newsletter_list_cleanup` runs hourly at minute 15
+UTC, under the shared newsletter lock. It discovers temporary lists directly
+from Brevo, including lists whose creation response was lost, and deletes only
+strictly matching owned names older than 24 hours. It collects all pages before
+mutation and retains failed deletions for the next run. It never deletes the
+enrollment list or ordinary operator lists. Review scheduler failures and
+`temporary_list_cleanup_failed` counts; rerun
+`services.newsletter_dispatch.cleanup_temporary_campaign_lists()` in the API
+runtime to retry cleanup. No address export is needed.
+
+No segment setup is required. `BREVO_NEWSLETTER_SEGMENTS` may remain in existing
+environments; the legacy parser remains available for compatibility but neither
+campaign path consults it. Missing, empty or invalid legacy values cannot select
+a dispatch target. Provider attributes may remain useful for display:
+`NL_LANGUAGE`, `NL_MONTHLY`, `NL_WEEKLY` and the five `NL_<TOPIC>` booleans.
+Backfill can synchronize those attributes without authorizing delivery or
+changing DOI evidence. Uncertain historical provider writes cannot broaden the
+fresh list, even when matching current attributes conceals an older update.
+
+See Brevo's official [list creation](https://developers.brevo.com/reference/create-list),
+[batch membership](https://developers.brevo.com/reference/add-contact-to-list),
+[list contacts](https://developers.brevo.com/reference/get-contacts-from-list)
+and [list deletion](https://developers.brevo.com/reference/delete-list) APIs.
 
 The saved frequency is a maximum cadence:
 
@@ -252,28 +305,6 @@ The scheduled digest produces separate Greek and English campaigns; generated
 labels, subjects and links follow the language, and bill titles use `title_en`
 for English, with the neutral label “Bill” when a translation is absent.
 
-For each planned `(language, frequency, topic)` combination, configure a Brevo
-segment with **all** of these conditions: membership in `BREVO_LIST_ID`, matching
-`NL_LANGUAGE`, the matching cadence attribute true, and at least one of the five
-topic attributes true. For a topic-specific segment, also require that topic
-attribute true. Keep the list-membership condition inside the segment: sending
-both `listIds` and `segmentIds` would broaden the audience.
-
-Set `BREVO_NEWSLETTER_SEGMENTS` to a JSON object of positive integer IDs. Keys
-are `el|en:monthly|weekly:all|<topic>`, for example:
-
-```json
-{"el:monthly:all":101,"en:monthly:all":102,"en:weekly:active_votes":103}
-```
-
-Both `el:monthly:all` and `en:monthly:all` are required for the scheduled digest.
-Configure additional combinations before drafting those admin campaigns. Missing
-or invalid mappings block campaigns; there is no fallback to the shared list.
-Run backfill in dry-run mode, then apply to sync existing members' attributes.
-Missing/stale attributes remain held until sync succeeds; backfill does not
-rewrite DOI evidence. An uncertain update remains held until matching provider
-attributes establish that it completed; list membership alone is insufficient.
-
 `PUT /api/v1/admin/newsletter/preferences` uses the existing admin bearer auth.
 Its body contains `email`, `language`, `frequency` and the complete `topics` map.
 It updates existing DOI consent atomically, queues sync before provider I/O and
@@ -288,30 +319,24 @@ Its body is a planned campaign, for example
 `{"language":"en","frequency":"weekly","topic":"active_votes"}`.
 Defaults are Greek, monthly and a general digest. It performs Redis/provider
 reads only and returns `selected`, `excluded`, `failed` counts: selected counts
-unique, locally eligible, unsuppressed members with matching synced attributes;
+unique, locally eligible, unsuppressed identities using current local preferences;
 excluded covers ineligible/nonmatching/provider-suppressed records; failed
-covers missing or stale provider state and ambiguous aliases. It reads only
+covers unknown provider state and ambiguous aliases. It reads only
 locally confirmed identities, so provider-only contacts are never candidates.
 The estimate is not a send reservation and does not depend on segment setup.
 
 Admin `/draft` accepts the same plan fields alongside subject/content. The
 provider draft stores the plan in a versioned `tag`. `/send` reads that stored
-plan, replaces recipients with its configured segment, and rechecks consent
-before dispatch. Old drafts lacking a valid plan must be recreated. Send output
+plan, creates and targets its isolated list, and rechecks consent and the exact
+list membership before dispatch. Drafts have no recipients until send
+preparation. Old drafts lacking a valid plan must be recreated. Send output
 contains only `selected`, `sent` and `telegram_sent` counts; an empty audience
 returns zero selected/sent without dispatch or cross-publishing.
 
-Both send paths retain the existing campaign lease and reconfirmation pause
-checks, retry pending withdrawals and compare every page of the actual segment
-against local selection. Unexpected provider-only members, wrong segments,
-missing/stale attributes, failed provider reads/removals or consent changes
-block dispatch. Native provider suppression is still respected. Segment reads
-are bounded to 10,000 contacts; larger audiences require an explicit follow-up.
-As with any asynchronous provider send, changes after dispatch cannot recall
-mail already accepted by the provider. The readiness audit remains read-only
-and conservative about provider history; its obsolete preference-enforcement
-blocker has been removed. The planned audience endpoint provides the campaign
-estimate.
+Both send paths return reason codes and aggregate counts only. Empty audiences
+create no temporary list, send no campaign and do not cross-publish. The read-only
+readiness audit remains conservative about provider history; the planned
+audience endpoint estimates current campaign eligibility without provider writes.
 
 Provider operations follow the official
 [Brevo list removal API](https://developers.brevo.com/reference/remove-contact-from-list)

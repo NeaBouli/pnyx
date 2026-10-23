@@ -130,7 +130,7 @@ async def test_monthly_report_campaign_reply_to(monkeypatch: pytest.MonkeyPatch,
     assert endpoint == "emailCampaigns"
     assert payload["replyTo"] == OPERATOR_EMAIL
     assert payload["sender"] == newsletter_service.SENDER
-    assert payload["recipients"] == {"segmentIds": [1]}
+    assert payload["recipients"] == {"listIds": [123]}
     # immediate-send behavior preserved
     assert calls[1][0] == "emailCampaigns/123/sendNow"
 
@@ -156,7 +156,7 @@ async def test_admin_draft_campaign_reply_to(campaign_support) -> None:
     payload = captured["data"]
     assert payload["replyTo"] == OPERATOR_EMAIL
     assert payload["sender"] == newsletter_admin.SENDER
-    assert payload["recipients"] == {"segmentIds": [1]}
+    assert "recipients" not in payload
 
 
 def test_contact_fallback_recipient_and_env_override(monkeypatch: pytest.MonkeyPatch) -> None:

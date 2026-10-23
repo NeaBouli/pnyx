@@ -413,8 +413,9 @@ async def send_monthly_report(db: AsyncSession) -> bool:
         return _wrap(body, language=language)
 
     from services.newsletter_audience import (
-        CampaignPlan, AudienceUnavailable, campaign_recipients, prepare_audience, authorize_dispatch, log_audience,
+        CampaignPlan, AudienceUnavailable, prepare_audience, authorize_dispatch, log_audience,
     )
+    from services.newsletter_dispatch import temporary_campaign_list
     # Keep one lease across both language snapshots and provider dispatches.
     audience = None
     try:
@@ -426,22 +427,24 @@ async def send_monthly_report(db: AsyncSession) -> bool:
                     continue
                 await audience.check(lease.store)
                 await lease.check()
-                result = await _brevo_post("emailCampaigns", {
-                    "name": f"Monthly Report {month_name} ({plan.language})",
-                    "subject": f"ekklesia.gr — {'Monthly Report' if plan.language == 'en' else 'Μηνιαία Αναφορά'} {month_name}",
-                    "sender": SENDER,
-                    "replyTo": OPERATOR_EMAIL,
-                    "type": "classic",
-                    "tag": plan.tag,
-                    "recipients": campaign_recipients(plan),
-                    "htmlContent": render(plan.language),
-                })
-                if not result or not result.get("id"):
-                    raise AudienceUnavailable("provider_unavailable", audience.counts)
-                audience = await authorize_dispatch(lease, plan, audience)
-                sent = await _brevo_post(f"emailCampaigns/{result['id']}/sendNow", {})
-                if sent is None:
-                    raise AudienceUnavailable("provider_unavailable", audience.counts)
+                async with temporary_campaign_list(lease, audience) as target:
+                    result = await _brevo_post("emailCampaigns", {
+                        "name": f"Monthly Report {month_name} ({plan.language})",
+                        "subject": f"ekklesia.gr — {'Monthly Report' if plan.language == 'en' else 'Μηνιαία Αναφορά'} {month_name}",
+                        "sender": SENDER,
+                        "replyTo": OPERATOR_EMAIL,
+                        "type": "classic",
+                        "tag": plan.tag,
+                        "recipients": target.recipients,
+                        "htmlContent": render(plan.language),
+                    })
+                    if not result or not result.get("id"):
+                        raise AudienceUnavailable("provider_unavailable", audience.counts)
+                    await target.verify_campaign(result["id"])
+                    audience = await authorize_dispatch(lease, plan, audience, target)
+                    sent = await _brevo_post(f"emailCampaigns/{result['id']}/sendNow", {})
+                    if sent is None:
+                        raise AudienceUnavailable("provider_unavailable", audience.counts)
                 log_audience("sent", audience.counts)
             return True
     except AudienceUnavailable as exc:

@@ -450,6 +450,9 @@ async def _expire_reconfirmations(store, dry_run: bool) -> dict[str, int]:
 
 
 async def _withdraw_subscription(store: aioredis.Redis, email: str, reason: str) -> bool:
+    from services.newsletter_consent import WITHDRAWAL_PENDING_KEY
+    # Publish intent before lock acquisition so preparation can abort a queued withdrawal.
+    await store.hset(WITHDRAWAL_PENDING_KEY, email.casefold(), reason)
     # Provider events can change casing; preserve stored consent identities while
     # matching the provider's case-insensitive contact identity.
     async with newsletter_lock(store):
@@ -461,6 +464,7 @@ async def _withdraw_subscription(store: aioredis.Redis, email: str, reason: str)
                 BREVO_REMOVE_RETRY_KEY, LISTMONK_REMOVE_RETRY_KEY,
                 identity, reason, "1" if LISTMONK_PW else "0", email.casefold(),
             )
+        await store.hdel(WITHDRAWAL_PENDING_KEY, email.casefold())
     success = True
     for identity in identities:
         if not await _retry_withdrawal(store, identity):

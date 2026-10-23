@@ -31,9 +31,10 @@ from services.newsletter_consent import (
     TOPICS as NEWSLETTER_TOPICS, UPDATE_PREFERENCES, preference_attributes,
 )
 from services.newsletter_audience import (
-    CampaignPlan, AudienceUnavailable, campaign_plan, campaign_recipients,
+    CampaignPlan, AudienceUnavailable, campaign_plan,
     audit_audience, prepare_audience, authorize_dispatch, log_audience,
 )
+from services.newsletter_dispatch import temporary_campaign_list
 from services import newsletter_service
 from routers.newsletter import NewsletterRoute
 
@@ -375,18 +376,12 @@ async def newsletter_create_draft(req: DraftRequest, _auth: bool = Depends(verif
     from datetime import datetime, timezone
     name = req.name or f"ekklesia — {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')}"
 
-    try:
-        recipients = campaign_recipients(req)
-    except AudienceUnavailable as exc:
-        log_audience(exc.reason, exc.counts)
-        raise HTTPException(503, exc.detail) from None
     result = await _brevo_request("POST", "emailCampaigns", {
         "name": name,
         "subject": req.subject,
         "sender": SENDER,
         "replyTo": OPERATOR_EMAIL,
         "type": "classic",
-        "recipients": recipients,
         "tag": req.tag,
         "htmlContent": wrapped,
     })
@@ -419,10 +414,12 @@ async def newsletter_send(req: SendRequest, _auth: bool = Depends(verify_admin_k
             if not audience.selected:
                 log_audience("ready", audience.counts)
                 return {"reason": "ready", **audience.counts, "sent": 0}
-            # Replace the draft audience immediately before dispatch.
-            await _brevo_request("PUT", f"emailCampaigns/{req.campaign_id}", {"recipients": campaign_recipients(plan)})
-            audience = await authorize_dispatch(lease, plan, audience)
-            await _brevo_request("POST", f"emailCampaigns/{req.campaign_id}/sendNow", {})
+            async with temporary_campaign_list(lease, audience) as target:
+                # Fully replace any historical shared list or segment recipients.
+                await _brevo_request("PUT", f"emailCampaigns/{req.campaign_id}", {"recipients": target.recipients})
+                await target.verify_campaign(req.campaign_id)
+                audience = await authorize_dispatch(lease, plan, audience, target)
+                await _brevo_request("POST", f"emailCampaigns/{req.campaign_id}/sendNow", {})
     except AudienceUnavailable as exc:
         log_audience(exc.reason, exc.counts)
         raise HTTPException(503, exc.detail) from None
@@ -431,7 +428,7 @@ async def newsletter_send(req: SendRequest, _auth: bool = Depends(verify_admin_k
                                     audience.counts if audience else None)
         log_audience(error.reason, error.counts)
         raise HTTPException(503, error.detail) from None
-    logger.info("[NEWSLETTER] Campaign %d sent", req.campaign_id)
+    logger.info("[NEWSLETTER] Campaign sent")
 
     # NEA-263: Cross-publish to Telegram (non-blocking)
     tg_sent = False
@@ -444,9 +441,9 @@ async def newsletter_send(req: SendRequest, _auth: bool = Depends(verify_admin_k
         )
         tg_sent = await tg_send(tg_msg, group_thread_id=TOPICS["platform"])
         if tg_sent:
-            logger.info("[NEWSLETTER] Telegram cross-publish OK for campaign %d", req.campaign_id)
+            logger.info("[NEWSLETTER] Telegram cross-publish OK")
         else:
-            logger.warning("[NEWSLETTER] Telegram cross-publish failed for campaign %d", req.campaign_id)
+            logger.warning("[NEWSLETTER] Telegram cross-publish failed")
     except Exception:
         logger.warning("[NEWSLETTER] Telegram cross-publish unavailable")
 
