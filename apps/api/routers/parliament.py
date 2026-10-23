@@ -666,7 +666,6 @@ async def create_bill(
         vote_date = datetime.fromisoformat(req.parliament_vote_date)
 
     bill = ParliamentBill(
-        source="LOCAL",
         id=req.id,
         title_el=req.title_el,
         title_en=req.title_en,

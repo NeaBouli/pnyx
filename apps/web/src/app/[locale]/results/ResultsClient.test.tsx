@@ -67,7 +67,7 @@ describe("ResultsClient first-page SSR seed", () => {
   it.each(["el", "en"])("attributes Parliament results in %s with independent originals and full titles", async locale => {
     context.locale = locale;
     const imported = { ...result("IMPORTED", 20, 0.5), source: "PARLIAMENT", created_at: "2026-01-01T23:30:00", parliament_url: "https://www.hellenicparliament.gr/bill", title_el: "*Official* _title_ ".repeat(30) };
-    const local = { ...result("LOCAL", 30, 0.2), source: "PARLIAMENT" };
+    const local = { ...result("ADMIN", 30, 0.2), source: "PARLIAMENT" };
     const { errors } = await serverThenHydrate([imported, local]);
     expect(errors).toEqual([]);
     const cards = container.querySelectorAll("article");

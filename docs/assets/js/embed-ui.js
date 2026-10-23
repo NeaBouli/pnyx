@@ -36,17 +36,19 @@ var EmbedUI = (function () {
     }
   }
   function parliamentUrl(value) {
-    if (!value || !/^https?:\/\//i.test(value) || /[\\\s]/.test(value)) return null;
+    if (!value || !/^https:\/\//i.test(value) || /[\\\s\u0000-\u001f\u007f]/.test(value)) return null;
     try {
-      var url = new URL(value), authority = value.split('/')[2];
-      if (['http:', 'https:'].indexOf(url.protocol) < 0
+      var url = new URL(value), authority = value.slice('https://'.length).split(/[/?#]/)[0];
+      if (url.protocol !== 'https:'
         || ['www.hellenicparliament.gr', 'hellenicparliament.gr'].indexOf(url.hostname) < 0
-        || url.username || url.password || url.port || authority.indexOf('@') >= 0 || authority.indexOf(':') >= 0) return null;
+        || url.username || url.password || url.port || authority.toLowerCase() !== url.hostname) return null;
       return url;
     } catch (_) { return null; }
   }
   function parliamentAttribution(parent, bill, greek) {
-    if (!parliamentUrl(bill.official_source_url) && !parliamentUrl(bill.parliament_url)) return false;
+    if (bill.source !== 'PARLIAMENT') return false;
+    var value = parliamentUrl(bill.official_source_url) ? bill.official_source_url : bill.parliament_url;
+    if (!parliamentUrl(value)) return false;
     var attr = node(parent, 'div', 'attr');
     node(attr, 'div', '', greek ? 'Αναδημοσίευση από τη διαδικτυακή πύλη της Βουλής των Ελλήνων'
       : 'Republished from the website of the Hellenic Parliament');
@@ -58,11 +60,8 @@ var EmbedUI = (function () {
     node(attr, 'div', '', (greek ? 'Ημερομηνία: ' : 'Date: ') + (date ? date.toLocaleDateString('en-GB', {
       timeZone: 'Europe/Athens', day: '2-digit', month: '2-digit', year: 'numeric'
     }) : (greek ? 'Μη διαθέσιμη' : 'Unavailable')));
-    var value = bill.official_source_url || bill.parliament_url, url = parliamentUrl(value);
-    if (url && url.protocol === 'https:') {
-      var original = node(attr, 'a', '', greek ? 'Πρωτότυπο' : 'Original');
-      original.href = value; original.target = '_blank'; original.rel = 'noopener external';
-    }
+    var original = node(attr, 'a', '', greek ? 'Πρωτότυπο' : 'Original');
+    original.href = value; original.target = '_blank'; original.rel = 'noopener external';
     return true;
   }
   function attribution(parent, greek, href, label) {

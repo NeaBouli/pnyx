@@ -68,12 +68,12 @@ async def test_review_approval_revokes_all_summary_ownership():
 
 
 @pytest.mark.asyncio
-async def test_admin_creation_records_local_origin_without_changing_import_defaults(monkeypatch):
+async def test_admin_creation_preserves_parliament_workflow_without_claiming_attribution(monkeypatch):
     from routers import admin, parliament
     from models import ParliamentBill
     from unittest.mock import AsyncMock
 
-    # Both administrative creation endpoints previously inherited PARLIAMENT.
+    # Both administrative endpoints must continue to inherit the workflow default.
     for module, request_type, create in (
         (admin, admin.BillCreateRequest, admin.admin_create_bill),
         (parliament, parliament.BillCreateRequest, parliament.create_bill),
@@ -85,9 +85,10 @@ async def test_admin_creation_records_local_origin_without_changing_import_defau
             add=added.append,
         )
         monkeypatch.setattr(module, 'commit_and_invalidate_representation', AsyncMock())
-        await create(request_type(id='ADMIN-LOCAL', title_el='Τοπική πρόταση'), db=db)
+        await create(request_type(id='ADMIN-PROPOSAL', title_el='Τοπική πρόταση'), db=db)
         assert len(added) == 1
-        assert added[0].source == 'LOCAL'
+        # SQLAlchemy applies the default on insert; the routes must not override it.
+        assert added[0].source is None
         assert added[0].parliament_url is None
         assert added[0].title_el == 'Τοπική πρόταση'
     # Importers continue to inherit the existing model default. No data migration.
@@ -112,3 +113,27 @@ async def test_single_url_import_retains_parliament_provenance(monkeypatch):
     await scraper.fetch_and_store(url=url, title_el='Τίτλος', bill_id='GR-IMPORTED', _auth=True, db=db)
     assert added[0].parliament_url == url
     assert added[0].title_el == 'Τίτλος'
+    assert added[0].source is None
+
+
+def test_no_code_compares_against_removed_bill_source():
+    from pathlib import Path
+    import re
+    import subprocess
+
+    removed_source = "LO" + "CAL"
+    literal = rf"['\"]{removed_source}['\"]"
+    comparison = re.compile(rf"(?:==|!=|===|!==)\s*{literal}|{literal}\s*(?:==|!=|===|!==)")
+    root = Path(__file__).resolve().parents[3]
+    paths = subprocess.check_output(
+        ["git", "ls-files"], cwd=root, text=True,
+    ).splitlines()
+    matches = []
+    for path in paths:
+        if Path(path).suffix not in {".py", ".ts", ".tsx", ".js", ".mjs", ".cjs"}:
+            continue
+        content = (root / path).read_text()
+        for match in comparison.finditer(content):
+            line_number = content.count("\n", 0, match.start()) + 1
+            matches.append(f"{path}:{line_number}: {match.group()}")
+    assert not matches, "\n".join(matches)

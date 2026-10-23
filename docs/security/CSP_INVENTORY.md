@@ -108,7 +108,7 @@ Only inert JSON-LD remains. No executable inline items, empty placeholders, stri
 | `docs/assets/js/demo-admin.js` | `1e2db56d71adaa48de5ba3972b2ae72184ba7c1633ca76a8d0d179374ce75364` |
 | `docs/assets/js/demo-bills.js` | `ebaf37f97ca68bd1a0ba9484dc1f064aed295972e1023f49b16c38db691e469a` |
 | `docs/assets/js/embed-results.js` | `81ae54ed15d517880012f7ac7ea87ed935ec63d3c233cbe88fb4996b084bf7f2` |
-| `docs/assets/js/embed-ui.js` | `92a766e1f98baeaf2617b199b28e2884a1a8209f72b13cdccd34e369f1a91bd9` |
+| `docs/assets/js/embed-ui.js` | `d386c127213ddefdef2d73c5c7dddf63d041e9ff90e0ee926f63c9124cb9bbc3` |
 | `docs/assets/js/embed-vote.js` | `660e46c24691465216a2b72456068b67fe93817f0672f86183a03ffba8a63be3` |
 | `docs/assets/js/events.js` | `ebcc4436e5b94be0263719f3c110d344aecbf8ecb168ea2564758743f7b6b97a` |
 | `docs/assets/js/govgr-dimos.js` | `b3797f416e307b94fa946ad7910cb0a2a7faa9419500b5abf7dad91e350b6cd9` |

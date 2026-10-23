@@ -171,7 +171,7 @@ class ParliamentBill(Base):
     dimos_id            = Column(Integer, ForeignKey("dimos.id", ondelete="SET NULL"), nullable=True)
 
     # Source tracking
-    source              = Column(String(20), default="PARLIAMENT")  # PARLIAMENT | DIAVGEIA | LOCAL (admin proposals)
+    source              = Column(String(20), default="PARLIAMENT")  # PARLIAMENT | DIAVGEIA
     diavgeia_ada        = Column(String(50), nullable=True)
     org_label           = Column(Text, nullable=True)               # Diavgeia organization name
     flag_count          = Column(Integer, default=0)

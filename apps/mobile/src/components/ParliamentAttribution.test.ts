@@ -52,32 +52,38 @@ describe.each(["el", "en"])("native Parliament attribution in %s", (locale) => {
   });
 
   it.each(["DIAVGEIA", "UNKNOWN", null, undefined, ""])("does not attribute source %s to Parliament", (source) => {
-    expect(ParliamentAttribution({ bill: { ...bill, source, official_source_url: null, parliament_url: null }, locale })).toBeNull();
+    expect(ParliamentAttribution({ bill: { ...bill, source }, locale })).toBeNull();
   });
 
-  it("does not invent missing dates or links", () => {
-    const tree = ParliamentAttribution({ bill: { source: "PARLIAMENT", parliament_url: "http://hellenicparliament.gr/bill" }, locale });
+  it("does not invent a date for an official original without timestamps", () => {
+    const tree = ParliamentAttribution({ bill: { ...bill, source_last_success: null, created_at: null }, locale });
     expect(text(tree)).toContain(locale === "el" ? "Ημερομηνία: Μη διαθέσιμη" : "Date: Unavailable");
-    expect(nodes(tree).some(node => node.props.accessibilityRole === "link")).toBe(false);
+    expect(nodes(tree).some(node => node.props.accessibilityRole === "link")).toBe(true);
   });
 
   it("rejects executable source links", () => {
-    const tree = ParliamentAttribution({ bill: { ...bill, official_source_url: "javascript:alert(1)" }, locale });
-    expect(nodes(tree).some(node => node.props.accessibilityRole === "link")).toBe(false);
+    const tree = ParliamentAttribution({ bill: { ...bill, official_source_url: "javascript:alert(1)", parliament_url: null }, locale });
+    expect(tree).toBeNull();
   });
 
   it("does not attribute a legacy admin proposal merely because source defaulted to PARLIAMENT", () => {
     expect(ParliamentAttribution({ bill: { source: "PARLIAMENT" }, locale })).toBeNull();
   });
-  it.each(["https://hellenicparliament.gr/bill", "https://www.hellenicparliament.gr/bill"])("classifies an imported bill or official URL %s without relying on source", url => {
-    const tree = ParliamentAttribution({ bill: { source: "LOCAL", parliament_url: url }, locale });
+  it.each(["https://hellenicparliament.gr/bill", "https://www.hellenicparliament.gr/bill"])("attributes a Parliament import with official URL %s", url => {
+    const tree = ParliamentAttribution({ bill: { source: "PARLIAMENT", parliament_url: url }, locale });
     expect(text(tree)).toContain(locale === "el" ? "Αναδημοσίευση" : "Republished");
     nodes(tree).find(node => node.props.accessibilityRole === "link")!.props.onPress!({ stopPropagation: vi.fn() });
     expect(native.openURL).toHaveBeenLastCalledWith(url);
   });
-  it.each(NEGATIVE)("omits unsafe Original %s but retains the text attribution", official_source_url => {
+  it.each(NEGATIVE)("omits attribution and links when the only URL is unsafe: %s", url => {
+    for (const field of ["official_source_url", "parliament_url"]) {
+      expect(ParliamentAttribution({ bill: { ...bill, official_source_url: null, parliament_url: null, [field]: url }, locale })).toBeNull();
+    }
+  });
+  it.each(NEGATIVE)("falls back to a validated Parliament URL when the preferred URL is unsafe: %s", official_source_url => {
     const tree = ParliamentAttribution({ bill: { ...bill, official_source_url }, locale });
-    expect(nodes(tree).some(node => node.props.accessibilityRole === "link")).toBe(false);
+    nodes(tree).find(node => node.props.accessibilityRole === "link")!.props.onPress!({ stopPropagation: vi.fn() });
+    expect(native.openURL).toHaveBeenLastCalledWith(bill.parliament_url);
     expect(text(tree)).toContain(locale === "el" ? "Αναδημοσίευση" : "Republished");
   });
 });

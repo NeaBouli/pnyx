@@ -24,7 +24,7 @@ vi.mock("@/lib/api", () => ({
 
 function bill(id: string, status = "ACTIVE"): Bill {
   return {
-    id, parliament_url: "https://www.hellenicparliament.gr/bill", title_el: `Τίτλος ${id}`, title_en: `Title ${id}`, pill_el: null, pill_en: null,
+    id, source: "PARLIAMENT", parliament_url: "https://www.hellenicparliament.gr/bill", title_el: `Τίτλος ${id}`, title_en: `Title ${id}`, pill_el: null, pill_en: null,
     summary_short_el: null, summary_short_en: null, summary_long_el: null, summary_long_en: null,
     categories: null, party_votes_parliament: null, status, parliament_vote_date: null,
   };

@@ -66,9 +66,20 @@ describe.each(["vote", "results"] as const)("static %s embed Parliament content"
   it("does not attribute local proposals with a legacy source default", () => {
     expect(embed(kind, { parliament_url: null }).textContent).not.toContain("Αναδημοσίευση");
   });
-  it.each(["http://www.hellenicparliament.gr/", "https://www.hellenicparliament.gr@evil.example/", "https://evil.example/", "https://www.hellenicparliament.gr:443/"])("omits unsafe originals %s while retaining attribution", official_source_url => {
+  it.each(["DIAVGEIA", "UNKNOWN", null])("does not attribute source %s even with an official Parliament URL", source => {
+    expect(embed(kind, { source }).textContent).not.toContain("Αναδημοσίευση");
+    expect(document.querySelector('a[rel="noopener external"]')).toBeNull();
+  });
+  it.each(["http://www.hellenicparliament.gr/", "https://www.hellenicparliament.gr@evil.example/", "https://evil.example/", "https://www.hellenicparliament.gr:443/"])("omits attribution when the only URL is unsafe: %s", url => {
+    for (const field of ["official_source_url", "parliament_url"]) {
+      const widget = embed(kind, { official_source_url: null, parliament_url: null, [field]: url });
+      expect(widget.textContent).not.toContain("Αναδημοσίευση");
+      expect(widget.querySelector('a[rel="noopener external"]')).toBeNull();
+    }
+  });
+  it.each(["http://www.hellenicparliament.gr/", "https://www.hellenicparliament.gr@evil.example/", "https://evil.example/", "https://www.hellenicparliament.gr:443/"])("uses a safe fallback when the preferred URL is unsafe: %s", official_source_url => {
     const widget = embed(kind, { official_source_url });
     expect(widget.textContent).toContain("Αναδημοσίευση");
-    expect(widget.querySelector('a[rel="noopener external"]')).toBeNull();
+    expect(widget.querySelector<HTMLAnchorElement>('a[rel="noopener external"]')?.href).toBe(bill.parliament_url);
   });
 });
