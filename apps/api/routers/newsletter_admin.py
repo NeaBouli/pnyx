@@ -110,7 +110,7 @@ class DraftRequest(CampaignPlan):
 
 
 class SendRequest(BaseModel):
-    campaign_id: int
+    campaign_id: int = Field(gt=0)
     confirm: bool = Field(..., description="Must be true to send")
 
 

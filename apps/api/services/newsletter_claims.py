@@ -103,6 +103,8 @@ class DispatchClaim:
 
     @classmethod
     async def acquire(cls, lease, key: str, campaign_id: int | None = None):
+        if campaign_id is not None and (isinstance(campaign_id, bool) or not isinstance(campaign_id, int) or campaign_id <= 0):
+            raise AudienceUnavailable("invalid_campaign_id")
         raw, records = await _records(lease.store)
         claim = cls(lease, key, campaign_id=campaign_id)
         claim.raw = raw.get(key, "")

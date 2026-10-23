@@ -336,3 +336,25 @@ async def test_campaign_fence_is_checked_atomically_at_send_gate(store, provider
     assert replaced is not None and replaced in store.hashes[CLAIMS_KEY].values()
     assert not any(req.url.path.endswith("/sendNow") for req in provider.writes)
     assert not provider.delivered
+
+
+@pytest.mark.parametrize("campaign_id", [0, -1])
+def test_send_request_rejects_non_positive_campaign_ids(campaign_id):
+    from pydantic import ValidationError
+    from routers.newsletter_admin import SendRequest
+
+    with pytest.raises(ValidationError):
+        SendRequest(campaign_id=campaign_id)
+
+
+@pytest.mark.parametrize("campaign_id", [0, -5, True])
+def test_claim_acquire_rejects_invalid_campaign_ids_without_writing(campaign_id):
+    import asyncio
+    from services.newsletter_audience import AudienceUnavailable
+    from services.newsletter_claims import DispatchClaim
+
+    class _NoStoreLease:
+        store = None  # any write attempt would fail loudly
+
+    with pytest.raises(AudienceUnavailable):
+        asyncio.run(DispatchClaim.acquire(_NoStoreLease(), "admin:test", campaign_id))
