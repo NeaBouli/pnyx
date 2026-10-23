@@ -71,9 +71,9 @@ Only inert JSON-LD remains. No executable inline items, empty placeholders, stri
 | `docs/bot.html:26` | JSON-LD data | Retain inline for SEO; inert under script-src. |
 | `docs/community.html:40` | JSON-LD data | Retain inline for SEO; inert under script-src. |
 | `docs/govgr-dimos.html:32` | JSON-LD data | Retain inline for SEO; inert under script-src. |
-| `docs/index.html:414` | JSON-LD data | Retain inline for SEO; inert under script-src. |
-| `docs/index.html:448` | JSON-LD data | Retain inline for SEO; inert under script-src. |
-| `docs/index.html:458` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/index.html:418` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/index.html:452` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/index.html:462` | JSON-LD data | Retain inline for SEO; inert under script-src. |
 | `docs/legal.html:26` | JSON-LD data | Retain inline for SEO; inert under script-src. |
 | `docs/municipality/article.html:24` | JSON-LD data | Retain inline for SEO; inert under script-src. |
 | `docs/municipality/index.html:24` | JSON-LD data | Retain inline for SEO; inert under script-src. |

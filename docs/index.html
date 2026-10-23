@@ -323,15 +323,19 @@
     .ticker-grid > div { overflow: hidden; }
     .ticker-grid h4 { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gray-400); margin: 0 0 0.75rem 0; display: flex; align-items: center; gap: 0.4rem; }
     .ticker-grid h4 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); }
-    .ticker-cards-wrap { height: 160px; position: relative; overflow: hidden; }
+    .ticker-cards-wrap { height: 200px; position: relative; overflow: hidden; }
     .t-card {
       background: var(--gray-100); border-radius: 0.75rem; padding: 1rem;
       border: 2px solid #e2e8f0; text-decoration: none; color: inherit;
       position: absolute; top: 0; left: 0; right: 0;
-      height: 160px; box-sizing: border-box; overflow: hidden;
+      height: 200px; box-sizing: border-box; overflow: hidden;
+      display: flex; flex-direction: column;
       opacity: 0; transition: opacity 0.4s;
     }
     .t-card.visible { opacity: 1; }
+    /* Parliament attribution must stay fully visible: content shrinks, attribution never clips. */
+    .t-card > a { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+    .t-card > .attr { flex: 0 0 auto; margin-top: 0.4rem; font-size: 0.68rem; line-height: 1.3; }
     .t-card:hover { border-color: var(--blue); }
     .t-card.al { border-left: 3px solid var(--green); }
     .t-card.rc { border-left: 3px solid var(--blue); }
