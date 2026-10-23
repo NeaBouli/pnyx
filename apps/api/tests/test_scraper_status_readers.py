@@ -111,6 +111,47 @@ async def _all_clean():
         await scraper_state.record_success(n)
 
 
+@pytest.mark.parametrize("path", ["/api/v1/scraper/jobs", "/api/v1/scraper/status"])
+async def test_host_cooldown_status_survives_restart_and_is_counts_only(env, scraper_redis, monkeypatch, path):
+    from unittest.mock import AsyncMock
+    from routers import scraper
+    from services import scraper_http
+
+    monkeypatch.setattr(scraper, "ollama_available", AsyncMock(return_value=False))
+    url = "https://www.hellenicparliament.gr/private?token=secret"
+    original = scraper_http.HostRateLimiter()
+    original.observe(url, 403, {})
+    await original.persist(url)
+    until = (await original.status(url))["cooldown_until"]
+    monkeypatch.setattr(scraper_http, "host_limiter", scraper_http.HostRateLimiter())
+    writes = scraper_redis.writes
+    body = await _get(path)
+    assert body["host_cooldowns"] == {
+        "hellenicparliament.gr": {"cooldown_until": until, "consecutive_403": 1},
+        "diavgeia.gov.gr": {"cooldown_until": None, "consecutive_403": 0},
+    }
+    assert scraper_redis.writes == writes
+    assert all(v not in str(body["host_cooldowns"]) for v in ("private", "secret", "http_403", "started_at"))
+
+
+@pytest.mark.parametrize("path", ["/api/v1/scraper/jobs", "/api/v1/scraper/status"])
+async def test_host_cooldown_status_uses_local_evidence_during_outage(env, scraper_redis, monkeypatch, path):
+    from unittest.mock import AsyncMock
+    from routers import scraper
+    from services import scraper_http
+
+    monkeypatch.setattr(scraper, "ollama_available", AsyncMock(return_value=False))
+    limiter = scraper_http.host_limiter
+    limiter.observe("https://hellenicparliament.gr/", 403, {})
+    await limiter.persist("https://hellenicparliament.gr/")
+    known = await limiter.status("https://hellenicparliament.gr/")
+    scraper_redis.down = True
+    assert (await _get(path))["host_cooldowns"] == {
+        "hellenicparliament.gr": known,
+        "diavgeia.gov.gr": {"cooldown_until": None, "consecutive_403": None},
+    }
+
+
 async def test_degraded_producer_flows_to_jobs_and_mod21(env):
     store, _ = env
     await _all_clean()
