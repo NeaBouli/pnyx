@@ -23,7 +23,7 @@ from models import (
     IdentityRecord, KeyStatus,
 )
 from services.content_provenance import clear_generated_content
-from services.representation_cache import invalidate_representation_cache
+from services.representation_cache import commit_and_invalidate_representation
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/admin", tags=["MOD-15 Admin"])
@@ -187,7 +187,7 @@ async def admin_create_bill(req: BillCreateRequest, _key=Depends(verify_admin), 
         status=BillStatus.ANNOUNCED, ai_summary_reviewed=False,
     )
     db.add(bill)
-    await db.commit()
+    await commit_and_invalidate_representation(db)
     logger.info(f"[MOD-15] Bill erstellt: {req.id}")
     return {"success": True, "bill_id": req.id, "status": "ANNOUNCED"}
 
@@ -207,11 +207,8 @@ async def admin_update_bill(
         setattr(bill, field, value)
         if field in {"pill_el", "summary_short_el"}:
             clear_generated_content(bill, field)
-    await db.commit()
+    await commit_and_invalidate_representation(db)
 
-    # DIAVGEIA text edits can also change whether a bill is public.
-    if {"results_visibility", "title_el", "summary_short_el", "summary_long_el"} & updates.keys():
-        await invalidate_representation_cache()
     logger.info(f"[MOD-15] Bill aktualisiert: {bill_id} — {list(updates.keys())}")
     return {"success": True, "bill_id": bill_id, "updated": list(updates.keys())}
 
@@ -229,7 +226,7 @@ async def admin_review_summary(
     if approved:
         clear_generated_content(bill, "pill_el")
         clear_generated_content(bill, "summary_short_el")
-    await db.commit()
+    await commit_and_invalidate_representation(db)
     return {"success": True, "bill_id": bill_id, "reviewed": approved}
 
 
@@ -243,7 +240,7 @@ async def admin_set_party_votes(
     if not bill:
         raise HTTPException(404, f"Bill {bill_id} nicht gefunden")
     bill.party_votes_parliament = party_votes
-    await db.commit()
+    await commit_and_invalidate_representation(db)
     return {"success": True, "bill_id": bill_id, "party_votes": party_votes}
 
 
@@ -351,7 +348,7 @@ async def admin_resolve_orgs(
             failed += 1
         await asyncio.sleep(0.3)  # Rate limit
 
-    await db.commit()
+    await commit_and_invalidate_representation(db)
     return {"success": True, "resolved": resolved, "failed": failed, "total": len(rows)}
 
 
@@ -393,7 +390,7 @@ async def admin_reset_votes(
     count = len(votes)
     for vote in votes:
         await db.delete(vote)
-    await db.commit()
+    await commit_and_invalidate_representation(db)
 
     logger.warning(f"[MOD-15] DEV: {count} Votes für {bill_id} gelöscht")
     return {"success": True, "deleted": count, "bill_id": bill_id}
@@ -687,7 +684,7 @@ async def admin_resolve_org_labels(
     """))
     backfilled = backfill_result.rowcount
 
-    await db.commit()
+    await commit_and_invalidate_representation(db)
 
     return {
         "step1_resolve": {
@@ -739,7 +736,7 @@ async def admin_set_bill_text(
     if not content:
         raise HTTPException(422, "Bill text must not be empty")
     bill.summary_long_el = content
-    await db.commit()
+    await commit_and_invalidate_representation(db)
     # Clear cache
     redis_url = os.getenv("REDIS_URL", "redis://redis:6379")
     r = aioredis.from_url(redis_url, decode_responses=True)

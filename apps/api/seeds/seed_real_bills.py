@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy import select, delete
+from services.representation_cache import commit_and_invalidate_representation
 from models import ParliamentBill, BillStatus, Party, Statement, PartyPosition
 from config import settings
 
@@ -191,7 +192,7 @@ async def seed():
             session.add(bill)
             added += 1
 
-        await session.commit()
+        await commit_and_invalidate_representation(session)
         print(f"Bills: {added} hinzugefuegt, {skipped} uebersprungen")
 
         # VAA Positionen
@@ -213,7 +214,7 @@ async def seed():
                         break
                     session.add(PartyPosition(party_id=party.id, statement_id=stmt.id, position=positions[i]))
                     pos_added += 1
-            await session.commit()
+            await commit_and_invalidate_representation(session)
             print(f"VAA Positionen: {pos_added} aktualisiert")
         else:
             print("VAA: Keine Parteien/Thesen gefunden")

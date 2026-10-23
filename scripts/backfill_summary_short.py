@@ -177,6 +177,9 @@ async def main():
 
     db_url = db_url.replace("postgresql+asyncpg://", "postgresql://")
 
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "apps", "api"))
+    from services.representation_cache import invalidate_representation_cache
+
     import asyncpg
     conn = await asyncpg.connect(db_url)
 
@@ -237,11 +240,13 @@ async def main():
                     "UPDATE parliament_bills SET summary_short_el = $1, pill_el = $2 WHERE id = $3 AND (summary_short_el IS NULL OR summary_short_el = '')",
                     short, pill, bill_id,
                 )
+                await invalidate_representation_cache()
             else:
                 await conn.execute(
                     "UPDATE parliament_bills SET summary_short_el = $1 WHERE id = $2 AND (summary_short_el IS NULL OR summary_short_el = '')",
                     short, bill_id,
                 )
+                await invalidate_representation_cache()
 
         updated += 1
 

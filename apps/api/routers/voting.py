@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import and_, or_, select, func, union, update, text
 from sqlalchemy.exc import IntegrityError
 
+from services.representation_cache import commit_and_invalidate_representation
 from database import get_db
 from rate_limit import limiter
 from models import (
@@ -635,7 +636,7 @@ async def _commit_vote_write(db: AsyncSession) -> None:
     written together or not at all. Foreign integrity errors stay unmasked.
     """
     try:
-        await db.commit()
+        await commit_and_invalidate_representation(db)
     except IntegrityError as exc:
         await db.rollback()
         name = _unique_violation_name(exc)
@@ -1505,7 +1506,7 @@ async def submit_consensus(
         VALUES (:nh, :econ, :soc, 'consensus', :bill_id)
     """), {"nh": req.nullifier_hash, "econ": weight * 0.05, "soc": 0.0, "bill_id": bill_id})
 
-    await db.commit()
+    await commit_and_invalidate_representation(db)
 
     return {
         "bill_id": bill_id,

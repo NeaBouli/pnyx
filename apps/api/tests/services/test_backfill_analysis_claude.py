@@ -452,11 +452,13 @@ class MainHarness:
     source_urls: list[str]
     env_paths: list[str]
     out_dir: Path
+    invalidate: AsyncMock
 
 
 @pytest.fixture
 def main_harness(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> MainHarness:
     import asyncpg
+    from services import representation_cache
 
     rows = {
         bill_id: {
@@ -469,6 +471,10 @@ def main_harness(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> MainHarness
         for bill_id in ("GR-1", "GR-2")
     }
     connection = FakeDB(rows)
+    async def invalidate_after_write():
+        assert connection.updates
+    invalidate = AsyncMock(side_effect=invalidate_after_write)
+    monkeypatch.setattr(representation_cache, "invalidate_representation_cache", invalidate)
     connect = AsyncMock(return_value=connection)
     gated_call = AsyncMock(return_value=(dict(FIXTURE_RESULT), dict(FIXTURE_USAGE)))
     source_urls: list[str] = []
@@ -493,7 +499,7 @@ def main_harness(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> MainHarness
     monkeypatch.setattr(backfill, "_http_text", read_fixture_source)
     monkeypatch.setattr(backfill, "gated_call_claude", gated_call)
     _forbid_budget_calls(monkeypatch)
-    return MainHarness(connection, connect, gated_call, source_urls, env_paths, tmp_path / "previews")
+    return MainHarness(connection, connect, gated_call, source_urls, env_paths, tmp_path / "previews", invalidate)
 
 
 def _set_main_args(
@@ -564,6 +570,7 @@ async def test_main_flag_matrix(
     await backfill.main()
 
     output = capsys.readouterr()
+    assert harness.invalidate.await_count == len(harness.connection.updates)
     assert output.err == ""
     assert len(harness.env_paths) == 2
     harness.connect.assert_awaited_once_with("postgresql://fixture.invalid/backfill")

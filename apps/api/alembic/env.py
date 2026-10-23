@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from database import Base
 from models import *  # importiert alle Modelle
+from services.representation_cache import invalidate_representation_cache
 
 config = context.config
 if config.config_file_name is not None:
@@ -31,6 +32,8 @@ async def run_async_migrations() -> None:
     )
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
+    # Alembic's transaction has committed, including any data backfills.
+    await invalidate_representation_cache()
     await connectable.dispose()
 
 def run_migrations_online() -> None:

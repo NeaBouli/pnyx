@@ -401,3 +401,101 @@ async def test_query_count_is_constant_for_many_bills(db: AsyncSession, monkeypa
     assert len(statements) == 1
     assert result["bills_analyzed"] == 100
     assert result["total_citizen_votes"] == 1500
+
+
+@pytest.mark.parametrize("route", ["set-text", "fetch-text", "party-votes", "patch-party-votes"])
+@pytest.mark.parametrize("cache_failure", [False, True])
+async def test_admin_text_and_party_vote_routes_remove_cached_rows(
+    db: AsyncSession, cache: Cache, monkeypatch: pytest.MonkeyPatch,
+    route: str, cache_failure: bool,
+) -> None:
+    from fastapi import Request
+    from services import parliament_fetcher
+
+    await bill(db, "A", source="DIAVGEIA", party={"A": "YES"})
+    await votes(db, "A", (10,)*4)
+    record = SimpleNamespace(
+        id="A", source="DIAVGEIA", parliament_url="https://example.test/bill.pdf",
+        summary_long_el="", party_votes_parliament={"A": "YES"},
+        generated_content_provenance=None,
+    )
+    writer = AsyncMock(spec=AsyncSession)
+    writer.get.return_value = record
+    writer.execute.return_value = SimpleNamespace(scalar_one_or_none=lambda: record)
+    keys = set()
+
+    async def commit() -> None:
+        assert keys <= cache.values.keys()  # Cache deletion follows the DB commit.
+        await db.execute(text("""UPDATE parliament_bills
+            SET summary_long_el = :summary, party_votes_parliament = :party WHERE id = 'A'
+        """), dict(summary=record.summary_long_el, party=json.dumps(record.party_votes_parliament)))
+        await db.commit()
+
+    writer.commit.side_effect = commit
+    monkeypatch.setattr(parliament_fetcher, "_fetch_bill_text_result",
+                        AsyncMock(return_value=("AMKA " + "official text " * 25, "fetched")))
+    # The routes also close their summary-cache connection.
+    monkeypatch.setattr(cache, "aclose", AsyncMock(), raising=False)
+    if cache_failure:
+        # Fail only representation deletion; summary-cache deletion still works.
+        async def unavailable_scan(**_: Any) -> AsyncIterator[str]:
+            raise RuntimeError("cache adapter failed")
+            yield
+        monkeypatch.setattr(cache, "scan_iter", unavailable_scan)
+
+    app = FastAPI()
+    app.include_router(analytics.router)
+    app.include_router(admin.router)
+
+    async def dependency(request: Request) -> AsyncIterator[AsyncSession]:
+        yield writer if "/admin/" in request.url.path else db
+
+    app.dependency_overrides[get_db] = dependency
+    app.dependency_overrides[admin.verify_admin] = lambda: True
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as http:
+        for policy in ("0", "10"):
+            monkeypatch.setenv("PUBLIC_RESULTS_MIN_COUNT", policy)
+            assert (await http.get("/api/v1/analytics/representation")).json()["bills_analyzed"] == 1
+        keys.update(cache.values)
+        cache.values["unrelated"] = (30, "keep")
+        if route == "patch-party-votes":
+            response = await http.patch("/api/v1/admin/bills/A", json={"party_votes_parliament": {}})
+        else:
+            payload = {"text": "AMKA " + "official text " * 25} if route == "set-text" else {}
+            response = await http.post(f"/api/v1/admin/bills/A/{route}", json=payload)
+        assert response.status_code == 200, response.text
+        assert response.json()["success"] is True
+        writer.commit.assert_awaited_once()
+        if cache_failure:
+            assert keys <= cache.values.keys()
+            # The existing anchored expiry remains the outage backstop.
+            cache.now = 30
+        else:
+            assert cache.values == {"unrelated": (30, "keep")}
+        assert (await http.get("/api/v1/analytics/representation")).json()["bills"] == []
+
+
+async def test_failed_commit_never_invalidates(cache: Cache) -> None:
+    from services.representation_cache import commit_and_invalidate_representation
+
+    cache.values["analytics:representation:v1:k0"] = (30, "keep")
+    writer = AsyncMock(spec=AsyncSession)
+    writer.commit.side_effect = RuntimeError("database rejected write")
+    with pytest.raises(RuntimeError, match="database rejected write"):
+        await commit_and_invalidate_representation(writer)
+    assert cache.values == {"analytics:representation:v1:k0": (30, "keep")}
+    assert cache.closed == 0
+
+
+async def test_invalidation_client_setup_failure_does_not_fail_write(
+    cache: Cache, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from services.representation_cache import commit_and_invalidate_representation
+
+    def broken_client(*_: Any, **__: Any) -> None:
+        raise ValueError("invalid Redis configuration")
+
+    monkeypatch.setattr(analytics.aioredis, "from_url", broken_client)
+    writer = AsyncMock(spec=AsyncSession)
+    await commit_and_invalidate_representation(writer)
+    writer.commit.assert_awaited_once()

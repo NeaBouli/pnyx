@@ -14,6 +14,7 @@ from dataclasses import dataclass
 import httpx
 from sqlalchemy import select
 
+from services.representation_cache import commit_and_invalidate_representation
 from database import AsyncSessionLocal
 from models import ParliamentBill
 from services.bill_visibility import sensitive_diavgeia_filter
@@ -107,7 +108,7 @@ async def _mark_hidden(successful_ids: list[str]) -> int:
         bills = result.scalars().all()
         for bill in bills:
             bill.admin_hidden = True
-        await db.commit()
+        await commit_and_invalidate_representation(db)
         return len(bills)
 
 

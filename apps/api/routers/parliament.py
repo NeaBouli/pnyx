@@ -25,7 +25,7 @@ from services.citizen_action_integrity import (
 )
 from services.source_links import official_source_url
 from services.source_freshness import get_source_freshness, bill_freshness
-from services.representation_cache import invalidate_representation_cache
+from services.representation_cache import commit_and_invalidate_representation
 from services.geographic_scope import validate_region_filter
 from models import (
     ParliamentBill, BillStatus, BillStatusLog, BillRelevanceVote,
@@ -550,7 +550,7 @@ async def flag_bill(
         await db.execute(text(
             "UPDATE parliament_bills SET flag_count = flag_count + 1 WHERE id = :bid"
         ), {"bid": bill_id})
-        await db.commit()
+        await commit_and_invalidate_representation(db)
     except IntegrityError as exc:
         await db.rollback()
         if _integrity_error_sqlstate(exc) != "23505":
@@ -606,8 +606,7 @@ async def transition_bill(
         to_status=new_status.value,
     )
     db.add(log)
-    await db.commit()
-    await invalidate_representation_cache()
+    await commit_and_invalidate_representation(db)
 
     # MOD-08: Arweave Auto-Publish bei PARLIAMENT_VOTED
     arweave_tx_id = None
@@ -617,7 +616,7 @@ async def transition_bill(
 
             await _hook_arweave_snapshot(db, bill)
             if bill.arweave_tx_id:
-                await db.commit()
+                await commit_and_invalidate_representation(db)
                 arweave_tx_id = bill.arweave_tx_id
                 logger.info("[MOD-08] Arweave TX: %s", arweave_tx_id)
         except Exception as arweave_err:
@@ -676,5 +675,5 @@ async def create_bill(
         status=BillStatus.ANNOUNCED,
     )
     db.add(bill)
-    await db.commit()
+    await commit_and_invalidate_representation(db)
     return {"success": True, "bill_id": req.id, "status": "ANNOUNCED"}

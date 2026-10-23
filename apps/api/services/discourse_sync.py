@@ -12,6 +12,7 @@ import httpx
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from services.representation_cache import commit_and_invalidate_representation
 from models import ParliamentBill, BillStatus, Periferia, Dimos
 from services.bill_visibility import public_bill_filter
 from services.content_provenance import (
@@ -748,7 +749,7 @@ async def resync_all_topics(db: AsyncSession) -> dict:
         if (i + 1) % 5 == 0:
             await asyncio.sleep(15)
 
-    await db.commit()
+    await commit_and_invalidate_representation(db)
 
     return {"total": len(bills), "updated": updated, "failed": failed}
 
@@ -802,7 +803,7 @@ async def sync_changed_bills_to_forum(db: AsyncSession) -> dict[str, int]:
             refreshed += 1
         else:
             failed += 1
-        await db.commit()
+        await commit_and_invalidate_representation(db)
         if refreshed + failed >= FORUM_REFRESH_BATCH:
             break
         if FORUM_SYNC_TOPIC_DELAY_SECONDS > 0:
@@ -857,7 +858,7 @@ async def sync_new_bills_to_forum(db: AsyncSession) -> dict[str, int]:
             await db.refresh(bill)
             topic_id = await create_discourse_topic(bill, db)
             bill.forum_topic_id = topic_id
-            await db.commit()
+            await commit_and_invalidate_representation(db)
             stats["created"] += 1
             logger.info("Forum topic %d ← bill %s", topic_id, bill.id)
             if FORUM_SYNC_TOPIC_DELAY_SECONDS > 0:
