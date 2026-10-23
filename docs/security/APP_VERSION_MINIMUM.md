@@ -12,10 +12,12 @@ before comparing. This is an update advisory, not API request enforcement.
 | --- | --- | --- |
 | Direct/Play 1.0.32 | 61 | Yes |
 | Direct/Play 1.0.33 | 62 | No |
-| Direct/Play 1.0.36 | 65 | No |
+| Direct/Play 1.0.37 | 66 | No |
 | F-Droid 1.0.32 | 611–614 | Yes |
 | F-Droid 1.0.33 | 621–624 | No |
-| F-Droid 1.0.36 | 651–654 | No |
+| F-Droid 1.0.36 (code-scheme example) | 651–654 | No |
+
+The F-Droid rows illustrate code compatibility, not release availability.
 
 `getCurrentVersionCode` reads the native build version, with Expo config as a
 fallback. Previously, `shouldOfferUpdate` only compared `latest_version_code`
@@ -36,10 +38,11 @@ this change does not add a blocking update screen.
 Already-installed clients cannot acquire new comparison logic from a JSON
 response. Existing F-Droid 1.0.32 clients still skip these prompts and must update
 through F-Droid. A raw comparison against 62 would also incorrectly accept
-611–614. Existing Direct/Play clients continue offering v1.0.36 through their
+611–614. Existing Direct/Play clients continue offering v1.0.37 through their
 usual latest-code check. New fields are additive and legacy camelCase download
 aliases are preserved. The new helper takes effect only in builds containing
-this change; the published v1.0.36 binary is not changed by this patch.
+this change; the published v1.0.36 binary predates the minimum-version helper
+patch and is not modified by it.
 
 Targeted regressions: `apps/api/tests/test_app_version.py` verifies the response
 contract and compatibility aliases; `apps/mobile/src/lib/update-channel.test.ts`

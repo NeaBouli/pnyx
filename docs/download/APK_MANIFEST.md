@@ -40,16 +40,16 @@ https://ekklesia.gr/representative/index.html
 
 | Field | Value |
 |---|---|
-| Version | 1.0.36 |
-| versionCode | 65 |
+| Version | 1.0.37 |
+| versionCode | 66 |
 | Package | ekklesia.gr |
-| Direct APK SHA-256 | `ece60ca1a0e9091bdb062d35a868f646d19002b37e82b7f54d77fc233581f5ec` |
-| Canonical APK URL | `https://github.com/NeaBouli/pnyx/releases/download/v1.0.36/ekklesia-v1.0.36-vC65-DIRECT.apk` |
-| Server alias | `https://ekklesia.gr/download/ekklesia-latest.apk` redirects to the v1.0.36 Direct APK (web `next.config.mjs`) |
-| Includes | Clearer no-name wording, safer key handling, one vote correction in the 24-hour window. |
+| Direct APK SHA-256 | `4efb7559242bcce0f01c27d4f4c96d97eadb0858b5f2b9b7c76361aed7a6a9a5` |
+| Canonical APK URL | `https://github.com/NeaBouli/pnyx/releases/download/v1.0.37/ekklesia-v1.0.37-vC66-DIRECT.apk` |
+| Server alias | `https://ekklesia.gr/download/ekklesia-latest.apk` redirects to the v1.0.37 Direct APK (web `next.config.mjs`) |
+| Includes | Last update date and time for Parliament data in the bills and trending lists. Notice when the data may be outdated. |
 
-The v1.0.36 URL and checksum above are the supplied release values for T-9157;
-this offline documentation update does not re-download or re-verify the binary.
+The v1.0.37 URL and checksum above are the integrator-verified release values
+for T-9172 (tag `v1.0.37` → commit `408a3203`).
 Historical v1.0.33 artifact/build/signature and Play Closed Testing evidence is
 recorded in [the vC62 release receipt](../operations/ANDROID_V62_RELEASE_2026-10-06.md).
 Google Play production access remains pending. F-Droid builds independently and
@@ -62,13 +62,13 @@ their installed channel. Changing channel requires uninstalling the installed
 copy first and then verifying again because the private voting key is stored
 only on that device installation.
 
-Post-publication validation command for the canonical v1.0.36 asset:
+Post-publication validation command for the canonical v1.0.37 asset:
 
 ```bash
 (
   set -euo pipefail
-  expected='ece60ca1a0e9091bdb062d35a868f646d19002b37e82b7f54d77fc233581f5ec'
-  actual="$(curl -fsSL https://github.com/NeaBouli/pnyx/releases/download/v1.0.36/ekklesia-v1.0.36-vC65-DIRECT.apk | sha256sum | awk '{print $1}')"
+  expected='4efb7559242bcce0f01c27d4f4c96d97eadb0858b5f2b9b7c76361aed7a6a9a5'
+  actual="$(curl -fsSL https://github.com/NeaBouli/pnyx/releases/download/v1.0.37/ekklesia-v1.0.37-vC66-DIRECT.apk | sha256sum | awk '{print $1}')"
   test "$actual" = "$expected"
   printf 'APK SHA256 verified: %s\n' "$actual"
 )

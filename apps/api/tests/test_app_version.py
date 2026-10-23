@@ -26,13 +26,13 @@ def test_mobile_build_metadata_is_consistent() -> None:
 
 
 def test_api_announces_only_the_published_release() -> None:
-    assert app_version.LATEST_VERSION == "1.0.36"
-    assert app_version.LATEST_VERSION_CODE == 65
+    assert app_version.LATEST_VERSION == "1.0.37"
+    assert app_version.LATEST_VERSION_CODE == 66
     assert app_version.RELEASE_NOTES_EL == (
-        "v1.0.36 — Σαφέστερη διατύπωση «χωρίς όνομα», ασφαλέστερος χειρισμός κλειδιών, μία διόρθωση ψήφου στο 24ωρο."
+        "v1.0.37 — Ημερομηνία και ώρα τελευταίας ενημέρωσης των δεδομένων της Βουλής στις λίστες νομοσχεδίων και δημοφιλών. Ειδοποίηση όταν τα δεδομένα ενδέχεται να μην είναι ενημερωμένα."
     )
     assert app_version.RELEASE_NOTES_EN == (
-        "v1.0.36 — Clearer no-name wording, safer key handling, one vote correction in the 24-hour window."
+        "v1.0.37 — Last update date and time for Parliament data in the bills and trending lists. Notice when the data may be outdated."
     )
 
 
@@ -44,8 +44,8 @@ async def test_app_version_direct_apk_url_points_to_file() -> None:
     assert response.status_code == 200
     data = response.json()
     assert data["direct_apk_url"] == (
-        "https://github.com/NeaBouli/pnyx/releases/download/v1.0.36/"
-        "ekklesia-v1.0.36-vC65-DIRECT.apk"
+        "https://github.com/NeaBouli/pnyx/releases/download/v1.0.37/"
+        "ekklesia-v1.0.37-vC66-DIRECT.apk"
     )
     assert not data["direct_apk_url"].endswith("/download/")
     assert data["playstore_url"] == "https://play.google.com/apps/testing/ekklesia.gr"
@@ -65,13 +65,13 @@ async def test_minimum_version_contract_preserves_legacy_and_fdroid_code_schemes
     }
     # Do not force all supported clients (including F-Droid 621-624) to update.
     assert data["force_update"] is False
-    assert data["latest_version_code"] == 65
+    assert data["latest_version_code"] == 66
     for channel in ("direct", "play"):
         minimum = data["min_required_version_code_by_channel"][channel]
-        assert 61 < minimum <= 62 <= 65
+        assert 61 < minimum <= 62 <= 66
     minimum = data["min_required_version_code_by_channel"]["fdroid"]
     assert all(code < minimum for code in range(611, 615))
-    assert all(code >= minimum for code in (*range(621, 625), *range(651, 655)))
+    assert all(code >= minimum for code in (*range(621, 625), *range(651, 655), *range(661, 665)))
 
 
 @pytest.mark.asyncio
@@ -82,8 +82,8 @@ async def test_legacy_version_download_url_matches_direct_apk_file() -> None:
     assert response.status_code == 200
     data = response.json()
     assert data["downloadUrl"] == (
-        "https://github.com/NeaBouli/pnyx/releases/download/v1.0.36/"
-        "ekklesia-v1.0.36-vC65-DIRECT.apk"
+        "https://github.com/NeaBouli/pnyx/releases/download/v1.0.37/"
+        "ekklesia-v1.0.37-vC66-DIRECT.apk"
     )
     assert not data["downloadUrl"].endswith("/download/")
     assert data["playStoreUrl"] == "https://play.google.com/apps/testing/ekklesia.gr"

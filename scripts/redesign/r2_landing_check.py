@@ -242,9 +242,9 @@ ALLOWED_T9106_CLAIMS_HASH = {
     "json_ld": "50d218729cc05d97bd7444bb5570a28a22d6df4cf214e687586b07729d52b8fa",
 }
 ALLOWED_APK_HREF_REPLACEMENT = {
-    # T-9157: reviewed Direct download refresh to v1.0.36/vC65. Play stays vC62.
+    # T-9172: reviewed Direct download refresh to v1.0.37/vC66. Play stays vC62.
     "https://github.com/NeaBouli/pnyx/releases/download/v1.0.32/ekklesia-v1.0.32-vC61-DIRECT.apk":
-        "https://github.com/NeaBouli/pnyx/releases/download/v1.0.36/ekklesia-v1.0.36-vC65-DIRECT.apk",
+        "https://github.com/NeaBouli/pnyx/releases/download/v1.0.37/ekklesia-v1.0.37-vC66-DIRECT.apk",
 }
 ALLOWED_DEMO_CYCLE_INTERACTION_COUNTS = {"add_event_listener_count": 8, "set_timeout_count": 2}
 ALLOWED_DEMO_CYCLE_FORM_CONTROLS = ({"tag": "button", "type": "button", "id": "cycleToggle"},)

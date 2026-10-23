@@ -20,7 +20,7 @@ export default function proxy(request: NextRequest) {
   // next.config.mjs redirects (middleware matcher excludes dotted paths).
   if (p === "/download" || p === "/download/" || p === "/el/download" || p === "/en/download") {
     return NextResponse.redirect(
-      "https://github.com/NeaBouli/pnyx/releases/download/v1.0.36/ekklesia-v1.0.36-vC65-DIRECT.apk",
+      "https://github.com/NeaBouli/pnyx/releases/download/v1.0.37/ekklesia-v1.0.37-vC66-DIRECT.apk",
       302,
     );
   }
