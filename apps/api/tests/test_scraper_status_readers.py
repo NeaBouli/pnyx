@@ -120,8 +120,7 @@ async def test_host_cooldown_status_survives_restart_and_is_counts_only(env, scr
     monkeypatch.setattr(scraper, "ollama_available", AsyncMock(return_value=False))
     url = "https://www.hellenicparliament.gr/private?token=secret"
     original = scraper_http.HostRateLimiter()
-    original.observe(url, 403, {})
-    await original.persist(url)
+    await original.record(url, 403, {})
     until = (await original.status(url))["cooldown_until"]
     monkeypatch.setattr(scraper_http, "host_limiter", scraper_http.HostRateLimiter())
     writes = scraper_redis.writes
@@ -142,8 +141,7 @@ async def test_host_cooldown_status_uses_local_evidence_during_outage(env, scrap
 
     monkeypatch.setattr(scraper, "ollama_available", AsyncMock(return_value=False))
     limiter = scraper_http.host_limiter
-    limiter.observe("https://hellenicparliament.gr/", 403, {})
-    await limiter.persist("https://hellenicparliament.gr/")
+    await limiter.record("https://hellenicparliament.gr/", 403, {})
     known = await limiter.status("https://hellenicparliament.gr/")
     scraper_redis.down = True
     assert (await _get(path))["host_cooldowns"] == {

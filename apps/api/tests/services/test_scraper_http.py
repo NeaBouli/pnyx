@@ -66,7 +66,7 @@ async def test_retry_after_dates_ignore_past_and_far_future(scraper_clock, offse
 
 async def test_forbidden_cooldown_expires_and_does_not_block_other_hosts(scraper_clock):
     limiter = scraper_clock.limiter
-    limiter.observe("https://example.org/a", 403, {})
+    await limiter.record("https://example.org/a", 403, {})
     for url in ("https://example.org/b", "http://EXAMPLE.org/a"):
         with pytest.raises(HostCooldown):
             await limiter.acquire(url)
@@ -93,7 +93,7 @@ async def test_http_redirect_attempts_are_paced(scraper_clock):
 
 @respx.mock
 async def test_source_cooldown_cannot_be_bypassed_via_jina(scraper_clock):
-    scraper_clock.limiter.observe("https://www.hellenicparliament.gr/", 403, {})
+    await scraper_clock.limiter.record("https://www.hellenicparliament.gr/", 403, {})
     async with httpx.AsyncClient(event_hooks=SCRAPER_HTTP_HOOKS) as client:
         with pytest.raises(HostCooldown):
             await client.get("https://r.jina.ai/https://www.hellenicparliament.gr/law?private=value")
@@ -119,7 +119,7 @@ async def test_source_cooldown_is_rechecked_after_queue(scraper_clock, monkeypat
     original_sleep = scraper_http.asyncio.sleep
 
     async def forbidden_while_queued(delay):
-        limiter.observe(source, 403, {})
+        await limiter.record(source, 403, {})
         await original_sleep(delay)
 
     monkeypatch.setattr(scraper_http.asyncio, "sleep", forbidden_while_queued)
@@ -138,7 +138,7 @@ async def test_jina_source_is_rechecked_after_queue_without_extensions(scraper_c
     original_sleep = scraper_http.asyncio.sleep
 
     async def forbidden_while_queued(delay):
-        scraper_clock.limiter.observe("https://www.hellenicparliament.gr/", 403, {})
+        await scraper_clock.limiter.record("https://www.hellenicparliament.gr/", 403, {})
         await original_sleep(delay)
 
     monkeypatch.setattr(scraper_http.asyncio, "sleep", forbidden_while_queued)
@@ -160,7 +160,7 @@ async def test_cross_host_redirect_retains_source_cooldown(scraper_clock, monkey
     original_sleep = scraper_http.asyncio.sleep
 
     async def forbidden_while_queued(delay):
-        scraper_clock.limiter.observe(source, 403, {})
+        await scraper_clock.limiter.record(source, 403, {})
         await original_sleep(delay)
 
     monkeypatch.setattr(scraper_http.asyncio, "sleep", forbidden_while_queued)
@@ -201,20 +201,17 @@ async def test_backoff_survives_expiry_and_restart_then_resets_on_success(scrape
     limiter = HostRateLimiter()
     for count, hours in enumerate((6, 12, 24, 48, 48), start=1):
         await limiter.acquire(url)
-        limiter.observe(url, 403, {})
-        await limiter.persist(url)
+        await limiter.record(url, 403, {})
         status = await limiter.status(url)
         assert status == {"cooldown_until": scraper_clock.time() + hours * 3600, "consecutive_403": count}
         scraper_clock.now += hours * 3600
         assert await scraper_redis.get("scraper:host:example.org:cooldown") is None
         limiter = HostRateLimiter()
     await limiter.acquire(url)
-    limiter.observe(url, 200, {})
-    await limiter.persist(url)
+    await limiter.record(url, 200, {})
     assert await HostRateLimiter().status(url) == {"cooldown_until": None, "consecutive_403": 0}
-    assert scraper_redis.values == {}
-    limiter.observe(url, 403, {})
-    await limiter.persist(url)
+    assert not any(k.endswith((":cooldown", ":streak", ":lease")) for k in scraper_redis.values)
+    await limiter.record(url, 403, {})
     assert (await limiter.status(url))["cooldown_until"] == scraper_clock.time() + 6 * 3600
 
 
@@ -223,8 +220,7 @@ async def test_backoff_survives_expiry_and_restart_then_resets_on_success(scrape
 async def test_redis_outage_fails_closed_even_for_unknown_hosts(scraper_clock, scraper_redis, known):
     url = "https://example.org/"
     if known:
-        scraper_clock.limiter.observe(url, 403, {})
-        await scraper_clock.limiter.persist(url)
+        await scraper_clock.limiter.record(url, 403, {})
         scraper_clock.now += 6 * 3600
     scraper_redis.down = True
     async with httpx.AsyncClient(event_hooks=SCRAPER_HTTP_HOOKS) as client:
@@ -234,22 +230,25 @@ async def test_redis_outage_fails_closed_even_for_unknown_hosts(scraper_clock, s
 
 
 @respx.mock
-async def test_failed_write_keeps_local_cooldown_and_recovers(scraper_clock, scraper_redis):
+async def test_failed_outcome_defers_without_pending_local_increments(scraper_clock, scraper_redis):
+    from services.scraper_http import HOST_LEASE_MS
+
     url = "https://example.org/"
     scraper_redis.write_down = True
     blocked = respx.get(url).respond(403)
     async with httpx.AsyncClient(event_hooks=SCRAPER_HTTP_HOOKS) as client:
-        with pytest.raises(HostCooldown):
+        with pytest.raises(HostCooldown, match="state unavailable"):
             await client.get(url)
-        assert await scraper_clock.limiter.status(url) == {
-            "cooldown_until": scraper_clock.time() + 6 * 3600, "consecutive_403": 1,
-        }
-        with pytest.raises(HostCooldown):
+        assert await scraper_clock.limiter.status(url) == {"cooldown_until": None, "consecutive_403": 0}
+        # Keep the lease after an unacknowledged outcome, including on recovery.
+        with pytest.raises(HostCooldown, match="lease busy"):
             await client.get(url)
         scraper_redis.write_down = False
-        with pytest.raises(HostCooldown):
+        with pytest.raises(HostCooldown, match="lease busy"):
             await client.get(url)
-    assert blocked.call_count == 1
+        assert blocked.call_count == 1
+        scraper_clock.now += HOST_LEASE_MS / 1000
+        assert (await client.get(url)).status_code == 403
     assert (await HostRateLimiter().status(url))["consecutive_403"] == 1
 
 
@@ -263,24 +262,28 @@ async def test_invalid_persisted_state_fails_closed(scraper_redis, raw):
     assert len(respx.calls) == 0
 
 
-async def test_concurrent_workers_keep_all_403s_and_success_cannot_clear_block(scraper_clock):
+async def test_reset_uses_persisted_count_and_fences_old_generation(scraper_clock, scraper_redis):
+    from services.scraper_http import HOST_LEASE_MS
+
     url = "https://example.org/"
     first, second = HostRateLimiter(), HostRateLimiter()
-    await first.acquire(url)
-    await second.acquire(url)
-    first.observe(url, 403, {})
-    second.observe(url, 403, {})
-    second.observe(url, 403, {})
-    await asyncio.gather(first.persist(url), second.persist(url))
-    assert await HostRateLimiter().status(url) == {
-        "cooldown_until": scraper_clock.time() + 24 * 3600, "consecutive_403": 3,
-    }
-    # A worker with expired local evidence must not erase a newer remote block.
-    scraper_clock.now += 6 * 3600
-    first.observe(url, 200, {})
-    await first.persist(url)
+    # Both workers saw an expired streak of three.
+    scraper_redis.values["scraper:host:example.org:streak"] = "3"
+    await first.check_persisted(url)
+    await second.check_persisted(url)
+    assert first._state(url).consecutive_403 == second._state(url).consecutive_403 == 3
+    stale = (await second.reserve(url))[0]
+    scraper_clock.now += HOST_LEASE_MS / 1000
+    await first.record(url, 200, {})
+    # A delayed response from the previous lease cannot resurrect that streak.
     with pytest.raises(HostCooldown):
-        await first.acquire(url)
+        await second.record(url, 403, {}, lease=stale)
+    assert await first.status(url) == {"cooldown_until": None, "consecutive_403": 0}
+    # A new response uses persisted zero, even with stale local display evidence.
+    await second.record(url, 403, {})
+    assert await first.status(url) == {
+        "cooldown_until": scraper_clock.time() + 6 * 3600, "consecutive_403": 1,
+    }
 
 
 @respx.mock
@@ -313,19 +316,180 @@ async def test_403_response_is_observed_before_queued_request_leaves(scraper_clo
     url = "https://example.org/"
     await scraper_clock.limiter.acquire(url)
     original_sleep = scraper_http.asyncio.sleep
-    tasks = []
 
     async def response_while_queued(delay):
-        tasks.append(asyncio.create_task(scraper_http.record_response(
-            httpx.Response(403, request=httpx.Request("GET", url)),
-        )))
-        await asyncio.sleep(0)
+        await HostRateLimiter().record(url, 403, {})
         await original_sleep(delay)
 
     monkeypatch.setattr(scraper_http.asyncio, "sleep", response_while_queued)
     async with httpx.AsyncClient(event_hooks=SCRAPER_HTTP_HOOKS) as client:
         with pytest.raises(HostCooldown):
             await client.get(url)
-    await asyncio.gather(*tasks)
     assert len(respx.calls) == 0
     assert (await scraper_clock.limiter.status(url))["consecutive_403"] == 1
+
+
+def worker_hooks(limiter):
+    from functools import partial
+    from services.scraper_http import pace_request, record_response
+    return {"request": [partial(pace_request, limiter=limiter)],
+            "response": [partial(record_response, limiter=limiter)]}
+
+
+@respx.mock
+async def test_two_workers_403_between_admission_and_dispatch_does_not_send(scraper_clock, monkeypatch):
+    url = "https://example.org/private?token=secret"
+    first, second = HostRateLimiter(min_interval=0), HostRateLimiter(min_interval=0)
+    in_flight, admission, persist = asyncio.Event(), asyncio.Event(), asyncio.Event()
+
+    async def forbidden(request):
+        in_flight.set()
+        await persist.wait()
+        return httpx.Response(403)
+
+    route = respx.get(url).mock(side_effect=forbidden)
+    original_acquire = second.acquire
+
+    async def pause_after_admission(target):
+        await original_acquire(target)
+        admission.set()
+        await persist.wait()
+
+    monkeypatch.setattr(second, "acquire", pause_after_admission)
+    async with httpx.AsyncClient(event_hooks=worker_hooks(first)) as a, httpx.AsyncClient(event_hooks=worker_hooks(second)) as b:
+        first_request = asyncio.create_task(a.get(url))
+        await in_flight.wait()
+        second_request = asyncio.create_task(b.get(url))
+        await admission.wait()
+        persist.set()
+        assert (await first_request).status_code == 403
+        with pytest.raises(HostCooldown):
+            await second_request
+    assert route.call_count == 1
+    assert (await second.status(url))["consecutive_403"] == 1
+
+
+@respx.mock
+async def test_final_admission_lease_excludes_another_worker_until_persistence(scraper_clock, monkeypatch, scraper_redis):
+    url = "https://example.org/"
+    first, second = HostRateLimiter(min_interval=0), HostRateLimiter(min_interval=0)
+    admitted, dispatch, persisting, commit = (asyncio.Event() for _ in range(4))
+    original_admission = first._admission
+    original_record = first.record
+
+    async def pause_before_send(target, token=""):
+        await original_admission(target, token)
+        if token:
+            admitted.set()
+            await dispatch.wait()
+
+    async def pause_persistence(*args, **kwargs):
+        persisting.set()
+        await commit.wait()
+        await original_record(*args, **kwargs)
+
+    monkeypatch.setattr(first, "_admission", pause_before_send)
+    monkeypatch.setattr(first, "record", pause_persistence)
+    route = respx.get(url).respond(403)
+    async with httpx.AsyncClient(event_hooks=worker_hooks(first)) as a, httpx.AsyncClient(event_hooks=worker_hooks(second)) as b:
+        request = asyncio.create_task(a.get(url))
+        await admitted.wait()
+        with pytest.raises(HostCooldown, match="lease busy"):
+            await b.get(url)
+        assert route.call_count == 0
+        dispatch.set()
+        await persisting.wait()
+        with pytest.raises(HostCooldown, match="lease busy"):
+            await b.get(url)
+        assert route.call_count == 1
+        commit.set()
+        assert (await request).status_code == 403
+        with pytest.raises(HostCooldown):
+            await b.get(url)
+    assert route.call_count == 1 and scraper_clock.sleeps == []
+    assert await scraper_redis.get("scraper:host:example.org:lease") is None
+
+
+@pytest.mark.parametrize("offset", [61, -61, 10 * 365 * 86400, -10 * 365 * 86400])
+@respx.mock
+async def test_admission_uses_server_ttl_with_independent_worker_clock(scraper_clock, scraper_redis, monkeypatch, offset):
+    server = [1_800_000_000.0]
+    scraper_redis.server_time = lambda: server[0]
+    monkeypatch.setattr(scraper_clock, "time", lambda: server[0] + offset)
+    url = "https://example.org/"
+    first = HostRateLimiter(forbidden_cooldown=60)
+    await first.record(url, 403, {})
+    second = HostRateLimiter(min_interval=0)
+    assert await second.status(url) == {"cooldown_until": server[0] + 60, "consecutive_403": 1}
+    route = respx.get(url).respond(403)
+    async with httpx.AsyncClient(event_hooks=worker_hooks(second)) as client:
+        with pytest.raises(HostCooldown):
+            await client.get(url)
+        server[0] += 59.999
+        with pytest.raises(HostCooldown):
+            await client.get(url)
+        server[0] += .001
+        assert (await client.get(url)).status_code == 403
+    assert route.call_count == 1
+    assert (await second.status(url))["cooldown_until"] == server[0] + 12 * 3600
+
+
+@respx.mock
+async def test_lost_commit_ack_and_replayed_response_increment_once(scraper_clock, scraper_redis):
+    from services.scraper_http import record_response
+    url = "https://example.org/"
+    scraper_redis.lose_ack = 1
+    route = respx.get(url).respond(403)
+    async with httpx.AsyncClient(event_hooks=SCRAPER_HTTP_HOOKS) as client:
+        response = await client.get(url)
+        await record_response(response)
+        with pytest.raises(HostCooldown):
+            await client.get(url)
+    assert scraper_redis.lose_ack == 0 and route.call_count == 1
+    assert await HostRateLimiter().status(url) == {
+        "cooldown_until": scraper_clock.time() + 6 * 3600, "consecutive_403": 1,
+    }
+
+
+async def test_stale_release_and_success_cannot_mutate_new_lease(scraper_clock, scraper_redis):
+    from services.scraper_http import HOST_LEASE_MS
+    url = "https://example.org/"
+    first, second = HostRateLimiter(), HostRateLimiter()
+    old = await first.reserve(url)
+    scraper_clock.now += HOST_LEASE_MS / 1000
+    current = await second.reserve(url)
+    await first.release(old)
+    assert await scraper_redis.get("scraper:host:example.org:lease") == current[0].token
+    await second.record(url, 403, {}, lease=current[0])
+    with pytest.raises(HostCooldown):
+        await first.record(url, 200, {}, lease=old[0])
+    assert (await second.status(url))["consecutive_403"] == 1
+    await second.release(current)
+
+
+@respx.mock
+async def test_source_lease_and_target_lease_are_both_held(scraper_clock):
+    source, target = "https://z-source.example.org/", "https://a-target.example.org/"
+    first, second = HostRateLimiter(), HostRateLimiter()
+    leases = await first.reserve(source)
+    route = respx.get(target).respond(200)
+    async with httpx.AsyncClient(event_hooks=worker_hooks(second)) as client:
+        with pytest.raises(HostCooldown, match="lease busy"):
+            await client.get(target, extensions={"scraper_source_url": source})
+        # A partially acquired lease set must be released on deferral.
+        await first.release(leases)
+        assert (await client.get(target, extensions={"scraper_source_url": source})).status_code == 200
+    assert route.call_count == 1
+
+
+@respx.mock
+async def test_redis_failure_acquiring_lease_defers_and_logs_counts_only(scraper_clock, scraper_redis, caplog):
+    import logging
+    caplog.set_level(logging.INFO)
+    scraper_redis.set_down = True
+    async with httpx.AsyncClient(event_hooks=SCRAPER_HTTP_HOOKS) as client:
+        with pytest.raises(HostCooldown, match="state unavailable"):
+            await client.get("https://example.org/private?token=secret")
+    assert len(respx.calls) == 0 and scraper_clock.sleeps == []
+    assert "deferred=1" in caplog.text
+    assert all(value not in caplog.text for value in ("example.org", "private", "secret", "Redis unavailable"))

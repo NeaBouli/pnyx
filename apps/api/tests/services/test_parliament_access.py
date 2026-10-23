@@ -117,7 +117,7 @@ async def test_parliament_aliases_share_ten_second_pacing_and_cooldown(scraper_c
     await limiter.acquire(BASE + "/one")
     await limiter.acquire("https://hellenicparliament.gr/two")
     assert scraper_clock.sleeps == [10]
-    limiter.observe(BASE, 403, {})
+    await limiter.record(BASE, 403, {})
     with pytest.raises(HostCooldown):
         await limiter.acquire("https://hellenicparliament.gr/three")
 

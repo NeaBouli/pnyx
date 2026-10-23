@@ -574,13 +574,14 @@ async def test_direct_diavgeia_retries_are_paced(scraper_clock):
 
 
 @respx.mock
-async def test_exceptions_and_failed_run_counts_do_not_leak(caplog, monkeypatch):
+async def test_exceptions_and_deferred_run_counts_do_not_leak(caplog, monkeypatch):
     caplog.set_level(logging.INFO)
     respx.get(f"{fetcher.JINA_URL}{LAW}").mock(side_effect=httpx.ConnectError("private-name " + LAW))
     respx.get(LAW).mock(side_effect=httpx.ConnectError("private-name " + LAW))
     monkeypatch.setattr(fetcher, "_channel_playwright", AsyncMock(return_value=""))
     assert await fetcher.fetch_bill_text("private-id", LAW) == ""
-    assert "fetched=0 skipped=0 failed=1" in caplog.text
+    # A transport failure abandons its lease; the retry defers until expiry.
+    assert "fetched=0 skipped=1 failed=0" in caplog.text
     for private in ("private-name", "private-id", "https://"):
         assert private not in caplog.text
 
