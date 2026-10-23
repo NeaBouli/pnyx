@@ -255,13 +255,50 @@ async def test_creation_timeout_is_discovered_by_cleanup(store, provider, monkey
     assert (await newsletter_dispatch.cleanup_temporary_campaign_lists())["deleted"] == 1
 
 
-async def test_cleanup_reads_all_pages_before_deleting(store, provider):
+@pytest.mark.parametrize("size", [0, 49, 50, 51, 99, 100, 101, 501])
+async def test_cleanup_reads_all_pages_before_deleting(store, provider, monkeypatch, size):
     now = int(datetime.now(timezone.utc).timestamp())
-    for list_id in range(1000, 1501):
+    for list_id in range(1000, 1000 + size):
         provider.lists[list_id] = {"id": list_id, "folderId": 1,
                                   "name": f"{newsletter_dispatch.TEMP_PREFIX}{now-86401}-{uuid4().hex}"}
-    assert await newsletter_dispatch.cleanup_temporary_campaign_lists() == {"selected": 501, "deleted": 501, "failed": 0}
-    assert len(set(provider.deleted)) == 501
+    original = provider.request
+    pages = []
+
+    def request(req):
+        if req.method == "GET" and req.url.path == "/v3/contacts/lists":
+            assert not provider.deleted  # Deletion must not shift later pages.
+            assert int(req.url.params["limit"]) == 50
+            pages.append(int(req.url.params["offset"]))
+        return original(req)
+
+    monkeypatch.setattr(provider, "request", request)
+    assert await newsletter_dispatch.cleanup_temporary_campaign_lists() == {"selected": size, "deleted": size, "failed": 0}
+    assert pages == list(range(0, size + 1, 50))  # Includes the enrollment list.
+    assert len(set(provider.deleted)) == size
+    assert set(provider.lists) == {newsletter_service.LIST_ID}
+
+
+async def test_cleanup_page_failure_is_reported_and_retry_deletes_every_leftover(store, provider, monkeypatch):
+    now = int(datetime.now(timezone.utc).timestamp())
+    for list_id in range(1000, 1100):
+        provider.lists[list_id] = {"id": list_id, "folderId": 1,
+                                  "name": f"{newsletter_dispatch.TEMP_PREFIX}{now-86401}-{uuid4().hex}"}
+    original = provider.request
+
+    def request(req):
+        if (req.method == "GET" and req.url.path == "/v3/contacts/lists"
+                and req.url.params["offset"] == "50"):
+            return httpx.Response(503, text=EMAIL + " private-provider-token")
+        return original(req)
+
+    monkeypatch.setattr(provider, "request", request)
+    with pytest.raises(newsletter_audience.AudienceUnavailable) as caught:
+        await newsletter_dispatch.cleanup_temporary_campaign_lists()
+    assert caught.value.reason == "provider_unavailable"
+    assert EMAIL not in str(caught.value)
+    assert not provider.deleted
+    monkeypatch.setattr(provider, "request", original)
+    assert await newsletter_dispatch.cleanup_temporary_campaign_lists() == {"selected": 100, "deleted": 100, "failed": 0}
     assert set(provider.lists) == {newsletter_service.LIST_ID}
 
 
