@@ -78,11 +78,19 @@ async def _brevo_request(method: str, endpoint: str, data: dict | None = None) -
                 headers={"api-key": BREVO_API_KEY}, json=data,
             )
         if not 200 <= response.status_code < 300:
+            if endpoint.endswith("/sendNow") and 400 <= response.status_code < 500:
+                raise newsletter_service.CampaignNotSent()
             raise ValueError()
         result = response.json() if response.text else {}
         if not isinstance(result, dict):
             raise ValueError()
         return result
+    except newsletter_service.CampaignNotSent:
+        raise
+    except (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout):
+        if endpoint.endswith("/sendNow"):
+            raise newsletter_service.CampaignNotSent() from None
+        raise HTTPException(503, "Newsletter provider unavailable; retry") from None
     except Exception:
         logger.warning("[NEWSLETTER] Provider request unavailable")
         raise HTTPException(503, "Newsletter provider unavailable; retry") from None
@@ -405,21 +413,37 @@ async def newsletter_send(req: SendRequest, _auth: bool = Depends(verify_admin_k
     if not req.confirm:
         raise HTTPException(400, "Confirmation required: confirm=true")
 
+    from services.newsletter_claims import DispatchClaim
+
     audience = None
+    claim = None
     try:
         async with newsletter_lock() as lease:
-            campaign = await _brevo_request("GET", f"emailCampaigns/{req.campaign_id}")
-            plan = campaign_plan(campaign.get("tag"))
-            audience = await prepare_audience(lease.store, plan)
-            if not audience.selected:
-                log_audience("ready", audience.counts)
-                return {"reason": "ready", **audience.counts, "sent": 0}
-            async with temporary_campaign_list(lease, audience) as target:
-                # Fully replace any historical shared list or segment recipients.
-                await _brevo_request("PUT", f"emailCampaigns/{req.campaign_id}", {"recipients": target.recipients})
-                await target.verify_campaign(req.campaign_id)
-                audience = await authorize_dispatch(lease, plan, audience, target)
-                await _brevo_request("POST", f"emailCampaigns/{req.campaign_id}/sendNow", {})
+            # The provider campaign ID is the stable identity of this send request.
+            claim = await DispatchClaim.acquire(lease, f"admin:{req.campaign_id}", req.campaign_id)
+            if claim.state in {"sent", "uncertain"}:
+                return {"reason": "already_sent" if claim.state == "sent" else "dispatch_uncertain",
+                        "sent": 0, "uncertain": int(claim.state == "uncertain")}
+            async with claim.attempt():
+                campaign = await _brevo_request("GET", f"emailCampaigns/{req.campaign_id}")
+                if campaign.get("status") == "sent":
+                    await claim.write("sent")
+                    return {"reason": "already_sent", "sent": 0}
+                plan = campaign_plan(campaign.get("tag"))
+                audience = await prepare_audience(lease.store, plan)
+                if not audience.selected:
+                    await claim.write("failed")
+                    log_audience("ready", audience.counts)
+                    return {"reason": "ready", **audience.counts, "sent": 0}
+                async with temporary_campaign_list(lease, audience) as target:
+                    # Fully replace any historical shared list or segment recipients.
+                    await _brevo_request("PUT", f"emailCampaigns/{req.campaign_id}", {"recipients": target.recipients})
+                    await target.verify_campaign(req.campaign_id)
+                    audience = await authorize_dispatch(lease, plan, audience, target)
+                    await claim.send(
+                        lambda: _brevo_request("POST", f"emailCampaigns/{req.campaign_id}/sendNow", {}),
+                        audience.counts, "audience_unavailable",
+                    )
     except AudienceUnavailable as exc:
         log_audience(exc.reason, exc.counts)
         raise HTTPException(503, exc.detail) from None
@@ -449,3 +473,14 @@ async def newsletter_send(req: SendRequest, _auth: bool = Depends(verify_admin_k
 
     log_audience("sent", audience.counts)
     return {"reason": "sent", **audience.counts, "sent": audience.counts["selected"], "telegram_sent": int(tg_sent)}
+
+
+@router.get("/dispatch-status")
+async def newsletter_dispatch_status(_auth: bool = Depends(verify_admin_key)) -> dict[str, int]:
+    from routers.newsletter import _get_redis
+    from services.newsletter_claims import dispatch_status
+
+    try:
+        return await dispatch_status(await _get_redis())
+    except Exception:
+        raise HTTPException(503, "Newsletter dispatch status unavailable; retry") from None

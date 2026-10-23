@@ -66,12 +66,13 @@ class ReconfirmRedis(MemoryRedis):
             self.hashes[confirmed][email] = attempted
             self.hashes[registry][normalized] = attempted
         elif script == CONFIRM_RECONFIRM:
-            token, confirmed, registry, suppressed = keys
+            token, confirmed, registry, suppressed, retry = keys
             invitation, email, normalized, raw, evidence = values
             if (self.pending.get(token) != invitation or normalized in self.hashes[suppressed]
                     or self.hashes[confirmed].get(email) != raw or self.hashes[registry].get(normalized) != raw):
                 return 0
             self.hashes[confirmed][email] = evidence
+            self.hashes[retry][email] = "1"
             self.hashes[registry].pop(normalized)
             self.pending.pop(token)
         elif script == EXPIRE_RECONFIRM:

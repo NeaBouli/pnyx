@@ -36,6 +36,10 @@ class ContactNotWritten(Exception):
     """Enrollment failed before send or was definitively rejected by the provider."""
 
 
+class CampaignNotSent(Exception):
+    """The send request did not reach the provider or was definitively rejected."""
+
+
 class _ContactRequestLogFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         # httpcore traces raw response headers (e.g. Location) without a URL.
@@ -87,12 +91,16 @@ async def _brevo_post(endpoint: str, data: dict, *, track_enrollment: bool = Fal
             if r.status_code in (200, 201, 202, 204):
                 return r.json() if r.text else {}
             logger.warning("[NEWSLETTER] Brevo request failed: status=%s", r.status_code)
+            if endpoint.endswith("/sendNow") and 400 <= r.status_code < 500:
+                raise CampaignNotSent()
             if track_enrollment and 300 <= r.status_code < 500:
                 raise ContactNotWritten()
-    except ContactNotWritten:
+    except (ContactNotWritten, CampaignNotSent):
         raise
     except (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout):
         logger.error("[NEWSLETTER] Brevo request failed before send")
+        if endpoint.endswith("/sendNow"):
+            raise CampaignNotSent() from None
         if track_enrollment:
             raise ContactNotWritten() from None
     except Exception:
@@ -416,19 +424,32 @@ async def send_monthly_report(db: AsyncSession) -> bool:
         CampaignPlan, AudienceUnavailable, prepare_audience, authorize_dispatch, log_audience,
     )
     from services.newsletter_dispatch import temporary_campaign_list
+    from services.newsletter_claims import DispatchClaim, dispatch_status
     # Keep one lease across both language snapshots and provider dispatches.
     audience = None
     try:
         async with newsletter_lock() as lease:
             plans = [CampaignPlan(language=language) for language in ("el", "en")]
-            audiences = [await prepare_audience(lease.store, plan) for plan in plans]
-            for plan, audience in zip(plans, audiences):
-                if not audience.selected:
-                    continue
-                await audience.check(lease.store)
-                await lease.check()
-                async with temporary_campaign_list(lease, audience) as target:
-                    result = await _brevo_post("emailCampaigns", {
+            complete = True
+            for plan in plans:
+                claim = None
+                try:
+                    claim = await DispatchClaim.acquire(lease, f"monthly:{now:%Y-%m}:{plan.language}")
+                    if claim.state == "sent":
+                        continue
+                    if claim.state == "uncertain":
+                        complete = False
+                        log_audience("dispatch_uncertain", {"uncertain": 1})
+                        continue
+                    audience = await prepare_audience(lease.store, plan)
+                    if not audience.selected:
+                        # Leave an unsent language resumable when enrollment settles.
+                        await claim.write("failed")
+                        continue
+                    await audience.check(lease.store)
+                    await lease.check()
+                    async with temporary_campaign_list(lease, audience) as target:
+                        payload = {
                         "name": f"Monthly Report {month_name} ({plan.language})",
                         "subject": f"ekklesia.gr — {'Monthly Report' if plan.language == 'en' else 'Μηνιαία Αναφορά'} {month_name}",
                         "sender": SENDER,
@@ -437,16 +458,33 @@ async def send_monthly_report(db: AsyncSession) -> bool:
                         "tag": plan.tag,
                         "recipients": target.recipients,
                         "htmlContent": render(plan.language),
-                    })
-                    if not result or not result.get("id"):
-                        raise AudienceUnavailable("provider_unavailable", audience.counts)
-                    await target.verify_campaign(result["id"])
-                    audience = await authorize_dispatch(lease, plan, audience, target)
-                    sent = await _brevo_post(f"emailCampaigns/{result['id']}/sendNow", {})
-                    if sent is None:
-                        raise AudienceUnavailable("provider_unavailable", audience.counts)
-                log_audience("sent", audience.counts)
-            return True
+                        }
+                        if claim.campaign_id is None:
+                            result = await _brevo_post("emailCampaigns", payload)
+                            campaign_id = result.get("id") if isinstance(result, dict) else None
+                            if type(campaign_id) is not int or campaign_id <= 0:
+                                raise AudienceUnavailable("provider_unavailable", audience.counts)
+                            await claim.write("claimed", campaign_id)
+                        else:
+                            # A definitely unsent draft keeps its original provider ID.
+                            from services.newsletter_dispatch import provider_request
+                            await provider_request("PUT", f"emailCampaigns/{claim.campaign_id}", payload)
+                        await target.verify_campaign(claim.campaign_id)
+                        audience = await authorize_dispatch(lease, plan, audience, target)
+                        await claim.send(
+                            lambda: _brevo_post(f"emailCampaigns/{claim.campaign_id}/sendNow", {}),
+                            audience.counts, "provider_unavailable",
+                        )
+                    log_audience("sent", audience.counts)
+                except AudienceUnavailable as exc:
+                    if claim is not None and claim.state == "claimed":
+                        await claim.write("failed")
+                    complete = False
+                    log_audience(exc.reason, exc.counts)
+            status = await dispatch_status(lease.store)
+            logger.info("[NEWSLETTER] Dispatch claimed=%d sent=%d failed=%d uncertain=%d",
+                        *(status[state] for state in ("claimed", "sent", "failed", "uncertain")))
+            return complete
     except AudienceUnavailable as exc:
         log_audience(exc.reason, exc.counts)
     except Exception as exc:

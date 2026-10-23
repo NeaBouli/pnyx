@@ -63,7 +63,9 @@ class Provider:
                 self.lists[list_id] = {"id": list_id, **body}
                 return httpx.Response(201, json={"id": list_id})
             offset = int(request.url.params["offset"])
-            return httpx.Response(200, json={"lists": list(self.lists.values())[offset:offset + 500], "count": len(self.lists)})
+            limit = int(request.url.params["limit"])
+            assert 0 < limit <= 50
+            return httpx.Response(200, json={"lists": list(self.lists.values())[offset:offset + limit], "count": len(self.lists)})
         if path.startswith("contacts/lists/"):
             list_id = int(path.split("/")[2])
             if request.method == "DELETE":
@@ -111,6 +113,7 @@ class Provider:
                 self.delivered.append({email for email, contact in self.contacts.items()
                                        if set(campaign["recipients"]["listIds"]).intersection(contact["listIds"])})
                 self.sent.append(campaign)
+                self.campaigns[campaign_id]["status"] = "sent"
                 return httpx.Response(204)
             if request.method == "PUT":
                 self.campaigns[campaign_id].update(body)

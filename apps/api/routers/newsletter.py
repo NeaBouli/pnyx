@@ -742,8 +742,8 @@ async def confirm_subscription(token: str, request: Request = None) -> HTMLRespo
                         if not key.startswith("reconfirm_") and key != "consent_state"}
                 data["confirmation_source"] = "legacy_reconfirmation"
                 confirmed_raw = confirmation_payload(data, confirmed_at)
-                result = await r.eval(CONFIRM_RECONFIRM, 4, reconfirm_token_key(token), CONFIRMED_KEY,
-                                      RECONFIRM_KEY, SUPPRESSED_KEY, reconfirm_raw, email,
+                result = await r.eval(CONFIRM_RECONFIRM, 5, reconfirm_token_key(token), CONFIRMED_KEY,
+                                      RECONFIRM_KEY, SUPPRESSED_KEY, BREVO_ADD_RETRY_KEY, reconfirm_raw, email,
                                       email.casefold(), current, confirmed_raw)
                 if result == 1:
                     await _reconcile_consent_aliases(r, email.casefold(), confirmed_at)
@@ -763,7 +763,7 @@ async def confirm_subscription(token: str, request: Request = None) -> HTMLRespo
                         and _reconfirm_deadline(old) <= confirmed_at):
                     await r.eval(RECONCILE_CONSENT_ALIASES, 1, CONFIRMED_KEY, json.dumps({email: existing}), "")
                 result = await r.eval(
-                    CONFIRM_ONCE, 2, f"newsletter:pending:{token}", CONFIRMED_KEY,
+                    CONFIRM_ONCE, 3, f"newsletter:pending:{token}", CONFIRMED_KEY, BREVO_ADD_RETRY_KEY,
                     raw, email, confirmed_raw,
                 )
         except NewsletterLockUnavailable:

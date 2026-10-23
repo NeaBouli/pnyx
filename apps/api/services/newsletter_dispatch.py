@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 MAX_CONTACTS = 10_000
 ADD_BATCH_SIZE = 150
 PAGE_SIZE = 500
+LIST_PAGE_SIZE = 50
 TEMP_PREFIX = "newsletter-tmp-v1-"
 TEMP_NAME = re.compile(r"newsletter-tmp-v1-(\d{10})-[0-9a-f]{32}\Z")
 
@@ -146,14 +147,14 @@ async def cleanup_temporary_campaign_lists() -> dict[str, int]:
         seen = set()
         expected_count = None
         # Collect before deletion so pagination cannot skip a shifted entry.
-        for offset in range(0, MAX_CONTACTS, PAGE_SIZE):
+        for offset in range(0, MAX_CONTACTS, LIST_PAGE_SIZE):
             await lease.check()
             payload = await provider_request("GET", "contacts/lists", params={
-                "limit": PAGE_SIZE, "offset": offset, "sort": "asc",
+                "limit": LIST_PAGE_SIZE, "offset": offset, "sort": "asc",
             })
             lists, count = payload.get("lists"), payload.get("count")
             if (not isinstance(lists, list) or type(count) is not int or not 0 <= count <= MAX_CONTACTS
-                    or len(lists) > PAGE_SIZE or (expected_count is not None and count != expected_count)):
+                    or len(lists) > LIST_PAGE_SIZE or (expected_count is not None and count != expected_count)):
                 raise AudienceUnavailable("provider_unavailable")
             expected_count = count
             for item in lists:
@@ -169,8 +170,10 @@ async def cleanup_temporary_campaign_lists() -> dict[str, int]:
                     stale.append(list_id)
             if offset + len(lists) == count:
                 break
-            if len(lists) != PAGE_SIZE or offset + len(lists) > count:
+            if len(lists) != LIST_PAGE_SIZE or offset + len(lists) > count:
                 raise AudienceUnavailable("provider_unavailable")
+        else:
+            raise AudienceUnavailable("audience_limit_exceeded")
         counts["selected"] = len(stale)
         for list_id in stale:
             await lease.check()

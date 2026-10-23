@@ -34,13 +34,15 @@ async def isolated_redis(monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[tuple
     confirmed = f"test:newsletter:confirmed:{uuid4().hex}"
     monkeypatch.setattr(newsletter, "_get_redis", AsyncMock(return_value=client))
     monkeypatch.setattr(newsletter, "CONFIRMED_KEY", confirmed)
+    monkeypatch.setattr(newsletter, "BREVO_ADD_RETRY_KEY", f"{confirmed}:enrollment")
     monkeypatch.setattr(newsletter_lock, "LOCK_KEY", f"{confirmed}:campaign-lock")
     monkeypatch.setattr(newsletter, "LISTMONK_PW", "")
     monkeypatch.setattr(newsletter.newsletter_service, "remove_contact", AsyncMock(return_value=True))
     try:
         yield client, token, confirmed
     finally:
-        await client.delete(f"newsletter:pending:{token}", f"newsletter:pending:{token}-other", confirmed, f"{confirmed}:campaign-lock")
+        await client.delete(f"newsletter:pending:{token}", f"newsletter:pending:{token}-other", confirmed,
+                            f"{confirmed}:campaign-lock", f"{confirmed}:enrollment")
         await client.aclose()
 
 
@@ -100,7 +102,7 @@ async def test_write_failure_preserves_pending_proof(isolated_redis: tuple) -> N
 async def test_changed_payload_cannot_confirm_stale_proof(isolated_redis: tuple) -> None:
     client, token, confirmed = isolated_redis
     await client.set(f"newsletter:pending:{token}", "new-payload", ex=60)
-    assert await client.eval(CONFIRM_ONCE, 2, f"newsletter:pending:{token}", confirmed,
+    assert await client.eval(CONFIRM_ONCE, 3, f"newsletter:pending:{token}", confirmed, f"{confirmed}:enrollment",
                              "stale-payload", "consent@example.org", "stale-confirmation") == 0
     assert await client.exists(confirmed) == 0
     assert await client.get(f"newsletter:pending:{token}") == "new-payload"
@@ -141,11 +143,12 @@ async def test_reconfirmation_lua_has_one_winner_and_durable_cleanup(
         assert await client.eval(CLAIM_RECONFIRM_SEND, 4, confirmed, registry, suppressed, token,
                                  email, email, invitation, attempted) == 0
         if finish == "confirm":
-            args = (CONFIRM_RECONFIRM, 4, token, confirmed, registry, suppressed,
+            args = (CONFIRM_RECONFIRM, 5, token, confirmed, registry, suppressed, addition,
                     invitation, email, email, attempted, evidence)
             results = await asyncio.gather(*[client.eval(*args) for _ in range(20)])
             assert results.count(1) == 1 and results.count(0) == 19
             assert await client.hget(confirmed, email) == evidence
+            assert await client.hget(addition, email) == "1"
             assert not await client.hexists(registry, email)
         else:
             args = (EXPIRE_RECONFIRM, 6, confirmed, registry, token, addition, brevo_retry, listmonk_retry,

@@ -36,6 +36,11 @@ return 1
 # succeed before DEL; GETDEL alone could lose proof on a subsequent write failure.
 CONFIRM_ONCE = """
 if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
+if redis.call('HGET', KEYS[2], ARGV[2]) then
+    redis.call('DEL', KEYS[1])
+    return 2
+end
+redis.call('HSET', KEYS[3], ARGV[2], '1')
 local created = redis.call('HSETNX', KEYS[2], ARGV[2], ARGV[3])
 redis.call('DEL', KEYS[1])
 if created == 1 then return 1 end
@@ -121,6 +126,7 @@ if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
 if redis.call('HEXISTS', KEYS[4], ARGV[3]) == 1 then return 0 end
 if redis.call('HGET', KEYS[2], ARGV[2]) ~= ARGV[4] then return 0 end
 if redis.call('HGET', KEYS[3], ARGV[3]) ~= ARGV[4] then return 0 end
+redis.call('HSET', KEYS[5], ARGV[2], '1')
 redis.call('HSET', KEYS[2], ARGV[2], ARGV[5])
 redis.call('HDEL', KEYS[3], ARGV[3])
 redis.call('DEL', KEYS[1])

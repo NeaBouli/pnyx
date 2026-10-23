@@ -12,7 +12,7 @@ from fastapi import HTTPException
 
 from routers import newsletter, newsletter_admin
 from services.newsletter_consent import (
-    CONFIRMED_KEY, QUEUE_BREVO_ADD, CONFIRM_ONCE, TOPICS, classify_contact, readiness_summary,
+    CONFIRMED_KEY, BREVO_ADD_RETRY_KEY, QUEUE_BREVO_ADD, CONFIRM_ONCE, TOPICS, classify_contact, readiness_summary,
 )
 
 
@@ -37,7 +37,7 @@ def consent_redis(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
 
     async def evaluate(script, *args):
         if script == CONFIRM_ONCE and store.eval.return_value == 1:
-            confirmed[args[4]] = args[5]
+            confirmed[args[5]] = args[6]
         return store.eval.return_value
 
     async def get_hash(key, field):
@@ -68,8 +68,8 @@ async def test_confirmation_preserves_original_preferences(
     result = await newsletter.confirm_subscription("synthetic-token")
     assert result.status_code == 200
     args = consent_redis.eval.await_args_list[0].args
-    assert args[1:6] == (2, "newsletter:pending:synthetic-token", "newsletter:confirmed", raw, "consent@example.org")
-    stored = json.loads(args[6])
+    assert args[1:7] == (3, "newsletter:pending:synthetic-token", "newsletter:confirmed", BREVO_ADD_RETRY_KEY, raw, "consent@example.org")
+    stored = json.loads(args[7])
     assert {key: stored[key] for key in json.loads(raw)} == json.loads(raw)
     assert datetime.fromisoformat(stored["confirmed_at"]).tzinfo is not None
     assert stored["confirmation_method"] == "double_opt_in"
@@ -137,12 +137,12 @@ async def test_subscribe_then_confirm_preserves_schema2_with_delivery_handoff(
     assert (await newsletter.confirm_subscription("synthetic-schema2-token")).status_code == 200
     assert consent_redis.eval.await_count == 6
     args = consent_redis.eval.await_args_list[2].args
-    assert args[:6] == (CONFIRM_ONCE, 2, pending_key, "newsletter:confirmed", raw, "schema2@example.org")
-    confirmed = json.loads(args[6])
+    assert args[:7] == (CONFIRM_ONCE, 3, pending_key, "newsletter:confirmed", BREVO_ADD_RETRY_KEY, raw, "schema2@example.org")
+    confirmed = json.loads(args[7])
     assert {key: confirmed[key] for key in pending} == pending
     assert confirmed["confirmed_at"] == confirmed_at.isoformat()
     assert confirmed["confirmation_method"] == "double_opt_in"
-    decision = classify_contact("schema2@example.org", args[6], 200, {
+    decision = classify_contact("schema2@example.org", args[7], 200, {
         "email": "schema2@example.org", "emailBlacklisted": False,
         "listIds": [], "listUnsubscribed": [],
     }, 2, confirmed_at)
@@ -201,7 +201,7 @@ async def test_optional_listmonk_failure_does_not_erase_confirmed_consent(
     monkeypatch.setattr(newsletter, "_listmonk_request", mocked)
     assert (await newsletter.confirm_subscription("synthetic-token")).status_code == 200
     assert consent_redis.eval.await_count == 6
-    assert json.loads(consent_redis.eval.await_args_list[0].args[6])["email"] == "consent@example.org"
+    assert json.loads(consent_redis.eval.await_args_list[0].args[7])["email"] == "consent@example.org"
     mocked.assert_awaited_once()
 
 

@@ -273,8 +273,11 @@ async def test_membership_adds_are_idempotent_and_each_dispatch_uses_new_list(st
             original(req)  # Simulate replay of an identical batch.
         return original(req)
     monkeypatch.setattr(provider, "request", request)
-    for _ in range(2):
-        assert (await dispatch("admin"))["sent"] == 1
+    for campaign_id in (1, 2):
+        provider.campaigns[campaign_id] = {"tag": CampaignPlan().tag}
+        assert (await newsletter_admin.newsletter_send(
+            newsletter_admin.SendRequest(campaign_id=campaign_id, confirm=True), _auth=True,
+        ))["sent"] == 1
     assert provider.delivered == [{EMAIL}, {EMAIL}]
     assert len(set(provider.deleted)) == 2
     names = [json.loads(req.content)["name"] for req in provider.writes

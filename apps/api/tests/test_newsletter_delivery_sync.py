@@ -16,6 +16,7 @@ from redis.exceptions import ConnectionError as RedisConnectionError, ResponseEr
 from routers import newsletter, newsletter_admin
 from services import newsletter_service
 from services.newsletter_lock import RENEW_LOCK, RELEASE_LOCK, NewsletterLockUnavailable
+from services.newsletter_claims import WRITE_CLAIM
 from services.newsletter_consent import (
     CONFIRMED_KEY, CONFIRM_ONCE, SUPPRESSED_KEY, BREVO_ADD_RETRY_KEY,
     BREVO_REMOVE_RETRY_KEY, LISTMONK_REMOVE_RETRY_KEY, WITHDRAW_CONSENT,
@@ -89,6 +90,12 @@ class MemoryRedis:
                 self.pending.pop(key)
             return 1
         self.mutations.append("eval")
+        if script == WRITE_CLAIM:
+            lock, claims, owner, key, previous, updated = args
+            if self.pending.get(lock) != owner or self.hashes[claims].get(key, "") != previous:
+                return 0
+            self.hashes[claims][key] = updated
+            return 1
         if script == UPDATE_PREFERENCES:
             confirmed, suppressed, retry, email, normalized, raw, updated = args
             if normalized in self.hashes[suppressed] or self.hashes[confirmed].get(email) != raw:
@@ -97,12 +104,13 @@ class MemoryRedis:
             self.hashes[retry][email] = "1"
             return 1
         if script == CONFIRM_ONCE:
-            pending_key, confirmed_key, raw, email, confirmed = args
+            pending_key, confirmed_key, retry, raw, email, confirmed = args
             if self.pending.get(pending_key) != raw:
                 return 0
             self.pending.pop(pending_key)
             if email in self.hashes[confirmed_key]:
                 return 2
+            self.hashes[retry][email] = "1"
             self.hashes[confirmed_key][email] = confirmed
             return 1
         if script == QUEUE_BREVO_ADD:

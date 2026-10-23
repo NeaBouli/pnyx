@@ -14,6 +14,7 @@ from services import newsletter_service
 from services.newsletter_consent import (
     CONFIRMED_KEY, SUPPRESSED_KEY, WITHDRAWAL_PENDING_KEY, RECONFIRM_KEY, TOPICS,
     delivery_eligible, matches_campaign, parse_consent,
+    BREVO_ADD_RETRY_KEY, BREVO_ADD_UNSETTLED_KEY,
 )
 
 logger = logging.getLogger(__name__)
@@ -99,6 +100,9 @@ class Audience:
             raise AudienceUnavailable("audience_mismatch", self.counts)
         if self.selected.intersection(email.casefold() for email in await store.hgetall(RECONFIRM_KEY)):
             raise AudienceUnavailable("audience_mismatch", self.counts)
+        for key in (BREVO_ADD_RETRY_KEY, BREVO_ADD_UNSETTLED_KEY):
+            if self.selected.intersection(email.casefold() for email in await store.hgetall(key)):
+                raise AudienceUnavailable("audience_mismatch", self.counts)
         # Keep withdrawal intent as the last store read before handing off to sendNow.
         pending = await store.hgetall(WITHDRAWAL_PENDING_KEY)
         if self.selected.intersection(email.casefold() for email in pending):
@@ -111,6 +115,8 @@ async def select_audience(store: Redis, plan: CampaignPlan) -> Audience:
     blocked = {email.casefold() for email in suppressed}
     blocked.update(email.casefold() for email in await store.hgetall(WITHDRAWAL_PENDING_KEY))
     blocked.update(email.casefold() for email in await store.hgetall(RECONFIRM_KEY))
+    for key in (BREVO_ADD_RETRY_KEY, BREVO_ADD_UNSETTLED_KEY):
+        blocked.update(email.casefold() for email in await store.hgetall(key))
     if len(records) > 10_000:
         raise AudienceUnavailable("audience_limit_exceeded")
     counts = {"selected": 0, "excluded": 0, "failed": 0}
