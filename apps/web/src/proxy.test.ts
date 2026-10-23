@@ -10,7 +10,7 @@ import { NextRequest } from "next/server";
 import proxy from "./proxy";
 
 const CANONICAL_APK =
-  "https://github.com/NeaBouli/pnyx/releases/download/v1.0.36/ekklesia-v1.0.36-vC65-DIRECT.apk";
+  "https://github.com/NeaBouli/pnyx/releases/download/v1.0.37/ekklesia-v1.0.37-vC66-DIRECT.apk";
 
 describe("proxy – legacy download redirects (T-350)", () => {
   const legacyPaths = ["/download", "/download/", "/el/download", "/en/download"];

@@ -55,7 +55,7 @@ describe("update channel resolver", () => {
 
   const minimumPayload = {
     ...payload,
-    latest_version_code: 65,
+    latest_version_code: 66,
     min_required_version_code: 62,
     min_required_version_code_by_channel: { direct: 62, play: 62, fdroid: 621 },
   };
@@ -66,7 +66,7 @@ describe("update channel resolver", () => {
     expect(resolveUpdateUrl(minimumPayload, "fdroid")).toBe(FDROID_URL);
   });
 
-  it.each([621, 622, 623, 624, 651, 652, 653, 654])("accepts supported F-Droid code %i", (code) => {
+  it.each([621, 622, 623, 624, 651, 652, 653, 654, 661, 662, 663, 664])("accepts supported F-Droid code %i", (code) => {
     expect(shouldRequireUpdate(minimumPayload, code, "fdroid")).toBe(false);
     expect(shouldOfferUpdate(minimumPayload, code, "fdroid")).toBe(false);
   });
@@ -76,13 +76,14 @@ describe("update channel resolver", () => {
     expect(shouldOfferUpdate(minimumPayload, 61, channel)).toBe(true);
     expect(shouldRequireUpdate(minimumPayload, 62, channel)).toBe(false);
     expect(shouldOfferUpdate(minimumPayload, 62, channel)).toBe(true);
-    expect(shouldOfferUpdate(minimumPayload, 65, channel)).toBe(false);
+    expect(shouldOfferUpdate(minimumPayload, 65, channel)).toBe(true);
+    expect(shouldOfferUpdate(minimumPayload, 66, channel)).toBe(false);
     // A required update still prompts if the optional release field is absent.
     expect(shouldOfferUpdate({ min_required_version_code: 62 }, 61, channel)).toBe(true);
   });
 
   it("never uses the legacy scalar as an F-Droid minimum", () => {
-    const legacy = { latest_version_code: 65, min_required_version_code: 62 };
+    const legacy = { latest_version_code: 66, min_required_version_code: 62 };
     expect(shouldRequireUpdate(legacy, 614, "fdroid")).toBe(false);
     expect(shouldOfferUpdate(legacy, 614, "fdroid")).toBe(false);
     expect(shouldRequireUpdate(legacy, 61, "direct")).toBe(true);

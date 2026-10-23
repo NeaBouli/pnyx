@@ -8,7 +8,7 @@
       "changefreq": "weekly",
       "priority": "1.0",
       "lastmod": "2026-10-23",
-      "sha256": "a37209816c601cd4d183521b376d7edc01e2ee613506c47e6763e04165ab117a"
+      "sha256": "893650e10bb5b0f1d9d4ae098fa5051e13e65fc0f9d83ecb0cfa820796b7c6ae"
     },
     {
       "loc": "/el/bills",
@@ -81,8 +81,8 @@
       "source": "docs/wiki/faq.html",
       "changefreq": "monthly",
       "priority": "0.9",
-      "lastmod": "2026-10-20",
-      "sha256": "75775c3a5276b260c543dd9f795526b5d00378580f89897b1866f48485c8ef70"
+      "lastmod": "2026-10-23",
+      "sha256": "bfa12a56c828158668c3f65c77e50f556ff748b2c24076e5a398c47b047d5eda"
     },
     {
       "loc": "/wiki/whitepaper.html",
@@ -137,8 +137,8 @@
       "source": "docs/wiki/roadmap.html",
       "changefreq": "monthly",
       "priority": "0.7",
-      "lastmod": "2026-10-20",
-      "sha256": "9dc487c29d0db4b58ecda1db763c35dce1b78cbe83688831da08f12f48f5fe56"
+      "lastmod": "2026-10-23",
+      "sha256": "b8965dd0417aa5e26e3021e09cc2c3b729fc5c035ebf8be1c8164b680e52c8bd"
     },
     {
       "loc": "/wiki/database.html",
