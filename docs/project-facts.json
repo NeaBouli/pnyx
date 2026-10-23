@@ -1,6 +1,6 @@
 {
   "counts": {
-    "api_endpoints": 194,
+    "api_endpoints": 196,
     "api_routers": 32,
     "db_tables_orm": 24,
     "modules_inactive": 2,

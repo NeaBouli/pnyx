@@ -576,7 +576,8 @@ async def _campaign(kind, monkeypatch):
             return True
         except newsletter.HTTPException as exc:
             assert exc.status_code == 503
-            assert exc.detail == "Newsletter campaign paused; retry"
+            assert exc.detail["reason"] in {"lock_unavailable", "unsettled_provider_writes", "audience_unavailable"}
+            assert set(exc.detail) == {"reason", "selected", "excluded", "failed", "provider"}
             return False
     db = MagicMock(scalar=AsyncMock(return_value=0), execute=AsyncMock(return_value=MagicMock(all=lambda: [])))
     return await newsletter_service.send_monthly_report(db)

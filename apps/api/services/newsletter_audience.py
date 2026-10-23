@@ -14,6 +14,7 @@ from redis.asyncio import Redis
 from services import newsletter_service
 from services.newsletter_consent import (
     CONFIRMED_KEY, SUPPRESSED_KEY, BREVO_REMOVE_RETRY_KEY, LISTMONK_REMOVE_RETRY_KEY,
+    BREVO_ADD_RETRY_KEY, BREVO_ADD_UNSETTLED_KEY, LISTMONK_ADD_UNSETTLED_KEY, TOPICS,
     delivery_eligible, matches_campaign, parse_consent, preference_attributes,
 )
 
@@ -37,6 +38,24 @@ class CampaignPlan(BaseModel):
 class AudienceUnavailable(Exception):
     """No provider dispatch is authorized when consent or segment state is unknown."""
 
+    def __init__(self, reason: str = "audience_unavailable", counts: dict[str, int] | None = None):
+        self.reason = reason
+        self.counts = {"selected": 0, "excluded": 0, "failed": 0, "provider": 0, **(counts or {})}
+        super().__init__(reason)
+
+    @property
+    def detail(self) -> dict[str, str | int]:
+        return {"reason": self.reason, **self.counts}
+
+
+def log_audience(reason: str, counts: dict[str, int]) -> None:
+    log = logger.info if reason in {"ready", "sent"} else logger.warning
+    log(
+        "[NEWSLETTER] reason=%s selected=%d excluded=%d failed=%d provider=%d",
+        reason, counts.get("selected", 0), counts.get("excluded", 0),
+        counts.get("failed", 0), counts.get("provider", 0),
+    )
+
 
 def campaign_plan(tag: object) -> CampaignPlan:
     if not isinstance(tag, str) or not tag.startswith("newsletter:v1:"):
@@ -50,14 +69,22 @@ def campaign_plan(tag: object) -> CampaignPlan:
 
 def campaign_recipients(plan: CampaignPlan) -> dict[str, list[int]]:
     """Never combine listIds with segmentIds: that would broaden the audience."""
+    raw = os.getenv("BREVO_NEWSLETTER_SEGMENTS", "")
+    if not raw.strip():
+        raise AudienceUnavailable("segments_not_configured")
     try:
-        segments = json.loads(os.getenv("BREVO_NEWSLETTER_SEGMENTS", "{}"))
-        segment = segments[plan.key]
-        if type(segment) is not int or segment <= 0:
+        segments = json.loads(raw)
+        if segments == {}:
+            raise AudienceUnavailable("segments_not_configured")
+        allowed = {f"{language}:{frequency}:{topic}" for language in ("el", "en")
+                   for frequency in ("monthly", "weekly") for topic in ("all", *TOPICS)}
+        if (not isinstance(segments, dict) or not set(segments) <= allowed
+                or any(type(value) is not int or value <= 0 for value in segments.values())
+                or plan.key not in segments):
             raise ValueError()
-        return {"segmentIds": [segment]}
-    except (KeyError, TypeError, ValueError):
-        raise AudienceUnavailable() from None
+        return {"segmentIds": [segments[plan.key]]}
+    except (TypeError, ValueError):
+        raise AudienceUnavailable("segments_invalid") from None
 
 
 @dataclass
@@ -70,10 +97,16 @@ class Audience:
     async def check(self, store: Redis) -> None:
         # Compare the entire snapshot, including aliases and new withdrawals.
         if (await store.hgetall(CONFIRMED_KEY) != self.records
-                or await store.hgetall(SUPPRESSED_KEY) != self.suppressed
-                or await store.hgetall(BREVO_REMOVE_RETRY_KEY)
-                or await store.hgetall(LISTMONK_REMOVE_RETRY_KEY)):
-            raise AudienceUnavailable()
+                or await store.hgetall(SUPPRESSED_KEY) != self.suppressed):
+            raise AudienceUnavailable("audience_mismatch", self.counts)
+        await check_provider_writes(store, self.counts)
+
+
+async def check_provider_writes(store: Redis, counts: dict[str, int]) -> None:
+    for key in (BREVO_ADD_RETRY_KEY, BREVO_ADD_UNSETTLED_KEY, LISTMONK_ADD_UNSETTLED_KEY,
+                BREVO_REMOVE_RETRY_KEY, LISTMONK_REMOVE_RETRY_KEY):
+        if await store.hgetall(key):
+            raise AudienceUnavailable("unsettled_provider_writes", counts)
 
 
 async def select_audience(store: Redis, plan: CampaignPlan) -> Audience:
@@ -142,23 +175,42 @@ async def _segment_members(segment: int) -> set[str]:
     raise AudienceUnavailable()
 
 
-async def prepare_audience(store: Redis, plan: CampaignPlan) -> Audience:
-    """Caller holds the campaign lease through the final check and sendNow."""
-    from routers.newsletter import _retry_withdrawal
-
+async def audit_audience(store: Redis, plan: CampaignPlan) -> Audience:
+    """Read-only diagnosis, also used by the final dispatch authorization."""
+    audience = None
     try:
-        recipients = campaign_recipients(plan)
-        if not await newsletter_service.ensure_reconfirmations_paused():
-            raise AudienceUnavailable()
-        retries = set(await store.hkeys(BREVO_REMOVE_RETRY_KEY)) | set(await store.hkeys(LISTMONK_REMOVE_RETRY_KEY))
-        for email in retries:
-            if not await _retry_withdrawal(store, email):
-                raise AudienceUnavailable()
         audience = await select_audience(store, plan)
-        if audience.counts["failed"] or await _segment_members(recipients["segmentIds"][0]) != audience.selected:
-            raise AudienceUnavailable()
+        recipients = campaign_recipients(plan)
+        await check_provider_writes(store, audience.counts)
+        members = await _segment_members(recipients["segmentIds"][0])
+        audience.counts["provider"] = len(members)
+        if audience.counts["failed"] or members != audience.selected:
+            raise AudienceUnavailable("audience_mismatch", audience.counts)
         await audience.check(store)
         return audience
+    except AudienceUnavailable as exc:
+        if audience is not None:
+            exc.counts.update(audience.counts)
+        raise
     except Exception:
-        logger.warning("[NEWSLETTER] Campaign audience unavailable; retry")
-        raise AudienceUnavailable() from None
+        raise AudienceUnavailable(counts=audience.counts if audience else None) from None
+
+
+async def prepare_audience(store: Redis, plan: CampaignPlan) -> Audience:
+    """Caller holds the campaign lease through preparation and dispatch."""
+    if not await newsletter_service.ensure_reconfirmations_paused():
+        raise AudienceUnavailable("unsettled_provider_writes")
+    return await audit_audience(store, plan)
+
+
+async def authorize_dispatch(lease, plan: CampaignPlan, previous: Audience) -> Audience:
+    """Renew first, then reread consent and provider membership under that lease.
+
+    The caller must invoke sendNow next, before releasing the lease. Every
+    withdrawal and delivery write uses this same lock, including child tasks.
+    """
+    await lease.check()
+    audience = await audit_audience(lease.store, plan)
+    if audience.selected != previous.selected:
+        raise AudienceUnavailable("audience_mismatch", audience.counts)
+    return audience

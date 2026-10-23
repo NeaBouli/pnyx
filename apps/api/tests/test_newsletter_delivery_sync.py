@@ -15,7 +15,7 @@ from redis.exceptions import ConnectionError as RedisConnectionError, ResponseEr
 
 from routers import newsletter, newsletter_admin
 from services import newsletter_service
-from services.newsletter_lock import RENEW_LOCK, RELEASE_LOCK
+from services.newsletter_lock import RENEW_LOCK, RELEASE_LOCK, NewsletterLockUnavailable
 from services.newsletter_consent import (
     CONFIRMED_KEY, CONFIRM_ONCE, SUPPRESSED_KEY, BREVO_ADD_RETRY_KEY,
     BREVO_REMOVE_RETRY_KEY, LISTMONK_REMOVE_RETRY_KEY, WITHDRAW_CONSENT,
@@ -680,7 +680,7 @@ async def test_real_service_add_and_remove_payloads_and_removal_idempotence(monk
         writes.append(request)
         body = json.loads(request.content)
         if request.url.path == "/v3/contacts":
-            assert body == {"email": EMAIL, "attributes": {"FIRSTNAME": "Fixture"}, "listIds": [9], "updateEnabled": True}
+            assert body == {"email": EMAIL, "attributes": {}, "listIds": [9], "updateEnabled": True}
             members.add(EMAIL)
             return httpx.Response(201, json={"id": 123})
         assert request.url.path == "/v3/contacts/lists/9/contacts/remove"
@@ -922,7 +922,7 @@ async def test_delayed_timed_out_add_keeps_removal_work_until_positive_reconcili
     newsletter_service.add_contact.assert_awaited_once()
 
 
-async def test_concurrent_adds_are_serialized_and_withdrawal_retains_pending_removal(store: MemoryRedis) -> None:
+async def test_concurrent_add_and_withdrawal_retry_after_delivery_lease(store: MemoryRedis) -> None:
     store.hashes[CONFIRMED_KEY][EMAIL] = json.dumps(consent())
     started, finish = asyncio.Event(), asyncio.Event()
 
@@ -935,13 +935,18 @@ async def test_concurrent_adds_are_serialized_and_withdrawal_retains_pending_rem
     task = asyncio.create_task(newsletter._sync_brevo_contact(store, EMAIL))
     try:
         await asyncio.wait_for(started.wait(), timeout=1)
-        assert await newsletter._sync_brevo_contact(store, EMAIL) is False
-        await newsletter._withdraw_subscription(store, EMAIL, "unsubscribed")
+        with pytest.raises(NewsletterLockUnavailable):
+            await newsletter._sync_brevo_contact(store, EMAIL)
+        with pytest.raises(NewsletterLockUnavailable):
+            await newsletter._withdraw_subscription(store, EMAIL, "unsubscribed")
         assert store.hashes[BREVO_ADD_UNSETTLED_KEY] == {EMAIL: "pending"}
-        assert store.hashes[BREVO_REMOVE_RETRY_KEY] == {EMAIL: "1"}
+        assert EMAIL in store.hashes[CONFIRMED_KEY]
+        assert not store.hashes[SUPPRESSED_KEY]
     finally:
         finish.set()
-        assert await asyncio.wait_for(task, timeout=1) is False
+        assert await asyncio.wait_for(task, timeout=1) is True
+    assert await newsletter._withdraw_subscription(store, EMAIL, "unsubscribed")
+    assert EMAIL not in store.hashes[CONFIRMED_KEY]
     newsletter_service.add_contact.assert_awaited_once()
     assert not store.hashes[BREVO_ADD_UNSETTLED_KEY]
     assert not store.hashes[BREVO_REMOVE_RETRY_KEY]
@@ -999,7 +1004,7 @@ async def test_listmonk_timeout_after_withdrawal_retains_removal_until_late_crea
     assert EMAIL not in caplog.text
 
 
-async def test_listmonk_concurrent_adds_and_withdrawal_keep_pending_removal(
+async def test_listmonk_add_and_withdrawal_retry_after_delivery_lease(
     store: MemoryRedis, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(newsletter, "LISTMONK_PW", "synthetic-password")
@@ -1017,13 +1022,18 @@ async def test_listmonk_concurrent_adds_and_withdrawal_keep_pending_removal(
     task = asyncio.create_task(newsletter._sync_listmonk_contact(store, EMAIL))
     try:
         await asyncio.wait_for(started.wait(), timeout=1)
-        assert await newsletter._sync_listmonk_contact(store, EMAIL) is False
-        await newsletter._withdraw_subscription(store, EMAIL, "unsubscribed")
+        with pytest.raises(NewsletterLockUnavailable):
+            await newsletter._sync_listmonk_contact(store, EMAIL)
+        with pytest.raises(NewsletterLockUnavailable):
+            await newsletter._withdraw_subscription(store, EMAIL, "unsubscribed")
         assert store.hashes[LISTMONK_ADD_UNSETTLED_KEY] == {EMAIL: "pending"}
-        assert store.hashes[LISTMONK_REMOVE_RETRY_KEY] == {EMAIL: "1"}
+        assert EMAIL in store.hashes[CONFIRMED_KEY]
+        assert not store.hashes[SUPPRESSED_KEY]
     finally:
         finish.set()
-        assert await asyncio.wait_for(task, timeout=1) is False
+        assert await asyncio.wait_for(task, timeout=1) is True
+    assert await newsletter._withdraw_subscription(store, EMAIL, "unsubscribed")
+    assert EMAIL not in store.hashes[CONFIRMED_KEY]
     assert not store.hashes[LISTMONK_ADD_UNSETTLED_KEY]
     assert not store.hashes[LISTMONK_REMOVE_RETRY_KEY]
     assert sum(call.args[0] == "POST" for call in provider.await_args_list) == 1

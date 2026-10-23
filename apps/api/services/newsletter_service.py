@@ -154,7 +154,7 @@ async def add_contact(email: str, name: str = "", *, preferences: dict[str, Any]
         raise ContactNotWritten()
     result = await _brevo_post("contacts", {
         "email": email,
-        "attributes": {**({"FIRSTNAME": name} if name else {}), **(attributes or {})},
+        "attributes": attributes or {},
         "listIds": [LIST_ID],
         "updateEnabled": True,
     }, track_enrollment=True)
@@ -412,8 +412,11 @@ async def send_monthly_report(db: AsyncSession) -> bool:
         body = body.replace("/el/", f"/{language}/")
         return _wrap(body, language=language)
 
-    from services.newsletter_audience import CampaignPlan, campaign_recipients, prepare_audience
+    from services.newsletter_audience import (
+        CampaignPlan, AudienceUnavailable, campaign_recipients, prepare_audience, authorize_dispatch, log_audience,
+    )
     # Keep one lease across both language snapshots and provider dispatches.
+    audience = None
     try:
         async with newsletter_lock() as lease:
             plans = [CampaignPlan(language=language) for language in ("el", "en")]
@@ -434,14 +437,16 @@ async def send_monthly_report(db: AsyncSession) -> bool:
                     "htmlContent": render(plan.language),
                 })
                 if not result or not result.get("id"):
-                    return False
-                await audience.check(lease.store)
-                await lease.check()
+                    raise AudienceUnavailable("provider_unavailable", audience.counts)
+                audience = await authorize_dispatch(lease, plan, audience)
                 sent = await _brevo_post(f"emailCampaigns/{result['id']}/sendNow", {})
                 if sent is None:
-                    return False
-                logger.info("[NEWSLETTER] Monthly report dispatched: selected=%d", audience.counts["selected"])
+                    raise AudienceUnavailable("provider_unavailable", audience.counts)
+                log_audience("sent", audience.counts)
             return True
-    except Exception:
-        logger.warning("[NEWSLETTER] Campaign paused; retry")
+    except AudienceUnavailable as exc:
+        log_audience(exc.reason, exc.counts)
+    except Exception as exc:
+        log_audience("lock_unavailable" if isinstance(exc, NewsletterLockUnavailable) else "audience_unavailable",
+                     audience.counts if audience else {})
     return False

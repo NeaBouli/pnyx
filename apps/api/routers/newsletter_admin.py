@@ -9,6 +9,7 @@ import html
 import logging
 import asyncio
 import json
+from contextlib import nullcontext
 from datetime import datetime, timezone
 from typing import Any, Literal
 from urllib.parse import quote
@@ -31,7 +32,7 @@ from services.newsletter_consent import (
 )
 from services.newsletter_audience import (
     CampaignPlan, AudienceUnavailable, campaign_plan, campaign_recipients,
-    select_audience, prepare_audience,
+    audit_audience, prepare_audience, authorize_dispatch, log_audience,
 )
 from services import newsletter_service
 from routers.newsletter import NewsletterRoute
@@ -127,15 +128,21 @@ class PreferencesRequest(BaseModel):
 # ─── Endpoints ───────────────────────────────────────────────────────────────
 
 @router.post("/audience")
-async def newsletter_audience(req: CampaignPlan, _auth: bool = Depends(verify_admin_key)) -> dict[str, int]:
+async def newsletter_audience(req: CampaignPlan, _auth: bool = Depends(verify_admin_key)) -> dict[str, str | int]:
     """Read-only audience estimate for a plan; no provider or Redis writes."""
     from routers.newsletter import _get_redis
     try:
         store = await _get_redis()
-        audience = await select_audience(store, req)
-        return audience.counts
+        audience = await audit_audience(store, req)
+        log_audience("ready", audience.counts)
+        return {"reason": "ready", **audience.counts}
+    except AudienceUnavailable as exc:
+        log_audience(exc.reason, exc.counts)
+        raise HTTPException(503, exc.detail) from None
     except Exception:
-        raise HTTPException(503, "Newsletter audience unavailable; retry") from None
+        error = AudienceUnavailable()
+        log_audience(error.reason, error.counts)
+        raise HTTPException(503, error.detail) from None
 
 
 @router.put("/preferences")
@@ -215,42 +222,43 @@ async def newsletter_backfill(dry_run: bool = True, _auth: bool = Depends(verify
 
     for email, raw in confirmed.items():
         try:
-            data = parse_consent(email, raw)
-            if await store.hget(SUPPRESSED_KEY, email.casefold()):
-                if not dry_run:
-                    await _withdraw_subscription(store, email, "suppressed")
-                counts["failed"] += 1
-                continue
-            if data is None or not delivery_eligible(data, datetime.now(timezone.utc)):
-                counts["failed" if data is None else "held"] += 1
-                if not dry_run and not await _remove_ineligible_contact(store, email):
+            async with (nullcontext() if dry_run else newsletter_lock(store)):
+                data = parse_consent(email, raw)
+                if await store.hget(SUPPRESSED_KEY, email.casefold()):
+                    if not dry_run:
+                        await _withdraw_subscription(store, email, "suppressed")
                     counts["failed"] += 1
-                continue
-            status = await newsletter_service.contact_status(email, attributes=preference_attributes(data))
-            # Recheck even an existing member against withdrawal during the GET.
-            if await store.hget(CONFIRMED_KEY, email) != raw or await store.hget(SUPPRESSED_KEY, email.casefold()):
-                counts["failed"] += 1
-                continue
-            if status == "suppressed":
-                if not dry_run:
-                    await _withdraw_subscription(store, email, "provider_suppressed")
-                counts["failed"] += 1
-            elif status == "already_present":
-                counts["already_present"] += 1
-                if not dry_run:
-                    await store.hdel(BREVO_ADD_RETRY_KEY, email)
-                    if await store.hget(BREVO_ADD_UNSETTLED_KEY, email.casefold()) == "uncertain":
-                        await store.hdel(BREVO_ADD_UNSETTLED_KEY, email.casefold())
-            elif status in {"to_add", "to_update"}:
-                # Recheck after the provider read: never enroll a withdrawn snapshot.
+                    continue
+                if data is None or not delivery_eligible(data, datetime.now(timezone.utc)):
+                    counts["failed" if data is None else "held"] += 1
+                    if not dry_run and not await _remove_ineligible_contact(store, email):
+                        counts["failed"] += 1
+                    continue
+                status = await newsletter_service.contact_status(email, attributes=preference_attributes(data))
+                # Recheck even an existing member against withdrawal during the GET.
                 if await store.hget(CONFIRMED_KEY, email) != raw or await store.hget(SUPPRESSED_KEY, email.casefold()):
                     counts["failed"] += 1
-                elif dry_run or await _sync_brevo_contact(store, email, data.get("name", "")):
-                    counts["to_add"] += 1
+                    continue
+                if status == "suppressed":
+                    if not dry_run:
+                        await _withdraw_subscription(store, email, "provider_suppressed")
+                    counts["failed"] += 1
+                elif status == "already_present":
+                    counts["already_present"] += 1
+                    if not dry_run:
+                        await store.hdel(BREVO_ADD_RETRY_KEY, email)
+                        if await store.hget(BREVO_ADD_UNSETTLED_KEY, email.casefold()) == "uncertain":
+                            await store.hdel(BREVO_ADD_UNSETTLED_KEY, email.casefold())
+                elif status in {"to_add", "to_update"}:
+                    # Recheck after the provider read: never enroll a withdrawn snapshot.
+                    if await store.hget(CONFIRMED_KEY, email) != raw or await store.hget(SUPPRESSED_KEY, email.casefold()):
+                        counts["failed"] += 1
+                    elif dry_run or await _sync_brevo_contact(store, email, data.get("name", "")):
+                        counts["to_add"] += 1
+                    else:
+                        counts["failed"] += 1
                 else:
                     counts["failed"] += 1
-            else:
-                counts["failed"] += 1
         except Exception:
             logger.error("[NEWSLETTER] Backfill contact failed")
             counts["failed"] += 1
@@ -369,8 +377,9 @@ async def newsletter_create_draft(req: DraftRequest, _auth: bool = Depends(verif
 
     try:
         recipients = campaign_recipients(req)
-    except AudienceUnavailable:
-        raise HTTPException(503, "Newsletter audience unavailable; retry") from None
+    except AudienceUnavailable as exc:
+        log_audience(exc.reason, exc.counts)
+        raise HTTPException(503, exc.detail) from None
     result = await _brevo_request("POST", "emailCampaigns", {
         "name": name,
         "subject": req.subject,
@@ -396,25 +405,32 @@ async def newsletter_create_draft(req: DraftRequest, _auth: bool = Depends(verif
 
 
 @router.post("/send")
-async def newsletter_send(req: SendRequest, _auth: bool = Depends(verify_admin_key)) -> dict[str, int]:
+async def newsletter_send(req: SendRequest, _auth: bool = Depends(verify_admin_key)) -> dict[str, str | int]:
     """Send a drafted campaign — requires confirm=true. Cross-publishes to Telegram (non-blocking)."""
     if not req.confirm:
         raise HTTPException(400, "Confirmation required: confirm=true")
 
+    audience = None
     try:
         async with newsletter_lock() as lease:
             campaign = await _brevo_request("GET", f"emailCampaigns/{req.campaign_id}")
             plan = campaign_plan(campaign.get("tag"))
             audience = await prepare_audience(lease.store, plan)
             if not audience.selected:
-                return {"selected": 0, "sent": 0}
+                log_audience("ready", audience.counts)
+                return {"reason": "ready", **audience.counts, "sent": 0}
             # Replace the draft audience immediately before dispatch.
             await _brevo_request("PUT", f"emailCampaigns/{req.campaign_id}", {"recipients": campaign_recipients(plan)})
-            await audience.check(lease.store)
-            await lease.check()
+            audience = await authorize_dispatch(lease, plan, audience)
             await _brevo_request("POST", f"emailCampaigns/{req.campaign_id}/sendNow", {})
-    except Exception:
-        raise HTTPException(503, "Newsletter campaign paused; retry") from None
+    except AudienceUnavailable as exc:
+        log_audience(exc.reason, exc.counts)
+        raise HTTPException(503, exc.detail) from None
+    except Exception as exc:
+        error = AudienceUnavailable("lock_unavailable" if isinstance(exc, NewsletterLockUnavailable) else "audience_unavailable",
+                                    audience.counts if audience else None)
+        log_audience(error.reason, error.counts)
+        raise HTTPException(503, error.detail) from None
     logger.info("[NEWSLETTER] Campaign %d sent", req.campaign_id)
 
     # NEA-263: Cross-publish to Telegram (non-blocking)
@@ -434,4 +450,5 @@ async def newsletter_send(req: SendRequest, _auth: bool = Depends(verify_admin_k
     except Exception:
         logger.warning("[NEWSLETTER] Telegram cross-publish unavailable")
 
-    return {"selected": audience.counts["selected"], "sent": audience.counts["selected"], "telegram_sent": int(tg_sent)}
+    log_audience("sent", audience.counts)
+    return {"reason": "sent", **audience.counts, "sent": audience.counts["selected"], "telegram_sent": int(tg_sent)}

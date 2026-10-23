@@ -1,4 +1,5 @@
 """Campaign selection through the real service and routes, with a mock Brevo only."""
+import asyncio
 import json
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
@@ -12,6 +13,7 @@ from services import newsletter_service, newsletter_audience
 from services.newsletter_audience import CampaignPlan, AudienceUnavailable
 from services.newsletter_consent import (
     CONFIRMED_KEY, SUPPRESSED_KEY, TOPICS, BREVO_ADD_RETRY_KEY, BREVO_REMOVE_RETRY_KEY,
+    BREVO_ADD_UNSETTLED_KEY, LISTMONK_ADD_UNSETTLED_KEY, LISTMONK_REMOVE_RETRY_KEY,
     preference_attributes,
 )
 from tests.test_newsletter_delivery_sync import (
@@ -135,7 +137,7 @@ async def test_confirmation_syncs_complete_attributes_and_preference_update_pres
     store.pending["newsletter:pending:synthetic"] = json.dumps(original)
     assert (await newsletter.confirm_subscription("synthetic")).status_code == 200
     before = json.loads(store.hashes[CONFIRMED_KEY][EMAIL])
-    assert provider.contacts[EMAIL]["attributes"] == {"FIRSTNAME": "Fixture", **preference_attributes(before)}
+    assert provider.contacts[EMAIL]["attributes"] == preference_attributes(before)
     changed = {topic: topic == "system_news" for topic in TOPICS}
     async with HTTP_CLIENT(transport=httpx.ASGITransport(app=application()), base_url="http://test") as client:
         response = await client.put("/api/v1/admin/newsletter/preferences", headers=AUTH, json={
@@ -148,6 +150,8 @@ async def test_confirmation_syncs_complete_attributes_and_preference_update_pres
     attributes = provider.contacts[EMAIL]["attributes"]
     assert attributes["NL_WEEKLY"] is False and attributes["NL_MONTHLY"] is True
     assert attributes["NL_ACTIVE_VOTES"] is False and attributes["NL_SYSTEM_NEWS"] is True
+    assert attributes == preference_attributes(after)
+    assert all("Fixture" not in request.content.decode() for request in provider.writes)
     assert not store.hashes[BREVO_ADD_RETRY_KEY]
     assert not provider.sent
 
@@ -211,8 +215,8 @@ async def test_audience_endpoint_is_admin_read_only_counts_and_current_preferenc
     async with HTTP_CLIENT(transport=httpx.ASGITransport(app=application()), base_url="http://test") as client:
         assert (await client.post("/api/v1/admin/newsletter/audience", json={})).status_code == 403
         response = await client.post("/api/v1/admin/newsletter/audience", headers=AUTH, json={})
-    assert response.json() == {"selected": 1, "excluded": 2, "failed": 0}
-    assert all(type(value) is int for value in response.json().values())
+    assert response.json() == {"reason": "ready", "selected": 1, "excluded": 2, "failed": 0, "provider": 1}
+    assert all(type(value) is int for key, value in response.json().items() if key != "reason")
     assert "@" not in response.text and "token" not in response.text
     assert store.mutations == baseline and not provider.writes
 
@@ -311,7 +315,7 @@ async def test_segment_pagination_and_unknown_language(store, provider):
     for index in range(501):
         save(store, provider, consent(f"fixture{index}@example.org", language=None))
     audience = await newsletter_audience.prepare_audience(store, CampaignPlan())
-    assert audience.counts == {"selected": 501, "excluded": 0, "failed": 0}
+    assert audience.counts == {"selected": 501, "excluded": 0, "failed": 0, "provider": 501}
 
 
 @pytest.mark.parametrize("raw", ["{}", "[]", "null", '{"el:monthly:all":true}', '{"el:monthly:all":0}'])
@@ -418,3 +422,242 @@ async def test_monthly_english_titles_and_labels_are_localized_and_escaped(store
     assert 'lang="en"' in content
     assert "English &lt;title&gt;" in content and "Ελληνικός τίτλος" not in content
     assert all(label in content for label in ("Upcoming Votes", "YES", "NO", "Total", "New bills"))
+
+
+async def dispatch(kind):
+    if kind == "monthly":
+        return await newsletter_service.send_monthly_report(db())
+    return await newsletter_admin.newsletter_send(
+        newsletter_admin.SendRequest(campaign_id=1, confirm=True), _auth=True,
+    )
+
+
+def seed_campaign(store, provider):
+    save(store, provider, consent())
+    provider.campaigns[1] = {"tag": CampaignPlan().tag}
+
+
+async def blocked_dispatch(kind, reason):
+    if kind == "monthly":
+        assert not await dispatch(kind)
+    else:
+        with pytest.raises(newsletter.HTTPException) as error:
+            await dispatch(kind)
+        assert error.value.status_code == 503
+        assert error.value.detail["reason"] == reason
+        return error.value.detail
+
+
+@pytest.mark.parametrize("kind", ["admin", "monthly"])
+async def test_withdrawal_at_final_lease_renewal_blocks_send_even_when_removal_fails(
+    store, provider, monkeypatch, caplog, kind,
+):
+    from services.newsletter_lock import NewsletterLease
+
+    seed_campaign(store, provider)
+    monkeypatch.setattr(newsletter_service, "remove_contact", AsyncMock(return_value=False))
+    original = NewsletterLease.check
+    withdrawn = False
+
+    async def renew(lease):
+        nonlocal withdrawn
+        await original(lease)
+        final_gap = any(request.method == "PUT" or (
+            kind == "monthly" and request.url.path == "/v3/emailCampaigns"
+        ) for request in provider.writes)
+        if final_gap and not withdrawn:
+            withdrawn = True
+            await newsletter._withdraw_subscription(store, EMAIL, "unsubscribed")
+
+    monkeypatch.setattr(NewsletterLease, "check", renew)
+    await blocked_dispatch(kind, "unsettled_provider_writes")
+    assert withdrawn and EMAIL in store.hashes[SUPPRESSED_KEY]
+    assert newsletter_service.LIST_ID in provider.contacts[EMAIL]["listIds"]
+    assert not provider.sent
+    assert "reason=unsettled_provider_writes" in caplog.text
+
+
+@pytest.mark.parametrize("kind", ["admin", "monthly"])
+@pytest.mark.parametrize("key,value", [
+    (BREVO_ADD_RETRY_KEY, "1"),
+    (BREVO_ADD_UNSETTLED_KEY, "pending"),
+    (BREVO_ADD_UNSETTLED_KEY, "uncertain"),
+    (LISTMONK_ADD_UNSETTLED_KEY, "pending"),
+    (LISTMONK_ADD_UNSETTLED_KEY, "uncertain"),
+    (BREVO_REMOVE_RETRY_KEY, "1"),
+    (LISTMONK_REMOVE_RETRY_KEY, "1"),
+])
+@pytest.mark.parametrize("stage", ["initial", "final"])
+async def test_any_unsettled_provider_write_blocks_both_send_paths(store, provider, monkeypatch, kind, key, value, stage):
+    seed_campaign(store, provider)
+    # Even an excluded contact's older write can change segment membership later.
+    save(store, provider, consent("older-sync@example.org", language="en"))
+    if stage == "initial":
+        store.hashes[key]["older-sync@example.org"] = value
+    else:
+        from services.newsletter_lock import NewsletterLease
+        original = NewsletterLease.check
+
+        async def renew(lease):
+            await original(lease)
+            if any(request.method == "PUT" or (
+                kind == "monthly" and request.url.path == "/v3/emailCampaigns"
+            ) for request in provider.writes):
+                store.hashes[key]["older-sync@example.org"] = value
+
+        monkeypatch.setattr(NewsletterLease, "check", renew)
+    await blocked_dispatch(kind, "unsettled_provider_writes")
+    assert not provider.sent
+    assert store.hashes[key] == {"older-sync@example.org": value}
+
+
+@pytest.mark.parametrize("kind", ["admin", "monthly"])
+async def test_final_authorization_rechecks_provider_membership_after_renewal(store, provider, monkeypatch, kind):
+    from services.newsletter_lock import NewsletterLease
+
+    seed_campaign(store, provider)
+    save(store, provider, consent("older-sync@example.org", language="en"))
+    original = NewsletterLease.check
+
+    async def renew(lease):
+        await original(lease)
+        if any(request.method == "PUT" or (
+            kind == "monthly" and request.url.path == "/v3/emailCampaigns"
+        ) for request in provider.writes):
+            # A historical request commits after the initial one-contact audit.
+            provider.contacts["older-sync@example.org"]["attributes"]["NL_LANGUAGE"] = "el"
+
+    monkeypatch.setattr(NewsletterLease, "check", renew)
+    detail = await blocked_dispatch(kind, "audience_mismatch")
+    if detail:
+        assert detail == {"reason": "audience_mismatch", "selected": 1, "excluded": 1, "failed": 0, "provider": 2}
+    assert not provider.sent
+
+
+@pytest.mark.parametrize("kind", ["admin", "monthly"])
+@pytest.mark.parametrize("operation", ["unsubscribe", "webhook", "brevo", "listmonk", "preferences", "backfill"])
+async def test_dispatch_lease_excludes_other_tasks_through_send(store, provider, monkeypatch, kind, operation):
+    from services.newsletter_lock import NewsletterLockUnavailable
+
+    seed_campaign(store, provider)
+    entered, release = asyncio.Event(), asyncio.Event()
+    original = provider.request
+
+    async def request(req):
+        if req.url.path.endswith("/sendNow"):
+            entered.set()
+            await release.wait()
+        return original(req)
+
+    monkeypatch.setattr(provider, "request", request)
+    task = asyncio.create_task(dispatch(kind))
+    try:
+        await asyncio.wait_for(entered.wait(), 2)
+        writes = len(provider.writes)
+        if operation in {"unsubscribe", "webhook"}:
+            path = "unsubscribe" if operation == "unsubscribe" else "webhook/brevo"
+            token = "synthetic-admin-key" if operation == "unsubscribe" else "synthetic-webhook-token"
+            async with HTTP_CLIENT(transport=httpx.ASGITransport(app=application()), base_url="http://test") as client:
+                response = await client.post(f"/api/v1/newsletter/{path}", headers={
+                    "Authorization": f"Bearer {token}",
+                }, json={"email": EMAIL, "event": "unsubscribe"})
+            assert response.status_code == (503 if operation == "unsubscribe" else 429)
+        elif operation in {"brevo", "listmonk"}:
+            sync = newsletter._sync_brevo_contact if operation == "brevo" else newsletter._sync_listmonk_contact
+            with pytest.raises(NewsletterLockUnavailable):
+                await sync(store, EMAIL)
+        elif operation == "preferences":
+            with pytest.raises(newsletter.HTTPException) as error:
+                await newsletter_admin.newsletter_preferences(newsletter_admin.PreferencesRequest(
+                    email=EMAIL, language="en", frequency="weekly", topics=dict.fromkeys(TOPICS, True),
+                ), _auth=True)
+            assert error.value.status_code == 503
+        else:
+            assert (await newsletter_admin.newsletter_backfill(dry_run=False, _auth=True))["failed"] == 1
+        assert not store.hashes[SUPPRESSED_KEY]
+        assert EMAIL in store.hashes[CONFIRMED_KEY]
+        assert len(provider.writes) == writes
+    finally:
+        release.set()
+        await asyncio.wait_for(task, 2)
+    assert len(provider.sent) == 1
+    # The same withdrawal succeeds once dispatch releases its authorization.
+    monkeypatch.setattr(provider, "request", original)
+    assert await newsletter._withdraw_subscription(store, EMAIL, "unsubscribed")
+    assert EMAIL in store.hashes[SUPPRESSED_KEY]
+
+
+@pytest.mark.parametrize("kind", ["admin", "monthly"])
+async def test_inflight_preference_sync_blocks_campaign_and_retains_stale_write_retry(store, provider, monkeypatch, kind):
+    from services.newsletter_lock import LOCK_KEY
+
+    seed_campaign(store, provider)
+    data = consent("older-sync@example.org")
+    store.hashes[CONFIRMED_KEY][data["email"]] = json.dumps(data)
+    entered, release = asyncio.Event(), asyncio.Event()
+    original = provider.request
+
+    async def request(req):
+        if req.method == "POST" and req.url.path == "/v3/contacts":
+            entered.set()
+            await release.wait()
+        return original(req)
+
+    monkeypatch.setattr(provider, "request", request)
+    task = asyncio.create_task(newsletter._sync_brevo_contact(store, data["email"]))
+    try:
+        await asyncio.wait_for(entered.wait(), 2)
+        assert LOCK_KEY in store.pending
+        store.hashes[CONFIRMED_KEY][data["email"]] = json.dumps({**data, "language": "en"})
+        await blocked_dispatch(kind, "lock_unavailable")
+    finally:
+        release.set()
+        assert not await asyncio.wait_for(task, 2)
+    assert store.hashes[BREVO_ADD_RETRY_KEY]
+    await blocked_dispatch(kind, "unsettled_provider_writes")
+    assert not provider.sent
+
+
+@pytest.mark.parametrize("key", ["en:weekly:all", "en:weekly:active_votes", "el:monthly:unknown", "xx:weekly:all", EMAIL])
+@pytest.mark.parametrize("value", [0, -1, True, "private-segment", 1.5, None, {}, []])
+def test_entire_segment_mapping_rejects_unknown_keys_and_invalid_other_entries(monkeypatch, key, value):
+    monkeypatch.setenv("BREVO_NEWSLETTER_SEGMENTS", json.dumps({"el:monthly:all": 1, key: value}))
+    with pytest.raises(AudienceUnavailable) as error:
+        newsletter_audience.campaign_recipients(CampaignPlan())
+    assert error.value.reason == "segments_invalid"
+
+
+@pytest.mark.parametrize("key", ["el:monthly:unknown", "xx:weekly:all", "el:daily:all", EMAIL])
+def test_unknown_segment_key_is_rejected_even_with_valid_id(monkeypatch, key):
+    monkeypatch.setenv("BREVO_NEWSLETTER_SEGMENTS", json.dumps({"el:monthly:all": 1, key: 17}))
+    with pytest.raises(AudienceUnavailable, match="segments_invalid"):
+        newsletter_audience.campaign_recipients(CampaignPlan())
+
+
+@pytest.mark.parametrize("kind", ["audience", "admin", "monthly"])
+@pytest.mark.parametrize("raw,reason", [
+    (None, "segments_not_configured"), ("", "segments_not_configured"),
+    ("{}", "segments_not_configured"), ("private-malformed-config", "segments_invalid"),
+    (json.dumps({"el:monthly:all": 1, "en:weekly:all": "private-value"}), "segments_invalid"),
+    (json.dumps({"el:monthly:all": 1, EMAIL: 987654321}), "segments_invalid"),
+])
+async def test_configuration_diagnosis_has_fixed_reason_and_counts_only(store, provider, monkeypatch, caplog, kind, raw, reason):
+    seed_campaign(store, provider)
+    save(store, provider, consent("excluded@example.org", language="en"))
+    if raw is None:
+        monkeypatch.delenv("BREVO_NEWSLETTER_SEGMENTS")
+    else:
+        monkeypatch.setenv("BREVO_NEWSLETTER_SEGMENTS", raw)
+    if kind == "monthly":
+        assert not await dispatch(kind)
+    else:
+        async with HTTP_CLIENT(transport=httpx.ASGITransport(app=application()), base_url="http://test") as client:
+            response = await client.post(f"/api/v1/admin/newsletter/{'audience' if kind == 'audience' else 'send'}",
+                                         headers=AUTH, json={} if kind == "audience" else {"campaign_id": 1, "confirm": True})
+        assert response.status_code == 503
+        assert response.json() == {"detail": {"reason": reason, "selected": 1, "excluded": 1, "failed": 0, "provider": 0}}
+        assert EMAIL not in response.text
+    assert f"reason={reason} selected=1 excluded=1 failed=0 provider=0" in caplog.text
+    assert all(value not in caplog.text for value in (EMAIL, "excluded@example.org", "private-value", "private-malformed-config", "987654321"))
+    assert not provider.sent
+    assert not provider.writes

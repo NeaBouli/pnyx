@@ -27,7 +27,7 @@ from ip_utils import hashed_rate_subject, rate_limit_key_for_ip, redis_fixed_win
 from dependencies import verify_admin_key
 from services import newsletter_service
 from services.mail_policy import operator_reply_to
-from services.newsletter_lock import newsletter_lock, NewsletterLockUnavailable
+from services.newsletter_lock import newsletter_lock, newsletter_transition, NewsletterLockUnavailable
 from security_headers import API_CSP, csp_hash
 from services.newsletter_consent import (
     CONFIRMED_KEY, CONFIRM_ONCE, CONSENT_SCHEMA, confirmation_payload,
@@ -214,6 +214,7 @@ async def _unlink_listmonk_contact(email: str, *, require_present: bool = False)
     return result.get("data") is True
 
 
+@newsletter_transition
 async def _retry_withdrawal(store: aioredis.Redis, email: str) -> bool:
     success = True
     for key, unsettled_key, remove in (
@@ -244,6 +245,7 @@ async def _retry_withdrawal(store: aioredis.Redis, email: str) -> bool:
     return success
 
 
+@newsletter_transition
 async def _remove_ineligible_contact(store: aioredis.Redis, email: str) -> bool:
     await store.eval(
         QUEUE_DELIVERY_REMOVAL, 3, BREVO_ADD_RETRY_KEY, BREVO_REMOVE_RETRY_KEY,
@@ -450,14 +452,15 @@ async def _expire_reconfirmations(store, dry_run: bool) -> dict[str, int]:
 async def _withdraw_subscription(store: aioredis.Redis, email: str, reason: str) -> bool:
     # Provider events can change casing; preserve stored consent identities while
     # matching the provider's case-insensitive contact identity.
-    identities = {email}
-    identities.update(field for field in await store.hkeys(CONFIRMED_KEY) if field.casefold() == email.casefold())
-    for identity in identities:
-        await store.eval(
-            WITHDRAW_CONSENT, 5, CONFIRMED_KEY, SUPPRESSED_KEY, BREVO_ADD_RETRY_KEY,
-            BREVO_REMOVE_RETRY_KEY, LISTMONK_REMOVE_RETRY_KEY,
-            identity, reason, "1" if LISTMONK_PW else "0", email.casefold(),
-        )
+    async with newsletter_lock(store):
+        identities = {email}
+        identities.update(field for field in await store.hkeys(CONFIRMED_KEY) if field.casefold() == email.casefold())
+        for identity in identities:
+            await store.eval(
+                WITHDRAW_CONSENT, 5, CONFIRMED_KEY, SUPPRESSED_KEY, BREVO_ADD_RETRY_KEY,
+                BREVO_REMOVE_RETRY_KEY, LISTMONK_REMOVE_RETRY_KEY,
+                identity, reason, "1" if LISTMONK_PW else "0", email.casefold(),
+            )
     success = True
     for identity in identities:
         if not await _retry_withdrawal(store, identity):
@@ -465,6 +468,7 @@ async def _withdraw_subscription(store: aioredis.Redis, email: str, reason: str)
     return success
 
 
+@newsletter_transition
 async def _sync_brevo_contact(store: aioredis.Redis, email: str, name: str = "") -> bool:
     """Queue before delivery; a concurrent withdrawal always wins over an add."""
     try:
@@ -515,6 +519,7 @@ async def _sync_brevo_contact(store: aioredis.Redis, email: str, name: str = "")
     return False
 
 
+@newsletter_transition
 async def _sync_listmonk_contact(store: aioredis.Redis, email: str) -> bool:
     """Retain removal work until even a timed-out creation has been reconciled."""
     try:
@@ -534,7 +539,7 @@ async def _sync_listmonk_contact(store: aioredis.Redis, email: str) -> bool:
             return False
         try:
             await _listmonk_request("POST", "/api/subscribers", {
-                "email": email, "name": data.get("name", ""),
+                "email": email,
                 "status": "enabled", "preconfirm_subscriptions": True,
                 "attribs": data.get("topics", {}),
             })
