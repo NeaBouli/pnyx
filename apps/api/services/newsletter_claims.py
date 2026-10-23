@@ -1,4 +1,5 @@
 """One durable ledger for logical dispatches and provider campaign identities."""
+import logging
 import json
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -6,6 +7,8 @@ from dataclasses import dataclass
 from services.newsletter_audience import AudienceUnavailable
 from services import newsletter_lock
 from services.newsletter_service import CampaignNotSent
+
+logger = logging.getLogger(__name__)
 
 CLAIMS_KEY = "newsletter:dispatch:v1"
 FENCE_FIELD = "_fence"
@@ -43,12 +46,18 @@ return 1
 async def _records(store) -> tuple[dict[str, str], dict[str, dict]]:
     raw = await store.hgetall(CLAIMS_KEY)
     records = {}
+    quarantined = 0
     for key, value in raw.items():
         if key == FENCE_FIELD:
             continue
         try:
             record = json.loads(value)
             campaign_id = record["campaign_id"]
+            if type(campaign_id) is int and campaign_id <= 0:
+                # A non-positive ID can never name a real provider campaign: quarantine the
+                # entry instead of blocking every dispatch path; other corruption fails closed.
+                quarantined += 1
+                continue
             if (record["state"] not in STATES or (campaign_id is not None
                     and (type(campaign_id) is not int or campaign_id <= 0))
                     or ("fence" in record and (type(record["fence"]) is not int or record["fence"] <= 0))):
@@ -56,6 +65,8 @@ async def _records(store) -> tuple[dict[str, str], dict[str, dict]]:
             records[key] = record
         except (KeyError, TypeError, ValueError):
             raise AudienceUnavailable("dispatch_unavailable") from None
+    if quarantined:
+        logger.warning("[NEWSLETTER] Ignored %d dispatch claim(s) with an invalid campaign ID", quarantined)
     return raw, records
 
 

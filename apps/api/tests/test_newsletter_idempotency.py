@@ -358,3 +358,32 @@ def test_claim_acquire_rejects_invalid_campaign_ids_without_writing(campaign_id)
 
     with pytest.raises(AudienceUnavailable):
         asyncio.run(DispatchClaim.acquire(_NoStoreLease(), "admin:test", campaign_id))
+
+
+def test_records_quarantines_non_positive_campaign_claims():
+    import asyncio, json
+    from services.newsletter_claims import CLAIMS_KEY, _records
+
+    class _Store:
+        async def hgetall(self, key):
+            assert key == CLAIMS_KEY
+            return {
+                "admin:legacy": json.dumps({"state": "claimed", "campaign_id": 0}),
+                "admin:ok": json.dumps({"state": "sent", "campaign_id": 7, "fence": 1}),
+            }
+
+    _, records = asyncio.run(_records(_Store()))
+    assert "admin:legacy" not in records and records["admin:ok"]["state"] == "sent"
+
+
+def test_records_still_fails_closed_on_other_corruption():
+    import asyncio
+    from services.newsletter_audience import AudienceUnavailable
+    from services.newsletter_claims import _records
+
+    class _Store:
+        async def hgetall(self, key):
+            return {"admin:broken": "{not json"}
+
+    with pytest.raises(AudienceUnavailable):
+        asyncio.run(_records(_Store()))
