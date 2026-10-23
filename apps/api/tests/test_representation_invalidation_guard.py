@@ -159,9 +159,9 @@ def scan(sources):
 
 
 def test_all_representation_writers_invalidate():
-    paths = subprocess.check_output(["rg", "--files", "--hidden", "-g", "*.py",
-                                     "-g", "!**/tests/**",
-                                     "-g", "!**/.venv/**", "-g", "!vendor/**"], cwd=ROOT, text=True).splitlines()
+    tracked = subprocess.check_output(["git", "ls-files", "--", "*.py"], cwd=ROOT, text=True).splitlines()
+    paths = [path for path in tracked
+             if "/tests/" not in f"/{path}" and "/.venv/" not in f"/{path}" and not path.startswith("vendor/")]
     sources = {path: (ROOT / path).read_text() for path in paths
                if not Path(path).name.startswith("test_")}
     assert not (missing := scan(sources)), "Writers missing post-commit invalidation:\n" + "\n".join(missing)
