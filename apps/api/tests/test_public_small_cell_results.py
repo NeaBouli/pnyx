@@ -612,12 +612,15 @@ async def test_exact_reproductions_execute_real_public_aggregate_sql(scenario):
 
 @pytest.mark.asyncio
 async def test_representation_totals_exclude_hidden_source_complements(monkeypatch):
-    safe = bill_fixture()
-    safe.id = "SAFE"
-    async def aggregate(_db, bill_id, **_):
-        return VoteTotals(10, 10, 10, 10, 40, 0) if bill_id == "SAFE" else VoteTotals(11, 10, 10, 10, 1, 40)
-    monkeypatch.setattr(analytics, "aggregate_bill_vote_totals", aggregate)
-    result = await analytics.compute_cumulative_representation(Db(rows=[[safe, bill_fixture()]]))
+    def row(bill_id, tier1, zk):
+        return dict(id=bill_id, title_el="Δοκιμή", source="PARLIAMENT",
+                    party_votes_parliament={"A": "YES"},
+                    **dict(zip((f"tier1_{c}" for c in CHOICES), tier1)),
+                    **dict(zip((f"zk_{c}" for c in CHOICES), zk)))
+    rows = [row("SAFE", (10,)*4, (0,)*4), row("SMALL", (1,0,0,0), (10,)*4)]
+    db = SimpleNamespace(execute=AsyncMock(return_value=SimpleNamespace(
+        mappings=lambda: SimpleNamespace(all=lambda: rows))))
+    result = await analytics.compute_cumulative_representation(db)
     assert result["total_citizen_votes"] == 40
 
 

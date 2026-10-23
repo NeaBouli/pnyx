@@ -1,22 +1,16 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
 } from 'recharts'
 import { arrayFrom, asRecord, numberFrom } from '@/lib/response'
-import { fetchOverviewJSON, hlrEstimate } from '@/lib/overview'
+import { hlrEstimate, loadOverviewWidgets, overviewLoading } from '@/lib/overview'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
 
 type Tab = 'overview' | 'analytics' | 'finance'
-
-// ─── Helpers ───
-
-async function apiFetch(path: string) {
-  return fetchOverviewJSON(path.startsWith('http') ? path : `${API}${path}`)
-}
 
 // ─── StatCard ───
 
@@ -27,9 +21,11 @@ interface StatCardProps {
   color?: string
   badge?: { label: string; color: 'green' | 'red' | 'yellow' | 'gray' }
   progress?: number
+  loading?: boolean
 }
 
-function StatCard({ title, value, sub, color = 'text-blue-600', badge, progress }: StatCardProps) {
+function StatCard({ title, value, sub, color = 'text-blue-600', badge, progress, loading }: StatCardProps) {
+  if (loading) return <Skeleton className="h-28 rounded-xl" />
   const badgeColors: Record<string, string> = {
     green: 'bg-green-100 text-green-700',
     red: 'bg-red-100 text-red-700',
@@ -89,53 +85,29 @@ function Skeleton({ className = '' }: { className?: string }) {
 
 export default function OverviewPage() {
   const [tab, setTab] = useState<Tab>('overview')
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(overviewLoading)
   const [data, setData] = useState<Record<string, unknown>>({})
+  const cancelLoad = useRef<(() => void) | null>(null)
 
-  const loadData = useCallback(async () => {
-    setLoading(true)
-    const [
-      health, hlr, bills, cplm, analytics, scraperJobs, discourse,
-      claude, newsletter, divergence, votesTimeline, topDiv, representation,
-      payments, arweave, deepl,
-    ] = await Promise.allSettled([
-      apiFetch('/health'),
-      fetchOverviewJSON('/api/proxy/admin/hlr/credits'),
-      apiFetch('/api/v1/bills?limit=5'),
-      apiFetch('/api/v1/cplm/aggregate'),
-      apiFetch('/api/v1/analytics/overview'),
-      apiFetch('/api/v1/scraper/jobs'),
-      fetchOverviewJSON('/api/discourse'),
-      apiFetch('/api/v1/claude/budget'),
-      apiFetch('/api/v1/newsletter/stats'),
-      apiFetch('/api/v1/analytics/divergence-trends?days=90'),
-      apiFetch('/api/v1/analytics/votes-timeline?days=30'),
-      apiFetch('/api/v1/analytics/top-divergence?limit=5'),
-      apiFetch('/api/v1/analytics/representation'),
-      apiFetch('/api/v1/payments/status'),
-      apiFetch('/api/v1/arweave/status'),
-      apiFetch('/api/v1/public/deepl/usage'),
-    ])
-
-    const v = (r: PromiseSettledResult<unknown>) => r.status === 'fulfilled' ? r.value : null
-    setData({
-      health: v(health), hlr: v(hlr), bills: v(bills), cplm: v(cplm),
-      analytics: v(analytics), scraperJobs: v(scraperJobs), discourse: v(discourse),
-      claude: v(claude), newsletter: v(newsletter),
-      divergence: v(divergence), votesTimeline: v(votesTimeline),
-      topDiv: v(topDiv), representation: v(representation),
-      payments: v(payments), arweave: v(arweave), deepl: v(deepl),
+  const loadData = useCallback(() => {
+    cancelLoad.current?.()
+    setLoading(overviewLoading())
+    cancelLoad.current = loadOverviewWidgets(API, (key, value) => {
+      setData(previous => ({ ...previous, [key]: value }))
+      setLoading(previous => ({ ...previous, [key]: false }))
     })
-    setLoading(false)
   }, [])
 
-  useEffect(() => { loadData() }, [loadData])
-
-  // Auto-refresh every 30s
   useEffect(() => {
+    loadData()
     const interval = setInterval(loadData, 30000)
-    return () => clearInterval(interval)
+    return () => {
+      clearInterval(interval)
+      cancelLoad.current?.()
+    }
   }, [loadData])
+
+  const refreshing = Object.values(loading).some(Boolean)
 
   const healthData = data.health as Record<string, unknown> | null
   const hlrData = data.hlr as Record<string, unknown> | null
@@ -193,10 +165,10 @@ export default function OverviewPage() {
         <h1 className="text-2xl font-bold text-gray-900">Επισκόπηση Dashboard</h1>
         <button
           onClick={loadData}
-          disabled={loading}
+          disabled={refreshing}
           className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
         >
-          {loading ? 'Ανανέωση...' : 'Ανανέωση'}
+          {refreshing ? 'Ανανέωση...' : 'Ανανέωση'}
         </button>
       </div>
 
@@ -221,65 +193,67 @@ export default function OverviewPage() {
       {tab === 'overview' && (
         <div className="space-y-6">
           {/* 8 tiles */}
-          {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard
-                title="Κατάσταση API"
-                value={apiOk ? 'Ενεργό' : 'Σφάλμα'}
-                sub={moduleCount > 0 ? `${moduleCount} ενεργά modules` : undefined}
-                color={apiOk ? 'text-green-600' : 'text-red-600'}
-                badge={{ label: apiOk ? 'OK' : 'ERROR', color: apiOk ? 'green' : 'red' }}
-              />
-              <StatCard
-                title="HLR Credits (Εκτίμηση)"
-                value={primaryCredits != null ? primaryCredits : '—'}
-                sub={primaryProvider ? `${primaryProvider} · Τοπικός μετρητής, όχι ζωντανό υπόλοιπο παρόχου` : 'Μη διαθέσιμο'}
-                color={primaryCredits != null ? 'text-blue-600' : 'text-gray-400'}
-                progress={primaryPct ?? undefined}
-              />
-              <StatCard
-                title="Ενεργά Νομοσχέδια"
-                value={activeBills ?? '—'}
-                sub="Περιλαμβάνει το παράθυρο 24 ωρών"
-                color="text-blue-600"
-              />
-              <StatCard
-                title="Συνολικές Ψηφοφορίες"
-                value={totalVotes != null ? totalVotes.toLocaleString('el-GR') : '—'}
-                sub="Από analytics/overview"
-                color="text-blue-600"
-              />
-              <StatCard
-                title="CPLM Θέση"
-                value={cplmX && cplmY ? `(${cplmX}, ${cplmY})` : '—'}
-                sub="X = Οικονομία, Y = Κοινωνία"
-                color={cplmData ? 'text-purple-600' : 'text-gray-400'}
-              />
-              <StatCard
-                title="Discourse Forum"
-                value={discourseVersion ?? 'Εκτός Σύνδεσης'}
-                sub="pnyx.ekklesia.gr"
-                color={discourseVersion ? 'text-blue-600' : 'text-red-600'}
-                badge={{ label: discourseVersion ? 'Live' : 'Εκτός Σύνδεσης', color: discourseVersion ? 'green' : 'red' }}
-              />
-              <StatCard
-                title="AI Προϋπολογισμός"
-                value={claudeIsActive ? 'Ενεργό' : claudeIsActive === false ? 'Ανενεργό' : '—'}
-                sub={claudeTokensToday != null ? `Σήμερα: ${claudeTokensToday.toLocaleString('el-GR')} tokens` : 'Claude Tokens'}
-                color={claudeIsActive ? 'text-green-600' : 'text-gray-400'}
-              />
-              <StatCard
-                title="Newsletter"
-                value={subscriberCount != null ? subscriberCount : '—'}
-                sub={sentMonth != null ? `${sentMonth} αποστολές/μήνα` : 'Συνδρομητές'}
-                color="text-blue-600"
-              />
-            </div>
-          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              loading={loading.health}
+              title="Κατάσταση API"
+              value={apiOk ? 'Ενεργό' : 'Σφάλμα'}
+              sub={moduleCount > 0 ? `${moduleCount} ενεργά modules` : undefined}
+              color={apiOk ? 'text-green-600' : 'text-red-600'}
+              badge={{ label: apiOk ? 'OK' : 'ERROR', color: apiOk ? 'green' : 'red' }}
+            />
+            <StatCard
+              loading={loading.hlr}
+              title="HLR Credits (Εκτίμηση)"
+              value={primaryCredits != null ? primaryCredits : '—'}
+              sub={primaryProvider ? `${primaryProvider} · Τοπικός μετρητής, όχι ζωντανό υπόλοιπο παρόχου` : 'Μη διαθέσιμο'}
+              color={primaryCredits != null ? 'text-blue-600' : 'text-gray-400'}
+              progress={primaryPct ?? undefined}
+            />
+            <StatCard
+              loading={loading.analytics}
+              title="Ενεργά Νομοσχέδια"
+              value={activeBills ?? '—'}
+              sub="Περιλαμβάνει το παράθυρο 24 ωρών"
+              color="text-blue-600"
+            />
+            <StatCard
+              loading={loading.analytics}
+              title="Συνολικές Ψηφοφορίες"
+              value={totalVotes != null ? totalVotes.toLocaleString('el-GR') : '—'}
+              sub="Από analytics/overview"
+              color="text-blue-600"
+            />
+            <StatCard
+              loading={loading.cplm}
+              title="CPLM Θέση"
+              value={cplmX && cplmY ? `(${cplmX}, ${cplmY})` : '—'}
+              sub="X = Οικονομία, Y = Κοινωνία"
+              color={cplmData ? 'text-purple-600' : 'text-gray-400'}
+            />
+            <StatCard
+              loading={loading.discourse}
+              title="Discourse Forum"
+              value={discourseVersion ?? 'Εκτός Σύνδεσης'}
+              sub="pnyx.ekklesia.gr"
+              color={discourseVersion ? 'text-blue-600' : 'text-red-600'}
+              badge={{ label: discourseVersion ? 'Live' : 'Εκτός Σύνδεσης', color: discourseVersion ? 'green' : 'red' }}
+            />
+            <StatCard
+              loading={loading.claude}
+              title="AI Προϋπολογισμός"
+              value={claudeIsActive ? 'Ενεργό' : claudeIsActive === false ? 'Ανενεργό' : '—'}
+              sub={claudeTokensToday != null ? `Σήμερα: ${claudeTokensToday.toLocaleString('el-GR')} tokens` : 'Claude Tokens'}
+              color={claudeIsActive ? 'text-green-600' : 'text-gray-400'}
+            />
+            <StatCard
+              loading={loading.newsletter}
+              title="Newsletter"
+              value={subscriberCount != null ? subscriberCount : '—'}
+              sub={sentMonth != null ? `${sentMonth} αποστολές/μήνα` : 'Συνδρομητές'}
+              color="text-blue-600"
+            />
+          </div>
 
           {/* Recent bills */}
           <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
@@ -287,7 +261,7 @@ export default function OverviewPage() {
               <h2 className="font-semibold text-gray-800">Τελευταία Νομοσχέδια</h2>
               <a href="/bills" className="text-sm text-blue-600 hover:underline">Όλα →</a>
             </div>
-            {!Array.isArray(bills) || bills.length === 0 ? (
+            {loading.bills ? <Skeleton className="h-40 m-5" /> : !Array.isArray(bills) || bills.length === 0 ? (
               <div className="p-8 text-center text-gray-400 text-sm">Δεν βρέθηκαν νομοσχέδια</div>
             ) : (
               <table className="w-full text-sm">
@@ -322,7 +296,7 @@ export default function OverviewPage() {
           {/* Scraper jobs */}
           <div>
             <h2 className="font-semibold text-gray-800 mb-3">Scheduler Jobs</h2>
-            {loading ? (
+            {loading.scraperJobs ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
               </div>
@@ -360,7 +334,7 @@ export default function OverviewPage() {
           {/* Divergence trends */}
           <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
             <h2 className="text-base font-semibold text-gray-800 mb-4">Divergence Trends (90 ημέρες)</h2>
-            {Array.isArray(divergenceData) && divergenceData.length > 0 ? (
+            {loading.divergence ? <Skeleton className="h-40" /> : Array.isArray(divergenceData) && divergenceData.length > 0 ? (
               <ResponsiveContainer width="100%" height={280}>
                 <LineChart data={divergenceData as Record<string, unknown>[]} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -378,7 +352,7 @@ export default function OverviewPage() {
           {/* Votes timeline */}
           <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
             <h2 className="text-base font-semibold text-gray-800 mb-4">Ψήφοι ανά Ημέρα (30 ημέρες)</h2>
-            {Array.isArray(votesTimelineData) && votesTimelineData.length > 0 ? (
+            {loading.votesTimeline ? <Skeleton className="h-40" /> : Array.isArray(votesTimelineData) && votesTimelineData.length > 0 ? (
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={votesTimelineData as Record<string, unknown>[]} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -398,7 +372,7 @@ export default function OverviewPage() {
             <div className="px-5 py-4 border-b border-gray-200">
               <h2 className="font-semibold text-gray-800">Top 5 Bills κατά Divergence</h2>
             </div>
-            {Array.isArray(topDivData) && topDivData.length > 0 ? (
+            {loading.topDiv ? <Skeleton className="h-40" /> : Array.isArray(topDivData) && topDivData.length > 0 ? (
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
@@ -427,7 +401,7 @@ export default function OverviewPage() {
           {/* Representation Score */}
           <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
             <h2 className="text-base font-semibold text-gray-800 mb-3">Representation Score</h2>
-            {representationData ? (
+            {loading.representation ? <Skeleton className="h-40" /> : representationData ? (
               <div>
                 <div className="text-3xl font-bold text-purple-600 mb-2">
                   {representationPercent.toFixed(1)}%
@@ -453,7 +427,7 @@ export default function OverviewPage() {
           {/* Payment status */}
           <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
             <h2 className="text-base font-semibold text-gray-800 mb-4">Κατάσταση Πληρωμών</h2>
-            {paymentsData ? (
+            {loading.payments ? <Skeleton className="h-40" /> : paymentsData ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="text-xs text-gray-500 mb-1">Διακομιστής</div>
@@ -491,7 +465,7 @@ export default function OverviewPage() {
           <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
             <h2 className="text-base font-semibold text-gray-800 mb-4">HLR Credits (Εκτίμηση)</h2>
             <p className="text-xs text-gray-500 mb-3">Τοπικός μετρητής, όχι ζωντανό υπόλοιπο παρόχου</p>
-            {hlrData ? (
+            {loading.hlr ? <Skeleton className="h-40" /> : hlrData ? (
               <div className="space-y-4">
                 {(['primary', 'fallback'] as const).map(key => {
                   const prov = hlrData[key] as Record<string, unknown> | null
@@ -518,7 +492,7 @@ export default function OverviewPage() {
           {/* Arweave */}
           <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
             <h2 className="text-base font-semibold text-gray-800 mb-3">Arweave Balance</h2>
-            {arweaveData ? (
+            {loading.arweave ? <Skeleton className="h-40" /> : arweaveData ? (
               <div>
                 <div className="text-3xl font-bold text-blue-600">
                   {arweaveData.balance_ar != null ? `${(arweaveData.balance_ar as number).toFixed(4)} AR` : '—'}
@@ -535,7 +509,7 @@ export default function OverviewPage() {
           {/* Claude AI Προϋπολογισμός */}
           <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
             <h2 className="text-base font-semibold text-gray-800 mb-3">Claude AI Προϋπολογισμός</h2>
-            {claudeData ? (
+            {loading.claude ? <Skeleton className="h-40" /> : claudeData ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="text-xs text-gray-500 mb-1">Tokens Σήμερα</div>
@@ -562,7 +536,7 @@ export default function OverviewPage() {
           {/* DeepL */}
           <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
             <h2 className="text-base font-semibold text-gray-800 mb-3">DeepL Κατανάλωση</h2>
-            {deeplData ? (
+            {loading.deepl ? <Skeleton className="h-40" /> : deeplData ? (
               <div>
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-gray-600">Χαρακτήρες</span>
