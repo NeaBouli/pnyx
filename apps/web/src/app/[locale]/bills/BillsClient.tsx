@@ -7,6 +7,7 @@ import Link from "next/link";
 import { ekklesia, municipal, Bill, BillQueryParams } from "@/lib/api";
 import { BILLS_PAGE_SIZE, type InitialBills } from "@/lib/initial-data";
 import ParliamentFreshness from "@/components/ParliamentFreshness";
+import ParliamentAttribution from "@/components/ParliamentAttribution";
 import StatusBadge from "@/components/StatusBadge";
 import RelevanceButtons from "@/components/RelevanceButtons";
 
@@ -317,9 +318,8 @@ export default function BillsClient({ initial }: { initial: InitialBills | null 
         {/* Bills List */}
         <div className="space-y-4">
           {paginated.map(bill => (
-            <Link
+            <article
               key={bill.id}
-              href={`bills/${bill.id}`}
               className="block bg-white rounded-2xl p-6 border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all group"
             >
               <div className="flex justify-between items-start gap-4 mb-3">
@@ -335,14 +335,22 @@ export default function BillsClient({ initial }: { initial: InitialBills | null 
               </div>
 
               <h2 className="font-semibold text-lg text-gray-900 mb-2 group-hover:text-blue-700 transition-colors leading-snug">
-                {bill[titleKey as keyof Bill] as string || bill.title_el}
+                <Link href={`bills/${bill.id}`}>
+                  {bill[titleKey as keyof Bill] as string || bill.title_el}
+                </Link>
               </h2>
+              <ParliamentAttribution bill={bill} locale={locale} />
               <ParliamentFreshness bill={bill} locale={locale} />
 
               {(bill[shortKey as keyof Bill] || bill[pillKey as keyof Bill]) && (
-                <p className="text-gray-500 text-sm leading-relaxed">
-                  {(bill[shortKey as keyof Bill] || bill[pillKey as keyof Bill]) as string}
-                </p>
+                <div className={bill.source === "PARLIAMENT" ? "border-t border-gray-200 pt-3 mt-3" : undefined}>
+                  {bill.source === "PARLIAMENT" && <p className="text-xs font-semibold text-gray-600 mb-1">
+                    {isEl ? "Σύνοψη — ekklesia" : "Summary — ekklesia"}
+                  </p>}
+                  <p className="text-gray-500 text-sm leading-relaxed">
+                    {(bill[shortKey as keyof Bill] || bill[pillKey as keyof Bill]) as string}
+                  </p>
+                </div>
               )}
 
               {bill.categories && (
@@ -383,11 +391,11 @@ export default function BillsClient({ initial }: { initial: InitialBills | null 
                 <div onClick={(e) => e.preventDefault()}>
                   <RelevanceButtons billId={bill.id} initialScore={bill.relevance_score ?? 0} locale={locale} compact />
                 </div>
-                <span className="text-blue-600 text-sm font-semibold group-hover:text-blue-700">
+                <Link href={`bills/${bill.id}`} className="text-blue-600 text-sm font-semibold group-hover:text-blue-700">
                   {isEl ? "Λεπτομέρειες →" : "Details →"}
-                </span>
+                </Link>
               </div>
-            </Link>
+            </article>
           ))}
         </div>
 

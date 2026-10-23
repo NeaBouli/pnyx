@@ -51,7 +51,8 @@ async def test_bill_list_detail_and_public_source_freshness_serialize_real_state
     await freshness.record_source_blocked()
     assert "scraper:parliament:source_blocked" in store
     bill = ParliamentBill(id="GR-actual", title_el="Δημόσιο νομοσχέδιο", status=BillStatus.ACTIVE,
-                          source="PARLIAMENT", ai_summary_reviewed=False)
+                          source="PARLIAMENT", ai_summary_reviewed=False,
+                          created_at=datetime(2026, 1, 1, 23, 30))
     db = SimpleNamespace(execute=AsyncMock(return_value=SimpleNamespace(
         scalars=lambda: SimpleNamespace(all=lambda: [bill]), scalar_one_or_none=lambda: bill)))
     app = FastAPI()
@@ -72,6 +73,7 @@ async def test_bill_list_detail_and_public_source_freshness_serialize_real_state
             assert payload["source_last_success"] == success
             assert payload["source_blocked"] is True
             assert payload["source_stale"] is True
+            assert payload["created_at"] == "2026-01-01T23:30:00"
 
 
 @pytest.mark.asyncio

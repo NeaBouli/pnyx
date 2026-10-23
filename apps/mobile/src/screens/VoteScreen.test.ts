@@ -8,6 +8,7 @@ import * as sourceResolver from "../lib/source-resolver";
 import * as voteSuccess from "../lib/vote-success";
 import * as zkPilotError from "../lib/zkPilotError";
 import * as zkPublicVoting from "../lib/zkPublicVoting";
+import { parliamentFreshness } from "../lib/source-freshness";
 
 type El = { type: unknown; props: Record<string, any> };
 type Status = { has_voted: boolean; is_correction: boolean; vote: string | null };
@@ -66,6 +67,7 @@ function createHarness() {
       if (pending) pending.push({ i, fn, deps });
     },
     createElement(type: unknown, props?: Record<string, unknown> | null, ...children: unknown[]) {
+      if (typeof type === "function") return type({ ...props, children });
       return { type, props: { ...(props ?? {}), children } };
     },
     Fragment: "Fragment",
@@ -100,10 +102,11 @@ function loadScreen(owner: string, deps: {
   fetchVoteStatus: ReturnType<typeof vi.fn>;
   syncVoteMark: ReturnType<typeof vi.fn>;
   submitVote: ReturnType<typeof vi.fn>;
-}) {
+}, billOverrides: Record<string, unknown> = {}) {
   const harness = createHarness();
   const reactModule = { __esModule: true, default: harness.api, ...harness.api };
-  const bill = { status: "ACTIVE", source: "PARLIAMENT", title_el: "Νόμος Τ" };
+  const bill = { status: "ACTIVE", source: "PARLIAMENT", title_el: "Νόμος Τ", ...billOverrides };
+  const openURL = vi.fn();
   const fetchMock = vi.fn(async () => ({ ok: true, json: async () => bill }));
   const requireMock = vi.fn((id: string): unknown => {
     if (id === "react") return reactModule;
@@ -111,7 +114,7 @@ function loadScreen(owner: string, deps: {
       return {
         View: "View", Text: "Text", TouchableOpacity: "TouchableOpacity", ScrollView: "ScrollView",
         ActivityIndicator: "ActivityIndicator", StyleSheet: { create: (s: unknown) => s },
-        Alert: { alert: vi.fn() }, Share: { share: vi.fn() }, Linking: { openURL: vi.fn() },
+        Alert: { alert: vi.fn() }, Share: { share: vi.fn() }, Linking: { openURL },
       };
     }
     if (id === "expo-local-authentication") return { authenticateAsync: vi.fn(), hasHardwareAsync: vi.fn() };
@@ -148,6 +151,16 @@ function loadScreen(owner: string, deps: {
     if (id === "../lib/vote-marks") return { recordVoteMark: vi.fn(), syncVoteMark: deps.syncVoteMark };
     if (id === "../lib/vote-success") return voteSuccess;
     if (id === "../lib/source-resolver") return sourceResolver;
+    if (id === "../lib/source-freshness") return { parliamentFreshness };
+    if (id === "../components/ParliamentAttribution") {
+      const source = readFileSync(new URL("../components/ParliamentAttribution.tsx", import.meta.url), "utf8");
+      const compiled = ts.transpileModule(source, {
+        compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React, esModuleInterop: true },
+      }).outputText;
+      const exports = {};
+      vm.runInNewContext(compiled, { exports, require: requireMock });
+      return exports;
+    }
     throw new Error(`Unexpected module ${id}`);
   });
   const source = readFileSync(new URL("./VoteScreen.tsx", import.meta.url), "utf8");
@@ -167,7 +180,7 @@ function loadScreen(owner: string, deps: {
   const Screen = exports.default as (p: unknown) => El;
   const props = { route: { params: { billId: "b-1", billTitle: "Τ" } }, navigation: { navigate: vi.fn() } };
   const screen = harness.mount(() => Screen(props));
-  return { harness, screen };
+  return { harness, screen, openURL };
 }
 
 async function flush() {
@@ -239,5 +252,38 @@ describe("VoteScreen vote-status owner isolation", () => {
     for (const btn of voteButtons) expect(btn.props.disabled).toBe(false);
     expect(b.harness.lateSets()).toBe(0);
     expect(submitVote).not.toHaveBeenCalled();
+  });
+});
+
+describe("VoteScreen source attribution", () => {
+  it.each(["PARLIAMENT", "DIAVGEIA", "UNKNOWN"])("renders %s without changing the title or official text", async source => {
+    const officialText = "Άρθρο 1 — Ακριβές_κείμενο * με https://example.gr/πηγή\n".repeat(40);
+    const { screen, openURL } = loadScreen("A", {
+      fetchVoteStatus: vi.fn(async () => null), syncVoteMark: vi.fn(), submitVote: vi.fn(),
+    }, {
+      source, title_el: "Αυθεντικός τίτλος — * Α", summary_short_el: "Η δική μας σύνοψη",
+      analysis_el: "Η δική μας ανάλυση", summary_long_el: officialText,
+      official_source_url: "https://www.hellenicparliament.gr/bill/123", source_last_success: null,
+      created_at: "2026-01-01T23:30:00",
+    });
+    await flush();
+    const tree = screen.tree();
+    const texts = textContent(tree);
+    expect(texts).toContain("Αυθεντικός τίτλος — * Α");
+    if (source === "PARLIAMENT") {
+      expect(texts).toContain("Αναδημοσίευση από τη διαδικτυακή πύλη της Βουλής των Ελλήνων");
+      expect(texts).toContain("Ημερομηνία: 02/01/2026");
+      expect(texts).toContain("Σύνοψη — ekklesia");
+      expect(texts).toContain("Ανάλυση — ekklesia");
+      expect(texts).toContain(officialText);
+      const link = findAll(tree, "TouchableOpacity").find(node => node.props.accessibilityRole === "link")!;
+      link.props.onPress({ stopPropagation: vi.fn() });
+      expect(openURL).toHaveBeenCalledWith("https://www.hellenicparliament.gr/bill/123");
+    } else {
+      expect(texts).not.toContain("Αναδημοσίευση");
+      expect(texts).not.toContain("Ημερομηνία:");
+      if (source === "DIAVGEIA") expect(texts).toContain("Πηγή — Διαύγεια");
+    }
+    screen.unmount();
   });
 });

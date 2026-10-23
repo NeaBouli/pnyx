@@ -173,6 +173,12 @@ describe("isOfficialDocumentBlockOnly", () => {
 });
 
 describe("cleanOfficialText", () => {
+  it("preserves the full Parliament excerpt, punctuation, URLs and whitespace when republishing", () => {
+    const original = "  Άρθρο 1 — Κείμενο * _ https://example.gr/πηγή\n\n".repeat(40);
+    expect(cleanOfficialText(original, true)).toBe(original);
+    expect(cleanOfficialText("You don't have permission to access / Reference #123", true)).toBe("");
+    expect(cleanOfficialText("Μετάβαση στο κύριο περιεχόμενο", true)).toBe("");
+  });
   it("returns empty text for PDF-only document blocks", () => {
     expect(cleanOfficialText(`
 ### Πλήρη έγγραφα

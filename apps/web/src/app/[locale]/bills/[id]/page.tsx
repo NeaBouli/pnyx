@@ -7,6 +7,7 @@ import { ekklesia, Bill, BillResults, submitSignedVote } from "@/lib/api";
 import { withSigner } from "@/lib/keystore";
 import { RequestTimeoutError, requestTimeoutMessage } from "@/lib/request-deadline";
 import ParliamentFreshness from "@/components/ParliamentFreshness";
+import ParliamentAttribution from "@/components/ParliamentAttribution";
 import StatusBadge from "@/components/StatusBadge";
 import RelevanceButtons from "@/components/RelevanceButtons";
 import BillResultReport from "@/components/BillResultReport";
@@ -276,6 +277,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
           {bill[titleKey as keyof Bill] as string || bill.title_el}
         </h1>
 
+        <ParliamentAttribution bill={bill} locale={locale} />
         <ParliamentFreshness bill={bill} locale={locale} />
 
         {/* Categories */}
@@ -319,13 +321,23 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
             )}
           </div>
           {expanded === "short" ? (
-            <p className="text-gray-700 leading-relaxed">
-              {bill[shortKey as keyof Bill] as string || bill.pill_el || (locale === "el" ? "Δεν υπάρχει ακόμα ελεγμένη σύνοψη για αυτή την πράξη. Δείτε το επίσημο κείμενο στην πηγή." : "No reviewed summary is available yet. See the official source text.")}
-            </p>
+            <div>
+              {bill.source === "PARLIAMENT" && <p className="text-xs font-semibold text-gray-600 mb-2">
+                {locale === "el" ? "Σύνοψη — ekklesia" : "Summary — ekklesia"}
+              </p>}
+              <p className="text-gray-700 leading-relaxed">
+                {bill[shortKey as keyof Bill] as string || bill.pill_el || (locale === "el" ? "Δεν υπάρχει ακόμα ελεγμένη σύνοψη για αυτή την πράξη. Δείτε το επίσημο κείμενο στην πηγή." : "No reviewed summary is available yet. See the official source text.")}
+              </p>
+            </div>
           ) : (
             <div className="text-gray-700 leading-relaxed">
               {hasAnalysis ? (
-                <p>{bill.analysis_el}</p>
+                <div>
+                  {bill.source === "PARLIAMENT" && <p className="text-xs font-semibold text-gray-600 mb-2">
+                    {locale === "el" ? "Ανάλυση — ekklesia" : "Analysis — ekklesia"}
+                  </p>}
+                  <p>{bill.analysis_el}</p>
+                </div>
               ) : hasOfficialContent ? (
                 <p className="text-gray-500">
                   {locale === "el"

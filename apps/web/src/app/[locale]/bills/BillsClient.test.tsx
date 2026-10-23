@@ -101,6 +101,37 @@ describe("BillsClient first-page SSR seed", () => {
     expect(context.getBills).not.toHaveBeenCalled();
   });
 
+  it.each(["el", "en"])("hydrates attribution only on Parliament cards in %s, with independent external links", async locale => {
+    context.locale = locale;
+    const rows = ["PARLIAMENT", "DIAVGEIA", "UNKNOWN"].map(source => ({
+      ...bill(source), source, title_el: `Αυθεντικός_τίτλος * ${source}`,
+      summary_short_el: "Η δική μας σύνοψη", summary_short_en: "Our summary",
+      source_last_success: "2026-07-16T21:30:00Z", created_at: "2026-01-01T00:00:00Z",
+      official_source_url: "https://www.hellenicparliament.gr/bill/123",
+    }));
+    const { errors } = await serverThenHydrate({ status: "", bills: rows });
+    expect(errors).toEqual([]);
+    const cards = [...container.querySelectorAll("article")];
+    expect(cards).toHaveLength(3);
+    expect(cards[0].querySelector("h2")?.textContent).toBe(locale === "el" ? rows[0].title_el : rows[0].title_en);
+    expect(cards[0].textContent).toContain(locale === "el"
+      ? "Αναδημοσίευση από τη διαδικτυακή πύλη της Βουλής των Ελλήνων"
+      : "Republished from the website of the Hellenic Parliament");
+    expect(cards[0].textContent).toContain((locale === "el" ? "Ημερομηνία: " : "Date: ") + "17/07/2026");
+    expect(cards[0].textContent).toContain(locale === "el" ? "Σύνοψη — ekklesia" : "Summary — ekklesia");
+    const link = cards[0].querySelector<HTMLAnchorElement>('a[rel="noopener external"]')!;
+    expect(link.textContent).toBe(locale === "el" ? "Πρωτότυπο" : "Original");
+    expect(link.href).toBe(rows[0].official_source_url);
+    expect(link.target).toBe("_blank");
+    expect(link.parentElement?.closest("a")).toBeNull();
+    expect(cards[1].textContent).toContain("ΔΙΑΥΓΕΙΑ");
+    for (const card of cards.slice(1)) {
+      expect(card.querySelector('a[rel="noopener external"]')).toBeNull();
+      expect(card.textContent).not.toContain("Republished");
+      expect(card.textContent).not.toContain("Αναδημοσίευση");
+    }
+  });
+
   it("uses a seed only for the matching URL status", async () => {
     context.params = new URLSearchParams({ status: "OPEN_END" });
     await serverThenHydrate({ status: "OPEN_END", bills: [bill("A", "OPEN_END")] });
