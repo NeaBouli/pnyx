@@ -27,7 +27,7 @@ from ip_utils import hashed_rate_subject, rate_limit_key_for_ip, redis_fixed_win
 from dependencies import verify_admin_key
 from services import newsletter_service
 from services.mail_policy import operator_reply_to
-from services.newsletter_lock import newsletter_lock, NewsletterLockUnavailable
+from services.newsletter_lock import newsletter_lock, newsletter_transition, NewsletterLockUnavailable
 from security_headers import API_CSP, csp_hash
 from services.newsletter_consent import (
     CONFIRMED_KEY, CONFIRM_ONCE, CONSENT_SCHEMA, confirmation_payload,
@@ -214,6 +214,7 @@ async def _unlink_listmonk_contact(email: str, *, require_present: bool = False)
     return result.get("data") is True
 
 
+@newsletter_transition
 async def _retry_withdrawal(store: aioredis.Redis, email: str) -> bool:
     success = True
     for key, unsettled_key, remove in (
@@ -244,6 +245,7 @@ async def _retry_withdrawal(store: aioredis.Redis, email: str) -> bool:
     return success
 
 
+@newsletter_transition
 async def _remove_ineligible_contact(store: aioredis.Redis, email: str) -> bool:
     await store.eval(
         QUEUE_DELIVERY_REMOVAL, 3, BREVO_ADD_RETRY_KEY, BREVO_REMOVE_RETRY_KEY,
@@ -448,16 +450,21 @@ async def _expire_reconfirmations(store, dry_run: bool) -> dict[str, int]:
 
 
 async def _withdraw_subscription(store: aioredis.Redis, email: str, reason: str) -> bool:
+    from services.newsletter_consent import WITHDRAWAL_PENDING_KEY
+    # Publish intent before lock acquisition so preparation can abort a queued withdrawal.
+    await store.hset(WITHDRAWAL_PENDING_KEY, email.casefold(), reason)
     # Provider events can change casing; preserve stored consent identities while
     # matching the provider's case-insensitive contact identity.
-    identities = {email}
-    identities.update(field for field in await store.hkeys(CONFIRMED_KEY) if field.casefold() == email.casefold())
-    for identity in identities:
-        await store.eval(
-            WITHDRAW_CONSENT, 5, CONFIRMED_KEY, SUPPRESSED_KEY, BREVO_ADD_RETRY_KEY,
-            BREVO_REMOVE_RETRY_KEY, LISTMONK_REMOVE_RETRY_KEY,
-            identity, reason, "1" if LISTMONK_PW else "0", email.casefold(),
-        )
+    async with newsletter_lock(store):
+        identities = {email}
+        identities.update(field for field in await store.hkeys(CONFIRMED_KEY) if field.casefold() == email.casefold())
+        for identity in identities:
+            await store.eval(
+                WITHDRAW_CONSENT, 5, CONFIRMED_KEY, SUPPRESSED_KEY, BREVO_ADD_RETRY_KEY,
+                BREVO_REMOVE_RETRY_KEY, LISTMONK_REMOVE_RETRY_KEY,
+                identity, reason, "1" if LISTMONK_PW else "0", email.casefold(),
+            )
+        await store.hdel(WITHDRAWAL_PENDING_KEY, email.casefold())
     success = True
     for identity in identities:
         if not await _retry_withdrawal(store, identity):
@@ -465,6 +472,7 @@ async def _withdraw_subscription(store: aioredis.Redis, email: str, reason: str)
     return success
 
 
+@newsletter_transition
 async def _sync_brevo_contact(store: aioredis.Redis, email: str, name: str = "") -> bool:
     """Queue before delivery; a concurrent withdrawal always wins over an add."""
     try:
@@ -484,7 +492,7 @@ async def _sync_brevo_contact(store: aioredis.Redis, email: str, name: str = "")
             return False
         not_written = False
         try:
-            added = await newsletter_service.add_contact(email, name)
+            added = await newsletter_service.add_contact(email, name, preferences=data)
         except newsletter_service.ContactSuppressed:
             await store.hdel(BREVO_ADD_UNSETTLED_KEY, email.casefold())
             await _withdraw_subscription(store, email, "provider_suppressed")
@@ -503,6 +511,9 @@ async def _sync_brevo_contact(store: aioredis.Redis, email: str, name: str = "")
         if await store.hget(SUPPRESSED_KEY, email.casefold()):
             await _withdraw_subscription(store, email, "suppressed")
             return False
+        if await store.hget(CONFIRMED_KEY, email) != raw:
+            # A preference change during the provider write must retain sync work.
+            return False
         if added:
             await store.hdel(BREVO_ADD_RETRY_KEY, email)
             return True
@@ -512,6 +523,7 @@ async def _sync_brevo_contact(store: aioredis.Redis, email: str, name: str = "")
     return False
 
 
+@newsletter_transition
 async def _sync_listmonk_contact(store: aioredis.Redis, email: str) -> bool:
     """Retain removal work until even a timed-out creation has been reconciled."""
     try:
@@ -531,7 +543,7 @@ async def _sync_listmonk_contact(store: aioredis.Redis, email: str) -> bool:
             return False
         try:
             await _listmonk_request("POST", "/api/subscribers", {
-                "email": email, "name": data.get("name", ""),
+                "email": email,
                 "status": "enabled", "preconfirm_subscriptions": True,
                 "attribs": data.get("topics", {}),
             })
@@ -730,8 +742,8 @@ async def confirm_subscription(token: str, request: Request = None) -> HTMLRespo
                         if not key.startswith("reconfirm_") and key != "consent_state"}
                 data["confirmation_source"] = "legacy_reconfirmation"
                 confirmed_raw = confirmation_payload(data, confirmed_at)
-                result = await r.eval(CONFIRM_RECONFIRM, 4, reconfirm_token_key(token), CONFIRMED_KEY,
-                                      RECONFIRM_KEY, SUPPRESSED_KEY, reconfirm_raw, email,
+                result = await r.eval(CONFIRM_RECONFIRM, 5, reconfirm_token_key(token), CONFIRMED_KEY,
+                                      RECONFIRM_KEY, SUPPRESSED_KEY, BREVO_ADD_RETRY_KEY, reconfirm_raw, email,
                                       email.casefold(), current, confirmed_raw)
                 if result == 1:
                     await _reconcile_consent_aliases(r, email.casefold(), confirmed_at)
@@ -751,7 +763,7 @@ async def confirm_subscription(token: str, request: Request = None) -> HTMLRespo
                         and _reconfirm_deadline(old) <= confirmed_at):
                     await r.eval(RECONCILE_CONSENT_ALIASES, 1, CONFIRMED_KEY, json.dumps({email: existing}), "")
                 result = await r.eval(
-                    CONFIRM_ONCE, 2, f"newsletter:pending:{token}", CONFIRMED_KEY,
+                    CONFIRM_ONCE, 3, f"newsletter:pending:{token}", CONFIRMED_KEY, BREVO_ADD_RETRY_KEY,
                     raw, email, confirmed_raw,
                 )
         except NewsletterLockUnavailable:

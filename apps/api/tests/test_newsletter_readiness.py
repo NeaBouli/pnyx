@@ -33,9 +33,9 @@ def provider(**changes: object) -> dict:
     return {"email": EMAIL, "emailBlacklisted": False, "listIds": [], "listUnsubscribed": [], **changes}
 
 
-def test_fresh_consent_still_cannot_enter_ungated_campaign_audience() -> None:
+def test_readiness_does_not_authorize_enrollment() -> None:
     assert classify_contact(EMAIL, consent(), 200, provider(), 2, NOW) == (
-        "HOLD", ["campaign_preferences_not_enforced"])
+        "HOLD", ["delivery_membership_missing"])
     summary = readiness_summary([classify_contact(EMAIL, consent(), 200, provider(), 2, NOW)], 1, True)
     assert summary["proposed_writes"] == 0
     assert summary["delivery_ready"] is False
@@ -65,7 +65,7 @@ def test_preferences_are_not_coerced(change: dict) -> None:
     raw = consent(**change)
     action, reasons = classify_contact(EMAIL, raw, 200, provider(), 2, NOW)
     assert action == "HOLD"
-    assert "unsupported_delivery_profile" in reasons
+    assert "unsupported_delivery_profile" not in reasons
     assert all(json.loads(raw)[key] == value for key, value in change.items())
 
 
@@ -176,7 +176,7 @@ async def test_provider_redirect_is_not_followed_or_disclosed(
         "confirmed_count": 1, "evaluated_count": 1, "complete": True,
         "proposed_writes": 0, "actions": {"KEEP": 0, "HOLD": 1, "EXCLUDE": 0},
         "reasons": {"provider_lookup_failed": 1}, "delivery_ready": False,
-        "blockers": ["campaign_preferences_not_enforced", "provider_history_requires_review"],
+        "blockers": ["provider_history_requires_review"],
     }
     assert len(requests) == 1
     store.eval_ro.assert_awaited_once_with(
@@ -233,7 +233,7 @@ async def test_mixed_snapshot_isolates_failures_and_returns_only_read_only_aggre
         "reasons": {"existing_list_member": 1, "invalid_consent_record": 1,
                     "provider_lookup_failed": 1, "provider_suppressed": 1},
         "delivery_ready": False,
-        "blockers": ["campaign_preferences_not_enforced", "provider_history_requires_review"],
+        "blockers": ["provider_history_requires_review"],
     }
     assert len(requests) == 3
     assert {request.url.raw_path for request in requests} == {

@@ -274,7 +274,8 @@ class _ConfirmRedis:
 
     async def eval(self, script: str, numkeys: int, *args: Any) -> int:
         if script == CONFIRM_ONCE:
-            self.confirmed[args[3]] = args[4]
+            _, email, confirmed = args[numkeys:]
+            self.confirmed[email] = confirmed
         return 1
 
     async def hget(self, key: str, field: str) -> str | None:

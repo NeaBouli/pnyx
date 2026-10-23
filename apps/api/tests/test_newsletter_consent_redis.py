@@ -3,6 +3,7 @@ import asyncio
 import json
 import os
 import time
+from dataclasses import replace
 from collections.abc import AsyncIterator
 from unittest.mock import AsyncMock
 from urllib.parse import urlparse
@@ -18,6 +19,7 @@ from services import newsletter_lock
 from services.newsletter_consent import (
     CONFIRM_ONCE, READ_CONSENT_SNAPSHOT, START_RECONFIRM, CLAIM_RECONFIRM_SEND,
     CONFIRM_RECONFIRM, EXPIRE_RECONFIRM, FINISH_RECONFIRM_EXPIRY,
+    UPDATE_PREFERENCES, WITHDRAW_CONSENT,
 )
 
 
@@ -33,13 +35,15 @@ async def isolated_redis(monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[tuple
     confirmed = f"test:newsletter:confirmed:{uuid4().hex}"
     monkeypatch.setattr(newsletter, "_get_redis", AsyncMock(return_value=client))
     monkeypatch.setattr(newsletter, "CONFIRMED_KEY", confirmed)
+    monkeypatch.setattr(newsletter, "BREVO_ADD_RETRY_KEY", f"{confirmed}:enrollment")
     monkeypatch.setattr(newsletter_lock, "LOCK_KEY", f"{confirmed}:campaign-lock")
     monkeypatch.setattr(newsletter, "LISTMONK_PW", "")
     monkeypatch.setattr(newsletter.newsletter_service, "remove_contact", AsyncMock(return_value=True))
     try:
         yield client, token, confirmed
     finally:
-        await client.delete(f"newsletter:pending:{token}", f"newsletter:pending:{token}-other", confirmed, f"{confirmed}:campaign-lock")
+        await client.delete(f"newsletter:pending:{token}", f"newsletter:pending:{token}-other", confirmed,
+                            f"{confirmed}:campaign-lock", f"{confirmed}:enrollment")
         await client.aclose()
 
 
@@ -99,7 +103,7 @@ async def test_write_failure_preserves_pending_proof(isolated_redis: tuple) -> N
 async def test_changed_payload_cannot_confirm_stale_proof(isolated_redis: tuple) -> None:
     client, token, confirmed = isolated_redis
     await client.set(f"newsletter:pending:{token}", "new-payload", ex=60)
-    assert await client.eval(CONFIRM_ONCE, 2, f"newsletter:pending:{token}", confirmed,
+    assert await client.eval(CONFIRM_ONCE, 3, f"newsletter:pending:{token}", confirmed, f"{confirmed}:enrollment",
                              "stale-payload", "consent@example.org", "stale-confirmation") == 0
     assert await client.exists(confirmed) == 0
     assert await client.get(f"newsletter:pending:{token}") == "new-payload"
@@ -140,11 +144,12 @@ async def test_reconfirmation_lua_has_one_winner_and_durable_cleanup(
         assert await client.eval(CLAIM_RECONFIRM_SEND, 4, confirmed, registry, suppressed, token,
                                  email, email, invitation, attempted) == 0
         if finish == "confirm":
-            args = (CONFIRM_RECONFIRM, 4, token, confirmed, registry, suppressed,
+            args = (CONFIRM_RECONFIRM, 5, token, confirmed, registry, suppressed, addition,
                     invitation, email, email, attempted, evidence)
             results = await asyncio.gather(*[client.eval(*args) for _ in range(20)])
             assert results.count(1) == 1 and results.count(0) == 19
             assert await client.hget(confirmed, email) == evidence
+            assert await client.hget(addition, email) == "1"
             assert not await client.hexists(registry, email)
         else:
             args = (EXPIRE_RECONFIRM, 6, confirmed, registry, token, addition, brevo_retry, listmonk_retry,
@@ -215,3 +220,96 @@ async def test_send_claim_rejects_token_at_absolute_deadline(isolated_redis):
         assert await client.hget(confirmed, email) == "invitation"
     finally:
         await client.delete(registry, suppressed, token)
+
+
+@pytest.mark.parametrize("withdraw_first", [True, False])
+async def test_preference_update_and_withdrawal_leave_no_active_consent(isolated_redis, withdraw_first):
+    client, _, confirmed = isolated_redis
+    suppressed, addition, removal, secondary = [f"{confirmed}:{suffix}" for suffix in ("suppressed", "add", "remove", "secondary")]
+    email = "consent@example.org"
+    try:
+        await client.hset(confirmed, email, "original-doi")
+        update = (UPDATE_PREFERENCES, 3, confirmed, suppressed, addition, email, email, "original-doi", "changed-preferences")
+        withdraw = (WITHDRAW_CONSENT, 5, confirmed, suppressed, addition, removal, secondary,
+                    email, "unsubscribed", "0", email)
+        operations = [withdraw, update] if withdraw_first else [update, withdraw]
+        await asyncio.gather(*[client.eval(*operation) for operation in operations])
+        assert not await client.hexists(confirmed, email)
+        assert not await client.hexists(addition, email)
+        assert await client.hget(suppressed, email) == "unsubscribed"
+        assert await client.hget(removal, email) == "1"
+    finally:
+        await client.delete(suppressed, addition, removal, secondary)
+
+
+async def test_preference_queue_failure_preserves_original_consent(isolated_redis):
+    client, _, confirmed = isolated_redis
+    suppressed, addition = f"{confirmed}:suppressed", f"{confirmed}:addition"
+    email = "consent@example.org"
+    try:
+        await client.hset(confirmed, email, "original-doi")
+        await client.set(addition, "wrong-type")
+        with pytest.raises(ResponseError, match="WRONGTYPE"):
+            await client.eval(UPDATE_PREFERENCES, 3, confirmed, suppressed, addition,
+                              email, email, "original-doi", "changed-preferences")
+        assert await client.hget(confirmed, email) == "original-doi"
+    finally:
+        await client.delete(suppressed, addition)
+
+
+async def test_shared_campaign_claim_has_one_winner_and_counts_once(isolated_redis, monkeypatch):
+    from services import newsletter_claims
+    from services.newsletter_audience import AudienceUnavailable
+
+    client, _, confirmed = isolated_redis
+    key = f"{confirmed}:dispatch"
+    monkeypatch.setattr(newsletter_claims, "CLAIMS_KEY", key)
+    try:
+        async with newsletter_lock.newsletter_lock(client) as lease:
+            results = await asyncio.gather(*[
+                newsletter_claims.DispatchClaim.acquire(lease, f"request:{index}", 1)
+                for index in range(20)
+            ], return_exceptions=True)
+            assert all(isinstance(result, (newsletter_claims.DispatchClaim, AudienceUnavailable))
+                       for result in results)
+            winners = [result for result in results
+                       if isinstance(result, newsletter_claims.DispatchClaim) and result.acquired]
+            assert len(winners) == 1
+            send = AsyncMock(return_value={})
+            await winners[0].send(send, {}, "provider_unavailable")
+            send.assert_awaited_once()
+            alias = await newsletter_claims.DispatchClaim.acquire(lease, "admin:1", 1)
+            assert alias.state == "sent" and not alias.acquired
+        assert await newsletter_claims.dispatch_status(client) == {
+            "claimed": 0, "sent": 1, "failed": 0, "uncertain": 0,
+        }
+    finally:
+        await client.delete(key)
+
+
+async def test_shared_campaign_fence_rejects_stale_worker_and_shared_record(isolated_redis, monkeypatch):
+    from services import newsletter_claims
+    from services.newsletter_audience import AudienceUnavailable
+
+    client, _, confirmed = isolated_redis
+    key = f"{confirmed}:dispatch"
+    monkeypatch.setattr(newsletter_claims, "CLAIMS_KEY", key)
+    try:
+        async with newsletter_lock.newsletter_lock(client) as lease:
+            old = await newsletter_claims.DispatchClaim.acquire(lease, "monthly:2026-10:el", 1)
+            await replace(old).write("failed")
+            current = await newsletter_claims.DispatchClaim.acquire(lease, "admin:1", 1)
+            assert current.fence > old.fence
+            send = AsyncMock(return_value={})
+            before = await client.hgetall(key)
+            with pytest.raises(AudienceUnavailable):
+                await old.send(send, {}, "provider_unavailable")
+            assert await client.hgetall(key) == before
+            replacement = json.dumps({"state": "claimed", "campaign_id": 1, "fence": current.fence + 1})
+            await client.hset(key, "campaign:1", replacement)
+            with pytest.raises(AudienceUnavailable):
+                await current.send(send, {}, "provider_unavailable")
+            assert await client.hget(key, "campaign:1") == replacement
+            send.assert_not_awaited()
+    finally:
+        await client.delete(key)

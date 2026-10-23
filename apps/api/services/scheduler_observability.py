@@ -16,7 +16,7 @@ JOB_NAMES = (
     "parliament", "diavgeia_municipal", "notify_new_bills", "notify_results",
     "forum_sync", "bill_lifecycle", "cplm_refresh", "greek_topics",
     "completeness_check", "push_categories", "weekly_digest",
-    "zk_arweave_publication", "finance_export", "monthly_newsletter", "newsletter_reconfirm_expiry",
+    "zk_arweave_publication", "finance_export", "monthly_newsletter", "newsletter_reconfirm_expiry", "newsletter_list_cleanup",
 )
 OUTCOMES = {"success", "failed", "skipped", "interrupted", "lock_busy"}
 FIELDS = ("last_started", "last_finished", "last_outcome", "last_duration_s", "next_run", "consecutive_failures",
