@@ -25,6 +25,7 @@ from services.citizen_action_integrity import (
 )
 from services.source_links import official_source_url
 from services.source_freshness import get_source_freshness, bill_freshness
+from services.representation_cache import invalidate_representation_cache
 from services.geographic_scope import validate_region_filter
 from models import (
     ParliamentBill, BillStatus, BillStatusLog, BillRelevanceVote,
@@ -606,6 +607,7 @@ async def transition_bill(
     )
     db.add(log)
     await db.commit()
+    await invalidate_representation_cache()
 
     # MOD-08: Arweave Auto-Publish bei PARLIAMENT_VOTED
     arweave_tx_id = None

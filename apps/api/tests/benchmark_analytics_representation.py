@@ -1,10 +1,12 @@
 """Manual SQLite benchmark of the original function versus the new aggregate.
 
 From apps/api (using the project's Python environment):
-  git show HEAD:apps/api/routers/analytics.py > /tmp/representation-before.py
+  PR_BASE=abf433abfac97fdf6dae714c5eba68e5acba1a94
+  git show "${PR_BASE}:apps/api/routers/analytics.py" > /tmp/representation-before.py
   PYTHONPATH=. python tests/benchmark_analytics_representation.py /tmp/representation-before.py
 
 Synthetic: 20,000 eligible bills, 1,000 with 400 Tier-1 + 200 ZK votes each.
+PR_BASE pins PR #681's base commit, before the aggregate implementation.
 SQLite and a memory cache measure local cost, not PostgreSQL/Redis network latency.
 """
 from __future__ import annotations
@@ -108,6 +110,7 @@ async def run(baseline_path: str) -> None:
             started = perf_counter()
             before = await baseline.compute_cumulative_representation(db)
             before_ms, before_queries = (perf_counter() - started) * 1000, query_count
+            assert before_queries > 1, "Baseline must be the original function from PR #681's base commit"
             cold = []
             for _ in range(3):
                 query_count = 0

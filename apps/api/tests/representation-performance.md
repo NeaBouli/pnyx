@@ -17,9 +17,14 @@ DIAVGEIA sensitivity checks, eligible statuses, the minimum ten votes, party vot
 ties, and the existing two-stage rounding remain intact. No index or migration
 is needed to remove the repeated queries.
 
-The endpoint stores only its public aggregate response in Redis for 30 seconds.
-Hits do not extend expiry. Expiry refreshes vote counts, bill metadata and
-visibility; changes to the small-cell policy select a separate cache key. Redis
+The endpoint stores only its public aggregate response in Redis until 30 seconds
+after the aggregation starts. Query time is subtracted from the TTL (rounded down
+to whole seconds); expired snapshots are not cached. Hits do not extend expiry.
+Committed admin visibility/text edits and manual or scheduled status transitions
+also delete all representation policy keys. The anchored TTL bounds staleness
+if invalidation fails or an in-flight aggregation fills after deletion. Expiry
+refreshes vote counts, bill metadata and visibility; changes to the small-cell
+policy select a separate cache key. Redis
 reads and writes each have a 100 ms deadline and 50 ms socket/connect timeouts;
 Redis failures fall back to the database. Database failures propagate without
 being cached. Empty results also have the same finite TTL.
@@ -57,12 +62,18 @@ on its statistics and work memory.
 Reproduce from `apps/api` with the project's Python environment:
 
 ```sh
-git show HEAD:apps/api/routers/analytics.py > /tmp/representation-before.py
+PR_BASE=abf433abfac97fdf6dae714c5eba68e5acba1a94
+git show "${PR_BASE}:apps/api/routers/analytics.py" > /tmp/representation-before.py
 PYTHONPATH=. python tests/benchmark_analytics_representation.py /tmp/representation-before.py
 ```
 
+`PR_BASE` is PR #681's base commit, before the aggregate implementation. Keep it
+pinned when rerunning from the PR branch or after merge so the original function
+is compared against the replacement.
+
 Endpoint tests execute the raw SQL with visibility, mixed-source, ZK-only,
 invalid-receipt, privacy, contract and rounding fixtures. Cache tests use a
-controlled clock to verify expiry at 30 seconds, unchanged expiry on hits,
-policy changes, visibility changes, failure fallback and closure. A 100-bill
+controlled clock to verify expiry at 30 seconds, delayed fills (including fills
+past expiry), unchanged expiry on hits, policy changes, visibility changes,
+write-path invalidation, failure fallback and closure. A 100-bill
 fixture asserts one SQL statement independently of cache hits.

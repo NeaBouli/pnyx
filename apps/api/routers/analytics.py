@@ -11,6 +11,7 @@ import asyncio
 import json
 import logging
 from datetime import datetime, timezone, timedelta
+from time import monotonic
 from typing import Optional
 import redis.asyncio as aioredis
 from redis.exceptions import RedisError
@@ -20,6 +21,7 @@ from sqlalchemy import DateTime, String, cast, select, func, and_, extract, Inte
 
 from database import get_db
 from config import settings
+from services.representation_cache import REPRESENTATION_CACHE_PREFIX
 from services.small_cell import (
     small_cell_k, suppress_public_cells, suppress_public_series,
 )
@@ -566,8 +568,9 @@ async def compute_cumulative_representation(db: AsyncSession) -> dict:
 @router.get("/representation")
 async def cumulative_representation(db: AsyncSession = Depends(get_db)) -> dict:
     # Policy changes never reuse a less restrictive aggregate. Expiry bounds
-    # vote/metadata staleness to 30s, including for empty results; hits don't renew it.
-    key = f"analytics:representation:v1:k{small_cell_k()}"
+    # vote/metadata staleness to 30s from query start, including empty results;
+    # hits don't renew it and slow fills don't get a fresh TTL.
+    key = f"{REPRESENTATION_CACHE_PREFIX}{small_cell_k()}"
     async with aioredis.from_url(
         settings.redis_url, decode_responses=True,
         socket_connect_timeout=0.05, socket_timeout=0.05,
@@ -587,11 +590,14 @@ async def cumulative_representation(db: AsyncSession = Depends(get_db)) -> dict:
         except (ValueError, TypeError):
             logger.warning("Representation cache entry invalid")
 
+        expires_at = monotonic() + REPRESENTATION_CACHE_TTL
         result = await compute_cumulative_representation(db)
-        if available:
+        # Round down: a fractional remainder must not extend the visibility bound.
+        ttl = int(expires_at - monotonic())
+        if available and ttl > 0:
             try:
                 async with asyncio.timeout(0.1):
-                    await cache.setex(key, REPRESENTATION_CACHE_TTL, json.dumps(result))
+                    await cache.setex(key, ttl, json.dumps(result))
             except (RedisError, OSError):
                 logger.warning("Representation cache write unavailable")
         return result

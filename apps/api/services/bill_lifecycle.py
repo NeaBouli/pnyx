@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models import ParliamentBill, BillStatus, BillStatusLog
 from services.bill_visibility import public_bill_filter, is_public_bill
 from services.small_cell import small_cell_k
+from services.representation_cache import invalidate_representation_cache
 from services.zk_vote_aggregation import aggregate_bill_vote_totals, include_zk_for_bill
 
 logger = logging.getLogger(__name__)
@@ -181,6 +182,7 @@ async def run_bill_lifecycle(db: AsyncSession) -> dict:
 
     if stats["transitioned"] > 0:
         await db.commit()
+        await invalidate_representation_cache()
 
     # Catch-up: archive bills that missed Arweave snapshot
     catchup = await _catchup_arweave(db)

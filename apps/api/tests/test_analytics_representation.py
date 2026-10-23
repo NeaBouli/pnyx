@@ -1,6 +1,9 @@
 """Representation contract, one-query aggregation and bounded public-result cache."""
 import json
 from collections.abc import AsyncIterator
+from datetime import datetime, timedelta, timezone
+from fnmatch import fnmatchcase
+from types import SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock
 
@@ -12,14 +15,16 @@ from sqlalchemy import event, text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from database import get_db
-from routers import analytics
+from models import BillStatus
+from routers import admin, analytics, notifications, parliament
+from services import bill_lifecycle
 
 CHOICES = ("YES", "NO", "ABSTAIN", "UNKNOWN")
 
 
 class Cache:
     def __init__(self) -> None:
-        self.now = 0
+        self.now = 0.0
         self.values: dict[str, tuple[float, str]] = {}
         self.writes: list[tuple[str, int, str]] = []
         self.read_error = False
@@ -44,11 +49,24 @@ class Cache:
         self.writes.append((key, ttl, value))
         self.values[key] = (self.now + ttl, value)
 
+    async def scan_iter(self, *, match: str) -> AsyncIterator[str]:
+        if self.read_error:
+            raise RedisConnectionError("cache unavailable")
+        for key in list(self.values):
+            if fnmatchcase(key, match):
+                yield key
+
+    async def delete(self, key: str) -> None:
+        if self.write_error:
+            raise RedisConnectionError("cache unavailable")
+        self.values.pop(key, None)
+
 
 @pytest.fixture
 def cache(monkeypatch: pytest.MonkeyPatch) -> Cache:
     store = Cache()
     monkeypatch.setattr(analytics.aioredis, "from_url", lambda *_, **__: store)
+    monkeypatch.setattr(analytics, "monotonic", lambda: store.now)
     monkeypatch.delenv("PUBLIC_RESULTS_MIN_COUNT", raising=False)
     return store
 
@@ -213,6 +231,136 @@ async def test_hit_skips_db_and_expiry_refreshes_votes_and_visibility(
     assert (await client.get("/api/v1/analytics/representation")).json()["bills"] == []
     assert all(ttl == 30 for _, ttl, _ in cache.writes)
     assert cache.closed == 4
+
+
+@pytest.mark.parametrize("delay", [5, 5.25, 29.5, 30, 35])
+@pytest.mark.parametrize("empty", [False, True])
+async def test_delayed_fill_expires_from_snapshot_start(
+    db: AsyncSession, client: AsyncClient, cache: Cache,
+    monkeypatch: pytest.MonkeyPatch, delay: float, empty: bool,
+) -> None:
+    if not empty:
+        await bill(db, "A", party={"A": "YES"})
+        await votes(db, "A", (10, 0, 0, 0))
+    compute = analytics.compute_cumulative_representation
+
+    async def delayed_compute(db: AsyncSession) -> dict:
+        snapshot = await compute(db)  # Snapshot at t=0; hidden at t=1.
+        cache.now = 1
+        await db.execute(text("UPDATE parliament_bills SET admin_hidden = TRUE"))
+        cache.now = delay
+        return snapshot
+
+    monkeypatch.setattr(analytics, "compute_cumulative_representation", delayed_compute)
+    response = await client.get("/api/v1/analytics/representation")
+    assert response.status_code == 200
+    assert response.json()["bills_analyzed"] == (0 if empty else 1)
+    remaining = int(30 - delay)
+    if remaining > 0:
+        assert len(cache.writes) == 1
+        key, ttl, _ = cache.writes[0]
+        assert ttl == remaining
+        assert cache.values[key][0] <= 30
+    else:
+        assert cache.writes == []
+
+    # A completed snapshot must never stay cached until t=delay+30.
+    monkeypatch.setattr(analytics, "compute_cumulative_representation", compute)
+    cache.now = max(30, delay)
+    assert (await client.get("/api/v1/analytics/representation")).json()["bills"] == []
+    assert len(cache.writes) == (2 if remaining > 0 else 1)
+
+
+@pytest.mark.parametrize("field", ["results_visibility", "title_el", "summary_short_el", "summary_long_el"])
+async def test_admin_visibility_edit_invalidates_all_policies_after_commit(
+    db: AsyncSession, client: AsyncClient, cache: Cache,
+    monkeypatch: pytest.MonkeyPatch, field: str,
+) -> None:
+    await bill(db, "A", source="DIAVGEIA", party={"A": "YES"})
+    await votes(db, "A", (10,)*4)
+    for policy in ("0", "10"):
+        monkeypatch.setenv("PUBLIC_RESULTS_MIN_COUNT", policy)
+        assert (await client.get("/api/v1/analytics/representation")).json()["bills_analyzed"] == 1
+    keys = set(cache.values)
+    cache.values["unrelated"] = (30, "keep")
+    value = "HIDDEN" if field == "results_visibility" else "AMKA"
+    writer = AsyncMock(spec=AsyncSession)
+    writer.get.return_value = SimpleNamespace(generated_content_provenance=None)
+
+    async def commit() -> None:
+        assert keys <= cache.values.keys()  # Invalidation must follow commit.
+        if field != "results_visibility":
+            await db.execute(text(f"UPDATE parliament_bills SET {field} = :value"), {"value": value})
+        await db.commit()
+
+    writer.commit.side_effect = commit
+    result = await admin.admin_update_bill(
+        "A", admin.BillUpdateRequest(**{field: value}), _key=True, db=writer,
+    )
+    assert result["success"] is True
+    writer.commit.assert_awaited_once()
+    assert cache.values == {"unrelated": (30, "keep")}
+    if field != "results_visibility":
+        assert (await client.get("/api/v1/analytics/representation")).json()["bills"] == []
+
+
+@pytest.mark.parametrize("failure", ["scan", "delete", "timeout"])
+async def test_invalidation_failure_does_not_fail_committed_visibility_edit(
+    cache: Cache, monkeypatch: pytest.MonkeyPatch, failure: str,
+) -> None:
+    cache.values["analytics:representation:v1:k0"] = (30, "stale")
+    cache.read_error = failure == "scan"
+    cache.write_error = failure == "delete"
+    if failure == "timeout":
+        async def timed_out_scan(**_: Any) -> AsyncIterator[str]:
+            raise TimeoutError("cache deadline")
+            yield  # Make this an async iterator, like Redis scan_iter.
+        monkeypatch.setattr(cache, "scan_iter", timed_out_scan)
+    writer = AsyncMock(spec=AsyncSession)
+    writer.get.return_value = SimpleNamespace(results_visibility="ALWAYS")
+    result = await admin.admin_update_bill(
+        "A", admin.BillUpdateRequest(results_visibility="HIDDEN"), _key=True, db=writer,
+    )
+    assert result["success"] is True
+    writer.commit.assert_awaited_once()
+    assert cache.closed == 1
+
+
+@pytest.mark.parametrize("scheduled", [False, True])
+async def test_status_transition_invalidates_representation_after_commit(
+    cache: Cache, monkeypatch: pytest.MonkeyPatch, scheduled: bool,
+) -> None:
+    cache.values["analytics:representation:v1:k0"] = (30, "stale")
+    record = SimpleNamespace(
+        id="A", status=BillStatus.WINDOW_24H, arweave_tx_id=None,
+        parliament_vote_date=datetime.now(timezone.utc) - timedelta(days=1),
+        status_changed_at=datetime.now(timezone.utc) - timedelta(days=2),
+    )
+    writer = AsyncMock(spec=AsyncSession)
+
+    async def commit() -> None:
+        assert record.status == BillStatus.PARLIAMENT_VOTED
+        assert cache.values  # Still present until the transition commits.
+
+    writer.commit.side_effect = commit
+    monkeypatch.setattr(bill_lifecycle, "_hook_arweave_snapshot", AsyncMock())
+    monkeypatch.setattr(bill_lifecycle, "_hook_telegram_community", AsyncMock())
+    monkeypatch.setattr(notifications, "publish_bill_event", AsyncMock())
+    if scheduled:
+        writer.execute.return_value = SimpleNamespace(scalars=lambda: SimpleNamespace(all=lambda: [record]))
+        monkeypatch.setattr(bill_lifecycle, "_catchup_arweave", AsyncMock(return_value=0))
+        result = await bill_lifecycle.run_bill_lifecycle(writer)
+        assert result["transitioned"] == 1
+        assert result["errors"] == 0
+    else:
+        writer.execute.return_value = SimpleNamespace(scalar_one_or_none=lambda: record)
+        result = await parliament.transition_bill(
+            "A", parliament.TransitionRequest(new_status="PARLIAMENT_VOTED"), _auth=True, db=writer,
+        )
+        assert result["success"] is True
+    writer.commit.assert_awaited_once()
+    assert cache.values == {}
+    assert cache.closed == 1
 
 
 @pytest.mark.parametrize("failure", ["read", "write", "json", "shape"])

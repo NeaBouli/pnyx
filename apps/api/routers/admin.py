@@ -23,6 +23,7 @@ from models import (
     IdentityRecord, KeyStatus,
 )
 from services.content_provenance import clear_generated_content
+from services.representation_cache import invalidate_representation_cache
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/admin", tags=["MOD-15 Admin"])
@@ -208,6 +209,9 @@ async def admin_update_bill(
             clear_generated_content(bill, field)
     await db.commit()
 
+    # DIAVGEIA text edits can also change whether a bill is public.
+    if {"results_visibility", "title_el", "summary_short_el", "summary_long_el"} & updates.keys():
+        await invalidate_representation_cache()
     logger.info(f"[MOD-15] Bill aktualisiert: {bill_id} — {list(updates.keys())}")
     return {"success": True, "bill_id": bill_id, "updated": list(updates.keys())}
 
