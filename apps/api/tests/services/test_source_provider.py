@@ -149,13 +149,25 @@ async def test_provider_failures_are_not_redirected_or_retried(monkeypatch, stat
 @pytest.mark.parametrize("body,headers", [
     (b"{}", {"content-encoding": "gzip"}),
     (b"{}", {"content-type": "text/html"}),
-    (b"x" * (provider.MAX_RESPONSE_BYTES + 1), {}),
     (b"not json", {}),
-])
+], ids=["compressed", "wrong-content-type", "malformed-json"])
 @respx.mock
 async def test_bad_or_oversized_bodies_fail_closed(monkeypatch, body, headers):
     monkeypatch.setenv("SOURCE_PROVIDER_SOCKET", SOCKET)
     respx.post("http://source-provider/v1/collect").mock(return_value=response(body, headers=headers))
+    assert await provider.collect_source_rows(limit=20, require_dates=True) == []
+
+
+@respx.mock
+async def test_oversized_valid_payload_is_rejected(monkeypatch):
+    monkeypatch.setenv("SOURCE_PROVIDER_SOCKET", SOCKET)
+    data = payload()
+    data["padding"] = "x" * provider.MAX_RESPONSE_BYTES
+    # Without the transport byte cap this otherwise valid envelope is accepted.
+    assert provider.validate_payload(data, limit=20, require_dates=True)
+    respx.post("http://source-provider/v1/collect").mock(
+        return_value=response(json.dumps(data).encode()),
+    )
     assert await provider.collect_source_rows(limit=20, require_dates=True) == []
 
 
