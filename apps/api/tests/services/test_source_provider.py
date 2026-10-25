@@ -204,6 +204,7 @@ async def test_explicit_robots_disallow_prevents_provider_requests(monkeypatch):
 
 
 async def test_direct_block_does_not_mark_all_providers_unavailable(monkeypatch):
+    monkeypatch.setattr(source_freshness, "_blocked_at", None)
     monkeypatch.setenv("SOURCE_PROVIDER_SOCKET", SOCKET)
     redis = AsyncMock()
     connect = AsyncMock(return_value=redis)

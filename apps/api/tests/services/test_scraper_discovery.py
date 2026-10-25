@@ -11,6 +11,7 @@ from services import parliament_access, source_freshness
 
 @pytest.fixture(autouse=True)
 def parliament_policy(monkeypatch):
+    monkeypatch.setattr(scraper, "SCRAPE_DELAY_SECONDS", 0)
     monkeypatch.setattr(parliament_access, "robots", {})
     monkeypatch.setattr(parliament_access, "responses", {})
     monkeypatch.setattr(source_freshness, "record_source_blocked", AsyncMock())
