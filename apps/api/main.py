@@ -521,6 +521,7 @@ async def scheduled_scrape():
     from routers.scraper import prefer_scraped_title, scrape_parliament_bills
     from services.scraper_state import record_run, record_success, record_failure, is_circuit_open
     from services.content_provenance import apply_generated_content, record_generated_content
+    from services.source_identity import find_existing_parliament_bill
     from database import AsyncSessionLocal
     from models import ParliamentBill, BillStatus
     from sqlalchemy import select
@@ -580,10 +581,9 @@ async def scheduled_scrape():
 
                 # Existing rows keep votes/forum/status, but scraper metadata may move
                 # forward as Parliament phases change on all-laws.
-                existing = await db.execute(
-                    select(ParliamentBill).where(ParliamentBill.id == bill_id)
+                existing_bill = await find_existing_parliament_bill(
+                    db, bill_id=bill_id, url=b.get("url"),
                 )
-                existing_bill = existing.scalar_one_or_none()
                 if existing_bill:
                     changed = False
                     preferred_title = prefer_scraped_title(existing_bill.title_el, title)

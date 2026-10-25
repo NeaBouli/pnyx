@@ -9,7 +9,13 @@ logger = logging.getLogger(__name__)
 _blocked_at: str | None = None
 
 
-async def record_source_blocked() -> None:
+async def record_source_blocked(*, force: bool = False) -> None:
+    from services.source_provider import configured_socket
+    # A single access path cannot establish total source unavailability when
+    # the deployment supplies another provider. Discovery records the final
+    # outcome after all configured access paths have been considered.
+    if not force and configured_socket():
+        return
     global _blocked_at
     _blocked_at = datetime.now(timezone.utc).isoformat()
     client = None

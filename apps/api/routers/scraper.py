@@ -7,7 +7,8 @@ KI Fallback-Kette (kein Konto, kein API Key nötig):
   L2: Hugging Face Free Tier — fallback
   L3: Regel-basiertes Parsing — Notfall
 
-Parliament content is fetched directly; blocks and robots exclusions stop access.
+Direct Parliament access observes blocks and robots exclusions. A deployment
+may supply an optional local metadata provider with independent source checks.
 
 @ai-anchor MOD10_SCRAPER
 @update-hint Ollama URL in .env: OLLAMA_URL=http://ollama:11434
@@ -39,7 +40,7 @@ from services.ollama_service import (
 )
 from services.content_provenance import apply_generated_content, record_generated_content
 from services.scraper_http import HostCooldown, SCRAPER_HTTP_HOOKS
-from services.parliament_access import USER_AGENT, RobotsDisallowed, is_parliament
+from services.parliament_access import USER_AGENT, RobotsDisallowed, RobotsUnavailable, is_parliament
 from services.parliament_fetcher import (
     _is_bad_parliament_text,
     _is_parliament_document_block_only,
@@ -607,6 +608,23 @@ async def scrape_parliament_bills(
     counts = {"fetched": 0, "skipped": 0, "failed": 1}
     try:
         bills = await _scrape_parliament_bills(limit, require_dates, errors)
+        if not bills:
+            from services.source_provider import collect_source_rows, configured_socket
+            if configured_socket():
+                if "robots_disallowed" not in errors:
+                    bills = await collect_source_rows(limit=limit, require_dates=require_dates)
+                if bills:
+                    for bill in bills:
+                        bill["pill_el"] = _build_parliament_metadata_pill(
+                            title_el=bill["title_el"], bill_type=bill.get("type"), ministry=bill.get("ministry"),
+                        )
+                        bill["summary_short_el"] = _build_parliament_metadata_summary(
+                            title_el=bill["title_el"], bill_type=bill.get("type"), ministry=bill.get("ministry"),
+                            phase=bill.get("phase"), submitted_date=bill.get("submitted_date"), vote_date=bill.get("date"),
+                        )
+                else:
+                    from services.source_freshness import record_source_blocked
+                    await record_source_blocked(force=True)
         counts["fetched"] = len(bills)
         counts["skipped"] = int(not bills and any(code.endswith("_cooldown") for code in errors))
         counts["failed"] = int(not bills and not counts["skipped"])
@@ -668,6 +686,7 @@ async def _scrape_parliament_bills(
                     bills.append({
                         "title_el": _normalize_scraped_title(item.get("Title")),
                         "url": f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Anazitisi-Nomothetikon-Ergon?law_id={urllib.parse.quote(law_id.strip(), safe='')}",
+                        "law_id": law_id.strip(),
                         "date": date,
                         "law_num": item.get("LawNum"),
                         "ministry": item.get("Ministry"),
@@ -678,6 +697,9 @@ async def _scrape_parliament_bills(
     except HostCooldown:
         _record_probe_error(probe_errors, "source_blocked")
         _record_probe_error(probe_errors, "api_http_403_cooldown")
+        return []
+    except RobotsUnavailable:
+        _record_probe_error(probe_errors, "robots_unavailable")
         return []
     except RobotsDisallowed:
         _record_probe_error(probe_errors, "robots_disallowed")
@@ -713,6 +735,8 @@ async def _scrape_parliament_bills(
         except HostCooldown:
             _record_probe_error(probe_errors, "source_blocked")
             _record_probe_error(probe_errors, "direct_html_http_403_cooldown")
+        except RobotsUnavailable:
+            _record_probe_error(probe_errors, "robots_unavailable")
         except RobotsDisallowed:
             _record_probe_error(probe_errors, "robots_disallowed")
         except Exception as e:
@@ -788,7 +812,7 @@ async def test_scraper(request: Request = None):
 
 @router.get("/parliament/latest")
 @limiter.limit("30/minute")
-async def get_latest_from_parliament(limit: int = Query(10, le=20), request: Request = None):
+async def get_latest_from_parliament(limit: int = Query(10, ge=1, le=20), request: Request = None):
     """Scraped aktuelle Gesetzentwürfe von hellenicparliament.gr."""
     bills = await scrape_parliament_bills(limit=limit)
     return {"source": "hellenicparliament.gr", "count": len(bills), "bills": bills}
@@ -796,7 +820,7 @@ async def get_latest_from_parliament(limit: int = Query(10, le=20), request: Req
 
 @router.get("/parliament/freshness")
 @limiter.limit("30/minute")
-async def get_parliament_freshness_probe(limit: int = Query(20, le=20), request: Request = None):
+async def get_parliament_freshness_probe(limit: int = Query(20, ge=1, le=20), request: Request = None):
     """Strict Parliament source probe for monitor freshness checks."""
     probe_errors: list[str] = []
     bills = await scrape_parliament_bills(limit=limit, require_dates=True, probe_errors=probe_errors)
