@@ -43,6 +43,7 @@
     },
     "minimatch@10.2.5": {
       "brace-expansion": "5.0.12"
-    }
+    },
+    "zod": "4.6.6"
   }
 }

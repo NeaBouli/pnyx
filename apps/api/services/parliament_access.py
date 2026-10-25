@@ -32,6 +32,10 @@ class RobotsDisallowed(Exception):
     """No content request is permitted by the current robots policy."""
 
 
+class RobotsUnavailable(RobotsDisallowed):
+    """This transport could not obtain policy; content remains prohibited."""
+
+
 @dataclass
 class CachedResponse:
     body: bytes
@@ -82,6 +86,8 @@ async def check_robots(url: str) -> None:
                 ttl = 3600
             robots[origin] = (time.monotonic() + ttl, parser)
         parser = robots[origin][1]
+    if parser.disallow_all:
+        raise RobotsUnavailable("Parliament robots policy unavailable")
     if not parser.can_fetch(USER_AGENT, url):
         raise RobotsDisallowed("Parliament robots policy disallows request")
     state = host_limiter._state(url)
