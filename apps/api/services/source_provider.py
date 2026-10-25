@@ -136,7 +136,7 @@ async def collect_source_rows(*, limit: int, require_dates: bool) -> list[dict]:
                             raise ValueError("Source response too large")
                         body.extend(chunk)
         return validate_payload(json.loads(body), limit=limit, require_dates=require_dates)
-    except (httpx.HTTPError, OSError, ValueError, TypeError, OverflowError, TimeoutError):
+    except (httpx.HTTPError, OSError, ValueError, TypeError, OverflowError, RecursionError, TimeoutError):
         # Do not expose private deployment paths, response bodies or transport details.
         logger.warning("Configured source provider unavailable")
         return []

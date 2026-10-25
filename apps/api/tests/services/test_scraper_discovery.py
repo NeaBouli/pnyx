@@ -37,13 +37,13 @@ async def test_discovery_success_logs_fetched_count(scraper_clock, caplog):
     caplog.set_level(logging.INFO)
     respx.get(scraper.PARLIAMENT_BASE + "/robots.txt").respond(200, text="User-agent: *\nDisallow:")
     respx.get(scraper.PARLIAMENT_API).respond(200, json={"Data": [{
-        "Title": "Τίτλος νομοσχεδίου για τη λειτουργία των θεσμών", "ID": "id",
+        "Title": "Τίτλος νομοσχεδίου για τη λειτουργία των θεσμών", "ID": "726dad50-ab77-453c-9590-b4e4012a069e",
     }]})
     assert len(await scraper.scrape_parliament_bills(limit=1)) == 1
     assert "fetched=1 skipped=0 failed=0" in caplog.text
 
 
-@pytest.mark.parametrize("missing_id", [None, "", "   "])
+@pytest.mark.parametrize("missing_id", [None, "", "   ", "not-a-uuid", "00000000-0000-0000-0000-000000000000"])
 @respx.mock
 async def test_api_rows_without_ids_use_dated_official_html(scraper_clock, missing_id):
     """The live Open Data response has dates/documents but no law IDs."""
@@ -69,7 +69,8 @@ async def test_api_rows_without_ids_use_dated_official_html(scraper_clock, missi
     assert len(bills) == 1
     assert bills[0]["url"] == base + path
     assert bills[0]["date"] == "2026-10-22T00:00:00+00:00"
-    assert "api_missing_law_id" in errors
+    expected_error = "api_invalid_law_id" if missing_id and missing_id.strip() else "api_missing_law_id"
+    assert expected_error in errors
     assert api.call_count == 2 and html.call_count == 1
     assert len(respx.calls) == 4  # robots, two API categories, the direct HTML page
 
@@ -92,6 +93,14 @@ async def test_direct_html_rejects_undated_and_foreign_law_links(scraper_clock):
     )
 
     assert await scraper.scrape_parliament_bills(limit=10, require_dates=True) == []
+
+
+@pytest.mark.parametrize("identity", ["not-a-uuid", "00000000-0000-0000-0000-000000000000"])
+def test_html_rejects_invalid_official_identities(identity):
+    html = f'''<table><tr><td>23/10/2026</td><td>
+    <a href="?law_id={identity}">Κύρωση συμφωνίας για τους θεσμούς</a>
+    </td></tr></table>'''
+    assert scraper._parse_parliament_html(html) == []
 
 
 @pytest.mark.parametrize("require_dates", [False, True])

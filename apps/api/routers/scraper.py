@@ -41,6 +41,7 @@ from services.ollama_service import (
 from services.content_provenance import apply_generated_content, record_generated_content
 from services.scraper_http import HostCooldown, SCRAPER_HTTP_HOOKS
 from services.parliament_access import USER_AGENT, RobotsDisallowed, RobotsUnavailable, is_parliament
+from services.source_identity import official_law_id
 from services.parliament_fetcher import (
     _is_bad_parliament_text,
     _is_parliament_document_block_only,
@@ -581,7 +582,7 @@ def _parse_parliament_html(text: str) -> list[dict]:
             f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Psifisthenta-Nomoschedia", link["href"],
         )
         parsed = urllib.parse.urlsplit(url)
-        law_id = urllib.parse.parse_qs(parsed.query).get("law_id", [""])[0]
+        law_id = official_law_id(url)
         title = _normalize_scraped_title(link.get_text(" ", strip=True))
         if parsed.scheme != "https" or not is_parliament(url) or not law_id or not title:
             continue
@@ -676,6 +677,12 @@ async def _scrape_parliament_bills(
                         # Open Data can omit IDs: never invent an empty detail
                         # link; let the existing direct HTML stage supply it.
                         _record_probe_error(probe_errors, "api_missing_law_id")
+                        continue
+                    law_id = official_law_id(
+                        f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Anazitisi-Nomothetikon-Ergon?law_id={urllib.parse.quote(law_id.strip(), safe='')}"
+                    )
+                    if law_id is None:
+                        _record_probe_error(probe_errors, "api_invalid_law_id")
                         continue
                     date_str = item.get("LawPhaseDate", "")
                     date = None

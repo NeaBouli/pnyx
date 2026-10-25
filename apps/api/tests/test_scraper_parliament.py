@@ -258,7 +258,7 @@ async def test_strict_scrape_rejects_undated_rows_without_jina(monkeypatch):
                     {
                         "Title": "Undated API row that should not stop strict fallback",
                         "LawPhaseDate": "",
-                        "ID": "undated-stage-one",
+                        "ID": "726dad50-ab77-453c-9590-b4e4012a069e",
                     }
                 ]
             }

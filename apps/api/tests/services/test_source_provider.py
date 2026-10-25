@@ -171,6 +171,15 @@ async def test_oversized_valid_payload_is_rejected(monkeypatch):
     assert await provider.collect_source_rows(limit=20, require_dates=True) == []
 
 
+@respx.mock
+async def test_deeply_nested_provider_json_fails_closed(monkeypatch):
+    monkeypatch.setenv("SOURCE_PROVIDER_SOCKET", SOCKET)
+    respx.post("http://source-provider/v1/collect").mock(
+        return_value=response(b"[" * 2000 + b"]" * 2000),
+    )
+    assert await provider.collect_source_rows(limit=20, require_dates=True) == []
+
+
 async def test_ordinary_discovery_success_does_not_call_provider(monkeypatch):
     monkeypatch.setenv("SOURCE_PROVIDER_SOCKET", SOCKET)
     rows = payload()["bills"]
