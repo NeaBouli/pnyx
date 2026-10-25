@@ -565,6 +565,38 @@ def _parse_parliament_markdown(md: str, source_url: str) -> list[dict]:
     return bills
 
 
+def _parse_parliament_html(text: str) -> list[dict]:
+    """Read real law links and optional dates from the official voted-laws table."""
+    bills = []
+    soup = BeautifulSoup(text, "html.parser")
+    for row in soup.find_all("tr"):
+        cells = row.find_all("td", recursive=False)
+        if len(cells) < 2:
+            continue
+        link = cells[1].find("a", href=True)
+        if link is None:
+            continue
+        url = urllib.parse.urljoin(
+            f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Psifisthenta-Nomoschedia", link["href"],
+        )
+        parsed = urllib.parse.urlsplit(url)
+        law_id = urllib.parse.parse_qs(parsed.query).get("law_id", [""])[0]
+        title = _normalize_scraped_title(link.get_text(" ", strip=True))
+        if parsed.scheme != "https" or not is_parliament(url) or not law_id or not title:
+            continue
+        try:
+            date = datetime.strptime(cells[0].get_text(strip=True), "%d/%m/%Y").isoformat() + "+00:00"
+        except ValueError:
+            date = None
+        bills.append({
+            "title_el": title,
+            "url": url,
+            "law_id": law_id,
+            "date": date,
+        })
+    return bills
+
+
 async def scrape_parliament_bills(
     limit: int = 10,
     require_dates: bool = False,
@@ -621,6 +653,12 @@ async def _scrape_parliament_bills(
                     continue
                 data = r.json()
                 for item in data.get("Data", []):
+                    law_id = item.get("ID")
+                    if not isinstance(law_id, str) or not law_id.strip():
+                        # Open Data can omit IDs: never invent an empty detail
+                        # link; let the existing direct HTML stage supply it.
+                        _record_probe_error(probe_errors, "api_missing_law_id")
+                        continue
                     date_str = item.get("LawPhaseDate", "")
                     date = None
                     if date_str:
@@ -629,7 +667,7 @@ async def _scrape_parliament_bills(
                             date = datetime.fromtimestamp(int(ts_match.group(1)) / 1000, tz=_tz.utc).isoformat()
                     bills.append({
                         "title_el": _normalize_scraped_title(item.get("Title")),
-                        "url": f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Anazitisi-Nomothetikon-Ergon?law_id={item.get('ID', '')}",
+                        "url": f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Anazitisi-Nomothetikon-Ergon?law_id={urllib.parse.quote(law_id.strip(), safe='')}",
                         "date": date,
                         "law_num": item.get("LawNum"),
                         "ministry": item.get("Ministry"),
@@ -667,15 +705,7 @@ async def _scrape_parliament_bills(
                     if _looks_like_access_denied_body(r.text):
                         _record_probe_error(probe_errors, "direct_html_access_denied")
                         return _finalize_scraped_bills(bills, limit=limit, require_dates=require_dates)
-                    soup = BeautifulSoup(r.text, "html.parser")
-                    for link in soup.find_all("a", href=True):
-                        text = link.get_text(strip=True)
-                        href = link.get("href", "")
-                        if len(text) > 20 and any(kw in text.lower() for kw in ["νόμος", "νομοσχέδιο", "ν.", "κύρωση"]):
-                            full_url = href if href.startswith("http") else f"{PARLIAMENT_BASE}{href}"
-                            bills.append({"title_el": _normalize_scraped_title(text), "url": full_url, "date": None})
-                        if len(bills) >= limit:
-                            break
+                    bills = _parse_parliament_html(r.text)
                     if bills:
                         logger.info("[SCRAPER] Fallback 2→3: Direct HTML returned %d bills", len(bills))
                 else:
