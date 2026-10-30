@@ -6,11 +6,12 @@ from sqlalchemy import String, cast, func, literal, select, union_all
 from models import CitizenVote, ParliamentBill, VoteChoice, ZkVoteReceipt
 from services.bill_visibility import public_bill_filter, results_visible_filter
 from services.small_cell import small_cell_k, publishable_set, suppress_public_series
+from services.public_bill_snapshot import snapshot_bill_filter, record_result_contributors
 
 CHOICES = ("yes", "no", "abstain", "unknown")
 
 
-async def load_public_vote_days(db, *, bill_id=None):
+async def load_public_vote_days(db, *, bill_id=None, bill_ids=None):
     """Read all days, never just the requested window; no identities selected."""
     tier = select(CitizenVote.bill_id.label("bill_id"),
                   CitizenVote.created_at.label("created_at"),
@@ -19,7 +20,9 @@ async def load_public_vote_days(db, *, bill_id=None):
     zk = select(ParliamentBill.id.label("bill_id"), ZkVoteReceipt.created_at,
                 ZkVoteReceipt.vote_commitment.label("vote"), literal(1).label("zk"))
     zk = zk.join(ParliamentBill, ZkVoteReceipt.vote_scope_id == func.concat("bill:", ParliamentBill.id))
-    filters = [public_bill_filter(), results_visible_filter()]
+    filters = [public_bill_filter(), results_visible_filter(), snapshot_bill_filter(results=True)]
+    if bill_ids is not None:
+        filters.append(ParliamentBill.id.in_(bill_ids))
     if bill_id is None:
         filters.append(~ParliamentBill.id.like("DEMO-%"))
     else:
@@ -49,6 +52,7 @@ async def load_public_vote_days(db, *, bill_id=None):
     for entry in bills.values():
         entry["totals"] = {key: sum(r[key] for r in entry["days"].values())
                            for key in (*CHOICES, "total")}
+    record_result_contributors(publishable_bill_ids(bills))
     return bills
 
 

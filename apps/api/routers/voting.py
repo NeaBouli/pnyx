@@ -21,8 +21,10 @@ from sqlalchemy import and_, or_, select, func, union, update, text
 from sqlalchemy.exc import IntegrityError
 
 from services.representation_cache import commit_and_invalidate_representation
+from services.client_flow_cache import public_policy_key, results_cache, with_cache_db
+from services.public_bill_response import capture_public_bill_body, public_bill_response, serve_public_bill_body
 from database import get_db
-from rate_limit import limiter
+from rate_limit import client_flow, enforce_route_limit, limiter, public_heavy
 from models import (
     CITIZEN_VOTE_NULLIFIER_UNIQUE_INDEX,
     CitizenVote, VoteChoice, IdentityRecord, KeyStatus,
@@ -187,14 +189,20 @@ async def representativity_for_bill(
             scope_label_el="Δήμος",
         )
     if level == GovernanceLevel.REGIONAL and getattr(bill, "periferia_id", None):
-        result = await db.execute(
-            text(
-                "SELECT COALESCE(SUM(population), 0) FROM dimos "
-                "WHERE periferia_id = :periferia_id AND is_active IS TRUE"
-            ),
-            {"periferia_id": bill.periferia_id},
+        async def load_population(db=db):
+            result = await db.execute(
+                text(
+                    "SELECT COALESCE(SUM(population), 0) FROM dimos "
+                    "WHERE periferia_id = :periferia_id AND is_active IS TRUE"
+                ),
+                {"periferia_id": bill.periferia_id},
+            )
+            return result.scalar_one_or_none() or None
+
+        population = await results_cache.get_or_fill(
+            ("regional-population", bill.periferia_id, public_policy_key()), load_population,
+            background_factory=lambda: with_cache_db(load_population),
         )
-        population = result.scalar_one_or_none() or None
         return compute_representativity(
             total_votes,
             eligible_voters=None,
@@ -662,6 +670,7 @@ async def _commit_vote_write(db: AsyncSession) -> None:
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
 @router.post("", response_model=VoteResponse)
+@client_flow
 @limiter.limit("120/minute")
 async def submit_vote(
     req: VoteRequest,
@@ -872,8 +881,8 @@ async def get_vote_status(
 
 
 @router.post("/{bill_id}/status", response_model=VoteStatusResponse)
-# Every signed vote/correction preflights here; allow the voting IP budget.
-@limiter.shared_limit("120/minute", scope="voting:post_vote_status")
+# Released clients preflight on detail mount; use the shared NAT read budget.
+@client_flow
 async def post_vote_status(
     bill_id: str,
     req: VoteStatusReadRequest,
@@ -929,6 +938,7 @@ class CorrectionRequest(BaseModel):
 
 
 @router.put("/{bill_id}/correct")
+@client_flow
 @limiter.shared_limit("20/minute", scope="voting:correct_vote")
 async def correct_vote(bill_id: str, req: CorrectionRequest, db: AsyncSession = Depends(get_db), request: Request = None):
     """
@@ -1039,8 +1049,9 @@ async def correct_vote(bill_id: str, req: CorrectionRequest, db: AsyncSession = 
     }
 
 
-@router.get("/results/latest")
-async def get_latest_result(db: AsyncSession = Depends(get_db)):
+@router.get("/results/latest", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def get_latest_result(db: AsyncSession = Depends(get_db), request: Request = None):
     """Most recent bill with at least 1 vote — for landing page live data."""
     from sqlalchemy import desc
     candidate_bill_ids = union(
@@ -1115,8 +1126,9 @@ async def get_latest_result(db: AsyncSession = Depends(get_db)):
     return published
 
 
-@router.get("/results/in-progress")
-async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
+@router.get("/results/in-progress", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def get_votes_in_progress(db: AsyncSession = Depends(get_db), request: Request = None):
     """Landing page ticker data. Aggregated counts only; no nullifiers or vote rows."""
     threshold = max(votes_in_progress_threshold(), small_cell_k())
     visibility_sql, visibility_params = public_bill_raw_sql(
@@ -1218,22 +1230,32 @@ async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
     }
 
 
-@router.get("/{bill_id}/results", response_model=BillResults)
-async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
+@router.get("/{bill_id}/results", response_model=BillResults, dependencies=[Depends(enforce_route_limit)])
+@client_flow
+@public_bill_response("point", suppression_dependent=True)
+async def get_results(bill_id: str, db: AsyncSession = Depends(get_db), request: Request = None):
     """
     Abstimmungsergebnisse + Divergence Score.
     Visibility: HIDDEN (default for ACTIVE), WINDOW (24h), ALWAYS.
     PARLIAMENT_VOTED/OPEN_END always visible.
     """
-    bill_result = await db.execute(
-        select(ParliamentBill).where(ParliamentBill.id == bill_id)
-    )
-    bill = bill_result.scalar_one_or_none()
-    if not bill or not is_public_bill(bill):
-        raise HTTPException(status_code=404, detail=f"Το νομοσχέδιο {bill_id} δεν βρέθηκε.")
+    async def eligible_bill():
+        bill_result = await db.execute(
+            select(ParliamentBill).where(ParliamentBill.id == bill_id)
+        )
+        bill = bill_result.scalar_one_or_none()
+        if not bill or not is_public_bill(bill):
+            raise HTTPException(status_code=404, detail=f"Το νομοσχέδιο {bill_id} δεν βρέθηκε.")
+        return bill
+
+    bill = await results_cache.check_eligibility(eligible_bill)
+    include_zk = (bill.source or "PARLIAMENT") == "PARLIAMENT"
+    k = small_cell_k()
+    totals_key = (bill_id, include_zk, k)
 
     # Visibility check (shared with every public results surface)
     if results_hidden(bill):
+        results_cache.invalidate(totals_key)
         vote_date = bill.parliament_vote_date.strftime("%d/%m/%Y") if bill.parliament_vote_date else None
         return publish_bill_results(BillResults(
             bill_id=bill_id, title_el=bill.title_el, status=bill.status.value,
@@ -1257,11 +1279,41 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
             disclaimer_el="Τα αποτελέσματα θα είναι ορατά μετά τη λήξη της ψηφοφορίας.",
         ))
 
-    totals = await aggregate_bill_vote_totals(
-        db,
-        bill_id,
-        include_zk=(bill.source or "PARLIAMENT") == "PARLIAMENT",
-    )
+    async def load_totals(session):
+        async def calculate():
+            return await aggregate_bill_vote_totals(session, bill_id, include_zk=include_zk)
+        if k:
+            return await capture_public_bill_body(calculate, db=session, point_results=bill_id)
+        return await calculate()
+
+    async def refresh_totals(session):
+        current = (await session.execute(
+            select(ParliamentBill).where(ParliamentBill.id == bill_id)
+        )).scalar_one_or_none()
+        if not current or not is_public_bill(current) or results_hidden(current):
+            raise HTTPException(404, "Public results are no longer visible")
+        return await load_totals(session)
+
+    async def cached_totals():
+        return await results_cache.get_or_fill(
+            totals_key, lambda: load_totals(db),
+            background_factory=lambda: with_cache_db(refresh_totals),
+        )
+
+    totals = await cached_totals()
+    if k:
+        async def rebuild_totals():
+            nonlocal totals
+            entry = results_cache.entries.get(totals_key)
+            if entry is not None and entry[1] is totals:
+                results_cache.invalidate(totals_key)
+            totals = await cached_totals()
+            return totals
+
+        totals = await serve_public_bill_body(
+            totals, db=db, schema="point", bill_ids=(bill_id,),
+            point_results=True, refresh=rebuild_totals,
+        )
     yes_c = totals.yes
     no_c = totals.no
     abs_c = totals.abstain
@@ -1448,6 +1500,7 @@ class ConsensusRequest(BaseModel):
 
 
 @router.post("/{bill_id}/consensus")
+@client_flow
 @limiter.shared_limit("20/minute", scope="voting:submit_consensus")
 async def submit_consensus(
     bill_id: str,

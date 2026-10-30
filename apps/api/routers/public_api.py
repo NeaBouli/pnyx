@@ -4,8 +4,8 @@ MOD-11: Public API + Rate Limiting + API Keys
 
 Public reads declaring Depends(rate_limit_check):
   - Shared public-data quota: anonymous IP 100 / valid API key 1000 per 60s
-  - These reads are excluded from SlowAPI's default 60/min in current wiring.
-  - The 60/min default covers other routes (for example /health), not these reads.
+  - Explicit shared read/heavy classes run before key validation and database work.
+  - Cheap health/version endpoints are exempt; API keys do not bypass read classes.
   - The shared quota is not a production throughput guarantee.
   - API Keys:    community-generiert, kein Konto nötig
 
@@ -20,14 +20,15 @@ import secrets
 import logging
 import time
 from datetime import date, datetime, time as datetime_time, timezone
-from fastapi import APIRouter, Depends, HTTPException, Request, Header, Query
+from fastapi import APIRouter, Depends, HTTPException, Header, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
 from typing import Annotated, Optional
 import httpx
 
 from database import get_db
-from rate_limit import limiter
+from slowapi.errors import RateLimitExceeded
+from rate_limit import enforce_route_limit, limiter, public_heavy, public_read
 from ip_utils import rate_limit_key_for_ip, redis_fixed_window_limit
 from services.bill_visibility import (
     is_public_bill,
@@ -182,11 +183,15 @@ async def rate_limit_check(
 
     A valid X-API-Key selects a 1000/60s key bucket across dependent routes;
     missing or invalid keys use the anonymous IP bucket (100/60s). Current
-    dependent public reads are excluded from SlowAPI's 60/min default; that
-    default is not an additional per-endpoint ceiling on these reads.
+    reads also have an explicit shared read/heavy class before this dependency.
+    Unavailable key validation uses the anonymous IP counter conservatively.
     """
     r = await get_redis()
-    valid_key = bool(x_api_key and await verify_api_key(x_api_key))
+    try:
+        valid_key = bool(x_api_key and await verify_api_key(x_api_key))
+    except (aioredis.RedisError, OSError):
+        # Key-store failure must not bypass the anonymous outage counter.
+        valid_key = False
     limit = 1000 if valid_key else 100
     if valid_key and x_api_key:
         rate_key = f"ratelimit:public_api:key:{hash_key(x_api_key)}"
@@ -264,7 +269,8 @@ async def api_key_status(x_api_key: Optional[str] = Header(None, alias="X-API-Ke
 
 # ── Public Endpoints ──────────────────────────────────────────────────────────
 
-@router.get("/bills")
+@router.get("/bills", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def public_bills(
     status: Optional[str] = None,
     governance: Optional[str] = None,
@@ -278,7 +284,8 @@ async def public_bills(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     _key=Depends(rate_limit_check),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Alle Gesetzentwürfe — öffentlich, CC BY 4.0."""
     query = select(ParliamentBill).where(public_bill_filter())
@@ -380,11 +387,13 @@ async def public_bills(
     }
 
 
-@router.get("/bills/{bill_id}/results")
+@router.get("/bills/{bill_id}/results", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def public_bill_results(
     bill_id: str,
     _key=Depends(rate_limit_check),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Citizen Vote Ergebnisse — öffentlich."""
     bill = await db.get(ParliamentBill, bill_id)
@@ -437,8 +446,9 @@ async def public_bill_results(
     }
 
 
-@router.get("/stats")
-async def public_stats(_key=Depends(rate_limit_check), db: AsyncSession = Depends(get_db)):
+@router.get("/stats", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def public_stats(_key=Depends(rate_limit_check), db: AsyncSession = Depends(get_db), request: Request = None):
     """Plattform-Statistiken — öffentlich."""
     total_bills  = await db.scalar(
         select(func.count(ParliamentBill.id)).where(public_bill_with_demo_filter())
@@ -496,8 +506,9 @@ async def public_stats(_key=Depends(rate_limit_check), db: AsyncSession = Depend
     }
 
 
-@router.get("/vaa/parties")
-async def public_parties(_key=Depends(rate_limit_check), db: AsyncSession = Depends(get_db)):
+@router.get("/vaa/parties", dependencies=[Depends(enforce_route_limit)])
+@public_read
+async def public_parties(_key=Depends(rate_limit_check), db: AsyncSession = Depends(get_db), request: Request = None):
     """Alle Parteien — öffentlich."""
     result = await db.execute(select(Party).order_by(Party.name_el))
     parties = result.scalars().all()
@@ -510,14 +521,16 @@ async def public_parties(_key=Depends(rate_limit_check), db: AsyncSession = Depe
     }
 
 
-@router.get("/cplm")
+@router.get("/cplm", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def public_cplm(
     _key=Depends(rate_limit_check),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """CPLM — Citizens Political Liquid Mirror. Aggregate political position of society. CC BY 4.0."""
     from services.cplm import get_cplm_cached
-    data = await get_cplm_cached(db)
+    data = dict(await get_cplm_cached(db))
     data["data_license"] = "CC BY 4.0"
     data["source"] = "ekklesia.gr"
     data["description"] = {
@@ -617,35 +630,43 @@ async def record_share(request: Request = None):
     return {"share_count": count}
 
 
-@router.get("/cplm/history")
+@router.get("/cplm/history", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def public_cplm_history(
     days: int = 30,
     _key=Depends(rate_limit_check),
+    request: Request = None,
+    db: AsyncSession = Depends(get_db),
 ):
     """CPLM historical snapshots. CC BY 4.0."""
     from services.cplm import get_cplm_history
-    entries = await get_cplm_history(min(days, 365))
+    entries = await get_cplm_history(min(days, 365), db=db)
     return {"snapshots": entries, "count": len(entries), "data_license": "CC BY 4.0"}
 
 
-@router.get("/representation")
+@router.get("/representation", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def public_representation(
     _key=Depends(rate_limit_check),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Parliament Representativeness — cumulative divergence. CC BY 4.0."""
-    from routers.analytics import compute_cumulative_representation
+    from routers.analytics import get_cached_representation
     try:
-        data = await compute_cumulative_representation(db)
+        data = dict(await get_cached_representation(db))
         data["data_license"] = "CC BY 4.0"
         data["source"] = "ekklesia.gr"
         return data
+    except (HTTPException, RateLimitExceeded):
+        raise
     except Exception:
         return {"error": "Representation data not available", "data_license": "CC BY 4.0"}
 
 
-@router.get("/info")
-async def api_info():
+@router.get("/info", dependencies=[Depends(enforce_route_limit)])
+@public_read
+async def api_info(request: Request = None):
     """API overview; rate_limits describes the shared public-data quota only.
 
     Only routes declaring rate_limit_check consume that shared budget.
@@ -657,6 +678,7 @@ async def api_info():
         "license": "MIT (Code) + CC BY 4.0 (Data)",
         "source_code": "https://github.com/NeaBouli/pnyx",
         "docs": "/docs",
+        "read_classes": {"public-read": "120 req/min/IP", "public-heavy": "20 req/min/IP"},
         "rate_limits": {
             "anonymous": "100 req/min", "with_key": "1000 req/min",
             "get_key": "POST /api/v1/public/keys/generate",

@@ -295,7 +295,8 @@ def test_rotation_message_is_domain_separated() -> None:
 def test_rotate_route_is_rate_limited() -> None:
     from rate_limit import limiter
     limits = limiter._route_limits.get("routers.identity.rotate_identity_key", [])
-    assert [str(l.limit) for l in limits] == ["10 per 1 minute"]
+    assert [str(l.limit) for l in limits] == ["1200 per 1 minute"]
+    assert [l.scope for l in limits] == ["client-flow"]
 
 
 async def _register_polis(identity_key: SigningKey, pk_polis: str):

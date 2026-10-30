@@ -10,14 +10,14 @@ import logging
 from datetime import datetime, timezone, timedelta
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Header, Response, Request
+from fastapi import APIRouter, Depends, HTTPException, Header, Request, Response
 from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from rate_limit import enforce_route_limit, limiter
+from rate_limit import enforce_route_limit, limiter, public_heavy
 from dependencies import verify_admin_key
 from ip_utils import log_reference
 from services.invite_codes import invite_code_hash, invite_code_hint
@@ -131,12 +131,14 @@ def _verify_admin(key: bool = Depends(verify_admin_key)):
 # ─── Admin Endpoints ─────────────────────────────────────────────────────────
 
 
-@router.post("/admin/invite")
+@router.post("/admin/invite", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def create_invite(
     req: InviteRequest,
     response: Response,
     _auth=Depends(_verify_admin),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Admin: Generate invite code for a representative.
 
@@ -179,10 +181,12 @@ async def create_invite(
     }
 
 
-@router.get("/admin/invites")
+@router.get("/admin/invites", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def list_invites(
     _auth=Depends(_verify_admin),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Admin: List invites. EVA-033: codes are not retrievable, only a display hint."""
     result = await db.execute(text(
@@ -382,10 +386,12 @@ def is_bill_visible_for_token(bill, rep: dict) -> bool:
         return source == "PARLIAMENT" or source is None
 
 
-@router.get("/bills")
+@router.get("/bills", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def get_rep_bills(
     rep: dict = Depends(verify_rep_token),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Bills visible to representatives — filtered by role.
 

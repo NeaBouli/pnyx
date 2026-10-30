@@ -16,8 +16,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from database import get_db
 from models import BillStatus
-from routers import admin, analytics, notifications, parliament
+from routers import admin, analytics, notifications, parliament, public_api
 from services import bill_lifecycle
+from services.public_bill_response import BODY_KEY, IDS_KEY, RESULTS_IDS_KEY
 
 CHOICES = ("YES", "NO", "ABSTAIN", "UNKNOWN")
 
@@ -30,6 +31,15 @@ class Cache:
         self.read_error = False
         self.write_error = False
         self.closed = 0
+        self.generation = 0
+
+    async def incr(self, key: str) -> int:
+        from services.public_visibility_cache import PUBLIC_VISIBILITY_GENERATION_KEY
+        assert key == PUBLIC_VISIBILITY_GENERATION_KEY
+        if self.write_error:
+            raise RedisConnectionError("cache unavailable")
+        self.generation += 1
+        return self.generation
 
     async def __aenter__(self) -> "Cache":
         return self
@@ -77,7 +87,7 @@ async def db() -> AsyncIterator[AsyncSession]:
     try:
         async with engine.begin() as conn:
             for sql in (
-                "CREATE TABLE parliament_bills (id TEXT PRIMARY KEY, title_el TEXT, parliament_url TEXT, created_at TEXT, source TEXT, status TEXT, admin_hidden BOOLEAN, summary_short_el TEXT, summary_long_el TEXT, party_votes_parliament TEXT)",
+                "CREATE TABLE parliament_bills (id TEXT PRIMARY KEY, title_el TEXT, parliament_url TEXT, created_at TEXT, source TEXT, status TEXT, results_visibility TEXT, admin_hidden BOOLEAN, summary_short_el TEXT, summary_long_el TEXT, party_votes_parliament TEXT)",
                 "CREATE TABLE citizen_votes (bill_id TEXT, vote TEXT)",
                 "CREATE INDEX idx_votes_bill ON citizen_votes (bill_id)",
                 "CREATE TABLE zk_vote_receipts (vote_scope_id TEXT, vote_commitment TEXT)",
@@ -142,7 +152,11 @@ async def test_endpoint_contract_combines_sources_and_preserves_rounding(
     response = await client.get("/api/v1/analytics/representation")
     assert response.status_code == 200
     result = response.json()
-    assert json.loads(cache.writes[0][2]) == result
+    cached = json.loads(cache.writes[0][2])
+    assert cached.pop("_public_visibility_generation") == 0
+    assert cached[IDS_KEY] == ["A", "B", "C"]
+    assert cached[RESULTS_IDS_KEY] == ["A", "B", "C"]
+    assert cached[BODY_KEY] == result
     for projected in result["bills"] + [result["last_bill"]]:
         assert projected.pop("source") == "PARLIAMENT"
         assert projected.pop("parliament_url") is None
@@ -210,7 +224,8 @@ async def test_source_suppression_and_policy_invalidation(
     assert [b["bill_id"] for b in after["bills"]] == ["SAFE"]
     monkeypatch.setenv("PUBLIC_RESULTS_MIN_COUNT", "11")
     assert (await client.get("/api/v1/analytics/representation")).json()["bills"] == []
-    assert len({key for key, _, _ in cache.writes}) == 3
+    assert len(cache.writes) == 1  # Only the k=0 request may store a result.
+    assert cache.values == {}  # Policy changes purge all representation variants.
 
 
 async def test_hit_skips_db_and_expiry_refreshes_votes_and_visibility(
@@ -259,15 +274,16 @@ async def test_delayed_fill_expires_from_snapshot_start(
     monkeypatch.setattr(analytics, "compute_cumulative_representation", delayed_compute)
     response = await client.get("/api/v1/analytics/representation")
     assert response.status_code == 200
-    assert response.json()["bills_analyzed"] == (0 if empty else 1)
+    assert response.json()["bills_analyzed"] == 0
+    assert response.json()["bills"] == []
     remaining = int(30 - delay)
     if remaining > 0:
-        assert len(cache.writes) == 1
+        assert len(cache.writes) == (1 if empty else 2)
         key, ttl, _ = cache.writes[0]
         assert ttl == remaining
-        assert cache.values[key][0] <= 30
+        assert cache.values[key][0] <= (30 if empty else delay + 30)
     else:
-        assert cache.writes == []
+        assert len(cache.writes) == (0 if empty else 1)
 
     # A completed snapshot must never stay cached until t=delay+30.
     monkeypatch.setattr(analytics, "compute_cumulative_representation", compute)
@@ -504,3 +520,125 @@ async def test_invalidation_client_setup_failure_does_not_fail_write(
     writer = AsyncMock(spec=AsyncSession)
     await commit_and_invalidate_representation(writer)
     writer.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("outage", [False, True])
+async def test_representation_misses_coalesce_and_outage_recomputes(db, cache, monkeypatch, outage):
+    import asyncio
+    from services.representation_cache import invalidate_representation_cache
+    cache.read_error = outage
+    async def compute(_):
+        await asyncio.sleep(0.01)
+        return {"cumulative_representation": 50, "bills": [], "last_bill": None}
+    calculate = AsyncMock(side_effect=compute)
+    monkeypatch.setattr(analytics, "compute_cumulative_representation", calculate)
+    responses = await asyncio.gather(*(analytics.cumulative_representation(db=db) for _ in range(50)))
+    assert all(response == responses[0] for response in responses)
+    assert calculate.await_count == 1
+    await analytics.cumulative_representation(db=db)
+    assert calculate.await_count == (2 if outage else 1)
+    await invalidate_representation_cache()
+    await analytics.cumulative_representation(db=db)
+    assert calculate.await_count == (3 if outage else 2)
+    cache.now = 31
+    await analytics.cumulative_representation(db=db)
+    assert calculate.await_count == (4 if outage else 3)
+
+
+@pytest.mark.asyncio
+async def test_representation_payload_has_at_most_200_bill_details(monkeypatch):
+    row = {"id": "bill", "title_el": "a" * 1000, "source": "PARLIAMENT", "party_votes_parliament": {"ND": "YES"},
+           **{f"tier1_{choice}": 10 if choice == "yes" else 0 for choice in ("yes", "no", "abstain", "unknown")},
+           **{f"zk_{choice}": 0 for choice in ("yes", "no", "abstain", "unknown")}}
+    rows = [dict(row, id=str(i)) for i in range(1000)]
+    db = SimpleNamespace(execute=AsyncMock(return_value=SimpleNamespace(mappings=lambda: SimpleNamespace(all=lambda: rows))))
+    result = await analytics.compute_cumulative_representation(db)
+    assert result["bills_analyzed"] == 1000
+    assert len(result["bills"]) == 200
+    assert len(result["bills"][0]["title_el"]) == 500
+    assert result["last_bill"]["bill_id"] == "999"
+
+
+@pytest.mark.parametrize("generation_changed", [False, True])
+@pytest.mark.parametrize("refresh_fails", [False, True])
+async def test_cached_representation_rechecks_visible_rows_and_last_bill(
+    db, client, cache, visibility_redis, monkeypatch, generation_changed, refresh_fails,
+):
+    await bill(db, "A", party={"ND": "YES"})
+    await votes(db, "A", (10, 0, 0, 0))
+    before = (await client.get("/api/v1/analytics/representation")).json()
+    assert before["last_bill"]["bill_id"] == "A"
+    await db.execute(text("UPDATE parliament_bills SET admin_hidden = TRUE"))
+    await db.commit()
+    if generation_changed:
+        visibility_redis.generation += 1  # A different worker committed; old Redis body remains.
+    if refresh_fails:
+        monkeypatch.setattr(analytics, "compute_cumulative_representation",
+                            AsyncMock(side_effect=RuntimeError("refresh unavailable")))
+    if refresh_fails:
+        with pytest.raises(RuntimeError, match="refresh unavailable"):
+            await client.get("/api/v1/analytics/representation")
+    else:
+        response = (await client.get("/api/v1/analytics/representation")).json()
+        assert response["bills"] == []
+        assert response["last_bill"] is None
+
+
+@pytest.mark.parametrize("refresh_fails", [False, True])
+async def test_representation_generation_outage_never_reuses_a_body(
+    db, client, cache, visibility_redis, monkeypatch, refresh_fails,
+):
+    await bill(db, "A", party={"ND": "YES"})
+    await votes(db, "A", (10, 0, 0, 0))
+    assert (await client.get("/api/v1/analytics/representation")).json()["bills_analyzed"] == 1
+    await db.execute(text("UPDATE parliament_bills SET admin_hidden = TRUE"))
+    await db.commit()
+    visibility_redis.down = True
+    if refresh_fails:
+        monkeypatch.setattr(analytics, "compute_cumulative_representation",
+                            AsyncMock(side_effect=RuntimeError("refresh unavailable")))
+        with pytest.raises(RuntimeError, match="refresh unavailable"):
+            await client.get("/api/v1/analytics/representation")
+    else:
+        response = (await client.get("/api/v1/analytics/representation")).json()
+        assert response["bills"] == []
+        assert response["bills_analyzed"] == 0
+        assert len(cache.writes) == 1  # An unverified generation is never stored.
+
+
+@pytest.mark.parametrize("path", ["/api/v1/public/representation", "/api/v1/analytics/representation"])
+@pytest.mark.parametrize("hide", ["admin_hidden = TRUE", "source = 'DIAVGEIA', summary_long_el = 'AMKA'"])
+async def test_one_second_old_representation_after_committed_hide_and_redis_recovery(
+    db, cache, visibility_redis, monkeypatch, path, hide,
+):
+    from services.representation_cache import commit_and_invalidate_representation
+    app = FastAPI()
+    app.include_router(public_api.router)
+    app.include_router(analytics.router)
+    app.dependency_overrides[get_db] = lambda: db
+    app.dependency_overrides[public_api.rate_limit_check] = lambda: None
+    await bill(db, "Z-HIDDEN", title="Hidden title", party={"ND": "YES"})
+    await votes(db, "Z-HIDDEN", (17, 0, 0, 0))
+    await bill(db, "A-VISIBLE", title="Visible title", party={"ND": "NO"})
+    await votes(db, "A-VISIBLE", (10, 0, 0, 0))
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as http:
+        assert (await http.get(path)).json()["total_citizen_votes"] == 27
+        stored = dict(cache.values)
+        visibility_redis.down = True
+        cache.write_error = True
+        await db.execute(text(f"UPDATE parliament_bills SET {hide} WHERE id = 'Z-HIDDEN'"))
+        await commit_and_invalidate_representation(db)
+        assert cache.values == stored  # Failed bump and deletion left the body alive.
+        assert cache.generation == visibility_redis.generation == 0
+        visibility_redis.down = cache.write_error = False
+        cache.now = 1
+        monkeypatch.setattr(analytics, "compute_cumulative_representation",
+                            AsyncMock(side_effect=RuntimeError("refresh unavailable")))
+        if path == "/api/v1/public/representation":
+            response = await http.get(path)
+            assert response.json() == {"error": "Representation data not available", "data_license": "CC BY 4.0"}
+        else:
+            with pytest.raises(RuntimeError, match="refresh unavailable"):
+                await http.get(path)
+        assert cache.values == stored

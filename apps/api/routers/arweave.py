@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from database import get_db
-from rate_limit import limiter
+from rate_limit import enforce_route_limit, limiter, public_read
 from models import ParliamentBill, BillStatusLog
 from config import settings
 from services.bill_visibility import is_public_bill
@@ -196,8 +196,9 @@ async def arweave_status(request: Request = None):
         }
 
 
-@router.get("/bill/{bill_id}")
-async def get_arweave_record(bill_id: str, db: AsyncSession = Depends(get_db)):
+@router.get("/bill/{bill_id}", dependencies=[Depends(enforce_route_limit)])
+@public_read
+async def get_arweave_record(bill_id: str, db: AsyncSession = Depends(get_db), request: Request = None):
     """Gibt TX-ID und Arweave URL für ein Bill zurück."""
     result = await db.execute(
         select(ParliamentBill).where(ParliamentBill.id == bill_id)

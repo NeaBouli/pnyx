@@ -7,6 +7,7 @@ GET  /api/v1/bills/trending     — Nach Relevanz-Score sortiert
 """
 import logging
 import os
+from typing import Literal
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, ConfigDict, Field
@@ -14,7 +15,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, text
 from sqlalchemy.exc import IntegrityError
 from database import get_db
-from rate_limit import limiter
+from services.client_flow_cache import public_client_cache
+from services.public_bill_response import public_bill_response
+from rate_limit import client_flow, enforce_route_limit, generate, limiter, public_heavy, public_read
 
 DISCOURSE_BASE = os.getenv("DISCOURSE_BASE_URL", "https://pnyx.ekklesia.gr")
 from dependencies import verify_admin_key
@@ -26,7 +29,7 @@ from services.citizen_action_integrity import (
 from services.source_links import official_source_url
 from services.source_freshness import get_source_freshness, bill_freshness
 from services.representation_cache import commit_and_invalidate_representation
-from services.geographic_scope import validate_region_filter
+from services.geographic_scope import validate_public_region_filters
 from models import (
     ParliamentBill, BillStatus, BillStatusLog, BillRelevanceVote,
     CitizenVote, VoteChoice, GovernanceLevel, IdentityRecord, KeyStatus,
@@ -152,11 +155,26 @@ def _parse_status_any(status_any: str | None) -> list[BillStatus]:
         try:
             status = BillStatus(value)
         except ValueError:
-            raise HTTPException(400, f"Ungültiger Status: {raw_status.strip()}") from None
+            raise HTTPException(422, f"Ungültiger Status: {raw_status.strip()}") from None
         if status not in seen:
             seen.add(status)
             statuses.append(status)
     return statuses
+
+
+async def _validate_bill_filters(*, status_filter=None, status_any=None, governance=None, **kwargs):
+    _parse_status_any(status_any)
+    if status_filter:
+        try:
+            BillStatus(status_filter.upper())
+        except ValueError:
+            raise HTTPException(422, f"Ungültiger Status: {status_filter}") from None
+    if governance:
+        try:
+            GovernanceLevel(governance.upper())
+        except ValueError:
+            raise HTTPException(422, f"Ungültige Governance-Ebene: {governance}") from None
+    await validate_public_region_filters(**kwargs)
 
 
 def _region_filter_conditions(
@@ -193,7 +211,9 @@ def _region_filter_conditions(
 
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
-@router.get("", response_model=list[BillSummary])
+@router.get("", response_model=list[BillSummary], dependencies=[Depends(enforce_route_limit)])
+@client_flow
+@public_client_cache(bill_schema="rows", validate=_validate_bill_filters)
 async def get_bills(
     status_filter: str | None = Query(None, alias="status"),
     status_any: str | None = Query(None),
@@ -201,12 +221,13 @@ async def get_bills(
     governance: str | None = Query(None),
     source: str | None = Query(None),
     q: str | None = Query(None, min_length=1, max_length=200),
-    periferia_id: int | None = Query(None),
-    dimos_id: int | None = Query(None),
+    periferia_id: int | None = Query(None, ge=1),
+    dimos_id: int | None = Query(None, ge=1),
     include_institutional: bool = Query(True),
-    limit: int = Query(20, le=500),
-    offset: int = Query(0),
-    db: AsyncSession = Depends(get_db)
+    limit: int = Query(20, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Gibt Gesetzentwürfe zurück, optional gefiltert nach Status/Kategorie/Governance/Source/Region."""
     from sqlalchemy import or_
@@ -230,7 +251,7 @@ async def get_bills(
             s = BillStatus(status_filter.upper())
             query = query.where(ParliamentBill.status == s)
         except ValueError:
-            raise HTTPException(400, f"Ungültiger Status: {status_filter}")
+            raise HTTPException(422, f"Ungültiger Status: {status_filter}")
 
     if governance:
         try:
@@ -245,7 +266,7 @@ async def get_bills(
             else:
                 query = query.where(ParliamentBill.governance_level == governance_level)
         except ValueError:
-            raise HTTPException(400, f"Ungültige Governance-Ebene: {governance}")
+            raise HTTPException(422, f"Ungültige Governance-Ebene: {governance}")
 
     if source:
         query = query.where(ParliamentBill.source == source.upper())
@@ -263,11 +284,6 @@ async def get_bills(
 
     # Region filter: show NATIONAL + INSTITUTIONAL + matching REGIONAL/MUNICIPAL
     if periferia_id is not None or dimos_id is not None:
-        await validate_region_filter(
-            db,
-            periferia_id=periferia_id,
-            dimos_id=dimos_id,
-        )
         region_conditions = _region_filter_conditions(
             periferia_id=periferia_id,
             dimos_id=dimos_id,
@@ -310,10 +326,13 @@ async def get_bills(
     ) for b in bills]
 
 
-@router.get("/trending", response_model=list[BillSummary])
+@router.get("/trending", response_model=list[BillSummary], dependencies=[Depends(enforce_route_limit)])
+@client_flow
+@public_client_cache(bill_schema="rows", quota="60/minute")
 async def get_trending(
-    limit: int = Query(10, le=50),
-    db: AsyncSession = Depends(get_db)
+    limit: int = Query(10, ge=1, le=50),
+    db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """
     Gesetzentwürfe sortiert nach Relevanz-Score (Up/Down Votes, MOD-14).
@@ -364,14 +383,16 @@ async def get_trending(
     ) for row in rows]
 
 
-@router.get("/sources/freshness")
-async def sources_freshness():
+@router.get("/sources/freshness", dependencies=[Depends(enforce_route_limit)])
+@public_read
+async def sources_freshness(request: Request = None):
     """Successful ingestion times and neutral availability flags for public sources."""
     return await get_source_freshness()
 
 
-@router.get("/{bill_id}", response_model=BillDetail)
-async def get_bill(bill_id: str, db: AsyncSession = Depends(get_db)):
+@router.get("/{bill_id}", response_model=BillDetail, dependencies=[Depends(enforce_route_limit)])
+@client_flow
+async def get_bill(bill_id: str, db: AsyncSession = Depends(get_db), request: Request = None):
     """Einzelner Gesetzentwurf mit vollständigen Details und KI-Zusammenfassungen."""
     result = await db.execute(
         select(ParliamentBill).where(ParliamentBill.id == bill_id)
@@ -415,11 +436,13 @@ async def get_bill(bill_id: str, db: AsyncSession = Depends(get_db)):
     )
 
 
-@router.get("/{bill_id}/summary")
+@router.get("/{bill_id}/summary", dependencies=[Depends(enforce_route_limit)])
+@generate
+@public_bill_response("point")
 async def get_bill_summary(
     request: Request,
     bill_id: str,
-    lang: str = "el",
+    lang: Literal["el", "en"] = "el",
     db: AsyncSession = Depends(get_db),
 ):
     """AI-generated plain-language bill summary (cached in Redis 7d)."""
@@ -566,12 +589,14 @@ async def flag_bill(
     return {"success": True, "bill_id": bill_id, "message": "Η αναφορά καταγράφηκε."}
 
 
-@router.post("/{bill_id}/transition")
+@router.post("/{bill_id}/transition", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def transition_bill(
     bill_id: str,
     req: TransitionRequest,
     _auth: bool = Depends(verify_admin_key),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """
     Lifecycle-Übergang eines Gesetzentwurfs.
@@ -647,11 +672,13 @@ async def transition_bill(
     }
 
 
-@router.post("/admin/create")
+@router.post("/admin/create", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def create_bill(
     req: BillCreateRequest,
     _auth: bool = Depends(verify_admin_key),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Admin: Neuen Gesetzentwurf anlegen."""
 

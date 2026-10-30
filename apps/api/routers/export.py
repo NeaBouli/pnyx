@@ -11,6 +11,7 @@ Für: NGOs, Medien, Forscher, Bürger
 import csv
 import io
 import logging
+from typing import Annotated
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import StreamingResponse, JSONResponse
@@ -18,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
 from database import get_db
-from rate_limit import limiter
+from rate_limit import enforce_route_limit, limiter, public_heavy
 from services.source_links import parliament_attribution_fields
 from models import ParliamentBill, CitizenVote, BillStatus, VoteChoice, Party
 from services.bill_visibility import public_bill_filter, results_hidden
@@ -29,25 +30,27 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/export", tags=["MOD-14 Data Export"])
 
 
-async def get_all_results(db: AsyncSession, min_votes: int = 0) -> list[dict]:
-    """Aggregierte Ergebnisse aller Bills."""
+async def get_all_results(db: AsyncSession, min_votes: int = 0, *, limit: int = 100, offset: int = 0) -> list[dict]:
+    """Aggregate one bounded page of public bills, selecting the page first."""
     threshold = small_cell_k()
     result = await db.execute(
         select(ParliamentBill).where(public_bill_filter()).order_by(
-            ParliamentBill.parliament_vote_date.desc().nullslast()
-        )
+            ParliamentBill.parliament_vote_date.desc().nullslast(), ParliamentBill.id
+        ).limit(limit).offset(offset)
     )
     bills = result.scalars().all()
+    bill_ids = [bill.id for bill in bills]
 
     if threshold:
         from services.public_result_windows import load_public_vote_days, publishable_bill_ids
-        populations = await load_public_vote_days(db)
+        populations = await load_public_vote_days(db, bill_ids=bill_ids)
         allowed = publishable_bill_ids(populations)
         vote_counts = {bid: {choice: populations[bid]["totals"][choice.value.lower()]
                              for choice in VoteChoice} for bid in allowed}
     else:
         vote_result = await db.execute(
             select(CitizenVote.bill_id, CitizenVote.vote, func.count(CitizenVote.id))
+            .where(CitizenVote.bill_id.in_(bill_ids))
             .group_by(CitizenVote.bill_id, CitizenVote.vote))
         vote_counts = {}
         for bill_id, vote, count in vote_result.all():
@@ -108,11 +111,12 @@ async def get_all_results(db: AsyncSession, min_votes: int = 0) -> list[dict]:
     return rows
 
 
-@router.get("/bills.csv")
-@limiter.limit("30/minute")
-async def export_bills_csv(db: AsyncSession = Depends(get_db), request: Request = None):
+@router.get("/bills.csv", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def export_bills_csv(db: AsyncSession = Depends(get_db), request: Request = None,
+    limit: Annotated[int, Query(ge=1, le=500)] = 100, offset: Annotated[int, Query(ge=0, le=10_000)] = 0):
     """Alle Gesetzentwürfe als CSV. Lizenz: CC BY 4.0"""
-    rows = await get_all_results(db)
+    rows = await get_all_results(db, limit=limit, offset=offset)
 
     output = io.StringIO()
     output.write("# ekklesia.gr Data Export\n")
@@ -136,13 +140,17 @@ async def export_bills_csv(db: AsyncSession = Depends(get_db), request: Request 
     )
 
 
-@router.get("/results.json")
+@router.get("/results.json", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def export_results_json(
     min_votes: int = Query(0, ge=0, description="Minimum votes among publishable bills"),
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    offset: Annotated[int, Query(ge=0, le=10_000)] = 0,
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Alle Abstimmungsergebnisse als JSON. Lizenz: CC BY 4.0"""
-    rows = await get_all_results(db, min_votes=min_votes)
+    rows = await get_all_results(db, min_votes=min_votes, limit=limit, offset=offset)
 
     return JSONResponse(
         content={
@@ -151,6 +159,8 @@ async def export_results_json(
             "source_code": "https://github.com/NeaBouli/pnyx",
             "exported_at": datetime.now(timezone.utc).isoformat(),
             "count": len(rows),
+            "limit": limit,
+            "offset": offset,
             "data": rows,
         },
         headers={
@@ -160,15 +170,17 @@ async def export_results_json(
     )
 
 
-@router.get("/divergence.csv")
-@limiter.limit("30/minute")
+@router.get("/divergence.csv", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def export_divergence_csv(
     min_votes: int = Query(10, ge=0, description="Minimum votes among publishable bills"),
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+    offset: Annotated[int, Query(ge=0, le=10_000)] = 0,
     db: AsyncSession = Depends(get_db),
     request: Request = None,
 ):
     """Divergence Score Ranking als CSV. Sortiert nach höchster Abweichung."""
-    rows = await get_all_results(db, min_votes=min_votes)
+    rows = await get_all_results(db, min_votes=min_votes, limit=limit, offset=offset)
 
     diverge_rows = [
         r for r in rows
@@ -206,8 +218,9 @@ async def export_divergence_csv(
     )
 
 
-@router.get("/parties.json")
-async def export_parties_json(db: AsyncSession = Depends(get_db)):
+@router.get("/parties.json", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def export_parties_json(db: AsyncSession = Depends(get_db), request: Request = None):
     """Alle Parteien als JSON."""
     result = await db.execute(select(Party))
     parties = result.scalars().all()
@@ -226,11 +239,13 @@ async def export_parties_json(db: AsyncSession = Depends(get_db)):
     )
 
 
-@router.get("/info")
-async def export_info():
+@router.get("/info", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def export_info(request: Request = None):
     """Übersicht aller Export-Endpoints."""
     return {
         "name": "Ekklesia.gr Data Export",
+        "pagination": {"default_limit": 100, "max_limit": 500, "max_offset": 10_000},
         "license": "CC BY 4.0",
         "endpoints": {
             "GET /api/v1/export/bills.csv":      "Alle Bills + Ergebnisse als CSV",

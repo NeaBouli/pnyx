@@ -178,6 +178,12 @@ def test_all_representation_writers_invalidate():
     'await db.execute(ParliamentBill.__table__.delete())',
     'await db.delete(x)',
     'x.party_votes_parliament = {}',
+    'x.admin_hidden = True',
+    'x.status = BillStatus.ACTIVE',
+    'x.results_visibility = "HIDDEN"',
+    'x.source = "DIAVGEIA"',
+    'x.title_el = "AMKA"',
+    'x.summary_short_el = "AMKA"',
     'setattr(x, "summary_long_el", "AMKA")',
     'x.vote_commitment = "NO"',
 ])

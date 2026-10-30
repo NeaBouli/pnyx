@@ -31,7 +31,7 @@ from datetime import datetime
 
 from services.representation_cache import commit_and_invalidate_representation
 from database import get_db
-from rate_limit import limiter
+from rate_limit import enforce_route_limit, limiter, public_heavy, public_read
 from models import ParliamentBill, BillStatus
 from dependencies import verify_admin_key
 from services.ollama_service import (
@@ -761,8 +761,9 @@ async def _scrape_parliament_bills(
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
-@router.get("/jobs")
-async def scraper_jobs():
+@router.get("/jobs", dependencies=[Depends(enforce_route_limit)])
+@public_read
+async def scraper_jobs(request: Request = None):
     """Status aller Scraper-Jobs (Redis-backed)."""
     from services.scraper_state import get_all_states
     from services.scheduler_observability import JOB_NAMES, FIELDS, safe_state
@@ -850,12 +851,14 @@ async def get_parliament_freshness_probe(limit: int = Query(20, ge=1, le=20), re
     }
 
 
-@router.post("/fetch")
+@router.post("/fetch", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def fetch_and_store(
     url: str = Query(...), title_el: str = Query(...),
     bill_id: str = Query(...),
     _auth: bool = Depends(verify_admin_key),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Scraped URL → KI Zusammenfassung → DB. Admin-geschützt."""
 
@@ -1061,11 +1064,13 @@ def _verified_official_payload_is_bound(
     )
 
 
-@router.post("/import")
+@router.post("/import", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def import_parliament_bills(
     req: BillImportRequest,
     _auth: bool = Depends(verify_admin_key),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Bulk import structured bill data.
     Called by GitHub Actions scraper workflow which fetches from

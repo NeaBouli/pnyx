@@ -81,7 +81,7 @@ class TestVaaQuestionsAlias:
             SimpleNamespace(id=1, display_order=1),
         ]
 
-        statement_payload = await get_statements(limit=0, db=_FakeDb(statements))
-        question_payload = await get_questions(limit=0, db=_FakeDb(statements))
+        statement_payload = await get_statements(limit=30, db=_FakeDb(statements))
+        question_payload = await get_questions(limit=30, db=_FakeDb(statements))
 
         assert question_payload == statement_payload

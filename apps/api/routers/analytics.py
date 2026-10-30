@@ -7,21 +7,26 @@ k-Anonymity: Demografische Daten nur wenn Gruppe >= 10 Stimmen.
 
 @ai-anchor MOD06_ANALYTICS
 """
+from services.client_flow_cache import public_client_cache
+from rate_limit import client_flow, enforce_route_limit, public_heavy
 import asyncio
 import json
 import logging
+from collections import deque
 from datetime import datetime, timezone, timedelta
 from time import monotonic
 from typing import Optional
 import redis.asyncio as aioredis
 from redis.exceptions import RedisError
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import DateTime, String, cast, select, func, and_, extract, Integer, union_all, text
 
 from database import get_db
 from config import settings
+from services.request_work import SingleFlight, cache_fill_quota
 from services.representation_cache import REPRESENTATION_CACHE_PREFIX
+from services.public_visibility_cache import with_public_visibility_generation
 from services.small_cell import (
     small_cell_k, suppress_public_cells, suppress_public_series,
 )
@@ -35,6 +40,9 @@ from services.bill_visibility import (
     results_hidden,
     results_visible_filter,
 )
+from services.public_bill_response import BODY_KEY, capture_public_bill_body, public_bill_response
+from services import result_cache_policy as result_policy
+from services.public_bill_snapshot import snapshot_bill_filter, snapshot_raw_filter, record_result_contributors
 from services.zk_vote_aggregation import (
     VoteTotals,
     aggregate_bill_vote_totals,
@@ -58,6 +66,8 @@ def representation_query() -> tuple[str, dict[str, str]]:
     or full bill objects are selected.
     """
     public_guard, params = public_bill_raw_sql("b")
+    snapshot_guard, snapshot_params = snapshot_raw_filter("b", results=True)
+    params.update(snapshot_params)
     params.update(voted="PARLIAMENT_VOTED", open_end="OPEN_END", diavgeia="DIAVGEIA",
                   bill_scope="bill:%", yes="YES", no="NO", abstain="ABSTAIN", unknown="UNKNOWN")
     choices = ("yes", "no", "abstain", "unknown")
@@ -90,7 +100,8 @@ def representation_query() -> tuple[str, dict[str, str]]:
         )
         SELECT b.id, b.title_el, b.source, b.parliament_url, b.created_at, b.party_votes_parliament, t.*
         FROM totals t JOIN parliament_bills b ON b.id = t.bill_id
-        WHERE b.status IN (:voted, :open_end)
+        WHERE {snapshot_guard}
+          AND b.status IN (:voted, :open_end)
           AND COALESCE(b.admin_hidden, FALSE) = FALSE
           AND (b.source <> :diavgeia OR ({public_guard}))
         ORDER BY b.id
@@ -121,10 +132,12 @@ async def compute_divergence(
     return round(abs(yes_pct - (1.0 if passed else 0.0)), 3)
 
 
-@router.get("/overview")
-async def analytics_overview(db: AsyncSession = Depends(get_db)):
+@router.get("/overview", dependencies=[Depends(enforce_route_limit)])
+@client_flow
+@public_client_cache(bill_schema="aggregate", quota="30/minute", aggregate=True, sensitive=True)
+async def analytics_overview(db: AsyncSession = Depends(get_db), request: Request = None):
     """Plattform-weite Statistiken + Divergence Übersicht."""
-    _real = public_bill_with_demo_filter()
+    _real = and_(public_bill_with_demo_filter(), snapshot_bill_filter())
     total_bills  = await db.scalar(select(func.count(ParliamentBill.id)).where(_real)) or 0
     total_votes = await count_public_votes(db)
     active_bills = await db.scalar(
@@ -147,7 +160,7 @@ async def analytics_overview(db: AsyncSession = Depends(get_db)):
     today_votes = await count_public_votes(db, since=today)
 
     result = await db.execute(
-        select(ParliamentBill).where(_real, ParliamentBill.status == BillStatus.PARLIAMENT_VOTED)
+        select(ParliamentBill).where(_real, snapshot_bill_filter(results=True), ParliamentBill.status == BillStatus.PARLIAMENT_VOTED)
     )
     voted = result.scalars().all()
 
@@ -155,6 +168,7 @@ async def analytics_overview(db: AsyncSession = Depends(get_db)):
     for bill in voted:
         score = await compute_divergence(db, bill.id, bill)
         if score is not None:
+            record_result_contributors([bill.id])
             divergence_scores.append(score)
 
     avg_divergence = round(sum(divergence_scores) / len(divergence_scores), 3) if divergence_scores else None
@@ -188,10 +202,12 @@ async def analytics_overview(db: AsyncSession = Depends(get_db)):
     }
 
 
-@router.get("/divergence-trends")
+@router.get("/divergence-trends", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def divergence_trends(
     days: int = Query(30, le=365),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Divergence Score Trends über Zeit."""
     since = datetime.utcnow() - timedelta(days=days)
@@ -253,11 +269,13 @@ async def divergence_trends(
     }
 
 
-@router.get("/votes-timeline")
+@router.get("/votes-timeline", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def votes_timeline(
     bill_id: Optional[str] = Query(None),
     days: int = Query(30, le=365),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Abstimmungs-Zeitverlauf aggregiert nach Tag.
 
@@ -357,10 +375,12 @@ async def votes_timeline(
     }
 
 
-@router.get("/top-divergence")
+@router.get("/top-divergence", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def top_divergence(
     limit: int = Query(10, le=50),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Top Bills nach Divergence Score — höchste Abweichung zuerst."""
     result = await db.execute(
@@ -407,8 +427,9 @@ async def top_divergence(
     }
 
 
-@router.get("/bill/{bill_id}")
-async def bill_analytics(bill_id: str, db: AsyncSession = Depends(get_db)):
+@router.get("/bill/{bill_id}", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def bill_analytics(bill_id: str, db: AsyncSession = Depends(get_db), request: Request = None):
     """Vollständige Analytik für ein einzelnes Bill."""
     bill = await db.get(ParliamentBill, bill_id)
     if not bill or not is_public_bill(bill):
@@ -494,7 +515,7 @@ async def compute_cumulative_representation(db: AsyncSession) -> dict:
     rows = (await db.execute(text(sql), params)).mappings().all()
 
     scores: list[float] = []
-    bill_details: list[dict] = []
+    bill_details = deque(maxlen=200)
     total_citizen_votes = 0
 
     for row in rows:
@@ -514,6 +535,7 @@ async def compute_cumulative_representation(db: AsyncSession) -> dict:
 
         # Do not include hidden bill totals in an otherwise reconstructable sum.
         if totals.publishable:
+            record_result_contributors([row["id"]])
             total_citizen_votes += total
 
         party_votes = row["party_votes_parliament"]
@@ -528,7 +550,7 @@ async def compute_cumulative_representation(db: AsyncSession) -> dict:
             bill_details.append({
                 **parliament_attribution_fields(row),
                 "bill_id": row["id"],
-                "title_el": row["title_el"] or "",
+                "title_el": (row["title_el"] or "")[:500],
                 "citizen_votes": total,
                 "divergence": round(div_score * 100, 1),
                 "representation": representation,
@@ -566,28 +588,62 @@ async def compute_cumulative_representation(db: AsyncSession) -> dict:
         "label_en": label_en,
         "color": color,
         "last_bill": bill_details[-1] if bill_details else None,
-        "bills": bill_details,
+        "bills": list(bill_details),
     }
 
 
-@router.get("/representation")
-async def cumulative_representation(db: AsyncSession = Depends(get_db)) -> dict:
+@router.get("/representation", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def cumulative_representation(db: AsyncSession = Depends(get_db), request: Request = None) -> dict:
+    return await get_cached_representation(db)
+
+
+_representation_flights = SingleFlight()
+
+
+async def _fresh_representation(db):
+    return await _load_representation(db, force=True)
+
+
+@public_bill_response("representation", refresh=_fresh_representation)
+async def get_cached_representation(db: AsyncSession) -> dict:
+    return await _load_representation(db)
+
+
+async def _load_representation(db, *, force=False):
+    async def under_policy(policy):
+        async def current(generation):
+            return await _representation_flights.run(
+                (policy, generation, force),
+                lambda: _get_cached_representation(db, generation, force=force, policy=policy),
+            )
+        return await with_public_visibility_generation(current)
+    return await result_policy.with_result_cache_policy(under_policy)
+
+
+async def _get_cached_representation(db: AsyncSession, generation, *, force=False, policy) -> dict:
     # Policy changes never reuse a less restrictive aggregate. Expiry bounds
     # vote/metadata staleness to 30s from query start, including empty results;
     # hits don't renew it and slow fills don't get a fresh TTL.
-    key = f"{REPRESENTATION_CACHE_PREFIX}{small_cell_k()}"
+    key = result_policy.result_cache_policy.key(f"{REPRESENTATION_CACHE_PREFIX}0", policy)
     async with aioredis.from_url(
         settings.redis_url, decode_responses=True,
         socket_connect_timeout=0.05, socket_timeout=0.05,
     ) as cache:
+        await result_policy.result_cache_policy.prepare_redis(cache, REPRESENTATION_CACHE_PREFIX)
+        if policy[0] > 0:
+            return await capture_public_bill_body(lambda: compute_cumulative_representation(db), db=db)
         available = True
         try:
             async with asyncio.timeout(0.1):
                 raw = await cache.get(key)
-            if raw:
+            if raw and generation is not None and not force:
                 cached = json.loads(raw)
-                if (isinstance(cached, dict) and "cumulative_representation" in cached
-                        and isinstance(cached.get("bills"), list)):
+                value = cached.get(BODY_KEY, {}) if isinstance(cached, dict) else {}
+                if ("cumulative_representation" in value
+                        and isinstance(value.get("bills"), list)
+                        and cached.pop("_public_visibility_generation", None) == generation):
+                    value["bills"] = value["bills"][-200:]
                     return cached
         except (RedisError, OSError):
             available = False
@@ -595,21 +651,27 @@ async def cumulative_representation(db: AsyncSession = Depends(get_db)) -> dict:
         except (ValueError, TypeError):
             logger.warning("Representation cache entry invalid")
 
+        await cache_fill_quota("representation")
         expires_at = monotonic() + REPRESENTATION_CACHE_TTL
-        result = await compute_cumulative_representation(db)
+        result = await capture_public_bill_body(lambda: compute_cumulative_representation(db), db=db)
         # Round down: a fractional remainder must not extend the visibility bound.
         ttl = int(expires_at - monotonic())
-        if available and ttl > 0:
+        if (available and generation is not None and ttl > 0
+                and policy == result_policy.result_cache_policy.current()):
             try:
                 async with asyncio.timeout(0.1):
-                    await cache.setex(key, ttl, json.dumps(result))
+                    await cache.setex(key, ttl, json.dumps(dict(result, _public_visibility_generation=generation)))
+                    if policy != result_policy.result_cache_policy.current():
+                        await cache.delete(key)
             except (RedisError, OSError):
+                available = False
                 logger.warning("Representation cache write unavailable")
         return result
 
 
-@router.get("/info")
-async def analytics_info():
+@router.get("/info", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def analytics_info(request: Request = None):
     """Übersicht aller Analytics-Endpoints."""
     return {
         "name": "Ekklesia.gr Analytics API",

@@ -25,6 +25,9 @@ class _Result:
     def mappings(self):
         return self
 
+    def scalars(self):
+        return self
+
     def all(self):
         return self._rows
 
@@ -37,8 +40,15 @@ class _Session:
         self.results = list(results)
         self.params = []
         self.statements = []
+        self.visibility_queries = []
 
     async def execute(self, statement, params=None):
+        if " AS results_visible" in str(statement):
+            self.visibility_queries.append(statement)
+            return _Result(rows=[(bill_id, True) for bill_id in ("DIAV-1", "DIAV-2", "DIAV-3", "DIAV-OUTSIDE-LIMIT")])
+        if str(statement).startswith("SELECT parliament_bills.id \n"):
+            self.visibility_queries.append(statement)
+            return _Result(rows=["DIAV-1", "DIAV-2", "DIAV-3"])
         self.statements.append(str(statement))
         self.params.append(params or {})
         return self.results.pop(0)
@@ -61,7 +71,8 @@ def test_national_scope_excludes_institutional_and_unmapped_rows():
 def test_view_payload_is_weighted_by_vote_count_and_aggregate_only():
     rows = [
         {
-            "bill_id": "DIAV-1",
+            "contributor_ids": ["DIAV-1", "DIAV-OUTSIDE-LIMIT"],
+        "bill_id": "DIAV-1",
             "title_el": "Απόφαση 1",
             "governance_level": "MUNICIPAL",
             "dimos_id": 22,
@@ -136,7 +147,7 @@ async def test_representation_rejects_mismatched_dimos_and_periferia():
     with pytest.raises(HTTPException) as exc_info:
         await get_consensus_representation(dimos_id=22, periferia_id=7, limit=20, db=db)
 
-    assert exc_info.value.status_code == 400
+    assert exc_info.value.status_code == 422
 
 
 @pytest.mark.asyncio
@@ -148,6 +159,7 @@ async def test_representation_endpoint_keeps_views_separate_and_public():
         "geographic_mapping_gaps": 0,
     }
     row = {
+        "contributor_ids": ["DIAV-1", "DIAV-OUTSIDE-LIMIT"],
         "bill_id": "DIAV-1",
         "title_el": "Απόφαση 1",
         "governance_level": "MUNICIPAL",
@@ -181,6 +193,7 @@ async def test_representation_endpoint_keeps_views_separate_and_public():
     assert result["views"]["regional"]["bill_count"] == 0
     assert result["views"]["national"]["consensus_vote_count"] == 2
     assert result["coverage"]["complete_geographic_representation"] is False
+    assert len(db.visibility_queries) == 2  # Provenance at fill, fresh authorization at serve.
     assert all("sensitive_term_0" in params for params in db.params[2:])
     assert all(params["k_anonymity_min"] == K_ANONYMITY_MIN for params in db.params[3:])
     assert all("HAVING COUNT(*) >= :k_anonymity_min" in statement for statement in db.statements[3:])

@@ -18,7 +18,8 @@ from nacl.signing import VerifyKey
 from nacl.exceptions import BadSignatureError
 
 from database import get_db
-from rate_limit import limiter
+from services.client_flow_cache import public_client_cache, invalidate_client_flow_caches
+from rate_limit import client_flow, enforce_route_limit, limiter, public_read
 from crypto.polis import (
     PolisTicketPayload,
     PolisVotePayload,
@@ -176,11 +177,14 @@ async def register_polis_key(
 
 # ─── GET /polis/tickets ──────────────────────────────────────────────────────
 
-@router.get("/tickets")
+@router.get("/tickets", dependencies=[Depends(enforce_route_limit)])
+@client_flow
+@public_client_cache(bill_schema="independent")
 async def list_tickets(
     category: str | None = None,
     status: str | None = None,
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """List POLIS tickets. Public, no auth required."""
     query = "SELECT id, title, category, pk_polis, status, up_votes, down_votes, created_at FROM polis_tickets"
@@ -274,6 +278,7 @@ async def create_ticket(
             "ts": req.timestamp_ms,
         })
         await db.commit()
+        invalidate_client_flow_caches()
     except IntegrityError:
         await db.rollback()
         raise HTTPException(status_code=409, detail="DUPLICATE_TICKET: Ticket already exists")
@@ -355,6 +360,7 @@ async def vote_ticket(
             {"id": ticket_id},
         )
         await db.commit()
+        invalidate_client_flow_caches()
     except IntegrityError:
         await db.rollback()
         raise HTTPException(status_code=409, detail="DUPLICATE_VOTE: Already voted on this ticket")

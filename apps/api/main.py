@@ -6,16 +6,16 @@ import secrets
 from contextlib import asynccontextmanager
 from typing import Any
 from urllib.parse import parse_qsl, unquote, unquote_plus, urlencode, urlsplit
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.cron import CronTrigger
-from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
-from rate_limit import limiter
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from rate_limit import client_flow, enforce_route_limit, limiter, public_heavy, rate_limit_exceeded_handler, rate_limit_http_exception_handler
 from security_startup import validate_identity_kdf_config, validate_server_salt_config
 from security_headers import API_CSP, SecurityHeadersMiddleware
 from services.scheduler_state import add_persisted_interval_job, add_observed_job, initialize_job_states, install_schedule_listener
@@ -1282,7 +1282,8 @@ app = FastAPI(
 )
 
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+app.add_exception_handler(StarletteHTTPException, rate_limit_http_exception_handler)
 
 
 @app.exception_handler(Exception)
@@ -1313,7 +1314,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "X-API-Key"],
-    expose_headers=["X-Data-License", "X-Rep-Role", "X-Vote-Read-Integrity"],
+    expose_headers=["X-Data-License", "X-Rep-Role", "X-Vote-Read-Integrity", "Retry-After"],
 )
 
 
@@ -1370,6 +1371,7 @@ app.include_router(zk.router)
 app.include_router(consensus_results.router)
 
 @app.get("/health")
+@limiter.exempt
 async def health():
     return {
         "status": "ok",
@@ -1402,8 +1404,9 @@ async def health():
         ]
     }
 
-@app.get("/api/v1/health/modules")
-async def health_modules():
+@app.get("/api/v1/health/modules", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def health_modules(request: Request = None):
     """Detailed per-module health status for live wiki indicators."""
     import redis.asyncio as aioredis
     import httpx
@@ -1541,7 +1544,8 @@ async def health_modules():
 
 
 @app.get("/api/v1/version")
-async def legacy_app_version():
+@client_flow
+async def legacy_app_version(request: Request):
     """Legacy endpoint — redirects to canonical /api/v1/app/version data."""
     from routers.app_version import LATEST_VERSION, LATEST_VERSION_CODE, MIN_REQUIRED_VERSION_CODE
     from routers.app_version import RELEASE_NOTES_EL, RELEASE_NOTES_EN, PLAYSTORE_URL, DIRECT_APK_URL
@@ -1554,8 +1558,9 @@ async def legacy_app_version():
         "playStoreUrl": PLAYSTORE_URL,
     }
 
-@app.get("/api/v1/admin/sentry/status")
-async def sentry_status():
+@app.get("/api/v1/admin/sentry/status", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def sentry_status(request: Request = None):
     """Sentry Cloud Status fuer Dashboard."""
     return {
         "enabled": SENTRY_ENABLED,
@@ -1567,6 +1572,7 @@ async def sentry_status():
 
 
 @app.get("/robots.txt", include_in_schema=False)
+@limiter.exempt
 async def robots_txt():
     """Block all crawlers from indexing the API subdomain."""
     return PlainTextResponse(
@@ -1576,5 +1582,6 @@ async def robots_txt():
 
 
 @app.get("/")
+@limiter.exempt
 async def root():
     return {"message": "Ekklesia.gr API — εκκλησία του δήμου"}

@@ -32,7 +32,7 @@ from keypair import generate_keypair, verify_signature
 from nullifier import generate_nullifier_hash, generate_nullifier_hash_v2, normalize_phone_number
 from hlr import normalize_greek_number, verify_greek_number
 
-from rate_limit import limiter
+from rate_limit import client_flow, enforce_route_limit, limiter, public_read
 from ip_utils import (
     hashed_rate_subject,
     rate_limit_key_for_ip,
@@ -598,7 +598,7 @@ async def revoke_identity(req: RevokeRequest, request: Request, db: AsyncSession
 
 
 @router.post("/status", response_model=StatusResponse)
-@limiter.limit("10/minute")
+@client_flow
 async def check_status(req: StatusRequest, db: AsyncSession = Depends(get_db), request: Request = None):
     """Prüft ob ein Nullifier Hash aktiv oder revoziert ist."""
     result = await db.execute(
@@ -698,8 +698,9 @@ async def build_hlr_credits_snapshot() -> dict:
     }
 
 
-@router.get("/hlr/credits")
-async def hlr_credits():
+@router.get("/hlr/credits", dependencies=[Depends(enforce_route_limit)])
+@public_read
+async def hlr_credits(request: Request = None):
     """
     Öffentlicher Endpoint — grober HLR-Betriebszustand für die Community-Kachel.
 
@@ -953,7 +954,7 @@ _ROTATION_CONFLICT = "ROTATION_CONFLICT"
 
 
 @router_v2.post("/rotate-key", response_model=RotateKeyResponse)
-@limiter.limit("10/minute")
+@client_flow
 async def rotate_identity_key(req: RotateKeyRequest, request: Request, db: AsyncSession = Depends(get_db)):
     """Swap the public key of an ACTIVE identity (EVA-001 PR2)."""
     if not identity_rotate_enabled():

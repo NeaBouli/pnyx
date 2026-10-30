@@ -7,6 +7,7 @@ Alembic migrations. Markdown (``wiki/``) and HTML (``docs/wiki/``) stay in sync.
 
 from __future__ import annotations
 
+import ast
 import re
 import unittest
 from collections import Counter
@@ -33,7 +34,9 @@ def read(rel: str) -> str:
 
 def registry_modules() -> set[str]:
     main = read("apps/api/main.py")
-    block = main[main.index('@app.get("/health")'):main.index('@app.get("/api/v1/health/modules")')]
+    health = next(node for node in ast.parse(main).body
+                  if isinstance(node, ast.AsyncFunctionDef) and node.name == "health")
+    block = ast.get_source_segment(main, health)
     return set(re.findall(r'"(MOD-\d+)\b', block))
 
 

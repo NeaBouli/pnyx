@@ -78,6 +78,7 @@ def test_get_client_ip_respects_two_trusted_proxy_hops(
     trusted_proxy: None,
 ) -> None:
     monkeypatch.setenv("TRUSTED_PROXY_COUNT", "2")
+    monkeypatch.setenv("TRUSTED_PROXY_CIDRS", "10.0.0.0/8,192.0.2.0/24")
     req = _request(
         {"X-Forwarded-For": "203.0.113.10, 198.51.100.20, 192.0.2.30"}
     )
@@ -139,3 +140,44 @@ def test_hashed_rate_subject_rotates_by_day(monkeypatch):
     second = hashed_rate_subject("198.51.100.20", "contact", date(2026, 6, 11))
 
     assert first != second
+
+
+@pytest.mark.parametrize("header", ["203.0.113.1, invalid", "203.0.113.1,", "203.0.113.1, , invalid"])
+def test_malformed_nearest_hop_cannot_promote_spoofed_value(
+    monkeypatch: MonkeyPatch, trusted_proxy: None, header: str,
+) -> None:
+    monkeypatch.setenv("TRUSTED_PROXY_COUNT", "1")
+    assert get_client_ip(_request({"X-Forwarded-For": header})) == "10.0.0.4"
+
+
+def test_multiple_hops_stop_at_nearest_untrusted_address(
+    monkeypatch: MonkeyPatch, trusted_proxy: None,
+) -> None:
+    monkeypatch.setenv("TRUSTED_PROXY_COUNT", "2")
+    req = _request({"X-Forwarded-For": "203.0.113.1, 198.51.100.2"})
+    assert get_client_ip(req) == "198.51.100.2"
+
+
+def test_forwarded_ipv6_clients_have_canonical_buckets(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setenv("TRUSTED_PROXY_CIDRS", "::1/128")
+    monkeypatch.setenv("TRUSTED_PROXY_COUNT", "1")
+    req = _request({"X-Forwarded-For": "2001:db8::10"}, client_host="::1")
+    assert get_client_ip(req) == "2001:db8::10"
+    expanded = _request({"X-Forwarded-For": "2001:0db8:0:0:0:0:0:10"}, client_host="::1")
+    assert rate_limit_key_for_ip(req, "test") == rate_limit_key_for_ip(expanded, "test")
+
+
+@pytest.mark.parametrize("trusted", [False, True])
+def test_repeated_forwarding_fields_use_the_nearest_trusted_assertion(
+    monkeypatch: MonkeyPatch, trusted: bool,
+) -> None:
+    monkeypatch.setenv("TRUSTED_PROXY_CIDRS", "10.0.0.4/32" if trusted else "")
+    monkeypatch.setenv("TRUSTED_PROXY_COUNT", "1")
+    req = _request()
+    req.scope["headers"] = [
+        (b"x-forwarded-for", b"203.0.113.10"),
+        (b"x-forwarded-for", b"198.51.100.20"),
+        (b"x-real-ip", b"203.0.113.30"),
+        (b"forwarded", b"for=203.0.113.40"),
+    ]
+    assert get_client_ip(req) == ("198.51.100.20" if trusted else "10.0.0.4")

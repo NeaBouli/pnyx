@@ -53,9 +53,13 @@ async def test_bill_list_detail_and_public_source_freshness_serialize_real_state
     bill = ParliamentBill(id="GR-actual", title_el="Δημόσιο νομοσχέδιο", status=BillStatus.ACTIVE,
                           source="PARLIAMENT", ai_summary_reviewed=False,
                           created_at=datetime(2026, 1, 1, 23, 30))
-    db = SimpleNamespace(execute=AsyncMock(return_value=SimpleNamespace(
-        scalars=lambda: SimpleNamespace(all=lambda: [bill]), scalar_one_or_none=lambda: bill,
-        all=lambda: [(bill, 5)])))
+    async def execute(statement):
+        values = [bill.id] if list(statement.selected_columns.keys()) == ["id"] else [bill]
+        return SimpleNamespace(
+            scalars=lambda: SimpleNamespace(all=lambda: values), scalar_one_or_none=lambda: bill,
+            all=lambda: [(bill, 5)])
+
+    db = SimpleNamespace(execute=AsyncMock(side_effect=execute))
     app = FastAPI()
     app.include_router(parliament.router)
     app.dependency_overrides[get_db] = lambda: db

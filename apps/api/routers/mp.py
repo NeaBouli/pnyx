@@ -7,9 +7,11 @@ Format: {"ΝΔ": "ΝΑΙ", "ΣΥΡΙΖΑ": "ΟΧΙ", "ΠΑΣΟΚ": "ΠΑΡΩΝ",
 
 @ai-anchor MOD12_MP_COMPARISON
 """
+from services.client_flow_cache import public_client_cache
+from rate_limit import client_flow, enforce_route_limit, public_heavy
 import logging
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
@@ -18,6 +20,7 @@ from services.source_links import parliament_attribution_fields
 from models import ParliamentBill, CitizenVote, Party, BillStatus, VoteChoice
 from services.bill_visibility import is_public_bill, public_bill_filter, results_hidden
 from services.small_cell import small_cell_k, suppress_public_cells
+from services.public_bill_snapshot import snapshot_bill_filter, record_result_contributors
 from services.zk_vote_aggregation import aggregate_bill_vote_totals, include_zk_for_bill
 
 logger = logging.getLogger(__name__)
@@ -53,8 +56,9 @@ async def citizen_majority_for(db: AsyncSession, bill_id: str, bill=None):
     return majority, yes, no, total
 
 
-@router.get("/parties")
-async def list_parties(db: AsyncSession = Depends(get_db)):
+@router.get("/parties", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def list_parties(db: AsyncSession = Depends(get_db), request: Request = None):
     """Alle Parteien mit Parlamentspräsenz."""
     result = await db.execute(select(Party).order_by(Party.name_el))
     return {
@@ -65,8 +69,9 @@ async def list_parties(db: AsyncSession = Depends(get_db)):
     }
 
 
-@router.get("/compare/{party_abbr}")
-async def party_comparison(party_abbr: str, db: AsyncSession = Depends(get_db)):
+@router.get("/compare/{party_abbr}", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def party_comparison(party_abbr: str, db: AsyncSession = Depends(get_db), request: Request = None):
     """Vergleicht Bürger-Mehrheit mit Parteistimme für alle abgestimmten Bills."""
     party_map = await get_party_map(db)
     party = party_map.get(party_abbr.upper())
@@ -142,8 +147,10 @@ async def party_comparison(party_abbr: str, db: AsyncSession = Depends(get_db)):
     }
 
 
-@router.get("/ranking")
-async def party_ranking(db: AsyncSession = Depends(get_db)):
+@router.get("/ranking", dependencies=[Depends(enforce_route_limit)])
+@client_flow
+@public_client_cache(bill_schema="aggregate", quota="30/minute", aggregate=True, sensitive=True)
+async def party_ranking(db: AsyncSession = Depends(get_db), request: Request = None):
     """Rangliste aller Parteien nach Übereinstimmung mit Bürgermehrheit."""
     result = await db.execute(select(Party))
     parties = result.scalars().all()
@@ -151,11 +158,16 @@ async def party_ranking(db: AsyncSession = Depends(get_db)):
     bills_result = await db.execute(
         select(ParliamentBill).where(
             ParliamentBill.status.in_([BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END]),
-            public_bill_filter(),
+            public_bill_filter(), snapshot_bill_filter(results=True),
         )
     )
     bills = bills_result.scalars().all()
 
+    # Aggregate each bill once, independent of the number of parties.
+    majorities = {bill.id: await citizen_majority_for(db, bill.id, bill)
+                  for bill in bills if bill.party_votes_parliament}
+    record_result_contributors(bill_id for bill_id, (majority, _, _, total) in majorities.items()
+                               if majority is not None and total >= K_MIN)
     ranking = []
     for party in parties:
         agree = disagree = 0
@@ -166,7 +178,7 @@ async def party_ranking(db: AsyncSession = Depends(get_db)):
             if not pvr:
                 continue
             pv = normalize_vote(pvr)
-            majority, yes, no_cnt, total = await citizen_majority_for(db, bill.id, bill)
+            majority, yes, no_cnt, total = majorities[bill.id]
             if majority is None or total < K_MIN:
                 continue
             if (majority == "YES" and pv == "YES") or (majority == "NO" and pv == "NO"):
@@ -195,8 +207,9 @@ async def party_ranking(db: AsyncSession = Depends(get_db)):
     }
 
 
-@router.get("/bill/{bill_id}")
-async def bill_party_breakdown(bill_id: str, db: AsyncSession = Depends(get_db)):
+@router.get("/bill/{bill_id}", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def bill_party_breakdown(bill_id: str, db: AsyncSession = Depends(get_db), request: Request = None):
     """Alle Parteistimmen vs. Bürgermehrheit für ein Bill."""
     bill = await db.get(ParliamentBill, bill_id)
     if not bill or not is_public_bill(bill):
@@ -240,8 +253,9 @@ async def bill_party_breakdown(bill_id: str, db: AsyncSession = Depends(get_db))
     }
 
 
-@router.get("/info")
-async def mp_info():
+@router.get("/info", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def mp_info(request: Request = None):
     return {
         "name": "Ekklesia.gr MP Comparison API",
         "endpoints": {

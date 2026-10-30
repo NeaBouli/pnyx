@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from sqlalchemy import and_, func, not_, or_
+from sqlalchemy import and_, func, not_, or_, select
 from sqlalchemy.sql.elements import ColumnElement
 
 from models import BillStatus, DiavgeiaDecision, ParliamentBill
@@ -104,6 +104,24 @@ def public_bill_filter() -> ColumnElement[bool]:
 def public_bill_with_demo_filter() -> ColumnElement[bool]:
     """Predicate for public surfaces that also exclude legacy DEMO rows."""
     return and_(public_bill_filter(), ~ParliamentBill.id.like("DEMO-%"))
+
+
+async def filter_public_bill_rows(rows, *, db, id_key="id", **_arguments):
+    """Recheck candidate primary keys on every response, including stale hits.
+
+    Select scalar IDs so the session identity map cannot return an older bill's
+    visibility fields. A failed check propagates; it cannot authorize a hit.
+    """
+    def bill_id(row):
+        return row[id_key] if isinstance(row, dict) else getattr(row, id_key)
+
+    ids = {bill_id(row) for row in rows}
+    if not ids:
+        return rows
+    visible = set((await db.execute(select(ParliamentBill.id).where(
+        ParliamentBill.id.in_(ids), public_bill_filter(),
+    ))).scalars().all())
+    return [row for row in rows if bill_id(row) in visible]
 
 
 def is_public_bill(bill: Any) -> bool:
