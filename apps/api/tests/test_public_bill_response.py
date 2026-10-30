@@ -146,6 +146,8 @@ async def test_registered_aggregate_rejects_a_one_second_old_body_after_hide(
 async def test_cplm_cache_history_and_trend_recheck_bill_provenance(db, monkeypatch, refresh_fails):
     await bill(db, "H")
     await bill(db, "V")
+    # CPLM depends on citizen-vote bills, including votes outside its details.
+    await db.execute(text("INSERT INTO citizen_votes (bill_id, vote) VALUES ('H', 'YES'), ('V', 'YES')"))
     values, history = {}, []
     class Redis:
         async def get(self, key): return values.get(key)

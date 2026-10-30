@@ -7,6 +7,7 @@ from models import CitizenVote, ParliamentBill, VoteChoice, ZkVoteReceipt
 from services.bill_visibility import public_bill_filter, results_visible_filter
 from services.small_cell import small_cell_k, publishable_set, suppress_public_series
 from services.public_bill_snapshot import snapshot_bill_filter, record_result_contributors
+from services.bill_id_set import bill_ids_filter
 
 CHOICES = ("yes", "no", "abstain", "unknown")
 
@@ -22,7 +23,7 @@ async def load_public_vote_days(db, *, bill_id=None, bill_ids=None):
     zk = zk.join(ParliamentBill, ZkVoteReceipt.vote_scope_id == func.concat("bill:", ParliamentBill.id))
     filters = [public_bill_filter(), results_visible_filter(), snapshot_bill_filter(results=True)]
     if bill_ids is not None:
-        filters.append(ParliamentBill.id.in_(bill_ids))
+        filters.append(bill_ids_filter(ParliamentBill.id, bill_ids))
     if bill_id is None:
         filters.append(~ParliamentBill.id.like("DEMO-%"))
     else:

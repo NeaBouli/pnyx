@@ -133,7 +133,7 @@ async def run(baseline_path: str) -> None:
                     warm.append((perf_counter() - started) * 1000)
                 assert query_count == 20  # One indexed current-visibility check per response.
             warm_queries = query_count
-            sql, params = analytics.representation_query()
+            sql, params = analytics.representation_query(db)
             plan = (await db.execute(text("EXPLAIN QUERY PLAN " + sql), params)).all()
             print(json.dumps(dict(
                 database="SQLite in-memory; original baseline function",

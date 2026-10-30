@@ -1,13 +1,14 @@
 """Shared visibility guards for non-public or operator-only bills."""
 from __future__ import annotations
 
-import re
 from typing import Any
 
-from sqlalchemy import and_, func, not_, or_, select
+from sqlalchemy import and_, func, literal, not_, or_, select
 from sqlalchemy.sql.elements import ColumnElement
 
 from models import BillStatus, DiavgeiaDecision, ParliamentBill
+from services.public_bill_index import SENSITIVE_PATTERN
+from services.bill_id_set import bill_ids_filter
 
 DIAVGEIA_SENSITIVE_PUBLIC_TERMS = (
     "αμκα",
@@ -46,6 +47,16 @@ def public_bill_raw_sql(
     )
 
 
+def public_bill_metadata_sql(alias: str, *, db=None) -> tuple[str, dict]:
+    """The exact partial-index predicate, including under generic prepared plans."""
+    if not alias.replace("_", "").isalnum():
+        raise ValueError("SQL alias must be an identifier")
+    from services.bill_id_set import db_dialect
+    dialect = db_dialect(db)
+    predicate = str(public_bill_filter().compile(dialect=dialect, compile_kwargs={"literal_binds": True}))
+    return predicate.replace("parliament_bills.", f"{alias}."), {}
+
+
 def _text_contains_sensitive_diavgeia_marker(value: str | None) -> bool:
     if not value:
         return False
@@ -61,16 +72,15 @@ def sensitive_diavgeia_filter() -> ColumnElement[bool]:
     """
 
     haystacks = (
-        func.lower(func.coalesce(ParliamentBill.title_el, "")),
-        func.lower(func.coalesce(ParliamentBill.summary_short_el, "")),
-        func.lower(func.coalesce(ParliamentBill.summary_long_el, "")),
+        func.lower(func.coalesce(column, literal("", literal_execute=True)))
+        for column in (ParliamentBill.title_el, ParliamentBill.summary_short_el, ParliamentBill.summary_long_el)
     )
     # Match the same literal substrings while lowercasing each large text once,
     # rather than once per marker. Escape punctuation (notably dotted AMKA).
-    pattern = "|".join(re.escape(term) for term in DIAVGEIA_SENSITIVE_PUBLIC_TERMS)
+    pattern = literal(SENSITIVE_PATTERN, literal_execute=True)
     term_checks = [haystack.regexp_match(pattern) for haystack in haystacks]
     return and_(
-        ParliamentBill.source == "DIAVGEIA",
+        ParliamentBill.source == literal("DIAVGEIA", literal_execute=True),
         or_(*term_checks),
     )
 
@@ -119,7 +129,7 @@ async def filter_public_bill_rows(rows, *, db, id_key="id", **_arguments):
     if not ids:
         return rows
     visible = set((await db.execute(select(ParliamentBill.id).where(
-        ParliamentBill.id.in_(ids), public_bill_filter(),
+        bill_ids_filter(ParliamentBill.id, ids), public_bill_filter(),
     ))).scalars().all())
     return [row for row in rows if bill_id(row) in visible]
 

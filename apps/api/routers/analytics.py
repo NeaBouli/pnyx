@@ -35,14 +35,16 @@ from models import ParliamentBill, CitizenVote, BillStatus, VoteChoice, ZkVoteRe
 from services.bill_visibility import (
     is_public_bill,
     public_bill_filter,
-    public_bill_raw_sql,
+    public_bill_metadata_sql,
     public_bill_with_demo_filter,
     results_hidden,
     results_visible_filter,
 )
 from services.public_bill_response import BODY_KEY, capture_public_bill_body, public_bill_response
 from services import result_cache_policy as result_policy
-from services.public_bill_snapshot import snapshot_bill_filter, snapshot_raw_filter, record_result_contributors
+from services.public_bill_snapshot import (
+    snapshot_bill_filter, snapshot_raw_filter, record_result_contributors, vote_bearing_bill_ids,
+)
 from services.zk_vote_aggregation import (
     VoteTotals,
     aggregate_bill_vote_totals,
@@ -58,17 +60,17 @@ K_ANONYMITY_MIN = 10
 REPRESENTATION_CACHE_TTL = 30
 
 
-def representation_query() -> tuple[str, dict[str, str]]:
+def representation_query(db=None) -> tuple[str, dict]:
     """Group each vote source once; join only bills with votes, using existing PKs.
 
     The raw visibility helper also checks admin_hidden. Restrict its sensitive
     text checks to DIAVGEIA, matching public_bill_filter(). No identity columns
     or full bill objects are selected.
     """
-    public_guard, params = public_bill_raw_sql("b")
-    snapshot_guard, snapshot_params = snapshot_raw_filter("b", results=True)
+    public_guard, params = public_bill_metadata_sql("b", db=db)
+    snapshot_guard, snapshot_params = snapshot_raw_filter("b", results=True, db=db)
     params.update(snapshot_params)
-    params.update(voted="PARLIAMENT_VOTED", open_end="OPEN_END", diavgeia="DIAVGEIA",
+    params.update(voted="PARLIAMENT_VOTED", open_end="OPEN_END",
                   bill_scope="bill:%", yes="YES", no="NO", abstain="ABSTAIN", unknown="UNKNOWN")
     choices = ("yes", "no", "abstain", "unknown")
     # Group by the indexed bill/scope alone. Grouping by choice as well would
@@ -102,8 +104,7 @@ def representation_query() -> tuple[str, dict[str, str]]:
         FROM totals t JOIN parliament_bills b ON b.id = t.bill_id
         WHERE {snapshot_guard}
           AND b.status IN (:voted, :open_end)
-          AND COALESCE(b.admin_hidden, FALSE) = FALSE
-          AND (b.source <> :diavgeia OR ({public_guard}))
+          AND ({public_guard})
         ORDER BY b.id
     """, params
 
@@ -134,7 +135,8 @@ async def compute_divergence(
 
 @router.get("/overview", dependencies=[Depends(enforce_route_limit)])
 @client_flow
-@public_client_cache(bill_schema="aggregate", quota="30/minute", aggregate=True, sensitive=True)
+@public_client_cache(bill_schema="aggregate", quota="30/minute", aggregate=True, sensitive=True,
+                     bill_candidates=lambda _: select(ParliamentBill.id).where(~ParliamentBill.id.like("DEMO-%")))
 async def analytics_overview(db: AsyncSession = Depends(get_db), request: Request = None):
     """Plattform-weite Statistiken + Divergence Übersicht."""
     _real = and_(public_bill_with_demo_filter(), snapshot_bill_filter())
@@ -511,7 +513,7 @@ async def compute_cumulative_representation(db: AsyncSession) -> dict:
     Berechnet über ALLE Bills mit Status PARLIAMENT_VOTED oder OPEN_END
     die mindestens 1 Citizen-Vote haben.
     """
-    sql, params = representation_query()
+    sql, params = representation_query(db)
     rows = (await db.execute(text(sql), params)).mappings().all()
 
     scores: list[float] = []
@@ -623,14 +625,10 @@ async def _load_representation(db, *, force=False):
 
 async def _capture_representation(db):
     # Only bills with votes can enter this aggregate. Scanning the whole bill
-    # corpus here both reads unrelated large texts and expands every public ID
-    # into the aggregate's snapshot IN clause, even on an otherwise tiny fill.
-    candidates = union_all(
-        select(CitizenVote.bill_id),
-        select(func.substr(ZkVoteReceipt.vote_scope_id, 6)).where(
-            ZkVoteReceipt.vote_scope_id.like("bill:%"),
-            ZkVoteReceipt.vote_commitment.in_([choice.value for choice in VoteChoice]),
-        ),
+    # corpus here reads unrelated large texts even on an otherwise tiny fill.
+    candidates = select(ParliamentBill.id).where(
+        ParliamentBill.status.in_([BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END]),
+        ParliamentBill.id.in_(vote_bearing_bill_ids()),
     )
     return await capture_public_bill_body(
         lambda: compute_cumulative_representation(db), db=db, candidates=candidates,

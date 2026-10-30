@@ -22,7 +22,7 @@ def slow_released_sql(released_backend, monkeypatch):
         await asyncio.sleep(0.02)
         sql = str(statement)
         if sql.startswith("SELECT parliament_bills.id \n"):
-            return Rows(statement.compile().params.get("id_1", ["GR-released"]))
+            return Rows(statement.compile().params.get("bill_ids_1", ["GR-released"]))
         if "FROM periferia WHERE" in sql:
             return Rows(1)
         if "FROM dimos WHERE" in sql:

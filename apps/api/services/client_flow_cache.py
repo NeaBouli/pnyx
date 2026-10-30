@@ -196,7 +196,8 @@ def public_policy_key():
     return ("public-visibility-v1", tuple(DIAVGEIA_SENSITIVE_PUBLIC_TERMS), small_cell_k())
 
 
-def public_client_cache(*, bill_schema, quota="600/minute", aggregate=False, validate=None, sensitive=False):
+def public_client_cache(*, bill_schema, quota="600/minute", aggregate=False, validate=None, sensitive=False,
+                        bill_candidates=None):
     """Cache only explicitly decorated public responses, never signed reads.
 
     All declared path/query arguments participate, including defaults. Undeclared
@@ -244,7 +245,10 @@ def public_client_cache(*, bill_schema, quota="600/minute", aggregate=False, val
                 async def calculate():
                     return await function(*bound.args, **bound.kwargs)
                 if bill_schema in {"aggregate", "representation"}:
-                    return await capture_public_bill_body(calculate, db=bound.arguments["db"])
+                    return await capture_public_bill_body(
+                        calculate, db=bound.arguments["db"],
+                        candidates=bill_candidates(bound.arguments) if bill_candidates else None,
+                    )
                 return await calculate()
 
             async def refresh():
@@ -256,7 +260,9 @@ def public_client_cache(*, bill_schema, quota="600/minute", aggregate=False, val
                     async def calculate():
                         return await function(**arguments)
                     if bill_schema in {"aggregate", "representation"}:
-                        return await capture_public_bill_body(calculate, db=db)
+                        return await capture_public_bill_body(
+                            calculate, db=db, candidates=bill_candidates(arguments) if bill_candidates else None,
+                        )
                     return await calculate()
                 return await with_cache_db(using_db)
 
@@ -285,6 +291,7 @@ def public_client_cache(*, bill_schema, quota="600/minute", aggregate=False, val
         wrapped.public_cache_parameters = frozenset(parameters.parameters) - {"db", "request"}
         wrapped.public_bill_contributor_keys = cache.public_bill_contributor_keys
         wrapped.public_bill_schema = bill_schema
+        wrapped.public_bill_candidates = bill_candidates
         wrapped.public_visibility_filter = serve_public_bill_body
         return wrapped
     return decorate

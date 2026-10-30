@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
+from contextvars import ContextVar
 from functools import wraps
 import threading
 from time import monotonic
@@ -13,6 +14,9 @@ from fastapi import HTTPException, Request
 from fastapi.responses import Response
 
 from rate_limit import global_key, limiter
+
+
+_owned_flights = ContextVar("owned_request_flights", default=frozenset())
 
 
 class SingleFlight:
@@ -33,6 +37,7 @@ class SingleFlight:
         return self._loops.setdefault(asyncio.get_running_loop(), {})
 
     async def _execute(self, pending, key, future, factory):
+        token = _owned_flights.set(_owned_flights.get() | {(self, future)})
         try:
             result = await factory()
             future.set_result(result)
@@ -45,6 +50,7 @@ class SingleFlight:
                 future.exception()
             raise
         finally:
+            _owned_flights.reset(token)
             pending.pop(key, None)
 
     def start(self, key, factory):
@@ -71,6 +77,10 @@ class SingleFlight:
         loop = asyncio.get_running_loop()
         pending = self._pending()
         if key in pending:
+            # A nested fill (including an awaited child task) cannot wait on
+            # the future that only its own outer calculation can complete.
+            if (self, pending[key]) in _owned_flights.get():
+                return await factory()
             if self.reject_on_capacity:
                 return await asyncio.shield(pending[key])
             try:

@@ -20,7 +20,7 @@ from services.source_links import parliament_attribution_fields
 from models import ParliamentBill, CitizenVote, Party, BillStatus, VoteChoice
 from services.bill_visibility import is_public_bill, public_bill_filter, results_hidden
 from services.small_cell import small_cell_k, suppress_public_cells
-from services.public_bill_snapshot import snapshot_bill_filter, record_result_contributors
+from services.public_bill_snapshot import snapshot_bill_filter, record_result_contributors, vote_bearing_bill_ids
 from services.zk_vote_aggregation import aggregate_bill_vote_totals, include_zk_for_bill
 
 logger = logging.getLogger(__name__)
@@ -149,7 +149,12 @@ async def party_comparison(party_abbr: str, db: AsyncSession = Depends(get_db), 
 
 @router.get("/ranking", dependencies=[Depends(enforce_route_limit)])
 @client_flow
-@public_client_cache(bill_schema="aggregate", quota="30/minute", aggregate=True, sensitive=True)
+@public_client_cache(bill_schema="aggregate", quota="30/minute", aggregate=True, sensitive=True,
+                     bill_candidates=lambda _: select(ParliamentBill.id).where(
+                         ParliamentBill.status.in_([BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END]),
+                         ParliamentBill.party_votes_parliament.is_not(None),
+                         ParliamentBill.id.in_(vote_bearing_bill_ids()),
+                     ))
 async def party_ranking(db: AsyncSession = Depends(get_db), request: Request = None):
     """Rangliste aller Parteien nach Übereinstimmung mit Bürgermehrheit."""
     result = await db.execute(select(Party))

@@ -282,6 +282,82 @@ successful commit; evaluation/ticket writes clear them locally too. Failed
 commits do not invalidate. Other workers refresh after five seconds and can
 serve their last good policy-keyed value only within the route's hard stale window.
 
+### PostgreSQL snapshot plans (#707)
+
+Apply Alembic `z902a2b3c4d5` before measuring these paths. The existing primary
+key, `idx_bills_status`, `idx_votes_bill` and `idx_zk_receipts_scope` cannot
+answer public visibility across overview/coverage populations without reading
+the imported text. The one new index, `idx_bills_public_metadata`, stores public
+membership in its partial predicate and covers ID, source, status, results
+visibility and geographic metadata. PostgreSQL maintains membership on writes,
+including changes to sensitive text and `admin_hidden`; Redis invalidation is
+not required for correctness. The migration builds/drops it concurrently in an
+Alembic autocommit block and removes an invalid index left by its own failed
+build. It adds no columns or vote indexes. Keep the fixed policy predicate in
+queries and the index identical; future marker-policy changes need a new index
+migration. Request values remain bound. Fixed policy literals let PostgreSQL
+match the partial predicate even in a generic prepared plan.
+
+| Path | Capture population and expected access |
+| --- | --- |
+| Analytics overview | All public non-DEMO IDs, including unvoted bills used by counts and the average denominator. Ordered metadata read from `idx_bills_public_metadata`; vote totals join on the existing bill/scope indexes. |
+| MP ranking | Vote-bearing completed/open-ended bills with party data; status selection can use `idx_bills_status`, with public metadata/ID lookups and vote counts on `idx_votes_bill` / `idx_zk_receipts_scope`. Unvoted party data does not affect ranking. |
+| Analytics representation and public alias | Completed/open-ended vote-bearing IDs; vote bill/scope indexes identify candidates, then public metadata/primary-key lookups. Provenance retains every contributing bill beyond the 200 details. |
+| Consensus representation | Public DIAVGEIA IDs, including unvoted and unmapped bills required for coverage. Metadata index scan; consensus grouping is unchanged. Municipal/regional view filters do not narrow national coverage. |
+| CPLM aggregate and public alias | Citizen-vote bill IDs, using `idx_votes_bill` and public metadata. Trend provenance also retains the previous population. |
+| CPLM history and public alias | One metadata query for the union of IDs in the stored envelopes; unsafe historical entries are withheld. |
+| Per-bill results at `k>0` | Only the requested bill ID. Both validation vote sources restrict indexed keys before grouping. |
+
+All envelope revalidations use only captured IDs, plus any requested point ID.
+They read scalar DB metadata on every hit, including after failed Redis writes;
+they do not re-read the public text population. Large populations use one
+`VARCHAR[]` parameter with `= ANY(...)`, including raw SQL aggregate filters.
+Query bind counts therefore stay constant at 40,000 IDs. SQLite tests use one
+JSON array parameter through `json_each`, exercising the same membership rule.
+
+Use `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)` on the statements from
+`visibility_snapshot_query(candidates=..., k=...)`, first for three IDs, then
+for the full overview/DIAVGEIA populations. Expect an `Index Only Scan` on
+`idx_bills_public_metadata` for broad metadata reads (some heap fetches are
+normal before vacuum advances the visibility map), and indexed lookups for
+small ID arrays. A sequential scan evaluating `summary_long_el` in a filter on
+these metadata paths is a regression. At `k>0`, `visible_candidates` is
+materialized once; the citizen subquery filters `bill_id IN (SELECT id ...)`
+and the ZK subquery filters `vote_scope_id IN (SELECT 'bill:' || id ...)`, with
+the latter restricted to Parliament sources, **before** either `GROUP BY`.
+For a small candidate set, expect `idx_votes_bill` and
+`idx_zk_receipts_scope` scans under the aggregates, without full vote-table
+sequential scans. PostgreSQL may reasonably scan all votes for an all-bill
+overview; the selective point/ranking plans must remain selective.
+
+The executable plan checks use default planner costs and also force generic
+prepared plans, without disabling sequential scans:
+
+```sh
+cd apps/api
+TZ=UTC PNYX_TEST_POSTGRES_URL=postgresql+asyncpg://localhost/pnyx_test_snapshots \
+  python -m pytest -q -s tests/test_public_bill_snapshot_pg.py
+TZ=UTC python -m pytest -q -s tests/test_public_bill_snapshot_scale.py
+```
+
+The PostgreSQL tests use their own temporary schema in the disposable local
+`pnyx_test_*` database, seed 40,000 bills and both vote sources, execute the real
+concurrent migration, assert indexed EXPLAIN nodes and execute the large array
+through asyncpg. They skip when that URL is absent. SQLite timeout/scale tests
+are separate evidence and do not establish PostgreSQL index use.
+
+Cold single-flight owners calculate immediately; only concurrent followers
+wait on the shared future. Nested work, including an awaited child task, cannot
+wait on a flight owned by its outer calculation. The regression checks both
+ownership cases against a subsecond deadline with a ten-second waiter timeout.
+After migration, repeat the production-copy cold/warm/warm measurements for
+each route and alias. Local tests establish correctness and query shape;
+only that dry run establishes the requested baseline latency comparison.
+
+PostgreSQL 15 references: [covering and partial index-only scans](https://www.postgresql.org/docs/15/indexes-index-only-scans.html),
+[matching partial predicates](https://www.postgresql.org/docs/15/indexes-partial.html),
+and [concurrent index builds](https://www.postgresql.org/docs/15/sql-createindex.html#SQL-CREATEINDEX-CONCURRENTLY).
+
 ## Shared storage, fallback and privacy
 
 All workers use the same `RATE_LIMIT_STORAGE_URI`, falling back to `REDIS_URL`;
