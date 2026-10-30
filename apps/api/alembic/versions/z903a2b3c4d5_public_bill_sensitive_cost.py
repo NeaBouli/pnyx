@@ -21,11 +21,14 @@ FUNCTION_DDL = f"""CREATE OR REPLACE FUNCTION public_bill_sensitive(
     source text, title text, short text, long text
 ) RETURNS boolean LANGUAGE plpgsql IMMUTABLE PARALLEL SAFE COST 10000 AS $$
 BEGIN
-    RETURN coalesce(source = 'DIAVGEIA' AND (
-        lower(coalesce(title, '')) ~ '{SENSITIVE_PATTERN}'
-        OR lower(coalesce(short, '')) ~ '{SENSITIVE_PATTERN}'
-        OR lower(coalesce(long, '')) ~ '{SENSITIVE_PATTERN}'
-    ), FALSE);
+    -- Keep SQL three-valued logic (a NULL source stays NULL, so NOT(...) still
+    -- excludes the row like the inline predicate), and dollar-quote the regex so
+    -- parsing never depends on standard_conforming_strings in the calling session.
+    RETURN source = 'DIAVGEIA' AND (
+        lower(coalesce(title, '')) ~ $rx${SENSITIVE_PATTERN}$rx$
+        OR lower(coalesce(short, '')) ~ $rx${SENSITIVE_PATTERN}$rx$
+        OR lower(coalesce(long, '')) ~ $rx${SENSITIVE_PATTERN}$rx$
+    );
 END;
 $$"""
 PREDICATE = (

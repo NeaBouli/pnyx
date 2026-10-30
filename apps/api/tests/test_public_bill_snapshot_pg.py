@@ -17,12 +17,13 @@ import pytest
 from sqlalchemy import func, select, text
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncConnection, create_async_engine
+from sqlalchemy.pool import NullPool
 from sqlalchemy.sql import Select
 
 from models import ParliamentBill
 from services.bill_visibility import (
     DIAVGEIA_SENSITIVE_PUBLIC_TERMS, is_public_bill, public_bill_filter,
-    public_bill_with_demo_filter, sensitive_diavgeia_filter,
+    public_bill_with_demo_filter,
 )
 from services.public_bill_index import PUBLIC_BILL_INDEX
 from services.public_bill_snapshot import visibility_snapshot_query
@@ -215,7 +216,7 @@ async def test_cold_toasted_population_uses_v2_without_vacuum(postgres: Any) -> 
         print(f"\nEXPLAIN {label}:\n{json.dumps(plan, indent=2)}")
 
 
-async def test_function_matches_python_visibility_on_edge_cases(postgres: Any) -> None:
+async def test_function_matches_frozen_sql_predicate_on_edge_cases(postgres: Any) -> None:
     connection, _ = postgres
     samples = [None, "", "ordinary hospital procurement", "αXμXκXα", "a.m.k.a", "α.μ.κ", "am\nka"]
     for term in DIAVGEIA_SENSITIVE_PUBLIC_TERMS:
@@ -239,16 +240,26 @@ async def test_function_matches_python_visibility_on_edge_cases(postgres: Any) -
         "INSERT INTO parliament_bills (id, source, admin_hidden, title_el, summary_short_el, summary_long_el) "
         "VALUES (:id, :source, :admin_hidden, :title_el, :summary_short_el, :summary_long_el)"
     ), cases)
-    expected = {row["id"]: row for row in cases}
-    query = select(
-        ParliamentBill.id, sensitive_diavgeia_filter(), public_bill_filter(),
-    ).where(ParliamentBill.id.like("EDGE-%"))
-    for bill_id, sensitive, public in (await connection.execute(query)).all():
-        row = expected.pop(bill_id)
-        assert sensitive is not None
-        assert sensitive is (not is_public_bill(SimpleNamespace(**{**row, "admin_hidden": False}))), row
-        assert public is is_public_bill(SimpleNamespace(**row)), row
-    assert not expected
+    # Oracle: the frozen pre-z903 SQL predicate, including SQL three-valued logic
+    # (a NULL source with a sensitive marker evaluates to NULL and stays hidden).
+    revision = public_metadata_revision()
+    legacy, current = text(f"({revision.LEGACY_PREDICATE})"), text(f"({revision.PREDICATE})")
+    rows = (await connection.execute(
+        select(ParliamentBill.id, legacy, current, public_bill_filter()).where(ParliamentBill.id.like("EDGE-%"))
+    )).all()
+    assert len(rows) == len(cases)
+    for bill_id, old_public, new_public, orm_public in rows:
+        assert new_public is old_public, (bill_id, old_public, new_public)
+        assert orm_public is old_public, (bill_id, old_public, orm_public)
+    edge = ParliamentBill.id.like("EDGE-%")
+    old_ids = set((await connection.execute(select(ParliamentBill.id).where(edge, legacy))).scalars())
+    new_ids = set((await connection.execute(select(ParliamentBill.id).where(edge, public_bill_filter()))).scalars())
+    assert old_ids == new_ids
+    null_source_marker = {
+        row["id"] for row in cases if row["source"] is None and row["admin_hidden"] is not True
+        and is_public_bill(SimpleNamespace(**{**row, "source": "DIAVGEIA", "admin_hidden": False})) is False
+    }
+    assert null_source_marker and not (null_source_marker & new_ids)
     properties = (await connection.execute(text(
         "SELECT l.lanname, p.provolatile, p.proparallel, p.procost, p.proisstrict "
         "FROM pg_proc p JOIN pg_language l ON l.oid = p.prolang "
@@ -257,3 +268,19 @@ async def test_function_matches_python_visibility_on_edge_cases(postgres: Any) -
     # asyncpg returns PostgreSQL's single-byte "char" columns as bytes.
     decoded = tuple(v.decode() if isinstance(v, bytes) else v for v in properties)
     assert decoded == ("plpgsql", "i", "s", 10000, False)
+
+
+async def test_regex_parsing_ignores_standard_conforming_strings(postgres: Any) -> None:
+    connection, _ = postgres
+    search_path = await connection.scalar(text("SHOW search_path"))
+    for setting in ("off", "on"):
+        # A new backend (no pool) compiles the PL/pgSQL body under this setting on first call.
+        engine = create_async_engine(disposable_postgres_url(), poolclass=NullPool)
+        async with engine.connect() as session:
+            session = await session.execution_options(isolation_level="AUTOCOMMIT")
+            await session.exec_driver_sql(f"SET search_path TO {search_path}")
+            await session.exec_driver_sql(f"SET standard_conforming_strings = {setting}")
+            check = text("SELECT public_bill_sensitive('DIAVGEIA', :title, NULL, NULL)")
+            assert await session.scalar(check, {"title": "αXμXκXα"}) is False, setting
+            assert await session.scalar(check, {"title": "α.μ.κ.α"}) is True, setting
+        await engine.dispose()
