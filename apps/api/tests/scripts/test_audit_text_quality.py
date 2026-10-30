@@ -363,8 +363,6 @@ async def test_non_greek_legacy_is_report_only_unless_explicitly_selected(
     ("Title: Έγγραφο\nURL Source: https://example.test/source\nΚείμενο", "reader_metadata"),
     ("Î•Î»Î»Î·Î½Î¹ÎºÏŒ", "mojibake"),
     ("<html><title>403 Forbidden</title><body>Access denied</body></html>", "error_page"),
-    ("Правила синтетического документа", "foreign_script"),
-    ("Για να βridge το προβλήμα", "mixed_script"),
 ])
 @pytest.mark.parametrize("apply", [False, True])
 async def test_legacy_default_allows_each_high_precision_reason(
@@ -541,3 +539,20 @@ async def test_more_matches_than_max_rows_abort_without_backup_or_writes(tmp_pat
     assert await _raw_audit(conn, fields=("summary_long_el",), apply=True, backup_path=backup,
                             expect_from=plan, max_rows=2) == 0
     assert conn.writes == [] and not backup.exists()
+
+
+
+@pytest.mark.parametrize("value", [
+    "Δωρεά οχημάτων ΙRONMAN και εγκατάσταση 100ΜWh",  # Greek capitals typed inside Latin names
+    "Αποστολή στο emaιl του δήμου",                    # Greek iota inside a Latin word
+    "Πρoσφoρά του ΑrcGIS για την υπηρεσία",          # mixed homoglyph typing
+    "Η απόφαση του Δημοτικού Συμβουλίου κατ’ άρθρο 5 με Кυρ. ονομασία",  # Cyrillic look-alike
+])
+@pytest.mark.asyncio
+async def test_legacy_script_signals_are_report_only_by_default(tmp_path: Path, value: str) -> None:
+    row = {"id": "OFF-1", "source": "DIAVGEIA", "ai_summary_reviewed": False,
+           "generated_content_provenance": None, "summary_long_el": value}
+    plan = tmp_path / "plan.csv"
+    await _raw_audit(PlanConnection([row]), fields=("summary_long_el",), plan_path=plan,
+                     legacy_sources=frozenset({"DIAVGEIA"}))
+    assert list(csv.DictReader(plan.read_text(encoding="utf-8").splitlines())) == []

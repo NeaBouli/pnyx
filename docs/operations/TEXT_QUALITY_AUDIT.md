@@ -26,7 +26,7 @@ by `--include-legacy`, and default to these reasons:
 - `foreign_script`
 - `mixed_script`
 
-`non_greek` is report-only for legacy fields by default: official source text can
+`non_greek`, `mixed_script` and `foreign_script` are report-only for legacy fields by default (official documents contain homoglyph quirks such as Greek capitals inside brand names or Cyrillic look-alikes); legacy apply defaults to the structural reasons refusal_or_meta, reader_metadata, mojibake and error_page. Originally: `non_greek` is report-only for legacy fields by default: official source text can
 contain foreign names and titles. `--legacy-reasons` replaces the default list.
 An explicit override such as `--legacy-reasons non_greek mixed_script` permits
 those two reasons for the named legacy sources. It does not limit reasons for

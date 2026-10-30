@@ -31,10 +31,11 @@ from services.public_bill_index import SENSITIVE_PATTERN
 from services.text_quality import GENERATED_TEXT_FIELDS, GREEK_FIELDS, check_generated_text
 
 
-DEFAULT_LEGACY_REASONS = frozenset({
-    "refusal_or_meta", "reader_metadata", "mojibake", "error_page", "foreign_script", "mixed_script",
-})
-LEGACY_REASON_CHOICES = DEFAULT_LEGACY_REASONS | {"non_greek"}
+# Legacy fields may hold extracted official text. Official documents contain
+# homoglyph quirks (Greek capitals inside brand names, Cyrillic look-alikes),
+# so only structural failures are cleared by default; script signals report only.
+DEFAULT_LEGACY_REASONS = frozenset({"refusal_or_meta", "reader_metadata", "mojibake", "error_page"})
+LEGACY_REASON_CHOICES = DEFAULT_LEGACY_REASONS | {"foreign_script", "mixed_script", "non_greek"}
 
 
 def _ownership(row: Any) -> dict[str, str]:
