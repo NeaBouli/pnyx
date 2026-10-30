@@ -23,7 +23,7 @@ import { isDemoMode } from "../lib/demo";
 import { colors } from "../theme";
 import { submitZkOptInForBill, submitZkVoteWithPublishedRoot, verifyZkVoteWithPublishedRoot } from "../lib/zkCanaryFlow";
 import { hasZkSemaphoreIdentity } from "../lib/zkSemaphoreIdentity";
-import { canShowPublicZkVoting, canSubmitPublicZkVote, publicZkVoteScopeForBill } from "../lib/zkPublicVoting";
+import { canShowPublicZkVoting, canSubmitPublicZkVote, PENDING_ZK_SCOPE_POLL_MS, publicZkVoteScopeForBill } from "../lib/zkPublicVoting";
 import type { ZkServerStatus } from "../lib/zkSemaphoreCore";
 import { formatZkPilotErrorMessage } from "../lib/zkPilotError";
 import { recordVoteMark, syncVoteMark } from "../lib/vote-marks";
@@ -470,7 +470,7 @@ export default function VoteScreen({ route, navigation }: Props) {
         .catch(() => undefined);
     };
     refresh();
-    const timer = setInterval(refresh, 5000);
+    const timer = setInterval(refresh, PENDING_ZK_SCOPE_POLL_MS);
     return () => {
       active = false;
       clearInterval(timer);

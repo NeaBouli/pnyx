@@ -18,6 +18,7 @@ PayPal IPN:
 
 Alles in Redis gespeichert — kein DB-Schema nötig.
 """
+from rate_limit import enforce_route_limit, paypal_verify, public_heavy, public_read
 import hashlib
 import json
 import logging
@@ -26,12 +27,16 @@ import secrets
 from decimal import Decimal, InvalidOperation
 from datetime import datetime, timezone
 from urllib.parse import parse_qs
-from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 import httpx
 import redis.asyncio as aioredis
 from dependencies import verify_admin_key
 
+from services.request_work import WorkSlots
+
 logger = logging.getLogger(__name__)
+
+_paypal_verification_slots = WorkSlots(4)
 router = APIRouter(prefix="/api/v1/payments", tags=["MOD-18 Donations"])
 
 # ── Redis ─────────────────────────────────────────────────────────────────────
@@ -957,7 +962,8 @@ def _months_elapsed(start_str: str) -> int:
 
 # ── Stripe Webhook ────────────────────────────────────────────────────────────
 
-@router.post("/webhook")
+@router.post("/webhook", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def stripe_webhook(request: Request) -> dict:
     """
     Stripe Webhook — verarbeitet checkout.session.completed Events.
@@ -1122,8 +1128,9 @@ async def stripe_webhook(request: Request) -> dict:
 
 # ── Public Status Endpoint ────────────────────────────────────────────────────
 
-@router.get("/status")
-async def payment_status():
+@router.get("/status", dependencies=[Depends(enforce_route_limit)])
+@public_read
+async def payment_status(request: Request = None):
     """
     Öffentlicher Transparenz-Endpoint — kein Auth.
     Liefert aktuelle Kontostände für community.html Kacheln.
@@ -1199,7 +1206,8 @@ async def _verify_paypal_ipn(payload: bytes) -> bool:
         return False
 
 
-@router.post("/webhook/paypal")
+@router.post("/webhook/paypal", dependencies=[Depends(enforce_route_limit)])
+@paypal_verify
 async def paypal_ipn_webhook(request: Request):
     """
     PayPal IPN Webhook.
@@ -1252,7 +1260,10 @@ async def paypal_ipn_webhook(request: Request):
         raise HTTPException(status_code=400, detail="Invalid PayPal payment purpose")
 
     # Verify with PayPal
-    verified = await _verify_paypal_ipn(payload)
+    # Reject saturation immediately: queued callbacks must not form an
+    # unbounded backlog behind the provider's 15-second verification timeout.
+    async with _paypal_verification_slots.slot():
+        verified = await _verify_paypal_ipn(payload)
     if not verified:
         logger.warning("[PayPal] IPN verification FAILED for txn=%s", txn_id)
         return {"received": True, "processed": False, "reason": "verification_failed"}
@@ -1459,8 +1470,9 @@ async def paypal_ipn_webhook(request: Request):
 
 # ── Admin Payment Logs ───────────────────────────────────────────────────────
 
-@router.get("/admin/logs")
-async def admin_payment_logs(_auth: bool = Depends(verify_admin_key)):
+@router.get("/admin/logs", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def admin_payment_logs(_auth: bool = Depends(verify_admin_key), request: Request = None):
     """Admin: Alle Zahlungen (letzte 50)."""
     r = await _get_redis()
     log_len = await r.llen(R_PAYMENTS)
@@ -1485,8 +1497,9 @@ async def admin_payment_logs(_auth: bool = Depends(verify_admin_key)):
     }
 
 
-@router.get("/admin/finance/events")
-async def admin_finance_events(_auth: bool = Depends(verify_admin_key)):
+@router.get("/admin/finance/events", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def admin_finance_events(_auth: bool = Depends(verify_admin_key), request: Request = None):
     """PII-free provider events for the private finance integration."""
     r = await _get_redis()
     event_count = await r.llen(R_FINANCE_EVENTS)
@@ -1508,8 +1521,9 @@ HETZNER_API_TOKEN = os.getenv("HETZNER_API_TOKEN", "")
 HETZNER_MONTHLY = float(os.getenv("HETZNER_MONTHLY_COST", "25.00"))  # ca., Stand 10.2026, laut Owner
 
 
-@router.get("/admin/finance/server")
-async def server_costs(_auth: bool = Depends(verify_admin_key)):
+@router.get("/admin/finance/server", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def server_costs(_auth: bool = Depends(verify_admin_key), request: Request = None):
     """Hetzner Server Kosten — echte Daten via API (1h Redis cache)."""
     r = await _get_redis()
     cached = await r.get("finance:hetzner:cache")
@@ -1561,8 +1575,9 @@ async def server_costs(_auth: bool = Depends(verify_admin_key)):
         return {"error": str(e), "monthly_eur": HETZNER_MONTHLY, "source": "fallback"}
 
 
-@router.get("/admin/finance/btc")
-async def btc_balance(_auth: bool = Depends(verify_admin_key)):
+@router.get("/admin/finance/btc", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def btc_balance(_auth: bool = Depends(verify_admin_key), request: Request = None):
     """BTC Wallet Balance via Blockstream API (30min Redis cache)."""
     if not BTC_ADDRESS:
         return {"error": "BTC_ADDRESS is not configured"}
@@ -1589,8 +1604,9 @@ async def btc_balance(_auth: bool = Depends(verify_admin_key)):
         return {"address": BTC_ADDRESS, "error": str(e), "balance_btc": 0, "balance_eur": 0}
 
 
-@router.get("/admin/finance/ltc")
-async def ltc_balance(_auth: bool = Depends(verify_admin_key)):
+@router.get("/admin/finance/ltc", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def ltc_balance(_auth: bool = Depends(verify_admin_key), request: Request = None):
     """LTC Wallet Balance via Blockcypher API (30min Redis cache)."""
     if not LTC_ADDRESS:
         return {"error": "LTC_ADDRESS is not configured"}
@@ -1614,8 +1630,9 @@ async def ltc_balance(_auth: bool = Depends(verify_admin_key)):
         return {"address": LTC_ADDRESS, "error": str(e), "balance_ltc": 0, "balance_eur": 0}
 
 
-@router.get("/admin/finance/overview")
-async def finance_overview(_auth: bool = Depends(verify_admin_key)):
+@router.get("/admin/finance/overview", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def finance_overview(_auth: bool = Depends(verify_admin_key), request: Request = None):
     """Vollstaendige Finanzuebersicht — alle Quellen kombiniert."""
     r = await _get_redis()
     await _init_operating_funding(r)
@@ -1692,8 +1709,9 @@ async def finance_overview(_auth: bool = Depends(verify_admin_key)):
     }
 
 
-@router.get("/public/finance")
-async def public_finance_overview():
+@router.get("/public/finance", dependencies=[Depends(enforce_route_limit)])
+@public_read
+async def public_finance_overview(request: Request = None):
     """Oeffentlicher Transparenz-Endpoint — nur Summen, keine Details."""
     r = await _get_redis()
     projection = await _load_public_support_projection(r)

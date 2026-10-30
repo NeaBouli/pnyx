@@ -3,13 +3,14 @@ MOD-20: Push Notifications (Expo Push API)
 POST /api/v1/notify/register — register device push token (signed, EKA-05)
 POST /api/v1/notify/send     — admin: send push to all (ADMIN_KEY required)
 """
+from rate_limit import enforce_route_limit, public_heavy
 import os
 import json
 import logging
 import asyncio
 import sys
 import time
-from fastapi import APIRouter, HTTPException, Header, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Header, Request
 from dependencies import verify_admin_key
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Literal, Optional
@@ -166,10 +167,12 @@ async def register_push(
     return {"registered": True, "integrity": "signed-v1"}
 
 
-@router.post("/send")
+@router.post("/send", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def send_push(
     req: SendRequest,
     _auth: bool = Depends(verify_admin_key),
+    request: Request = None,
 ) -> dict:
 
     r = await _get_redis()

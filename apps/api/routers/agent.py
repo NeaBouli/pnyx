@@ -33,7 +33,7 @@ from services.claude_usage import (
     reserve_budget,
     track_usage,
 )
-from rate_limit import limiter
+from rate_limit import enforce_route_limit, generate, limiter
 from services.agent_prompt import (
     AgentPrompt,
     UnsafeModelOutputError,
@@ -992,8 +992,8 @@ def _output_guard_response(question: str, lang: str) -> dict:
     }
 
 
-@router.post("/ask")
-@limiter.limit("5/minute")
+@router.post("/ask", dependencies=[Depends(enforce_route_limit)])
+@generate
 async def ask_agent(
     request: Request,
     req: AskRequest,

@@ -2,13 +2,14 @@
 Admin Test Account — generates Ed25519 keypair + nullifier for test devices.
 POST /api/v1/admin/test-account → in-app import code (EVA-034/035: no deep-link URL)
 """
+from rate_limit import enforce_route_limit, public_heavy
 import hashlib
 import logging
 import os
 import secrets
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from database import get_db
@@ -55,11 +56,13 @@ class TestAccountRequest(BaseModel):
     dimos_id: int | None = None
 
 
-@router.post("/test-account", response_model=TestAccountResponse)
+@router.post("/test-account", response_model=TestAccountResponse, dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def create_test_account(
     req: TestAccountRequest | None = Body(default=None),
     _auth: bool = Depends(verify_admin_key),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Generate a test account with Ed25519 keypair. For admin/dev testing only."""
     from nacl.signing import SigningKey

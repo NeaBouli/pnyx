@@ -3,6 +3,7 @@ Newsletter Admin — Brevo Campaign Draft/Preview/Send
 Admin-only. No subscriber emails returned.
 NEA-263: Cross-publish to Telegram after successful send.
 """
+from rate_limit import enforce_route_limit, public_heavy
 import re
 import os
 import html
@@ -16,7 +17,7 @@ from urllib.parse import quote
 
 import httpx
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, EmailStr, field_validator
 
 from dependencies import verify_admin_key
@@ -136,8 +137,9 @@ class PreferencesRequest(BaseModel):
 
 # ─── Endpoints ───────────────────────────────────────────────────────────────
 
-@router.post("/audience")
-async def newsletter_audience(req: CampaignPlan, _auth: bool = Depends(verify_admin_key)) -> dict[str, str | int]:
+@router.post("/audience", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def newsletter_audience(req: CampaignPlan, _auth: bool = Depends(verify_admin_key), request: Request = None) -> dict[str, str | int]:
     """Read-only audience estimate for a plan; no provider or Redis writes."""
     from routers.newsletter import _get_redis
     try:
@@ -154,8 +156,9 @@ async def newsletter_audience(req: CampaignPlan, _auth: bool = Depends(verify_ad
         raise HTTPException(503, error.detail) from None
 
 
-@router.put("/preferences")
-async def newsletter_preferences(req: PreferencesRequest, _auth: bool = Depends(verify_admin_key)) -> dict[str, int]:
+@router.put("/preferences", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def newsletter_preferences(req: PreferencesRequest, _auth: bool = Depends(verify_admin_key), request: Request = None) -> dict[str, int]:
     """Operator update of existing DOI consent; suppression and evidence are preserved."""
     from routers.newsletter import _get_redis, _sync_brevo_contact, _remove_ineligible_contact
     try:
@@ -181,9 +184,11 @@ async def newsletter_preferences(req: PreferencesRequest, _auth: bool = Depends(
         raise HTTPException(503, "Newsletter preferences unavailable; retry") from None
 
 
-@router.post("/reconfirm")
+@router.post("/reconfirm", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def newsletter_reconfirm(
     dry_run: bool = True, resend: bool = False, _auth: bool = Depends(verify_admin_key),
+    request: Request = None,
 ) -> dict[str, int]:
     from routers.newsletter import reconfirm_legacy
     try:
@@ -193,9 +198,11 @@ async def newsletter_reconfirm(
         raise HTTPException(503, "Newsletter reconfirmation unavailable; retry") from None
 
 
-@router.post("/reconfirm/expire")
+@router.post("/reconfirm/expire", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def newsletter_reconfirm_expire(
     dry_run: bool = True, _auth: bool = Depends(verify_admin_key),
+    request: Request = None,
 ) -> dict[str, int]:
     from routers.newsletter import expire_reconfirmations
     try:
@@ -205,8 +212,9 @@ async def newsletter_reconfirm_expire(
         raise HTTPException(503, "Newsletter reconfirmation unavailable; retry") from None
 
 
-@router.post("/backfill")
-async def newsletter_backfill(dry_run: bool = True, _auth: bool = Depends(verify_admin_key)) -> dict:
+@router.post("/backfill", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def newsletter_backfill(dry_run: bool = True, _auth: bool = Depends(verify_admin_key), request: Request = None) -> dict:
     """Reconcile confirmed consent only. Default to provider reads and aggregate counts."""
     from routers.newsletter import (
         _get_redis, _retry_withdrawal, _sync_brevo_contact,
@@ -274,9 +282,11 @@ async def newsletter_backfill(dry_run: bool = True, _auth: bool = Depends(verify
     return counts
 
 
-@router.get("/readiness")
+@router.get("/readiness", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def newsletter_readiness(
     _auth: bool = Depends(verify_admin_key), check_list_service: bool = False,
+    request: Request = None,
 ) -> dict[str, Any]:
     """Bounded local-confirmation audit: Redis reads and provider GETs only.
 
@@ -340,8 +350,9 @@ async def _listmonk_connection_health() -> dict[str, int]:
     return counts
 
 
-@router.get("/stats")
-async def newsletter_admin_stats(_auth: bool = Depends(verify_admin_key)):
+@router.get("/stats", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def newsletter_admin_stats(_auth: bool = Depends(verify_admin_key), request: Request = None):
     """Campaign stats from Brevo — no subscriber emails."""
     if not BREVO_API_KEY:
         raise HTTPException(503, "BREVO_API_KEY nicht konfiguriert")
@@ -363,8 +374,9 @@ async def newsletter_admin_stats(_auth: bool = Depends(verify_admin_key)):
     }
 
 
-@router.post("/preview")
-async def newsletter_preview(req: PreviewRequest, _auth: bool = Depends(verify_admin_key)):
+@router.post("/preview", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def newsletter_preview(req: PreviewRequest, _auth: bool = Depends(verify_admin_key), request: Request = None):
     """Render preview with ekklesia template — no send."""
     sanitized = _sanitize_html(req.html_content)
     wrapped = _wrap(sanitized)
@@ -375,8 +387,9 @@ async def newsletter_preview(req: PreviewRequest, _auth: bool = Depends(verify_a
     }
 
 
-@router.post("/draft")
-async def newsletter_create_draft(req: DraftRequest, _auth: bool = Depends(verify_admin_key)):
+@router.post("/draft", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def newsletter_create_draft(req: DraftRequest, _auth: bool = Depends(verify_admin_key), request: Request = None):
     """Create Brevo campaign draft — does NOT send."""
     sanitized = _sanitize_html(req.html_content)
     wrapped = _wrap(sanitized)
@@ -407,8 +420,9 @@ async def newsletter_create_draft(req: DraftRequest, _auth: bool = Depends(verif
     }
 
 
-@router.post("/send")
-async def newsletter_send(req: SendRequest, _auth: bool = Depends(verify_admin_key)) -> dict[str, str | int]:
+@router.post("/send", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def newsletter_send(req: SendRequest, _auth: bool = Depends(verify_admin_key), request: Request = None) -> dict[str, str | int]:
     """Send a drafted campaign — requires confirm=true. Cross-publishes to Telegram (non-blocking)."""
     if not req.confirm:
         raise HTTPException(400, "Confirmation required: confirm=true")
@@ -475,8 +489,9 @@ async def newsletter_send(req: SendRequest, _auth: bool = Depends(verify_admin_k
     return {"reason": "sent", **audience.counts, "sent": audience.counts["selected"], "telegram_sent": int(tg_sent)}
 
 
-@router.get("/dispatch-status")
-async def newsletter_dispatch_status(_auth: bool = Depends(verify_admin_key)) -> dict[str, int]:
+@router.get("/dispatch-status", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def newsletter_dispatch_status(_auth: bool = Depends(verify_admin_key), request: Request = None) -> dict[str, int]:
     from routers.newsletter import _get_redis
     from services.newsletter_claims import dispatch_status
 

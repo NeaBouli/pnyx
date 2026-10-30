@@ -7,13 +7,13 @@ Auth: Ed25519 Signatur (identisch mit Voting-Pattern).
 import logging
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Response, Request
+from fastapi import APIRouter, Depends, HTTPException, Header, Request, Response
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from rate_limit import limiter
+from rate_limit import enforce_route_limit, limiter, public_heavy
 from ip_utils import log_reference
 from keypair import verify_signature
 from models import EvaluationQuestion, PoliticianEvaluation, IdentityRecord, KeyStatus
@@ -132,8 +132,9 @@ async def _get_enabled_politician(ada_number: str, db: AsyncSession) -> dict:
 # ─── Endpoints ───────────────────────────────────────────────────────────────
 
 
-@router.get("/")
-async def list_politicians(db: AsyncSession = Depends(get_db)):
+@router.get("/", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def list_politicians(db: AsyncSession = Depends(get_db), request: Request = None):
     """Public: all politicians who opted-in to evaluation, with avg scores."""
     result = await db.execute(text("""
         SELECT rt.ada_number, rt.role, rt.region, rt.org_label,
@@ -195,10 +196,12 @@ async def get_my_evaluations_bulk(
     } for r in rows]
 
 
-@router.get("/{ada_number}/questions")
+@router.get("/{ada_number}/questions", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def get_questions(
     ada_number: str,
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Public: evaluation questions for a politician (only if enabled)."""
     await _get_enabled_politician(ada_number, db)
@@ -338,10 +341,12 @@ async def evaluate_politician(
     }
 
 
-@router.get("/{ada_number}/scores")
+@router.get("/{ada_number}/scores", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def get_scores(
     ada_number: str,
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Public: evaluation scores for a politician."""
     politician = await _get_enabled_politician(ada_number, db)

@@ -22,7 +22,7 @@ from sqlalchemy.exc import IntegrityError
 
 from services.representation_cache import commit_and_invalidate_representation
 from database import get_db
-from rate_limit import limiter
+from rate_limit import enforce_route_limit, limiter, public_heavy
 from models import (
     CITIZEN_VOTE_NULLIFIER_UNIQUE_INDEX,
     CitizenVote, VoteChoice, IdentityRecord, KeyStatus,
@@ -1039,8 +1039,9 @@ async def correct_vote(bill_id: str, req: CorrectionRequest, db: AsyncSession = 
     }
 
 
-@router.get("/results/latest")
-async def get_latest_result(db: AsyncSession = Depends(get_db)):
+@router.get("/results/latest", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def get_latest_result(db: AsyncSession = Depends(get_db), request: Request = None):
     """Most recent bill with at least 1 vote — for landing page live data."""
     from sqlalchemy import desc
     candidate_bill_ids = union(
@@ -1115,8 +1116,9 @@ async def get_latest_result(db: AsyncSession = Depends(get_db)):
     return published
 
 
-@router.get("/results/in-progress")
-async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
+@router.get("/results/in-progress", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def get_votes_in_progress(db: AsyncSession = Depends(get_db), request: Request = None):
     """Landing page ticker data. Aggregated counts only; no nullifiers or vote rows."""
     threshold = max(votes_in_progress_threshold(), small_cell_k())
     visibility_sql, visibility_params = public_bill_raw_sql(
@@ -1218,8 +1220,9 @@ async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
     }
 
 
-@router.get("/{bill_id}/results", response_model=BillResults)
-async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
+@router.get("/{bill_id}/results", response_model=BillResults, dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def get_results(bill_id: str, db: AsyncSession = Depends(get_db), request: Request = None):
     """
     Abstimmungsergebnisse + Divergence Score.
     Visibility: HIDDEN (default for ACTIVE), WINDOW (24h), ALWAYS.

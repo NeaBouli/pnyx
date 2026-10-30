@@ -1,5 +1,9 @@
 # Public API shared quota contract — offline validation
 
+Historical acceptance snapshot. The active PR #706 / B01 policy is
+[API_RATE_LIMIT_COVERAGE.md](API_RATE_LIMIT_COVERAGE.md); its explicit shared
+read/heavy/generate classes supersede the exemptions described below.
+
 2026-10-10, T-9050; source baseline `c727a3c8`. This follows the
 needs-validation item in T-9049. Test/report-only: no limiter, advertisement,
 Redis policy, provider, database, proxy or production configuration is changed.

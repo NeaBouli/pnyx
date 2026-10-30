@@ -504,3 +504,41 @@ async def test_invalidation_client_setup_failure_does_not_fail_write(
     writer = AsyncMock(spec=AsyncSession)
     await commit_and_invalidate_representation(writer)
     writer.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("outage", [False, True])
+async def test_representation_misses_coalesce_and_outage_does_not_recompute(cache, monkeypatch, outage):
+    import asyncio
+    from services.representation_cache import invalidate_representation_cache
+    cache.read_error = outage
+    async def compute(_):
+        await asyncio.sleep(0.01)
+        return {"cumulative_representation": 50, "bills": []}
+    calculate = AsyncMock(side_effect=compute)
+    monkeypatch.setattr(analytics, "compute_cumulative_representation", calculate)
+    responses = await asyncio.gather(*(analytics.cumulative_representation(db=object()) for _ in range(50)))
+    assert all(response == responses[0] for response in responses)
+    assert calculate.await_count == 1
+    await analytics.cumulative_representation(db=object())
+    assert calculate.await_count == 1
+    await invalidate_representation_cache()
+    await analytics.cumulative_representation(db=object())
+    assert calculate.await_count == 2
+    cache.now = 31
+    await analytics.cumulative_representation(db=object())
+    assert calculate.await_count == 3
+
+
+@pytest.mark.asyncio
+async def test_representation_payload_has_at_most_200_bill_details(monkeypatch):
+    row = {"id": "bill", "title_el": "a" * 1000, "source": "PARLIAMENT", "party_votes_parliament": {"ND": "YES"},
+           **{f"tier1_{choice}": 10 if choice == "yes" else 0 for choice in ("yes", "no", "abstain", "unknown")},
+           **{f"zk_{choice}": 0 for choice in ("yes", "no", "abstain", "unknown")}}
+    rows = [dict(row, id=str(i)) for i in range(1000)]
+    db = SimpleNamespace(execute=AsyncMock(return_value=SimpleNamespace(mappings=lambda: SimpleNamespace(all=lambda: rows))))
+    result = await analytics.compute_cumulative_representation(db)
+    assert result["bills_analyzed"] == 1000
+    assert len(result["bills"]) == 200
+    assert len(result["bills"][0]["title_el"]) == 500
+    assert result["last_bill"]["bill_id"] == "999"

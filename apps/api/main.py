@@ -6,7 +6,7 @@ import secrets
 from contextlib import asynccontextmanager
 from typing import Any
 from urllib.parse import parse_qsl, unquote, unquote_plus, urlencode, urlsplit
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -15,7 +15,7 @@ from apscheduler.triggers.cron import CronTrigger
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from rate_limit import limiter, rate_limit_exceeded_handler, rate_limit_http_exception_handler
+from rate_limit import enforce_route_limit, limiter, public_heavy, rate_limit_exceeded_handler, rate_limit_http_exception_handler
 from security_startup import validate_identity_kdf_config, validate_server_salt_config
 from security_headers import API_CSP, SecurityHeadersMiddleware
 from services.scheduler_state import add_persisted_interval_job, add_observed_job, initialize_job_states, install_schedule_listener
@@ -1371,6 +1371,7 @@ app.include_router(zk.router)
 app.include_router(consensus_results.router)
 
 @app.get("/health")
+@limiter.exempt
 async def health():
     return {
         "status": "ok",
@@ -1403,8 +1404,9 @@ async def health():
         ]
     }
 
-@app.get("/api/v1/health/modules")
-async def health_modules():
+@app.get("/api/v1/health/modules", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def health_modules(request: Request = None):
     """Detailed per-module health status for live wiki indicators."""
     import redis.asyncio as aioredis
     import httpx
@@ -1542,6 +1544,7 @@ async def health_modules():
 
 
 @app.get("/api/v1/version")
+@limiter.exempt
 async def legacy_app_version():
     """Legacy endpoint — redirects to canonical /api/v1/app/version data."""
     from routers.app_version import LATEST_VERSION, LATEST_VERSION_CODE, MIN_REQUIRED_VERSION_CODE
@@ -1555,8 +1558,9 @@ async def legacy_app_version():
         "playStoreUrl": PLAYSTORE_URL,
     }
 
-@app.get("/api/v1/admin/sentry/status")
-async def sentry_status():
+@app.get("/api/v1/admin/sentry/status", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def sentry_status(request: Request = None):
     """Sentry Cloud Status fuer Dashboard."""
     return {
         "enabled": SENTRY_ENABLED,
@@ -1568,6 +1572,7 @@ async def sentry_status():
 
 
 @app.get("/robots.txt", include_in_schema=False)
+@limiter.exempt
 async def robots_txt():
     """Block all crawlers from indexing the API subdomain."""
     return PlainTextResponse(
@@ -1577,5 +1582,6 @@ async def robots_txt():
 
 
 @app.get("/")
+@limiter.exempt
 async def root():
     return {"message": "Ekklesia.gr API — εκκλησία του δήμου"}

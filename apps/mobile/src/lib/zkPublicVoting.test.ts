@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { canShowPublicZkVoting, canSubmitPublicZkVote, publicZkVoteScopeForBill } from "./zkPublicVoting";
+import { canShowPublicZkVoting, canSubmitPublicZkVote, PENDING_ZK_SCOPE_POLL_MS, publicZkVoteScopeForBill } from "./zkPublicVoting";
 import type { ZkScopeStatus } from "./api";
 import type { ZkServerStatus } from "./zkSemaphoreCore";
 
@@ -128,4 +128,14 @@ describe("public ZK voting visibility", () => {
   it("builds canonical bill scope ids", () => {
     expect(publicZkVoteScopeForBill("GR-5294")).toBe("bill:GR-5294");
   });
+});
+
+
+it("leaves read capacity during pending enrollment and proof startup", () => {
+  const feedAndResultReads = 6;
+  const startupStatusReads = 2;
+  const proofRootReads = 2;
+  const pollsPerMinute = Math.ceil(60_000 / PENDING_ZK_SCOPE_POLL_MS);
+  expect(PENDING_ZK_SCOPE_POLL_MS).toBeGreaterThan(0);
+  expect(feedAndResultReads + startupStatusReads + proofRootReads + pollsPerMinute).toBeLessThanOrEqual(14);
 });

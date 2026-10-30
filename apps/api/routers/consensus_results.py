@@ -1,8 +1,9 @@
 """Public, aggregate-only DIAVGEIA consensus representation views."""
+from rate_limit import enforce_route_limit, public_heavy
 
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -142,12 +143,14 @@ async def _load_view(
     return _view_payload(view, [dict(row) for row in result.mappings().all()])
 
 
-@router.get("/representation")
+@router.get("/representation", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def get_consensus_representation(
     dimos_id: int | None = Query(None, ge=1),
     periferia_id: int | None = Query(None, ge=1),
     limit: int = Query(20, ge=1, le=50),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Return separate aggregate views; never return individual consensus rows."""
     if dimos_id is not None or periferia_id is not None:

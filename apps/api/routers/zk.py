@@ -6,10 +6,13 @@ Semaphore proof payloads when ZK_VOTING_ENABLED is explicitly enabled.
 from __future__ import annotations
 
 import os
+import asyncio
+from collections import OrderedDict
+from services.request_work import SingleFlight
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Path as FastAPIPath, Query, status, Request
+from fastapi import APIRouter, Depends, HTTPException, Path as FastAPIPath, Query, Request, status
 from pydantic import BaseModel, Field, model_serializer
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -18,7 +21,7 @@ from starlette.concurrency import run_in_threadpool
 
 from services.representation_cache import commit_and_invalidate_representation
 from database import get_db
-from rate_limit import limiter
+from rate_limit import enforce_route_limit, limiter, public_heavy, public_read
 from services.small_cell import small_cell_k
 from services.zk_vote_aggregation import zk_scope_publishable
 from dependencies import verify_admin_key
@@ -69,6 +72,8 @@ from services.zk_tier_lock import (
 from services.vote_scope import ensure_bill_scope_allowed
 
 router = APIRouter(prefix="/api/v1/zk", tags=["GH#112 ZK V2"])
+_root_members_cache = OrderedDict()
+_root_members_flights = SingleFlight(capacity=4)
 
 VKEY_PATH = Path(__file__).resolve().parents[1] / "data" / "semaphore-v4-depth16-vkey.json"
 ZK_VOTING_ENABLED_ENV = "ZK_VOTING_ENABLED"
@@ -555,8 +560,9 @@ def _ensure_bill_scope_allowed(identity: IdentityRecord, bill: ParliamentBill) -
     ensure_bill_scope_allowed(identity, bill)
 
 
-@router.get("/status", response_model=ZkStatusResponse)
-async def get_zk_status() -> ZkStatusResponse:
+@router.get("/status", response_model=ZkStatusResponse, dependencies=[Depends(enforce_route_limit)])
+@public_read
+async def get_zk_status(request: Request = None) -> ZkStatusResponse:
     production_enabled = zk_voting_enabled()
     return ZkStatusResponse(
         production_enabled=production_enabled,
@@ -580,7 +586,8 @@ async def get_zk_status() -> ZkStatusResponse:
     )
 
 
-@router.get("/scopes/{vote_scope_id}/status", response_model=ZkScopeStatusResponse)
+@router.get("/scopes/{vote_scope_id}/status", response_model=ZkScopeStatusResponse, dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def get_zk_scope_status(
     vote_scope_id: str = FastAPIPath(
         ...,
@@ -589,6 +596,7 @@ async def get_zk_scope_status(
         pattern=r"^(bill|municipal|regional):[^/]{1,110}$",
     ),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ) -> ZkScopeStatusResponse:
     try:
         scope = validate_vote_scope_id(vote_scope_id)
@@ -651,7 +659,8 @@ async def get_zk_scope_status(
     )
 
 
-@router.get("/canary/preflight/{vote_scope_id}", response_model=ZkCanaryPreflightResponse)
+@router.get("/canary/preflight/{vote_scope_id}", response_model=ZkCanaryPreflightResponse, dependencies=[Depends(enforce_route_limit)])
+@public_read
 async def get_zk_canary_preflight(
     vote_scope_id: str = FastAPIPath(
         ...,
@@ -661,6 +670,7 @@ async def get_zk_canary_preflight(
     ),
     _admin: bool = Depends(verify_admin_key),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ) -> ZkCanaryPreflightResponse:
     scope = validate_vote_scope_id(vote_scope_id)
     scope_type, scope_id = scope.split(":", 1)
@@ -851,7 +861,8 @@ async def opt_in_zk(req: ZkOptInRequest, db: AsyncSession = Depends(get_db), req
     )
 
 
-@router.get("/receipts/{vote_scope_id}", response_model=ZkReceiptListResponse)
+@router.get("/receipts/{vote_scope_id}", response_model=ZkReceiptListResponse, dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def list_zk_receipts(
     vote_scope_id: str = FastAPIPath(
         ...,
@@ -862,6 +873,7 @@ async def list_zk_receipts(
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ) -> ZkReceiptListResponse:
     scope = validate_vote_scope_id(vote_scope_id)
     await _ensure_scope_public_or_safe_canary(db, scope)
@@ -889,7 +901,8 @@ async def list_zk_receipts(
     )
 
 
-@router.get("/roots/{vote_scope_id}", response_model=ZkRootResponse)
+@router.get("/roots/{vote_scope_id}", response_model=ZkRootResponse, dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def get_current_zk_root(
     vote_scope_id: str = FastAPIPath(
         ...,
@@ -898,6 +911,7 @@ async def get_current_zk_root(
         pattern=r"^(bill|municipal|regional):[^/]{1,110}$",
     ),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ) -> ZkRootResponse:
     scope = validate_vote_scope_id(vote_scope_id)
     await _ensure_scope_public_or_safe_canary(db, scope)
@@ -916,7 +930,8 @@ async def get_current_zk_root(
     return _zk_root_response(root)
 
 
-@router.get("/roots/{vote_scope_id}/members", response_model=ZkRootMembersResponse)
+@router.get("/roots/{vote_scope_id}/members", response_model=ZkRootMembersResponse, dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def get_current_zk_root_members(
     vote_scope_id: str = FastAPIPath(
         ...,
@@ -925,6 +940,7 @@ async def get_current_zk_root_members(
         pattern=r"^(bill|municipal|regional):[^/]{1,110}$",
     ),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ) -> ZkRootMembersResponse:
     scope = validate_vote_scope_id(vote_scope_id)
     await _ensure_scope_public_or_safe_canary(db, scope)
@@ -943,22 +959,39 @@ async def get_current_zk_root_members(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ZK root not found")
 
     members = await list_public_group_members_for_scope(db, vote_scope_id=scope)
-    current_group = build_semaphore_group_root(members)
-    if (
-        str(current_group.root) != str(root.merkle_root)
-        or current_group.size != int(root.group_size)
-        or int(root.merkle_depth) != SEMAPHORE_MERKLE_TREE_DEPTH
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="ZK root is stale; publish a fresh root before proof generation",
-        )
+    key = (scope, str(root.merkle_root), int(root.group_size), int(root.merkle_depth))
+
+    async def validate_members():
+        # Preserve stale-root detection without repeating Poseidon on cache hits.
+        cached = _root_members_cache.get(key)
+        if cached is not None:
+            valid = cached == tuple(members)
+        else:
+            current_group = await asyncio.to_thread(build_semaphore_group_root, members)
+            valid = (str(current_group.root) == str(root.merkle_root)
+                     and current_group.size == int(root.group_size)
+                     and int(root.merkle_depth) == SEMAPHORE_MERKLE_TREE_DEPTH)
+        if not valid:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="ZK root is stale; publish a fresh root before proof generation",
+            )
+        _root_members_cache[key] = tuple(members)
+        _root_members_cache.move_to_end(key)
+        while len(_root_members_cache) > 16:
+            _root_members_cache.popitem(last=False)
+
+    await _root_members_flights.run(key, validate_members)
+    # A concurrent caller may have observed a different membership revision.
+    if _root_members_cache.get(key) != tuple(members):
+        raise HTTPException(409, "ZK root is stale; publish a fresh root before proof generation")
 
     response = _zk_root_response(root)
     return ZkRootMembersResponse(**response.model_dump(), members=members)
 
 
-@router.post("/roots/{vote_scope_id}/publish", response_model=ZkRootPublishResponse)
+@router.post("/roots/{vote_scope_id}/publish", response_model=ZkRootPublishResponse, dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def publish_zk_root(
     vote_scope_id: str = FastAPIPath(
         ...,
@@ -968,6 +1001,7 @@ async def publish_zk_root(
     ),
     _admin: bool = Depends(verify_admin_key),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ) -> ZkRootPublishResponse:
     _ensure_zk_root_publication_enabled()
     scope = _ensure_zk_write_scope_allowed(vote_scope_id)
@@ -1146,7 +1180,8 @@ async def verify_zk_proof(req: ZkVerifyRequest, db: AsyncSession = Depends(get_d
     )
 
 
-@router.post("/receipts/{vote_scope_id}/publish-pending", response_model=ZkReceiptPublishResponse)
+@router.post("/receipts/{vote_scope_id}/publish-pending", response_model=ZkReceiptPublishResponse, dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def publish_pending_zk_receipts(
     vote_scope_id: str = FastAPIPath(
         ...,
@@ -1157,6 +1192,7 @@ async def publish_pending_zk_receipts(
     limit: int = Query(25, ge=1, le=100),
     _admin: bool = Depends(verify_admin_key),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ) -> ZkReceiptPublishResponse:
     try:
         stats = await publish_pending_zk_receipts_for_scope(

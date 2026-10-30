@@ -6,6 +6,7 @@ GET  /api/v1/admin/diavgeia/refresh-orgs-cache/{job_id} — Poll job status
 GET  /api/v1/municipal/{dimos_id}/decisions  — Diavgeia decisions for a municipality
 GET  /api/v1/regions/{periferia_id}/decisions — Diavgeia decisions for a region
 """
+from rate_limit import enforce_route_limit, public_heavy
 import asyncio
 import os
 import logging
@@ -15,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -61,11 +62,13 @@ class DiavgeiaDecisionResponse(BaseModel):
 
 # ─── POST /api/v1/admin/diavgeia/scrape ─────────────────────────────────────
 
-@router.post("/api/v1/admin/diavgeia/scrape")
+@router.post("/api/v1/admin/diavgeia/scrape", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def admin_scrape_diavgeia(
     req: ScrapeRequest,
     _key: str = Depends(verify_admin),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ) -> dict:
     """Manually trigger Diavgeia scrape. Admin-only."""
     from services.diavgeia_scraper import convert_decisions_to_bills, scrape_decisions
@@ -132,9 +135,11 @@ async def _run_refresh_job(job_id: str) -> None:
         logger.error("Refresh orgs cache failed: %s", e)
 
 
-@router.post("/api/v1/admin/diavgeia/refresh-orgs-cache", status_code=202)
+@router.post("/api/v1/admin/diavgeia/refresh-orgs-cache", status_code=202, dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def admin_refresh_orgs_cache(
     _key: str = Depends(verify_admin),
+    request: Request = None,
 ) -> dict:
     """Start async org cache refresh. Returns job_id for polling."""
     # Check for existing running jobs
@@ -175,10 +180,12 @@ async def admin_refresh_orgs_cache(
     }
 
 
-@router.get("/api/v1/admin/diavgeia/refresh-orgs-cache/{job_id}")
+@router.get("/api/v1/admin/diavgeia/refresh-orgs-cache/{job_id}", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def admin_refresh_orgs_cache_status(
     job_id: str,
     _key: str = Depends(verify_admin),
+    request: Request = None,
 ) -> dict:
     """Poll status of an org cache refresh job."""
     if job_id not in _refresh_jobs:
@@ -189,11 +196,14 @@ async def admin_refresh_orgs_cache_status(
 @router.get(
     "/api/v1/admin/diavgeia/decision/{ada}",
     response_model=DiavgeiaDecisionResponse,
+    dependencies=[Depends(enforce_route_limit)],
 )
+@public_heavy
 async def admin_get_diavgeia_decision(
     ada: str,
     _key: str = Depends(verify_admin),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ) -> dict:
     """Return one locally catalogued Diavgeia decision by ADA."""
     normalized_ada = ada.strip().upper()
@@ -221,13 +231,15 @@ async def admin_get_diavgeia_decision(
 
 # ─── GET /api/v1/municipal/{dimos_id}/decisions ─────────────────────────────
 
-@router.get("/api/v1/municipal/{dimos_id}/decisions")
+@router.get("/api/v1/municipal/{dimos_id}/decisions", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def list_municipal_decisions(
     dimos_id: int,
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     decision_type_uid: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ) -> dict:
     """List Diavgeia decisions for a municipality."""
     dimos = await db.get(Dimos, dimos_id)
@@ -272,13 +284,15 @@ async def list_municipal_decisions(
 
 # ─── GET /api/v1/regions/{periferia_id}/decisions ───────────────────────────
 
-@router.get("/api/v1/regions/{periferia_id}/decisions")
+@router.get("/api/v1/regions/{periferia_id}/decisions", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def list_regional_decisions(
     periferia_id: int,
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     decision_type_uid: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ) -> dict:
     """List Diavgeia decisions for a region (all municipalities within)."""
     periferia = await db.get(Periferia, periferia_id)

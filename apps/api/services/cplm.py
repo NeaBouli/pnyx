@@ -16,6 +16,7 @@ import os
 from models import CitizenVote, VoteChoice, ParliamentBill, BillStatus
 from services.bill_visibility import public_bill_filter, results_visible_filter
 from services.small_cell import small_cell_k
+from services.request_work import coalesce, cache_fill_quota
 
 logger = logging.getLogger(__name__)
 
@@ -189,45 +190,49 @@ def _read_snapshot(raw: str, k: int) -> dict:
     return publish_cplm(stored["snapshot"] if verified else stored, verified=verified)
 
 
+@coalesce(lambda: f"cplm:k{small_cell_k()}")
 async def get_cplm_cached(db: AsyncSession) -> dict:
     """Get CPLM aggregate, using Redis cache if available."""
     r = aioredis.from_url(REDIS_URL, decode_responses=True)
-    # Keep flag-off cache/history byte-compatible and never reuse its unchecked
-    # trend deltas when suppression is enabled (including after changing k).
-    k = small_cell_k()
-    suffix = f":publishable-v1:k{k}" if k else ""
-    cache_key, history_key = CACHE_KEY + suffix, HISTORY_KEY + suffix
-    cached = await r.get(cache_key)
-    if cached:
+    try:
+        # Keep flag-off cache/history byte-compatible and never reuse its unchecked
+        # trend deltas when suppression is enabled (including after changing k).
+        k = small_cell_k()
+        suffix = f":publishable-v1:k{k}" if k else ""
+        cache_key, history_key = CACHE_KEY + suffix, HISTORY_KEY + suffix
+        cached = await r.get(cache_key)
+        if cached:
+            return _read_snapshot(cached, k)
+
+        await cache_fill_quota("cplm")
+        result = await compute_cplm(db)
+
+        # Cache + store history snapshot
+        await r.setex(cache_key, CACHE_TTL, _store_snapshot(result, k))
+
+        # Compute trend from previous snapshot
+        prev = await r.lindex(history_key, 0)
+        if prev:
+            prev_data = _read_snapshot(prev, k)
+        if prev and result["x"] is not None and prev_data["x"] is not None:
+            x_delta = result["x"] - prev_data.get("x", 0)
+            y_delta = result["y"] - prev_data.get("y", 0)
+            if abs(x_delta) > abs(y_delta):
+                direction = "right" if x_delta > 0 else "left"
+            elif abs(y_delta) > abs(x_delta):
+                direction = "up" if y_delta > 0 else "down"
+            else:
+                direction = "stable"
+            result["trend"] = {"x_delta": round(x_delta, 4), "y_delta": round(y_delta, 4), "direction": direction}
+
+        # Push to history (keep last 365 entries)
+        await r.lpush(history_key, _store_snapshot(result, k))
+        await r.ltrim(history_key, 0, 364)
+
+        return result
+
+    finally:
         await r.aclose()
-        return _read_snapshot(cached, k)
-
-    result = await compute_cplm(db)
-
-    # Cache + store history snapshot
-    await r.setex(cache_key, CACHE_TTL, _store_snapshot(result, k))
-
-    # Compute trend from previous snapshot
-    prev = await r.lindex(history_key, 0)
-    if prev:
-        prev_data = _read_snapshot(prev, k)
-    if prev and result["x"] is not None and prev_data["x"] is not None:
-        x_delta = result["x"] - prev_data.get("x", 0)
-        y_delta = result["y"] - prev_data.get("y", 0)
-        if abs(x_delta) > abs(y_delta):
-            direction = "right" if x_delta > 0 else "left"
-        elif abs(y_delta) > abs(x_delta):
-            direction = "up" if y_delta > 0 else "down"
-        else:
-            direction = "stable"
-        result["trend"] = {"x_delta": round(x_delta, 4), "y_delta": round(y_delta, 4), "direction": direction}
-
-    # Push to history (keep last 365 entries)
-    await r.lpush(history_key, _store_snapshot(result, k))
-    await r.ltrim(history_key, 0, 364)
-
-    await r.aclose()
-    return result
 
 
 async def get_cplm_history(days: int = 30) -> list[dict]:

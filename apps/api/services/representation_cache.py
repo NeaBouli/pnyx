@@ -1,6 +1,7 @@
 """Shared commit boundary for writes affecting the representation aggregate."""
 import asyncio
 import logging
+from weakref import WeakKeyDictionary
 
 import redis.asyncio as aioredis
 
@@ -8,6 +9,7 @@ from config import settings
 
 logger = logging.getLogger(__name__)
 REPRESENTATION_CACHE_PREFIX = "analytics:representation:v1:k"
+outage_snapshots = WeakKeyDictionary()
 
 
 async def commit_and_invalidate_representation(db) -> None:
@@ -17,6 +19,7 @@ async def commit_and_invalidate_representation(db) -> None:
 
 
 async def invalidate_representation_cache() -> None:
+    outage_snapshots.clear()
     # Remove every policy variant so switching policy cannot revive stale data.
     try:
         async with aioredis.from_url(

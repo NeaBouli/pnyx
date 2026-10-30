@@ -40,8 +40,8 @@ import hashlib
 import hmac
 import logging
 from typing import Any
-from rate_limit import limiter
-from fastapi import APIRouter, Query, HTTPException, Request
+from rate_limit import enforce_route_limit, limiter, public_read
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
 import httpx
 import redis.asyncio as aioredis
@@ -173,8 +173,9 @@ async def _consume_oauth_state(state: str | None) -> dict[str, Any]:
     return record
 
 
-@router.get("/status")
-async def govgr_status():
+@router.get("/status", dependencies=[Depends(enforce_route_limit)])
+@public_read
+async def govgr_status(request: Request = None):
     """Status der gov.gr OAuth Integration."""
     gates_met = sum(1 for v in ACTIVATION_GATES.values() if v)
     return {
@@ -330,8 +331,9 @@ async def govgr_callback(
     }
 
 
-@router.get("/family/verify")
-async def family_verify_stub():
+@router.get("/family/verify", dependencies=[Depends(enforce_route_limit)])
+@public_read
+async def family_verify_stub(request: Request = None):
     """Liquid Democracy: Verwandte 1. Grades via gov.gr. STUB."""
     return {
         "module": "Liquid Democracy — Familien-Verifikation",
@@ -345,8 +347,9 @@ async def family_verify_stub():
     }
 
 
-@router.get("/info")
-async def govgr_info():
+@router.get("/info", dependencies=[Depends(enforce_route_limit)])
+@public_read
+async def govgr_info(request: Request = None):
     return {
         "name": "MOD-09: gov.gr OAuth2.0", "phase": "Alpha 0.1 (design-only stub)",
         "runtime_enabled": GOVGR_FLOW_ENABLED,

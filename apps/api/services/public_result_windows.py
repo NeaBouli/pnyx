@@ -10,7 +10,7 @@ from services.small_cell import small_cell_k, publishable_set, suppress_public_s
 CHOICES = ("yes", "no", "abstain", "unknown")
 
 
-async def load_public_vote_days(db, *, bill_id=None):
+async def load_public_vote_days(db, *, bill_id=None, bill_ids=None):
     """Read all days, never just the requested window; no identities selected."""
     tier = select(CitizenVote.bill_id.label("bill_id"),
                   CitizenVote.created_at.label("created_at"),
@@ -20,6 +20,8 @@ async def load_public_vote_days(db, *, bill_id=None):
                 ZkVoteReceipt.vote_commitment.label("vote"), literal(1).label("zk"))
     zk = zk.join(ParliamentBill, ZkVoteReceipt.vote_scope_id == func.concat("bill:", ParliamentBill.id))
     filters = [public_bill_filter(), results_visible_filter()]
+    if bill_ids is not None:
+        filters.append(ParliamentBill.id.in_(bill_ids))
     if bill_id is None:
         filters.append(~ParliamentBill.id.like("DEMO-%"))
     else:

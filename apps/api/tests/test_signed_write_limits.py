@@ -162,15 +162,25 @@ def test_untrusted_forwarded_headers_cannot_reset_signed_write_bucket(
     assert client.post(path(0), headers=IP_TWO, json=body()).status_code == 429
 
 
-def test_public_reads_stay_unlimited_after_signed_writes_exhausted(
+def test_public_reads_keep_independent_classes_after_signed_writes_exhausted(
     http: tuple[TestClient, LocalSession],
 ) -> None:
-    client, _ = http
+    client, session = http
     for name, (path, body, _guard) in ROUTES.items():
         for index in range(121):
             client.post(path(index), headers=IP_ONE, json=body())
     for _ in range(61):
         assert client.get("/api/v1/app/version", headers=IP_ONE).status_code == 200
+    for _ in range(10):
         assert client.get("/api/v1/bills", headers=IP_ONE).status_code == 200
-        assert client.get("/api/v1/polis/tickets", headers=IP_ONE).status_code == 200
         assert client.get("/api/v1/vote/GR-missing/results", headers=IP_ONE).status_code == 404
+    calls = session.calls
+    assert client.get("/api/v1/bills", headers=IP_ONE).status_code == 429
+    assert session.calls == calls
+    for _ in range(120):
+        assert client.get("/api/v1/polis/tickets", headers=IP_ONE).status_code == 200
+    calls = session.calls
+    assert client.get("/api/v1/polis/tickets", headers=IP_ONE).status_code == 429
+    assert session.calls == calls
+    assert client.get("/api/v1/bills", headers=IP_TWO).status_code == 200
+    assert client.get("/api/v1/polis/tickets", headers=IP_TWO).status_code == 200

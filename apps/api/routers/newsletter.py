@@ -5,6 +5,7 @@ GET  /api/v1/newsletter/lists      — Public list of available lists
 GET  /api/v1/newsletter/stats      — Public transparency (Brevo account stats)
 POST /api/v1/newsletter/webhook/brevo — Brevo event webhook
 """
+from services.request_work import coalesce, cache_fill_quota
 import os
 import json
 import logging
@@ -14,7 +15,7 @@ from functools import lru_cache
 from ipaddress import IPv4Address
 from typing import Any, Optional
 from urllib.parse import urlencode, urlsplit
-from rate_limit import limiter
+from rate_limit import enforce_route_limit, limiter, public_heavy, public_read
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.exceptions import RequestValidationError
@@ -566,8 +567,9 @@ async def _sync_listmonk_contact(store: aioredis.Redis, email: str) -> bool:
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
-@router.get("/lists")
-async def get_lists() -> dict:
+@router.get("/lists", dependencies=[Depends(enforce_route_limit)])
+@public_read
+async def get_lists(request: Request = None) -> dict:
     """Public: available newsletter lists."""
     return {
         "lists": [
@@ -802,9 +804,11 @@ async def confirm_subscription(token: str, request: Request = None) -> HTMLRespo
     )
 
 
-@router.post("/unsubscribe")
+@router.post("/unsubscribe", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def unsubscribe(
     req: UnsubscribeRequest, _auth: bool = Depends(verify_admin_key),
+    request: Request = None,
 ) -> dict:
     """Operator-recorded withdrawal; public Brevo withdrawals arrive via its webhook."""
     try:
@@ -830,8 +834,10 @@ async def _get_redis() -> aioredis.Redis:
 
 # ── Stats Endpoint (Brevo + Listmonk) ────────────────────────────────────────
 
-@router.get("/stats")
-async def newsletter_stats() -> dict:
+@router.get("/stats", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+@coalesce(lambda: "newsletter:stats")
+async def newsletter_stats(request: Request = None) -> dict:
     """
     Public transparency endpoint.
     Fetches Brevo account stats + Listmonk subscriber count.
@@ -842,6 +848,7 @@ async def newsletter_stats() -> dict:
     if cached:
         return json.loads(cached)
 
+    await cache_fill_quota("newsletter")
     stats = {
         "plan": "free",
         "emails_sent_month": 0,
@@ -949,7 +956,8 @@ def _require_brevo_webhook_auth(request: Request) -> None:
         )
 
 
-@router.post("/webhook/brevo")
+@router.post("/webhook/brevo", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def brevo_webhook(request: Request) -> dict:
     """Receive Brevo event webhooks — track sent/opened/bounced."""
     _require_brevo_webhook_auth(request)

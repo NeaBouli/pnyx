@@ -6,12 +6,13 @@ Schutz: ADMIN_KEY (Beta) → gov.gr Auth (Alpha)
 
 @ai-anchor MOD15_ADMIN
 """
+from rate_limit import enforce_route_limit, generate, public_heavy
 import os
 import re
 import logging
 from datetime import datetime, timezone
 from typing import Optional
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, text
@@ -101,8 +102,9 @@ class BillTextRequest(BaseModel):
     text: str
 
 
-@router.get("/dashboard")
-async def admin_dashboard(_key=Depends(verify_admin), db: AsyncSession = Depends(get_db)):
+@router.get("/dashboard", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def admin_dashboard(_key=Depends(verify_admin), db: AsyncSession = Depends(get_db), request: Request = None):
     """Admin Dashboard."""
     total_bills   = await db.scalar(select(func.count(ParliamentBill.id))) or 0
     total_votes   = await db.scalar(select(func.count(CitizenVote.id))) or 0
@@ -137,11 +139,13 @@ async def admin_dashboard(_key=Depends(verify_admin), db: AsyncSession = Depends
     }
 
 
-@router.get("/bills")
+@router.get("/bills", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def admin_list_bills(
     status: Optional[str] = None, reviewed: Optional[bool] = None,
     limit: int = Query(50, le=200), offset: int = 0,
-    _key=Depends(verify_admin), db: AsyncSession = Depends(get_db)
+    _key=Depends(verify_admin), db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Alle Bills mit Admin-Details."""
     query = select(ParliamentBill).order_by(ParliamentBill.created_at.desc()).limit(limit).offset(offset)
@@ -164,8 +168,9 @@ async def admin_list_bills(
     } for b in bills]}
 
 
-@router.post("/bills")
-async def admin_create_bill(req: BillCreateRequest, _key=Depends(verify_admin), db: AsyncSession = Depends(get_db)):
+@router.post("/bills", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def admin_create_bill(req: BillCreateRequest, _key=Depends(verify_admin), db: AsyncSession = Depends(get_db), request: Request = None):
     """Neues Bill anlegen."""
     existing = await db.get(ParliamentBill, req.id)
     if existing:
@@ -192,10 +197,12 @@ async def admin_create_bill(req: BillCreateRequest, _key=Depends(verify_admin), 
     return {"success": True, "bill_id": req.id, "status": "ANNOUNCED"}
 
 
-@router.patch("/bills/{bill_id}")
+@router.patch("/bills/{bill_id}", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def admin_update_bill(
     bill_id: str, req: BillUpdateRequest,
-    _key=Depends(verify_admin), db: AsyncSession = Depends(get_db)
+    _key=Depends(verify_admin), db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Bill aktualisieren."""
     bill = await db.get(ParliamentBill, bill_id)
@@ -213,10 +220,12 @@ async def admin_update_bill(
     return {"success": True, "bill_id": bill_id, "updated": list(updates.keys())}
 
 
-@router.post("/bills/{bill_id}/review")
+@router.post("/bills/{bill_id}/review", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def admin_review_summary(
     bill_id: str, approved: bool = Query(True),
-    _key=Depends(verify_admin), db: AsyncSession = Depends(get_db)
+    _key=Depends(verify_admin), db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """KI-Zusammenfassung als geprüft markieren."""
     bill = await db.get(ParliamentBill, bill_id)
@@ -230,10 +239,12 @@ async def admin_review_summary(
     return {"success": True, "bill_id": bill_id, "reviewed": approved}
 
 
-@router.post("/bills/{bill_id}/party-votes")
+@router.post("/bills/{bill_id}/party-votes", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def admin_set_party_votes(
     bill_id: str, party_votes: dict,
-    _key=Depends(verify_admin), db: AsyncSession = Depends(get_db)
+    _key=Depends(verify_admin), db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Parteistimmen setzen. Format: {"ΝΔ": "ΝΑΙ", "ΣΥΡΙΖΑ": "ΟΧΙ"}"""
     bill = await db.get(ParliamentBill, bill_id)
@@ -244,10 +255,12 @@ async def admin_set_party_votes(
     return {"success": True, "bill_id": bill_id, "party_votes": party_votes}
 
 
-@router.post("/forum/resync-all")
+@router.post("/forum/resync-all", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def admin_resync_forum(
     _key=Depends(verify_admin),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Re-categorize and re-tag all existing forum topics."""
     from services.discourse_sync import resync_all_topics
@@ -255,10 +268,12 @@ async def admin_resync_forum(
     return {"success": True, **stats}
 
 
-@router.post("/forum/sync-new", status_code=202)
+@router.post("/forum/sync-new", status_code=202, dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def admin_sync_new_forum(
     background_tasks: BackgroundTasks,
     _key=Depends(verify_admin),
+    request: Request = None,
 ):
     """Trigger missing forum-topic creation in the background."""
     import main as app_main
@@ -266,13 +281,15 @@ async def admin_sync_new_forum(
     return {"success": True, "queued": "forum_sync"}
 
 
-@router.post("/scraper/catch-up")
+@router.post("/scraper/catch-up", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def admin_scraper_catchup(
     force: str | None = Query(
         None,
         pattern="^(parliament|diavgeia_municipal|bill_lifecycle|forum_sync|cplm_refresh|all)$",
     ),
     _key=Depends(verify_admin),
+    request: Request = None,
 ):
     """Trigger catch-up for overdue scraper jobs (background, idempotent)."""
     import asyncio
@@ -314,10 +331,12 @@ async def admin_scraper_catchup(
     return {"accepted": True, "jobs_triggered": triggered, "skipped": skipped, "force": force}
 
 
-@router.post("/diavgeia/resolve-orgs")
+@router.post("/diavgeia/resolve-orgs", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def admin_resolve_orgs(
     _key=Depends(verify_admin),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Resolve all [unknown:XXX] org names via Diavgeia API."""
     import re
@@ -352,10 +371,12 @@ async def admin_resolve_orgs(
     return {"success": True, "resolved": resolved, "failed": failed, "total": len(rows)}
 
 
-@router.post("/scraper/enrich-all")
+@router.post("/scraper/enrich-all", dependencies=[Depends(enforce_route_limit)])
+@generate
 async def admin_enrich_all(
     _key=Depends(verify_admin),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Enrich all parliament bills missing text (4-channel pipeline)."""
     from services.parliament_fetcher import enrich_all_bills
@@ -363,10 +384,12 @@ async def admin_enrich_all(
     return {"success": True, **stats}
 
 
-@router.post("/diavgeia/convert-to-bills")
+@router.post("/diavgeia/convert-to-bills", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def admin_convert_diavgeia(
     _key=Depends(verify_admin),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Convert new Diavgeia Α.2 decisions into parliament_bills."""
     from services.diavgeia_scraper import convert_decisions_to_bills
@@ -374,10 +397,12 @@ async def admin_convert_diavgeia(
     return {"success": True, **stats}
 
 
-@router.delete("/bills/{bill_id}/votes")
+@router.delete("/bills/{bill_id}/votes", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def admin_reset_votes(
     bill_id: str, confirm: str = Query(...),
-    _key=Depends(verify_admin), db: AsyncSession = Depends(get_db)
+    _key=Depends(verify_admin), db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """DEV ONLY: Alle Votes für ein Bill löschen."""
     if os.environ.get("ENVIRONMENT") == "production":
@@ -396,8 +421,9 @@ async def admin_reset_votes(
     return {"success": True, "deleted": count, "bill_id": bill_id}
 
 
-@router.get("/stats")
-async def admin_stats(_key=Depends(verify_admin), db: AsyncSession = Depends(get_db)):
+@router.get("/stats", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def admin_stats(_key=Depends(verify_admin), db: AsyncSession = Depends(get_db), request: Request = None):
     """Detaillierte Statistiken."""
     yes     = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.vote == VoteChoice.YES)) or 0
     no      = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.vote == VoteChoice.NO)) or 0
@@ -423,8 +449,9 @@ async def admin_stats(_key=Depends(verify_admin), db: AsyncSession = Depends(get
     }
 
 
-@router.get("/hlr/credits")
-async def admin_hlr_credits(_key=Depends(verify_admin)):
+@router.get("/hlr/credits", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def admin_hlr_credits(_key=Depends(verify_admin), request: Request = None):
     """Exakter HLR-Snapshot für das Dashboard (EKA-06).
 
     Geschütztes Gegenstück zum datensparsamen öffentlichen Endpoint —
@@ -433,8 +460,9 @@ async def admin_hlr_credits(_key=Depends(verify_admin)):
     return await build_hlr_credits_snapshot()
 
 
-@router.post("/scraper/heal-status")
-async def admin_heal_status(_key=Depends(verify_admin)):
+@router.post("/scraper/heal-status", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def admin_heal_status(_key=Depends(verify_admin), request: Request = None):
     """Check auto-healing scraper status and healed selectors."""
     import redis.asyncio as aioredis
     redis_url = os.getenv("REDIS_URL", "redis://redis:6379")
@@ -493,10 +521,12 @@ def _sanitize_logs(text: str) -> str:
     return sanitized
 
 
-@router.post("/logs/explain")
+@router.post("/logs/explain", dependencies=[Depends(enforce_route_limit)])
+@generate
 async def admin_explain_logs(
     _key=Depends(verify_admin),
     lines: int = Query(default=30, ge=5, le=200),
+    request: Request = None,
 ):
     """Ask the assistant to analyze recent API container logs. Secrets are redacted before analysis."""
     from services.ollama_service import ollama_generate, ollama_available
@@ -538,8 +568,9 @@ DOCKER_PROXY_URL = os.getenv("DOCKER_PROXY_URL", "http://docker-proxy:2375")
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
 
 
-@router.get("/logs/containers")
-async def admin_log_containers(_key=Depends(verify_admin)):
+@router.get("/logs/containers", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def admin_log_containers(_key=Depends(verify_admin), request: Request = None):
     """List running containers via docker-proxy. Returns structural data only."""
     import httpx
     try:
@@ -567,8 +598,9 @@ async def admin_log_containers(_key=Depends(verify_admin)):
     return {"containers": containers}
 
 
-@router.get("/logs/ollama", summary="Assistant diagnostics")
-async def admin_log_ollama(_key=Depends(verify_admin)):
+@router.get("/logs/ollama", summary="Assistant diagnostics", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def admin_log_ollama(_key=Depends(verify_admin), request: Request = None):
     """Check assistant reachability and available models."""
     import httpx
     try:
@@ -584,8 +616,9 @@ async def admin_log_ollama(_key=Depends(verify_admin)):
         return {"reachable": False, "models": [], "active_model": None}
 
 
-@router.get("/logs/stream")
-async def admin_log_stream(_key=Depends(verify_admin)):
+@router.get("/logs/stream", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def admin_log_stream(_key=Depends(verify_admin), request: Request = None):
     """Return last 100 sanitized API container log lines via docker-proxy."""
     import httpx
     try:
@@ -619,10 +652,12 @@ async def admin_log_stream(_key=Depends(verify_admin)):
         raise HTTPException(504, "Docker proxy timeout")
 
 
-@router.post("/maintenance/resolve-org-labels")
+@router.post("/maintenance/resolve-org-labels", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def admin_resolve_org_labels(
     _key=Depends(verify_admin),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """
     NEA-272: Resolve [unknown:UID] organization labels in diavgeia_decisions
@@ -699,11 +734,13 @@ async def admin_resolve_org_labels(
     }
 
 
-@router.post("/bills/{bill_id}/fetch-text")
+@router.post("/bills/{bill_id}/fetch-text", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def admin_fetch_bill_text(
     bill_id: str,
     _key=Depends(verify_admin),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Fetch bill text from parliament via Jina Reader + update DB."""
     import redis.asyncio as aioredis
@@ -716,12 +753,14 @@ async def admin_fetch_bill_text(
         await r.aclose()
 
 
-@router.post("/bills/{bill_id}/set-text")
+@router.post("/bills/{bill_id}/set-text", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def admin_set_bill_text(
     bill_id: str,
     req: BillTextRequest,
     _key=Depends(verify_admin),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Manually set bill text (for when auto-fetch fails)."""
     import redis.asyncio as aioredis
@@ -750,10 +789,12 @@ async def admin_set_bill_text(
 
 # ── Compass Question Generator ────────────────────────────────────────────
 
-@router.post("/compass/generate-questions")
+@router.post("/compass/generate-questions", dependencies=[Depends(enforce_route_limit)])
+@generate
 async def admin_generate_compass(
     _key=Depends(verify_admin),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Generate new compass questions from recent bills using AI and translation."""
     from services.compass_generator import run_compass_update
@@ -765,10 +806,12 @@ async def admin_generate_compass(
     }
 
 
-@router.get("/compass/pending-review")
+@router.get("/compass/pending-review", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def admin_compass_pending(
     _key=Depends(verify_admin),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """List all pending (unapproved) compass questions."""
     result = await db.execute(
@@ -794,11 +837,13 @@ async def admin_compass_pending(
     }
 
 
-@router.post("/compass/approve/{question_id}")
+@router.post("/compass/approve/{question_id}", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def admin_compass_approve(
     question_id: int,
     _key=Depends(verify_admin),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Approve a pending compass question → goes live."""
     stmt = await db.get(Statement, question_id)
@@ -809,11 +854,13 @@ async def admin_compass_approve(
     return {"success": True, "id": question_id, "status": "active"}
 
 
-@router.post("/compass/reject/{question_id}")
+@router.post("/compass/reject/{question_id}", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def admin_compass_reject(
     question_id: int,
     _key=Depends(verify_admin),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Reject a pending compass question."""
     stmt = await db.get(Statement, question_id)

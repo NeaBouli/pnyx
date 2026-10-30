@@ -1,6 +1,9 @@
 import type { ZkServerStatus } from "./zkSemaphoreCore";
 import type { ZkScopeStatus } from "./api";
 
+// Leave room in the shared heavy-read budget for feeds, startup and proofs.
+export const PENDING_ZK_SCOPE_POLL_MS = 15_000;
+
 const ZK_PUBLIC_VOTABLE_STATUSES = new Set(["ACTIVE", "WINDOW_24H", "OPEN_END"]);
 
 export function publicZkVoteScopeForBill(billId: string): string {

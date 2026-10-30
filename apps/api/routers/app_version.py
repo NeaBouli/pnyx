@@ -3,6 +3,7 @@ App Version Check Endpoint
 GET /api/v1/app/version — kein Auth noetig
 Liefert aktuelle Version + Update-Info fuer Mobile Clients.
 """
+from rate_limit import limiter
 from fastapi import APIRouter
 
 from routers.identity import identity_key_check_enabled, identity_rotate_enabled
@@ -31,6 +32,7 @@ DIRECT_APK_URL = "https://github.com/NeaBouli/pnyx/releases/download/v1.0.37/ekk
 
 
 @router.get("/version")
+@limiter.exempt
 async def app_version():
     return {
         "latest_version": LATEST_VERSION,

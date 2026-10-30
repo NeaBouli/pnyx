@@ -79,7 +79,7 @@ import r0_inventory
 # T-9172: Direct APK copy is v1.0.37/vC66 in EL/EN/FAQ JSON-LD; Play stays vC62.
 APPROVED_WIKI_INVENTORY_HASH = {
     "docs/community.html": "3056fa1108b6f6701eda9888653a0eee27153b7c2af26d8865350fb3cd651383",  # T-9153: paused donations; neutral Arweave tooltip, no acquisition prompts or exchange links
-    "docs/wiki/api.html": "bc4f65e29392765b7302a8f6e638a6e86a8d41066041cb00a22faa05c12677c5",  # T-9148: reviewed EL/EN AI wording
+    "docs/wiki/api.html": "84ae43334fce215fbc952d1417d3fc9a8e9383266937a5c409ce577a42530445",  # B01 / PR #706: explicit read/heavy/generate classes and bounded work
     "docs/wiki/architecture.html": "15bf107d472a1a299c1a0f91ad42c90d6542146eb8f384b09f0ee2d39b0c34ca",
     "docs/wiki/broadcasting.html": "b5e2ee8a6c84697b9e5921d1910adc7a222de8fc41630f72cffa7c61aba106e0",
     "docs/wiki/contributing.html": "44b72f926ea13ed3d6000269ac8be6444997d8096f6d8f9377a533f29f53d842",

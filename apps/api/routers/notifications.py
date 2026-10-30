@@ -13,8 +13,8 @@ import json
 import logging
 from datetime import datetime, timezone
 from typing import AsyncGenerator, Optional
-from rate_limit import limiter
-from fastapi import APIRouter, Query, Request, WebSocket, WebSocketDisconnect, HTTPException, Depends
+from rate_limit import enforce_route_limit, limiter, public_heavy, public_read
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from dependencies import verify_admin_key
 
 logger = logging.getLogger(__name__)
@@ -133,11 +133,13 @@ async def websocket_endpoint(websocket: WebSocket, bill_id: Optional[str] = Quer
         event_bus.unsubscribe(queue)
 
 
-@router.post("/test/publish")
+@router.post("/test/publish", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def test_publish(
     event_type: str = Query("bill.status_changed"),
     bill_id: str = Query("GR-2025-0001"),
     _auth: bool = Depends(verify_admin_key),
+    request: Request = None,
 ):
     """DEV: Test Event publishen."""
 
@@ -145,8 +147,9 @@ async def test_publish(
     return {"published": True, "event_type": event_type, "subscribers": event_bus.subscriber_count}
 
 
-@router.get("/status")
-async def notifications_status():
+@router.get("/status", dependencies=[Depends(enforce_route_limit)])
+@public_read
+async def notifications_status(request: Request = None):
     return {
         "module": "MOD-07 Push Notifications", "status": "active",
         "subscribers": event_bus.subscriber_count,

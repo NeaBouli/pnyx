@@ -21,11 +21,9 @@ from routers import admin, public_api, representative
 
 WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 ADMIN_GUARDS = {verify_admin_key, admin.verify_admin, representative._verify_admin}
-AUTH_GUARDS = {representative.verify_rep_token}
+AUTH_GUARDS = {representative.verify_rep_token, *ADMIN_GUARDS}
 
-# Preserve established Redis policies without installing a second counter.
-# Provider callbacks deliberately have no citizen-IP quota: providers share
-# source IPs and retry/batch events; their existing verification stays required.
+# Handler quotas are limit classes, not exemptions.
 WRITE_EXCEPTIONS = {
     ("POST", "/api/v1/identity/verify"): "Atomic HLR Redis guard: 5/IP/min, 20/IP/day, 3/number/day and 300s cooldown.",
     ("POST", "/api/v2/identity/verify"): "Uses the same atomic HLR Redis guard as v1 registration.",
@@ -33,87 +31,17 @@ WRITE_EXCEPTIONS = {
     ("POST", "/api/v1/newsletter/subscribe"): "Redis: 10/IP/hour and 3/email/day; confirmed subscriptions return without consuming quota.",
     ("POST", "/api/v1/contact/ngo"): "Existing Redis guard: 3/IP/hour before sending mail.",
     ("POST", "/api/v1/notify/register"): "Redis: 600/IP/hour before auth, 20/identity/day for changed device registrations.",
-    ("POST", "/api/v1/payments/webhook"): "Stripe signature verification and event deduplication; preserve provider retries and bursts.",
-    ("POST", "/api/v1/payments/webhook/paypal"): "PayPal IPN verification and transaction deduplication; preserve provider retries and bursts.",
-    ("POST", "/api/v1/newsletter/webhook/brevo"): "Authenticated Brevo event batches; preserve provider retries and bursts.",
 }
-
-# Classify every public router GET, so a new expensive/oracle read cannot hide
-# behind an incomplete path-name heuristic. Public cacheable reads keep the
-# main-branch policy: SSR shares one IP.
 READ_EXCEPTIONS = {
-    "/api/v1/analytics/bill/{bill_id}": "public cacheable read; SSR shares one IP",
-    "/api/v1/analytics/divergence-trends": "public cacheable read; SSR shares one IP",
-    "/api/v1/analytics/info": "public cacheable read; SSR shares one IP",
-    "/api/v1/analytics/overview": "public cacheable read; SSR shares one IP",
-    "/api/v1/analytics/representation": "public cacheable read; SSR shares one IP",
-    "/api/v1/analytics/top-divergence": "public cacheable read; SSR shares one IP",
-    "/api/v1/analytics/votes-timeline": "public cacheable read; SSR shares one IP",
-    "/api/v1/app/version": "Static client update metadata; retain existing polling access policy.",
-    "/api/v1/arweave/bill/{bill_id}": "Single stored archive pointer; no gateway/provider request.",
-    "/api/v1/auth/govgr/family/verify": "public cacheable read; SSR shares one IP",
-    "/api/v1/auth/govgr/info": "Static integration metadata.",
-    "/api/v1/auth/govgr/status": "public cacheable read; SSR shares one IP",
-    "/api/v1/bills/sources/freshness": "public cacheable read; SSR shares one IP",
-    "/api/v1/bills": "Paginated public feed; retain existing SSR access policy.",
-    "/api/v1/bills/trending": "public cacheable read; SSR shares one IP",
-    "/api/v1/bills/{bill_id}": "Single public bill lookup.",
-    "/api/v1/bills/{bill_id}/summary": "public cacheable read; SSR shares one IP",
-    "/api/v1/claude/budget": "public cacheable read; SSR shares one IP",
-    "/api/v1/consensus/representation": "public cacheable read; SSR shares one IP",
-    "/api/v1/cplm/aggregate": "public cacheable read; SSR shares one IP",
-    "/api/v1/cplm/history": "public cacheable read; SSR shares one IP",
-    "/api/v1/decisions": "Paginated public decision feed.",
-    "/api/v1/export/info": "Static format metadata; CSV downloads have explicit limits.",
-    "/api/v1/export/parties.json": "public cacheable read; SSR shares one IP",
-    "/api/v1/export/results.json": "public cacheable read; SSR shares one IP",
-    "/api/v1/identity/hlr/credits": "public cacheable read; SSR shares one IP",
-    "/api/v1/mp/bill/{bill_id}": "public cacheable read; SSR shares one IP",
-    "/api/v1/mp/compare/{party_abbr}": "public cacheable read; SSR shares one IP",
-    "/api/v1/mp/info": "Static module metadata.",
-    "/api/v1/mp/parties": "Small public party catalogue.",
-    "/api/v1/mp/ranking": "public cacheable read; SSR shares one IP",
-    "/api/v1/municipal/{dimos_id}/decisions": "Paginated public municipal decision feed.",
-    "/api/v1/municipal/{dimos_id}/voteable": "public cacheable read; SSR shares one IP",
-    "/api/v1/newsletter/lists": "Static subscription options.",
-    "/api/v1/newsletter/stats": "public cacheable read; SSR shares one IP",
-    "/api/v1/notifications/status": "public cacheable read; SSR shares one IP",
-    "/api/v1/payments/public/finance": "public cacheable read; SSR shares one IP",
-    "/api/v1/payments/status": "public cacheable read; SSR shares one IP",
-    "/api/v1/periferia": "Small public region catalogue.",
-    "/api/v1/periferia/{periferia_id}/dimos": "Bounded public municipality catalogue for one region.",
-    "/api/v1/polis/tickets": "Public ticket list capped at 100 records.",
-    "/api/v1/politicians/": "public cacheable read; SSR shares one IP",
-    "/api/v1/politicians/{ada_number}/questions": "Small public evaluation question catalogue; no personal scores.",
-    "/api/v1/politicians/{ada_number}/scores": "public cacheable read; SSR shares one IP",
-    "/api/v1/public/bills": "Existing shared Redis public-data quota: 100/min/IP or 1000/min/valid key.",
-    "/api/v1/public/bills/{bill_id}/results": "Existing shared Redis public-data quota: 100/min/IP or 1000/min/valid key.",
-    "/api/v1/public/cplm": "Existing shared Redis public-data quota: 100/min/IP or 1000/min/valid key.",
-    "/api/v1/public/cplm/history": "Existing shared Redis public-data quota: 100/min/IP or 1000/min/valid key.",
-    "/api/v1/public/info": "Static API metadata.",
-    "/api/v1/public/representation": "Existing shared Redis public-data quota: 100/min/IP or 1000/min/valid key.",
-    "/api/v1/public/stats": "Existing shared Redis public-data quota: 100/min/IP or 1000/min/valid key.",
-    "/api/v1/public/vaa/parties": "Existing shared Redis public-data quota: 100/min/IP or 1000/min/valid key.",
-    "/api/v1/regions/{periferia_id}/decisions": "Paginated public regional decision feed.",
-    "/api/v1/rep/bills": "Representative-authenticated public bill list capped at 100 records.",
-    "/api/v1/scraper/jobs": "public cacheable read; SSR shares one IP",
-    "/api/v1/vaa/parties": "Small public party catalogue.",
-    "/api/v1/vaa/questions": "Bounded public question lookup.",
-    "/api/v1/vaa/statements": "Bounded public statement lookup.",
-    "/api/v1/vote/results/in-progress": "public cacheable read; SSR shares one IP",
-    "/api/v1/vote/results/latest": "public cacheable read; SSR shares one IP",
-    "/api/v1/vote/{bill_id}/results": "public cacheable read; SSR shares one IP",
-    "/api/v1/zk/receipts/{vote_scope_id}": "public cacheable read; SSR shares one IP",
-    "/api/v1/zk/roots/{vote_scope_id}": "public cacheable read; SSR shares one IP",
-    "/api/v1/zk/roots/{vote_scope_id}/members": "public cacheable read; SSR shares one IP",
-    "/api/v1/zk/scopes/{vote_scope_id}/status": "public cacheable read; SSR shares one IP",
-    "/api/v1/zk/status": "public cacheable read; SSR shares one IP",
+    "/": "Constant API greeting; no database or provider access.",
+    "/health": "Static module manifest and process liveness; no database or provider access.",
+    "/robots.txt": "Constant crawler policy; no database or provider access.",
+    "/api/v1/app/version": "Static release metadata and environment feature flags; no database or provider access.",
+    "/api/v1/version": "Static legacy release metadata; no database or provider access.",
 }
-
-
-# Explicit operator exemptions: adding an admin route requires policy review.
-ADMIN_EXCEPTIONS = {
-    key: "Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota."
+# Preserve the established admin-authentication audit without exemptions.
+ADMIN_AUTH_REQUIRED = {
+    key: "Admin-key authentication required in addition to the route class."
     for key in {
         ('DELETE', '/api/v1/admin/bills/{bill_id}/votes'),
         ('GET', '/api/v1/admin/bills'),
@@ -178,11 +106,7 @@ ADMIN_EXCEPTIONS = {
         ('PUT', '/api/v1/admin/newsletter/preferences'),
     }
 }
-
-DIRECT_DEFAULTS = {
-    "/", "/health", "/api/v1/health/modules", "/api/v1/version",
-    "/api/v1/admin/sentry/status", "/robots.txt",
-}
+DIRECT_DEFAULTS = set()
 FRAMEWORK_DEFAULTS = {"/openapi.json", "/docs", "/docs/oauth2-redirect", "/redoc"}
 
 
@@ -213,26 +137,16 @@ def route_policy(route: Any, method: str) -> tuple[str, str] | None:
     if has_route_limit(route, method):
         name = f"{route.endpoint.__module__}.{route.endpoint.__name__}"
         limits = limiter._route_limits[name]
-        return "explicit", "; ".join(str(item.limit) for item in limits)
-    if key in ADMIN_EXCEPTIONS and is_admin(route):
-        return "admin-exempt", ADMIN_EXCEPTIONS[key]
-    if is_admin(route):
-        return None
+        scopes = {item.scope for item in limits}
+        cls = next((name for name in ("generate", "paypal-verify", "public-heavy", "public-read") if name in scopes), "explicit")
+        return cls, "; ".join(f"{item.limit}" + (f" ({item.scope})" if item.scope else "") for item in limits)
     if key in WRITE_EXCEPTIONS:
-        reason = WRITE_EXCEPTIONS[key]
-        return ("provider-exempt" if "/webhook" in route.path else "dedicated-redis", reason)
-    if method == "GET" and route.path in READ_EXCEPTIONS:
-        reason = READ_EXCEPTIONS[route.path]
-        if "shared Redis public-data quota" in reason:
-            if public_api.rate_limit_check not in dependency_calls(route.dependant):
-                return None
-            return "public-shared-redis", reason
-        return "public-read-exempt", reason
-    if method in {"GET", "HEAD"} and (
-        route.path in DIRECT_DEFAULTS and route.endpoint.__module__ == "main"
-        or route.path in FRAMEWORK_DEFAULTS and route.endpoint.__module__.startswith("fastapi.")
-    ):
-        return "direct-default", "60/minute/IP per endpoint via SlowAPI middleware (including health)."
+        return "dedicated-redis", WRITE_EXCEPTIONS[key]
+    name = f"{route.endpoint.__module__}.{route.endpoint.__name__}"
+    if method == "GET" and route.path in READ_EXCEPTIONS and name in limiter._exempt_routes:
+        return "cheap-exempt", READ_EXCEPTIONS[route.path]
+    if method in {"GET", "HEAD"} and route.path in FRAMEWORK_DEFAULTS and route.endpoint.__module__.startswith("fastapi."):
+        return "framework-default", "Development metadata: 60/minute/IP via SlowAPI middleware."
     return None
 
 
@@ -285,7 +199,7 @@ def unclassified_routes(app: FastAPI) -> list[tuple[str, str]]:
 def test_every_http_route_has_an_explicit_policy_class() -> None:
     assert not (missing := unclassified_routes(main.app)), f"Unclassified HTTP routes: {missing}"
     actual = {(method, route.path): route for route in iter_api_routes(main.app.routes) for method in route.methods}
-    for key, reason in ADMIN_EXCEPTIONS.items():
+    for key, reason in ADMIN_AUTH_REQUIRED.items():
         assert key in actual, f"Stale admin policy: {key}"
         assert is_admin(actual[key]), f"Admin policy has lost authentication: {key}"
         assert reason.strip()
@@ -349,7 +263,7 @@ def test_every_public_write_has_an_explicit_rate_limit() -> None:
     assert not (missing := uncovered_routes(main.app)), f"Unprotected public writes: {missing}"
 
 
-def test_every_public_router_get_has_a_limit_or_reviewed_reason() -> None:
+def test_every_public_router_get_has_a_limit_or_cheap_exemption() -> None:
     missing = []
     for route in iter_api_routes(main.app.routes):
         if "GET" not in route.methods or not route.endpoint.__module__.startswith("routers.") or is_admin(route):
@@ -417,3 +331,27 @@ def test_rate_limit_audit_requires_throttling_before_auth_dependency(guard_order
     assert uncovered_routes(app) == (
         [] if guard_order == "before_auth" else [("POST", "/api/v1/authenticated")]
     )
+
+
+@pytest.mark.parametrize("path", sorted(READ_EXCEPTIONS))
+def test_exempt_routes_are_constant_cost(path, monkeypatch):
+    """Any database/provider work is a regression in these exact exemptions."""
+    from unittest.mock import AsyncMock
+    from fastapi.testclient import TestClient
+    from sqlalchemy.ext.asyncio import AsyncSession
+    import httpx
+    import redis.asyncio as redis
+
+    forbidden = AsyncMock(side_effect=AssertionError("Exemption performed I/O"))
+    monkeypatch.setattr(AsyncSession, "execute", forbidden)
+    monkeypatch.setattr(AsyncSession, "get", forbidden)
+    monkeypatch.setattr(httpx.AsyncClient, "request", forbidden)
+    monkeypatch.setattr(redis.Redis, "execute_command", forbidden)
+    monkeypatch.setattr(limiter, "enabled", True)
+    client = TestClient(main.app)
+    try:
+        for _ in range(125):
+            assert client.get(path).status_code == 200
+    finally:
+        client.close()
+    forbidden.assert_not_awaited()

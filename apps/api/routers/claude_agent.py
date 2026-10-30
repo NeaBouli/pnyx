@@ -6,9 +6,10 @@ EKA-61: The public POST /api/v1/claude/ask endpoint was removed fail-closed.
 It bypassed every guardrail and tracked the token budget only post-hoc.
 Usage tracking for internal analysis jobs stays in services/claude_usage.py.
 """
+from rate_limit import enforce_route_limit, public_read
 import os
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, Request
 import redis.asyncio as aioredis
 
 from services.claude_usage import read_budget
@@ -23,8 +24,9 @@ async def _redis():
     return aioredis.from_url(REDIS_URL, decode_responses=True)
 
 
-@router.get("/budget")
-async def get_budget():
+@router.get("/budget", dependencies=[Depends(enforce_route_limit)])
+@public_read
+async def get_budget(request: Request = None):
     """Live budget status for community.html tile."""
     r = await _redis()
     return await read_budget(r, api_key_configured=bool(ANTHROPIC_API_KEY))

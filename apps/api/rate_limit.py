@@ -6,11 +6,13 @@ import logging
 import math
 import os
 import time
+import threading
 
 from fastapi import Request
 from fastapi.exception_handlers import http_exception_handler
 from fastapi.responses import JSONResponse, Response
 from limits import RateLimitItem
+from limits.storage import MemoryStorage
 from limits.strategies import FixedWindowRateLimiter
 from limits.util import WindowStats
 from slowapi import Limiter
@@ -44,6 +46,50 @@ class CountsOnlyFilter(logging.Filter):
 _logger = logging.getLogger("slowapi")
 if not any(isinstance(item, CountsOnlyFilter) for item in _logger.filters):
     _logger.addFilter(CountsOnlyFilter())
+
+
+class BoundedMemoryStorage(MemoryStorage):
+    """Fixed-window storage: never discard a live counter to admit a new IP.
+
+    One lock covers admission and increments, including requests on different
+    worker threads. Expiry is lazy; no per-key locks or timer threads accumulate.
+    Returning infinity on failed admission lets limits produce its normal 429.
+    """
+
+    def __init__(self, max_buckets: int = 10_000):
+        super().__init__()
+        self.timer.cancel()
+        self.max_buckets = max_buckets
+        self._capacity_lock = threading.RLock()
+
+    def _expire(self) -> None:
+        now = time.time()
+        for key in [key for key, end in self.expirations.items() if end <= now]:
+            self.storage.pop(key, None)
+            self.expirations.pop(key, None)
+
+    def incr(self, key: str, expiry: float, amount: int = 1) -> int:
+        with self._capacity_lock:
+            self._expire()
+            if key not in self.storage:
+                if len(self.storage) >= self.max_buckets:
+                    return math.inf
+                self.expirations[key] = time.time() + expiry
+            self.storage[key] += amount
+            return self.storage[key]
+
+    def get(self, key: str) -> int:
+        with self._capacity_lock:
+            self._expire()
+            return self.storage.get(key, 0)
+
+    def clear(self, key: str) -> None:
+        with self._capacity_lock:
+            super().clear(key)
+
+    def reset(self) -> int:
+        with self._capacity_lock:
+            return super().reset()
 
 
 class ConservativeMemoryLimiter(FixedWindowRateLimiter):
@@ -80,8 +126,8 @@ def get_rate_limit_key(request: Request) -> str:
 # FastAPI includes lazy routers via _IncludedRouter (no top-level endpoint).
 # SlowAPI skips default_limits for those routes. The 60/min default is
 # NOT an API-wide guarantee: router writes need an explicit decorator or a
-# handler-level Redis guard. tests/test_rate_limit_coverage.py audits the
-# registered app, with reasoned exceptions for Redis guards/provider callbacks.
+# handler-level Redis guard. The coverage gate audits every registered method,
+# permitting only five tested constant-cost exemptions.
 def create_limiter(*, storage_uri: str | None = None, enabled: bool | None = None) -> Limiter:
     """Create the same shared-store and conservative-fallback policy in every worker."""
     uri = storage_uri or get_rate_limit_storage_uri()
@@ -96,11 +142,33 @@ def create_limiter(*, storage_uri: str | None = None, enabled: bool | None = Non
         key_prefix="ekklesia-api",
         enabled=enabled if enabled is not None else os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true",
     )
+    instance._fallback_storage = BoundedMemoryStorage()
     instance._fallback_limiter = ConservativeMemoryLimiter(instance._fallback_storage)
+    if uri == "memory://":
+        instance._storage = BoundedMemoryStorage()
+        instance._limiter = FixedWindowRateLimiter(instance._storage)
     return instance
 
 
 limiter = create_limiter()
+
+# Shared scopes make target IDs, query parameters and route rotation irrelevant.
+public_read = limiter.shared_limit("120/minute", scope="public-read")
+public_heavy = limiter.shared_limit("20/minute", scope="public-heavy")
+
+
+def global_key(request: Request) -> str:
+    return "global"
+
+
+def generate(endpoint):
+    endpoint = limiter.shared_limit("5/minute", scope="generate")(endpoint)
+    return limiter.shared_limit("30/minute", scope="generate-global", key_func=global_key)(endpoint)
+
+
+def paypal_verify(endpoint):
+    endpoint = limiter.shared_limit("10/minute", scope="paypal-verify")(endpoint)
+    return limiter.shared_limit("60/minute", scope="paypal-global", key_func=global_key)(endpoint)
 
 
 def rate_limit_response(

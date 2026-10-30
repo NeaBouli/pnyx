@@ -32,7 +32,7 @@ from keypair import generate_keypair, verify_signature
 from nullifier import generate_nullifier_hash, generate_nullifier_hash_v2, normalize_phone_number
 from hlr import normalize_greek_number, verify_greek_number
 
-from rate_limit import limiter
+from rate_limit import enforce_route_limit, limiter, public_read
 from ip_utils import (
     hashed_rate_subject,
     rate_limit_key_for_ip,
@@ -698,8 +698,9 @@ async def build_hlr_credits_snapshot() -> dict:
     }
 
 
-@router.get("/hlr/credits")
-async def hlr_credits():
+@router.get("/hlr/credits", dependencies=[Depends(enforce_route_limit)])
+@public_read
+async def hlr_credits(request: Request = None):
     """
     Öffentlicher Endpoint — grober HLR-Betriebszustand für die Community-Kachel.
 

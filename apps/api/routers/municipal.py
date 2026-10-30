@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from rate_limit import limiter
+from rate_limit import enforce_route_limit, limiter, public_heavy, public_read
 from services.small_cell import suppress_public_cells
 from models import (
     Periferia, Dimos, Decision, GovernanceLevel, BillStatus,
@@ -28,10 +28,12 @@ router = APIRouter(prefix="/api/v1", tags=["MOD-16 Municipal"])
 
 # ─── GET /api/v1/periferia ────────────────────────────────────────────────────
 
-@router.get("/periferia")
+@router.get("/periferia", dependencies=[Depends(enforce_route_limit)])
+@public_read
 async def list_periferies(
     is_active: Optional[bool] = Query(True, description="Filter by active status"),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """List all Periferies (Regions) of Greece."""
     stmt = select(Periferia)
@@ -53,11 +55,13 @@ async def list_periferies(
 
 # ─── GET /api/v1/periferia/{id}/dimos ─────────────────────────────────────────
 
-@router.get("/periferia/{periferia_id}/dimos")
+@router.get("/periferia/{periferia_id}/dimos", dependencies=[Depends(enforce_route_limit)])
+@public_read
 async def list_dimos_by_periferia(
     periferia_id: int,
     is_active: Optional[bool] = Query(True, description="Filter by active status"),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """List all Dimos (Municipalities) within a Periferia."""
     periferia = await db.get(Periferia, periferia_id)
@@ -84,7 +88,8 @@ async def list_dimos_by_periferia(
 
 # ─── GET /api/v1/decisions ────────────────────────────────────────────────────
 
-@router.get("/decisions")
+@router.get("/decisions", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def list_decisions(
     level: Optional[GovernanceLevel] = Query(None, description="Filter by governance level"),
     periferia_id: Optional[int] = Query(None, description="Filter by Periferia ID"),
@@ -93,6 +98,7 @@ async def list_decisions(
     limit: int = Query(20, ge=1, le=100, description="Results per page"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """
     List Decisions (municipal/regional/national) with filters.
@@ -138,11 +144,13 @@ async def list_decisions(
 
 # ─── Voteable Decisions ──────────────────────────────────────────────────────
 
-@router.get("/municipal/{dimos_id}/voteable")
+@router.get("/municipal/{dimos_id}/voteable", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
 async def get_voteable_decisions(
     dimos_id: int,
     days: int = Query(90, ge=7, le=365),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Diavgeia decisions for a specific Dimos that can be voted on."""
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)

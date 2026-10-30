@@ -6,11 +6,12 @@ GET  /api/v1/vaa/parties           — Alle Parteien
 POST /api/v1/vaa/match             — Matching-Algorithmus
 """
 from fastapi import APIRouter, Depends, Query, Request
+from typing import Annotated
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from database import get_db
-from rate_limit import limiter
+from rate_limit import enforce_route_limit, limiter, public_read
 from models import Party, Statement, PartyPosition
 
 router = APIRouter(prefix="/api/v1/vaa", tags=["MOD-02 VAA"])
@@ -85,21 +86,25 @@ def calculate_match(
 
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
-@router.get("/statements", response_model=list[StatementOut])
+@router.get("/statements", response_model=list[StatementOut], dependencies=[Depends(enforce_route_limit)])
+@public_read
 async def get_statements(
     lang: str = Query("el", description="Sprache: el oder en"),
-    limit: int = Query(0, description="Max questions (0=all). Random selection if >0 and pool is larger."),
-    db: AsyncSession = Depends(get_db)
+    limit: Annotated[int, Query(ge=1, le=100, description="Maximum questions (1–100).")] = 30,
+    db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
-    """Gibt aktive Thesen zurück. Mit limit>0: zufällige Auswahl aus dem Pool."""
+    """Return a bounded random selection of active statements, in display order."""
     return await _load_active_statements(db=db, limit=limit)
 
 
-@router.get("/questions", response_model=list[StatementOut])
+@router.get("/questions", response_model=list[StatementOut], dependencies=[Depends(enforce_route_limit)])
+@public_read
 async def get_questions(
     lang: str = Query("el", description="Sprache: el oder en"),
-    limit: int = Query(0, description="Max questions (0=all). Random selection if >0 and pool is larger."),
+    limit: Annotated[int, Query(ge=1, le=100, description="Maximum questions (1–100).")] = 30,
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     """Public alias for partner projects that call the VAA items 'questions'."""
     return await _load_active_statements(db=db, limit=limit)
@@ -109,22 +114,19 @@ async def _load_active_statements(db: AsyncSession, limit: int) -> list[Statemen
     result = await db.execute(
         select(Statement)
         .where(Statement.is_active == True)
-        .order_by(Statement.display_order)
+        .order_by(func.random())
+        .limit(limit)
     )
     statements = list(result.scalars().all())
 
-    # If limit set and pool is larger → random subset per category
-    if limit > 0 and len(statements) > limit:
-        import random
-        random.shuffle(statements)
-        statements = statements[:limit]
-        statements.sort(key=lambda s: s.display_order or 0)
+    statements.sort(key=lambda s: s.display_order or 0)
 
     return statements
 
 
-@router.get("/parties", response_model=list[PartyOut])
-async def get_parties(db: AsyncSession = Depends(get_db)):
+@router.get("/parties", response_model=list[PartyOut], dependencies=[Depends(enforce_route_limit)])
+@public_read
+async def get_parties(db: AsyncSession = Depends(get_db), request: Request = None):
     """Gibt alle aktiven Parteien zurück."""
     result = await db.execute(
         select(Party).where(Party.is_active == True).order_by(Party.id)

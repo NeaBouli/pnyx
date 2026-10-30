@@ -14,19 +14,28 @@ All paths below are relative to the base URL.
 
 ## Rate limits
 
-Limits are endpoint-specific; there is no universal 60 requests/minute policy.
+Every public route has an explicit class. Ordinary reads share 120/minute/IP;
+aggregates, analytics, searches, large feeds and exports share 20/minute/IP.
+Generation routes share 5/minute/IP plus 30/minute globally. PayPal verification
+allows 10/minute/IP plus 60/minute globally and four concurrent calls/process.
+Only the static greeting, health manifest, robots and two version endpoints are
+exempt; tests forbid database/provider work on each. Administrative routes and
+provider callbacks also have classes, in addition to authentication/verification.
 The [complete route policy](../docs/operations/API_RATE_LIMIT_COVERAGE.md)
-lists every registered HTTP route and its limit or justified exemption.
-Public API data reads share 100/minute per anonymous IP or 1000/minute per
-valid API key. Signed vote submissions and signed vote-status preflights
-retain 120/minute per IP; personal reads retain their existing route quotas.
-Public feeds used by server rendering and authenticated administrative batch
-operations have explicit exemptions from citizen-IP quotas. Provider webhooks
-retain signature/provider authentication and deduplication.
+lists every registered HTTP route, shared scope and exemption justification.
+Public data reads retain their additional 100/minute anonymous-IP or
+1000/minute valid-key budget. Unavailable key validation uses the anonymous
+counter. API keys do not bypass the read/heavy classes. Signed votes and signed
+status preflights retain 120/minute/IP; QR polling retains 600/minute/IP and
+30/minute per validated session. Export pages default to 100 bills (maximum 500,
+offset up to 10,000). VAA questions/statements default to 30 (range 1–100).
+Summary languages are limited to `el` and `en`.
 
 Workers share Redis counters when `RATE_LIMIT_STORAGE_URI` (or `REDIS_URL`)
 is configured. Counter outages use memory per process at half the normal quota
 (rounded down, minimum one); these counters are not shared across workers.
+Both local counter stores cap at 10,000 live buckets and reject new buckets
+with 429 at capacity without evicting live counters.
 Separate data stores, locks and paid-provider fail-closed guards still require
 Redis. Client IP attribution accepts forwarded headers only from configured
 trusted proxy hops. Limiter logs contain event counts without identifiers.
