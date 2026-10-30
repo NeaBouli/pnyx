@@ -254,4 +254,6 @@ async def test_function_matches_python_visibility_on_edge_cases(postgres: Any) -
         "FROM pg_proc p JOIN pg_language l ON l.oid = p.prolang "
         "WHERE p.oid = 'public_bill_sensitive(text,text,text,text)'::regprocedure"
     ))).one()
-    assert tuple(properties) == ("plpgsql", "i", "s", 10000, False)
+    # asyncpg returns PostgreSQL's single-byte "char" columns as bytes.
+    decoded = tuple(v.decode() if isinstance(v, bytes) else v for v in properties)
+    assert decoded == ("plpgsql", "i", "s", 10000, False)
