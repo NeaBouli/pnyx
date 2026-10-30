@@ -653,7 +653,7 @@ async def main() -> None:
                         """
                         UPDATE parliament_bills
                         SET summary_short_el=$1, analysis_el=$2, summary_long_el=$3, updated_at=NOW(),
-                            generated_content_provenance=COALESCE(generated_content_provenance, '{}'::jsonb) || $5::jsonb
+                            generated_content_provenance=COALESCE(NULLIF(generated_content_provenance, 'null'::jsonb), '{}'::jsonb) || $5::jsonb
                         WHERE id=$4
                         """,
                         (result.get("summary_short_el") or "").strip(),

@@ -77,3 +77,51 @@ def test_share_threshold_and_short_pill_acronym() -> None:
 def test_english_fields_require_integrity_without_greek_share() -> None:
     assert check_generated_text("The regulation defines a synthetic procedure.", field="summary_short_en").ok
     assert not check_generated_text("I'm sorry, I cannot provide this.", field="summary_short_en").ok
+
+
+@pytest.mark.parametrize("text,reason", [
+    ("Δυστυχώς, δεν μπορώ να παράσχω σύνοψη…", "refusal_or_meta"),
+    ("Δεν έχω πρόσβαση στο έγγραφο…", "refusal_or_meta"),
+    ("Παρακαλώ, δώστε μου το κείμενο για να το αναλύσω.", "refusal_or_meta"),
+    ("**Απάντηση**: Η ρύθμιση αφορά τις υπηρεσίες.", "refusal_or_meta"),
+    ("Η ρύθμιση για τη δημόσια διοίκηση provides new rules για τη διαδικασία.", "non_greek"),
+    ("Η ρύθμιση για τη δημόσια διοίκηση содержит новые правила.", "foreign_script"),
+    ("Η ρύθμιση για τη δημόσια διοίκηση 包含新规则.", "foreign_script"),
+    ("Η «Это русское описание документа» αφορά τη διαδικασία.", "foreign_script"),
+    ("Η ρύθμιση â€œαφοράâ€ τη διαδικασία.", "mojibake"),
+    ("Η ρύθμιση â€” αφορά τη διαδικασία.", "mojibake"),
+    ("Η ρύθμιση â€¦ αφορά τη διαδικασία.", "mojibake"),
+    ("ERROR", "refusal_or_meta"),
+])
+def test_review_failure_regressions(text: str, reason: str) -> None:
+    assert reason in check_generated_greek(text, field="pill_el").reasons
+
+
+@pytest.mark.parametrize("text", [
+    "Η Εσθονία χρησιμοποιείται ως μοντέλο για την ψηφιακή διακυβέρνηση.",
+    "Η κατάθεση αναφέρει «I cannot endorse this proposal» ως δήλωση του μάρτυρα.",
+    "Η ρύθμιση χρησιμοποιεί «γνήσια εισαγωγικά», … και — στη διατύπωση.",
+    "COVID-19", "ΕΕ COVID-19", "ΕΕ API", "GDPR", "H1N1", "B2B",
+])
+def test_review_legitimate_regressions(text: str) -> None:
+    assert check_generated_greek(text, field="pill_el").ok
+
+
+@pytest.mark.parametrize("text", ["Η " + "«" * 99_998, "Η " + "\n \t" * 33_334, "A" * 100_000, "COVID-" + "9" * 99_993 + "a"],
+                         ids=["unclosed-quotes", "blank-lines", "latin-word", "alphanumeric-token"])
+def test_large_inputs_complete_in_half_second(text: str) -> None:
+    from time import perf_counter
+
+    started = perf_counter()
+    check_generated_greek(text, field="summary_long_el")
+    assert perf_counter() - started < 0.5
+
+
+@pytest.mark.parametrize("text", [
+    "Δεν μπορώ να δημιουργήσω περίληψη χωρίς το έγγραφο.",
+    "Χρειάζομαι το πλήρες κείμενο του εγγράφου.",
+    "Παρακαλώ να μου στείλετε το έγγραφο.",
+    "Μπορείτε να μου παρέχετε το κείμενο;",
+])
+def test_greek_requests_for_input_are_not_legislative_prose(text: str) -> None:
+    assert "refusal_or_meta" in check_generated_greek(text, field="summary_short_el").reasons

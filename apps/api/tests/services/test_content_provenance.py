@@ -95,3 +95,13 @@ def test_manual_clear_removes_only_selected_ownership():
     assert bill.generated_content_provenance == {
         "pill_el": content_sha256("Pill")
     }
+
+
+def test_provenance_none_serializes_to_sql_null() -> None:
+    from models import ParliamentBill
+    from sqlalchemy.dialects.postgresql.asyncpg import PGDialect_asyncpg
+
+    column_type = ParliamentBill.__table__.c.generated_content_provenance.type
+    processor = column_type.dialect_impl(PGDialect_asyncpg()).bind_processor(PGDialect_asyncpg())
+    assert column_type.none_as_null is True
+    assert processor is not None and processor(None) is None

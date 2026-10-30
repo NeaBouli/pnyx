@@ -36,12 +36,13 @@ class Connection:
         self.writes: list[tuple[str, tuple[Any, ...]]] = []
         self.race = False
 
-    async def fetch(self, query: str) -> list[dict[str, Any]]:
-        assert query.startswith("SELECT ")
-        return self.rows
+    async def cursor(self, query: str, *, prefetch: int) -> AsyncIterator[dict[str, Any]]:
+        assert query.startswith("SELECT ") and prefetch == 100
+        for row in self.rows:
+            yield row
 
     @asynccontextmanager
-    async def transaction(self) -> AsyncIterator[None]:
+    async def transaction(self, **kwargs: Any) -> AsyncIterator[None]:
         yield
 
     async def execute(self, query: str, *values: Any) -> str:
@@ -90,7 +91,7 @@ async def test_apply_only_unreviewed_owned_failures(tmp_path: Path, invalidate: 
     conn = Connection(rows, backup)
     assert await audit_script.audit(conn, fields=("summary_long_el",), apply=True, backup_path=backup) == 1
     assert len(conn.writes) == 1
-    assert conn.writes[0][1] == ("SYNTH-1", BAD, "summary_long_el", content_sha256(BAD))
+    assert conn.writes[0][1] == ("SYNTH-1", BAD, "summary_long_el", content_sha256(BAD), audit_script.SENSITIVE_PATTERN)
     invalidate.assert_awaited_once()
     assert BAD not in capsys.readouterr().out
 
@@ -140,11 +141,13 @@ class LegacyConnection:
         self.rows, self.backup = rows, backup
         self.writes: list[tuple[str, tuple[Any, ...]]] = []
 
-    async def fetch(self, query: str) -> list[dict[str, Any]]:
-        return self.rows
+    async def cursor(self, query: str, *, prefetch: int) -> AsyncIterator[dict[str, Any]]:
+        assert prefetch == 100
+        for row in self.rows:
+            yield row
 
     @asynccontextmanager
-    async def transaction(self) -> AsyncIterator[None]:
+    async def transaction(self, **kwargs: Any) -> AsyncIterator[None]:
         yield
 
     async def execute(self, query: str, *values: Any) -> str:
@@ -192,7 +195,7 @@ async def test_include_legacy_clears_only_named_unreviewed_failures(
     with backup.open(newline="", encoding="utf-8") as stream:
         assert list(csv.DictReader(stream)) == [{"id": "L-bad", "field": "summary_long_el", "old_value": BAD}]
     [(query, values)] = conn.writes
-    assert values == ("L-bad", BAD, "DIAVGEIA", "summary_long_el")
+    assert values == ("L-bad", BAD, "DIAVGEIA", "summary_long_el", audit_script.SENSITIVE_PATTERN)
     for guard in ("summary_long_el = $2", "ai_summary_reviewed IS NOT TRUE", "source = $3", "? $4::text"):
         assert guard in query
     assert BAD not in query
@@ -205,3 +208,119 @@ async def test_include_legacy_dry_run_writes_nothing(tmp_path: Path) -> None:
     conn = LegacyConnection([_legacy("L-bad")], backup)
     cleared = await audit_script.audit(conn, fields=("summary_long_el",), legacy_sources=frozenset({"DIAVGEIA"}))
     assert cleared == 0 and conn.writes == [] and not backup.exists()
+
+
+@pytest.mark.parametrize("owned", [False, True])
+@pytest.mark.parametrize("marker", ["ΑΜΚΑ", "Α.Μ.Κ.Α", "amka", "ασθεν", "ΕΟΠΥΥ", "eopyy"])
+async def test_sensitive_failure_is_skipped_and_bill_stays_hidden(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], owned: bool, marker: str,
+) -> None:
+    from types import SimpleNamespace
+    from services.bill_visibility import is_public_bill
+
+    value = BAD + " " + marker
+    row = _row("SYNTH-SENSITIVE", owned=owned, value=value)
+    row.update(source="DIAVGEIA", title_el="Συνθετικός τίτλος", summary_short_el=None)
+    assert not is_public_bill(SimpleNamespace(**row))
+    conn = LegacyConnection([row], tmp_path / "sensitive.csv")
+    assert await audit_script.audit(conn, fields=("summary_long_el",), apply=True, backup_path=conn.backup,
+                                    legacy_sources=frozenset({"DIAVGEIA"})) == 0
+    assert "skipped_sensitive\t1\tSYNTH-SENSITIVE" in capsys.readouterr().out
+    assert not conn.writes and not conn.backup.exists()
+    assert not is_public_bill(SimpleNamespace(**row))
+
+
+@pytest.mark.parametrize("apply", [False, True])
+async def test_legacy_fields_restrict_counting_backup_and_apply(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], invalidate: AsyncMock, apply: bool,
+) -> None:
+    row = _legacy("SYNTH-FIELDS")
+    row.update(pill_el="ERROR", summary_short_el="English summary that must remain untouched.")
+
+    class FieldsConnection(LegacyConnection):
+        async def cursor(self, query: str, *, prefetch: int) -> AsyncIterator[dict[str, Any]]:
+            assert "summary_short_el" not in query and "pill_el" not in query
+            yield row
+
+        async def execute(self, query: str, *values: Any) -> str:
+            assert "lower(summary_long_el) ~ $5" in query
+            assert values[-1] == audit_script.SENSITIVE_PATTERN
+            row["summary_long_el"] = None
+            return await super().execute(query, *values)
+
+    conn = FieldsConnection([row], tmp_path / "fields.csv")
+    assert await audit_script.audit(conn, fields=("summary_long_el",), apply=apply, backup_path=conn.backup,
+                                    legacy_sources=frozenset({"DIAVGEIA"})) == int(apply)
+    output = capsys.readouterr().out
+    assert "summary_short_el" not in output and "pill_el" not in output
+    assert "summary_long_el\trefusal_or_meta\t1" in output
+    assert row["pill_el"] == "ERROR" and row["summary_short_el"].startswith("English")
+    if apply:
+        assert row["summary_long_el"] is None
+        with conn.backup.open(newline="", encoding="utf-8") as stream:
+            assert [entry["field"] for entry in csv.DictReader(stream)] == ["summary_long_el"]
+    else:
+        assert not conn.writes and not conn.backup.exists()
+
+
+async def test_cursor_spools_complete_backup_before_batched_updates(tmp_path: Path, invalidate: AsyncMock) -> None:
+    class StreamingConnection:
+        scanned = writes = 0
+        transaction_sizes: list[int] = []
+        current_writes = 0
+
+        @asynccontextmanager
+        async def transaction(self, *, readonly: bool = False) -> AsyncIterator[None]:
+            self.current_writes = 0
+            yield
+            if not readonly:
+                self.transaction_sizes.append(self.current_writes)
+
+        async def cursor(self, query: str, *, prefetch: int) -> AsyncIterator[dict[str, Any]]:
+            assert prefetch == 100
+            for index in range(251):
+                self.scanned += 1
+                yield _row(f"SYNTH-{index}")
+
+        async def execute(self, query: str, *values: Any) -> str:
+            assert self.scanned == 251
+            with backup.open(newline="", encoding="utf-8") as stream:
+                assert sum(1 for _ in csv.DictReader(stream)) == 251
+            self.current_writes += 1
+            self.writes += 1
+            return "UPDATE 1"
+
+    backup = tmp_path / "streamed.csv"
+    conn = StreamingConnection()
+    assert await audit_script.audit(conn, fields=("summary_long_el",), apply=True, backup_path=backup) == 251
+    assert conn.transaction_sizes == [100, 100, 51]
+    assert conn.writes == 251
+
+
+def test_cli_legacy_source_and_field_are_independent(monkeypatch: pytest.MonkeyPatch) -> None:
+    import sys
+
+    monkeypatch.setattr(sys, "argv", [str(SCRIPT), "--include-legacy", "DIAVGEIA", "--fields", "summary_long_el"])
+    args = audit_script.parse_args()
+    assert args.include_legacy == ["DIAVGEIA"] and args.fields == ["summary_long_el"]
+
+
+async def test_clearing_other_fields_cannot_expose_sensitive_bill(tmp_path: Path, invalidate: AsyncMock) -> None:
+    from types import SimpleNamespace
+    from services.bill_visibility import is_public_bill
+
+    row = _legacy("SYNTH-HIDDEN", value=BAD + " ΑΜΚΑ")
+    row.update(title_el="Συνθετικός τίτλος", summary_short_el=BAD)
+    assert not is_public_bill(SimpleNamespace(**row))
+
+    class VisibilityConnection(LegacyConnection):
+        async def execute(self, query: str, *values: Any) -> str:
+            assert "SET summary_short_el = NULL" in query
+            row["summary_short_el"] = None
+            return await super().execute(query, *values)
+
+    conn = VisibilityConnection([row], tmp_path / "hidden.csv")
+    assert await audit_script.audit(conn, fields=("summary_short_el", "summary_long_el"), apply=True,
+                                    backup_path=conn.backup, legacy_sources=frozenset({"DIAVGEIA"})) == 1
+    assert row["summary_short_el"] is None and "ΑΜΚΑ" in row["summary_long_el"]
+    assert not is_public_bill(SimpleNamespace(**row))

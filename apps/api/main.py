@@ -520,7 +520,8 @@ async def scheduled_scrape():
     from services.representation_cache import commit_and_invalidate_representation
     from routers.scraper import prefer_scraped_title, scrape_parliament_bills
     from services.scraper_state import record_run, record_success, record_failure, is_circuit_open
-    from services.content_provenance import accepted_generated_text, apply_generated_content, record_generated_content
+    from services.content_provenance import apply_official_summary
+    from services.error_pages import looks_like_error_page
     from services.source_identity import find_existing_parliament_bill
     from database import AsyncSessionLocal
     from models import ParliamentBill, BillStatus
@@ -561,10 +562,9 @@ async def scheduled_scrape():
                     h = hashlib.sha256(title.encode()).hexdigest()[:8]
                     bill_id = f"GR-AUTO-{h}"
 
-                # Gate generated metadata before either update or insert.
                 b = dict(b)
-                for field in ("pill_el", "summary_short_el", "summary_long_el"):
-                    b[field] = accepted_generated_text(b.get(field), field=field, bill_id=bill_id)
+                if looks_like_error_page(b.get("summary_long_el")):
+                    b["summary_long_el"] = None
 
                 # Parse vote date if available (strip tz for naive DB column)
                 vote_date = None
@@ -601,11 +601,11 @@ async def scheduled_scrape():
                     if b.get("summary_long_el") and not existing_bill.summary_long_el:
                         existing_bill.summary_long_el = b.get("summary_long_el")
                         changed = True
-                    if apply_generated_content(
+                    if apply_official_summary(
                         existing_bill, "summary_short_el", b.get("summary_short_el")
                     ):
                         changed = True
-                    if apply_generated_content(existing_bill, "pill_el", b.get("pill_el")):
+                    if apply_official_summary(existing_bill, "pill_el", b.get("pill_el")):
                         changed = True
                     if submitted_date and existing_bill.submitted_date != submitted_date:
                         existing_bill.submitted_date = submitted_date
@@ -631,10 +631,6 @@ async def scheduled_scrape():
                     summary_short_el=b.get("summary_short_el"),
                     summary_long_el=b.get("summary_long_el"),
                     categories=[b["ministry"]] if b.get("ministry") else None,
-                )
-                record_generated_content(new_bill, "pill_el", b.get("pill_el"))
-                record_generated_content(
-                    new_bill, "summary_short_el", b.get("summary_short_el")
                 )
                 db.add(new_bill)
                 inserted += 1
@@ -1070,9 +1066,8 @@ async def scheduled_completeness_check():
             from models import ParliamentBill, BillStatus
             from services.parliament_fetcher import (
                 _DOCUMENT_BLOCK_HEADING,
-                _is_bad_parliament_text,
                 _is_parliament_document_block_only,
-                _merge_text_with_existing_document_block,
+                store_fetched_text,
                 _fetch_bill_text_result,
             )
 
@@ -1124,11 +1119,7 @@ async def scheduled_completeness_check():
                         text, outcome = await _fetch_bill_text_result(bill.id, bill.parliament_url, source=bill.source)
                         if outcome == "skipped":
                             counts["skipped"] += 1
-                        elif outcome == "fetched" and text and not _is_bad_parliament_text(text):
-                            bill.summary_long_el = _merge_text_with_existing_document_block(
-                                text[:10000],
-                                bill.summary_long_el,
-                            )
+                        elif outcome == "fetched" and store_fetched_text(bill, text, limit=10000):
                             counts["fetched"] += 1
                         else:
                             counts["failed"] += 1

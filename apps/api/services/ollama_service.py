@@ -12,7 +12,7 @@ import os
 import re
 from typing import Any, Mapping, Sequence
 
-from services.content_provenance import accepted_generated_text
+from services.content_provenance import OfficialText, accepted_generated_text
 from services.agent_prompt import (
     UnsafeModelOutputError,
     build_agent_prompt,
@@ -294,7 +294,7 @@ async def summarize_bill(
 
     # Strategy 3: Fallback template (always works)
     fallback = _template_summary(title, pill, status, cats, lang)
-    return accepted_generated_text(fallback, field=field, bill_id=bill_id) or ""
+    return OfficialText(fallback)
 
 
 # ── Divergence Explanation ───────────────────────────────────────────────────

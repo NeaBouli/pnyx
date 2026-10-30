@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pytest
 
-from services.content_provenance import content_sha256
 
 
 SCRIPT_PATH = (
@@ -69,11 +68,14 @@ async def test_apply_update_is_scoped_to_parliament_and_empty_fields_only():
     assert "source = 'PARLIAMENT'" in query
     assert "summary_short_el IS NULL OR btrim(summary_short_el) = ''" in query
     assert "pill_el IS NULL OR btrim(pill_el) = ''" in query
-    assert params == ("Σύνοψη", "Περιγραφή", "GR-test", content_sha256("Σύνοψη"), content_sha256("Περιγραφή"))
+    assert params == ("Σύνοψη", "Περιγραφή", "GR-test")
 
 
-async def test_apply_update_skips_rejected_text() -> None:
+async def test_apply_update_preserves_official_latin_text() -> None:
     conn = FakeConn()
-    result = await backfill.apply_update(conn, {"id": "SYNTH-1"}, "Απάντηση: Αναζήτησε το έγγραφο.", "Περιγραφή")
-    assert result == "UPDATE 0"
-    assert conn.calls == []
+    official = "Ανάθεση στη SYNTHETIC TIMING SYSTEMS AE για το Example Endpoint Package"
+    result = await backfill.apply_update(conn, {"id": "SYNTH-1"}, official, official)
+    assert result == "UPDATE 1"
+    query, params = conn.calls[0]
+    assert params == (official, official, "SYNTH-1")
+    assert "generated_content_provenance" not in query

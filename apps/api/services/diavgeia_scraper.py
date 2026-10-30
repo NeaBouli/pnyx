@@ -347,13 +347,11 @@ async def convert_decisions_to_bills(session: AsyncSession) -> dict:
         title = f"{subject.strip()}"
         pill = f"Διαύγεια: {org_label}" if org_label else "Διαύγεια"
 
-        from services.content_provenance import accepted_generated_text, record_generated_content
-
         bill = ParliamentBill(
             id=bill_id,
             title_el=title,
-            pill_el=accepted_generated_text(pill, field="pill_el", bill_id=bill_id),
-            summary_short_el=accepted_generated_text(title, field="summary_short_el", bill_id=bill_id),
+            pill_el=pill,
+            summary_short_el=title,
             status=BillStatus.OPEN_END,
             governance_level=gov,
             parliament_url=doc_url,
@@ -365,8 +363,6 @@ async def convert_decisions_to_bills(session: AsyncSession) -> dict:
             org_label=_clean_org_label(org_label),
             categories=["Διαύγεια", type_uid],
         )
-        record_generated_content(bill, "pill_el", bill.pill_el)
-        record_generated_content(bill, "summary_short_el", bill.summary_short_el)
 
         try:
             session.add(bill)

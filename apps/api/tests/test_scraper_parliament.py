@@ -759,7 +759,7 @@ async def test_verified_text_replaces_only_exact_legacy_metadata_summary(monkeyp
 
     assert existing.summary_short_el == official_summary
     assert existing.summary_long_el.startswith(official_summary)
-    assert existing.generated_content_provenance["summary_short_el"]
+    assert not (existing.generated_content_provenance or {}).get("summary_short_el")
 
 
 @pytest.mark.asyncio

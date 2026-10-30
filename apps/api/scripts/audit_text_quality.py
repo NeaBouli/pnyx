@@ -16,12 +16,15 @@ import csv
 import json
 import os
 import sys
+import tempfile
 from collections import Counter, defaultdict
+from itertools import islice
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable, Iterator, TextIO
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from services.content_provenance import content_sha256
+from services.content_provenance import contains_sensitive_marker, content_sha256
+from services.public_bill_index import SENSITIVE_PATTERN
 from services.text_quality import GENERATED_TEXT_FIELDS, GREEK_FIELDS, check_generated_text
 
 
@@ -32,7 +35,7 @@ def _ownership(row: Any) -> dict[str, str]:
     return value if isinstance(value, dict) else {}
 
 
-def write_backup(path: Path, failures: list[tuple[str, str, str]]) -> None:
+def write_backup(path: Path, failures: Iterable[tuple[str, str, str]]) -> None:
     """Fail closed if the backup already exists or cannot be made durable."""
     fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
     with os.fdopen(fd, "w", newline="", encoding="utf-8") as backup:
@@ -57,67 +60,92 @@ async def audit(
     if apply and backup_path is None:
         raise ValueError("--apply requires --backup-csv")
     fields = tuple(dict.fromkeys(fields))
-    rows = await conn.fetch(
-        "SELECT id, source, ai_summary_reviewed, generated_content_provenance, "
-        + ", ".join(fields) + " FROM parliament_bills ORDER BY id"
-    )
     counts: Counter[tuple[str, str, str]] = Counter()
     samples: dict[tuple[str, str, str], list[str]] = defaultdict(list)
-    generated: list[tuple[str, str, str]] = []
-    legacy: list[tuple[str, str, str, str]] = []
-    for row in rows:
-        ownership = _ownership(row)
-        for field in fields:
-            value = row[field]
-            quality = check_generated_text(value, field=field)
-            for reason in quality.reasons:
-                key = (row["source"] or "UNKNOWN", field, reason)
-                counts[key] += 1
-                if len(samples[key]) < sample_limit:
-                    samples[key].append(row["id"])
-            if quality.ok or row["ai_summary_reviewed"]:
-                continue
-            if ownership.get(field) == content_sha256(value):
-                generated.append((row["id"], field, value))
-            elif field not in ownership and row["source"] in legacy_sources:
-                legacy.append((row["id"], field, value, row["source"]))
-    print("source\tfield\treason\tcount\tsample_ids")
-    for key, count in sorted(counts.items()):
-        print("\t".join((*key, str(count), ",".join(samples[key]))))
-    print(f"{'APPLY' if apply else 'DRY-RUN'}: {len(rows)} rows; {len(generated)} failing fields with generation ownership; "
-          f"{len(legacy)} failing legacy fields without provenance in {sorted(legacy_sources) or 'no named source'}")
-    if not apply or not (generated or legacy):
-        return 0
-    assert backup_path is not None
-    write_backup(backup_path, generated + [entry[:3] for entry in legacy])
-    updated = 0
-    async with conn.transaction():
-        for bill_id, field, value in generated:
-            # Identifiers are allowlisted above. All values are parameters;
-            # recheck ownership, review status and value against concurrent edits.
-            status = await conn.execute(
-                f"UPDATE parliament_bills SET {field} = NULL, "
-                "generated_content_provenance = generated_content_provenance - $3::text "
-                f"WHERE id = $1 AND {field} = $2 AND ai_summary_reviewed IS NOT TRUE "
-                "AND generated_content_provenance ->> $3::text = $4",
-                bill_id, value, field, content_sha256(value),
-            )
-            updated += int(status.split()[-1])
-        for bill_id, field, value, source in legacy:
-            # Same value/review recheck; still no provenance entry for this field.
-            status = await conn.execute(
-                f"UPDATE parliament_bills SET {field} = NULL "
-                f"WHERE id = $1 AND {field} = $2 AND ai_summary_reviewed IS NOT TRUE AND source = $3 "
-                "AND NOT (coalesce(generated_content_provenance, '{}'::jsonb) ? $4::text)",
-                bill_id, value, source, field,
-            )
-            updated += int(status.split()[-1])
-    if updated:
-        from services.representation_cache import invalidate_representation_cache
+    row_count = generated_count = legacy_count = 0
+    # The server cursor and disk spool bound memory independently of prose volume.
+    with tempfile.TemporaryFile(mode="w+", encoding="utf-8") as candidates:
+        async with conn.transaction(readonly=True):
+            async for row in conn.cursor(
+                "SELECT id, source, ai_summary_reviewed, generated_content_provenance, "
+                + ", ".join(fields) + " FROM parliament_bills ORDER BY id", prefetch=100,
+            ):
+                row_count += 1
+                ownership = _ownership(row)
+                for field in fields:
+                    value = row[field]
+                    sensitive = contains_sensitive_marker(value)
+                    reasons = ("skipped_sensitive",) if sensitive else check_generated_text(value, field=field).reasons
+                    for reason in reasons:
+                        key = (row["source"] or "UNKNOWN", field, reason)
+                        counts[key] += 1
+                        if len(samples[key]) < sample_limit:
+                            samples[key].append(row["id"])
+                    if sensitive or not reasons or row["ai_summary_reviewed"]:
+                        continue
+                    source = None
+                    if ownership.get(field) == content_sha256(value):
+                        generated_count += 1
+                    elif field not in ownership and row["source"] in legacy_sources:
+                        legacy_count += 1
+                        source = row["source"]
+                    else:
+                        continue
+                    if apply:
+                        candidates.write(json.dumps((row["id"], field, value, source)) + "\n")
+        print("source\tfield\treason\tcount\tsample_ids")
+        for key, count in sorted(counts.items()):
+            print("\t".join((*key, str(count), ",".join(samples[key]))))
+        print(f"{'APPLY' if apply else 'DRY-RUN'}: {row_count} rows; {generated_count} failing fields with generation ownership; "
+              f"{legacy_count} failing legacy fields without provenance in {sorted(legacy_sources) or 'no named source'}")
+        if not apply or not (generated_count or legacy_count):
+            return 0
+        assert backup_path is not None
+        write_backup(backup_path, (entry[:3] for entry in _candidates(candidates)))
+        updated = 0
+        # Replay the durable backup's candidates in bounded transactions.
+        entries = _candidates(candidates)
+        while True:
+            batch = list(islice(entries, 100))
+            if not batch:
+                break
+            batch_updated = 0
+            async with conn.transaction():
+                for bill_id, field, value, source in batch:
+                    # Exact value + sensitivity rechecks preserve suppression even
+                    # when a concurrent edit lands between scan and update.
+                    if source is None:
+                        status = await conn.execute(
+                            f"UPDATE parliament_bills SET {field} = NULL, "
+                            "generated_content_provenance = generated_content_provenance - $3::text "
+                            f"WHERE id = $1 AND {field} = $2 AND ai_summary_reviewed IS NOT TRUE "
+                            "AND generated_content_provenance ->> $3::text = $4 "
+                            f"AND NOT (lower({field}) ~ $5)",
+                            bill_id, value, field, content_sha256(value), SENSITIVE_PATTERN,
+                        )
+                    else:
+                        status = await conn.execute(
+                            f"UPDATE parliament_bills SET {field} = NULL "
+                            f"WHERE id = $1 AND {field} = $2 AND ai_summary_reviewed IS NOT TRUE AND source = $3 "
+                            "AND NOT (coalesce(nullif(generated_content_provenance, 'null'::jsonb), '{}'::jsonb) ? $4::text) "
+                            f"AND NOT (lower({field}) ~ $5)",
+                            bill_id, value, source, field, SENSITIVE_PATTERN,
+                        )
+                    batch_updated += int(status.split()[-1])
+            updated += batch_updated
+            if batch_updated:
+                from services.representation_cache import invalidate_representation_cache
 
-        await invalidate_representation_cache()
-    print(f"Cleared {updated} fields; backup: {backup_path}")
-    return updated
+                await invalidate_representation_cache()
+        print(f"Cleared {updated} fields; backup: {backup_path}")
+        return updated
+
+
+def _candidates(stream: TextIO) -> Iterator[tuple[str, str, str, str | None]]:
+    stream.seek(0)
+    for line in stream:
+        bill_id, field, value, source = json.loads(line)
+        yield bill_id, field, value, source
 
 
 def parse_args() -> argparse.Namespace:
@@ -148,9 +176,8 @@ async def main() -> None:
                         apply=True, backup_path=args.backup_csv,
                         legacy_sources=frozenset(args.include_legacy))
         else:
-            async with conn.transaction(readonly=True):
-                await audit(conn, fields=tuple(args.fields), sample_limit=args.samples,
-                            legacy_sources=frozenset(args.include_legacy))
+            await audit(conn, fields=tuple(args.fields), sample_limit=args.samples,
+                        legacy_sources=frozenset(args.include_legacy))
     finally:
         await conn.close()
 

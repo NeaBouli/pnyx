@@ -289,7 +289,7 @@ async def main() -> None:
                 await conn.execute(
                     """
                     UPDATE parliament_bills SET summary_short_el = $1, pill_el = $2,
-                        generated_content_provenance = COALESCE(generated_content_provenance, '{}'::jsonb) || $4::jsonb
+                        generated_content_provenance = COALESCE(NULLIF(generated_content_provenance, 'null'::jsonb), '{}'::jsonb) || $4::jsonb
                     WHERE id = $3 AND (summary_short_el IS NULL OR summary_short_el = '')
                     """,
                     short, pill, bill_id,
@@ -300,7 +300,7 @@ async def main() -> None:
                 await conn.execute(
                     """
                     UPDATE parliament_bills SET summary_short_el = $1,
-                        generated_content_provenance = COALESCE(generated_content_provenance, '{}'::jsonb) || $3::jsonb
+                        generated_content_provenance = COALESCE(NULLIF(generated_content_provenance, 'null'::jsonb), '{}'::jsonb) || $3::jsonb
                     WHERE id = $2 AND (summary_short_el IS NULL OR summary_short_el = '')
                     """,
                     short, bill_id, json.dumps({"summary_short_el": content_sha256(short)}),

@@ -150,3 +150,30 @@ async def test_completeness_deferral_keeps_scheduler_running(monkeypatch, caplog
         "completeness_check", outcome="clean", reason="none", count=0,
     )
     assert len(respx.calls) == 0
+
+
+@pytest.mark.parametrize("generated", [False, True])
+async def test_completeness_records_only_generated_extraction(monkeypatch: pytest.MonkeyPatch, generated: bool) -> None:
+    from services.content_provenance import content_sha256
+
+    candidate = bill("SYNTH-1", "PARLIAMENT")
+    text = "Η απόφαση καθορίζει τις αρμοδιότητες των δημόσιων υπηρεσιών. " * 8
+    job, _ = load_job(monkeypatch, [candidate])
+    fetched = parliament_fetcher.GeneratedExtraction(text) if generated else text
+    monkeypatch.setattr(parliament_fetcher, "_fetch_bill_text_result", AsyncMock(return_value=(fetched, "fetched")))
+    await job()
+    assert candidate.summary_long_el == text
+    assert candidate.generated_content_provenance == ({"summary_long_el": content_sha256(text)} if generated else None)
+
+
+@pytest.mark.parametrize("error", ["Access Denied", "403 Forbidden", "Request Rejected",
+                                  "You don't have permission to access this server.", "Cloudflare Ray ID: synthetic"])
+async def test_completeness_storage_rejects_error_pages(monkeypatch: pytest.MonkeyPatch, error: str) -> None:
+    candidate = bill("SYNTH-1", "PARLIAMENT")
+    job, _ = load_job(monkeypatch, [candidate])
+    monkeypatch.setattr(parliament_fetcher, "_fetch_bill_text_result", AsyncMock(return_value=(error + "\n" + "Συνθετικό κείμενο. " * 20, "fetched")))
+    await job()
+    assert candidate.summary_long_el is None
+    scraper_state.record_success.assert_awaited_once_with(
+        "completeness_check", outcome="degraded", reason="scrape_errors", count=1,
+    )

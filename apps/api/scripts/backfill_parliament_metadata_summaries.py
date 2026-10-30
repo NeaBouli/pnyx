@@ -124,12 +124,6 @@ async def fetch_candidates(conn: Any, *, limit: int, bill_id: str | None) -> lis
 async def apply_update(conn: Any, row: Any, summary: str, pill: str) -> str:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     from services.representation_cache import invalidate_representation_cache
-    from services.content_provenance import accepted_generated_text, content_sha256
-
-    summary = accepted_generated_text(summary, field="summary_short_el", bill_id=row["id"])
-    pill = accepted_generated_text(pill, field="pill_el", bill_id=row["id"])
-    if summary is None or pill is None:
-        return "UPDATE 0"
 
     result = await conn.execute(
         """
@@ -142,12 +136,7 @@ async def apply_update(conn: Any, row: Any, summary: str, pill: str) -> str:
           pill_el = CASE
             WHEN pill_el IS NULL OR btrim(pill_el) = '' THEN $2
             ELSE pill_el
-          END,
-          generated_content_provenance = COALESCE(generated_content_provenance, '{}'::jsonb)
-            || CASE WHEN summary_short_el IS NULL OR btrim(summary_short_el) = ''
-                 THEN jsonb_build_object('summary_short_el', $4::text) ELSE '{}'::jsonb END
-            || CASE WHEN pill_el IS NULL OR btrim(pill_el) = ''
-                 THEN jsonb_build_object('pill_el', $5::text) ELSE '{}'::jsonb END
+          END
         WHERE id = $3
           AND source = 'PARLIAMENT'
           AND (
@@ -158,8 +147,6 @@ async def apply_update(conn: Any, row: Any, summary: str, pill: str) -> str:
         summary,
         pill,
         row["id"],
-        content_sha256(summary),
-        content_sha256(pill),
     )
     await invalidate_representation_cache()
     return result
@@ -167,7 +154,6 @@ async def apply_update(conn: Any, row: Any, summary: str, pill: str) -> str:
 
 async def run(args: argparse.Namespace) -> int:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    from services.content_provenance import accepted_generated_text
 
     import asyncpg
 
@@ -208,11 +194,6 @@ async def run(args: argparse.Namespace) -> int:
                     vote_date=row["parliament_vote_date"],
                 )
                 pill = build_metadata_pill(title_el=title)
-                summary = accepted_generated_text(summary, field="summary_short_el", bill_id=row["id"])
-                pill = accepted_generated_text(pill, field="pill_el", bill_id=row["id"])
-                if summary is None or pill is None:
-                    skipped += 1
-                    continue
                 action = "UPDATE" if args.apply else "DRY_RUN"
                 writer.writerow([row["id"], row["status"], fill_summary, fill_pill, summary, pill, action])
 

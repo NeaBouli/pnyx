@@ -340,8 +340,11 @@ def _load_completeness(monkeypatch, bills, fetch, commit_exc=None, src_path=None
         async def __aexit__(self, *a):
             return False
 
-    def merge(text, existing):
-        return text
+    def store_fetched_text(bill: types.SimpleNamespace, text: str | None, *, limit: int | None = None) -> bool:
+        if not text or text == "BAD":
+            return False
+        bill.summary_long_el = text[:limit] if limit is not None else text
+        return True
 
     fakes = {
         "database": types.SimpleNamespace(AsyncSessionLocal=_CM),
@@ -350,7 +353,7 @@ def _load_completeness(monkeypatch, bills, fetch, commit_exc=None, src_path=None
         "services.parliament_fetcher": types.SimpleNamespace(
             _DOCUMENT_BLOCK_HEADING="DOC", _is_bad_parliament_text=lambda t: t == "BAD",
             _is_parliament_document_block_only=lambda s: False,
-            _merge_text_with_existing_document_block=merge, _fetch_bill_text_result=fetch),
+            store_fetched_text=store_fetched_text, _fetch_bill_text_result=fetch),
     }
     for k, v in fakes.items():
         monkeypatch.setitem(sys.modules, k, v)

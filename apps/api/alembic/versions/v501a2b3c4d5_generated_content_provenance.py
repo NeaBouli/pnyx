@@ -18,7 +18,7 @@ depends_on = None
 def upgrade() -> None:
     op.add_column(
         "parliament_bills",
-        sa.Column("generated_content_provenance", postgresql.JSONB(), nullable=True),
+        sa.Column("generated_content_provenance", postgresql.JSONB(none_as_null=True), nullable=True),
     )
 
 

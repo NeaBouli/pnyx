@@ -449,7 +449,7 @@ async def get_bill_summary(
     import redis.asyncio as aioredis
     import os
     from services.ollama_service import summarize_bill
-    from services.content_provenance import accepted_generated_text
+    from services.content_provenance import OfficialText, accepted_generated_text
 
     # Get bill
     result = await db.execute(
@@ -495,6 +495,8 @@ async def get_bill_summary(
         categories=bill.categories or [],
         bill_id=bill_id,
     )
+    if isinstance(summary, OfficialText):
+        return {"bill_id": bill_id, "summary": summary, "cached": False, "lang": lang, "source": "fallback"}
     summary = accepted_generated_text(summary, field=f"summary_short_{lang}", bill_id=bill_id)
     if not summary:
         raise HTTPException(status_code=503, detail="Summary temporarily unavailable")

@@ -24,15 +24,16 @@ def _load(name: str) -> ModuleType:
 
 @pytest.mark.parametrize("name", ["backfill_summary_short", "backfill_summary_ollama"])
 @pytest.mark.parametrize("text", [BAD, GOOD])
+@pytest.mark.parametrize("existing_pill", [None, "Επίσημη περιγραφή"])
 async def test_backfill_loop_skips_bad_output(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, name: str, text: str,
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, name: str, text: str, existing_pill: str | None,
 ) -> None:
     import asyncpg
     from services import representation_cache
 
     script = _load(name)
     row = {"id": "SYNTH-1", "title_el": "Δοκιμαστικός τίτλος", "summary_long_el": GOOD * 5,
-           "summary_short_el": None, "pill_el": None, "source": "PARLIAMENT", "status": "ANNOUNCED"}
+           "summary_short_el": None, "pill_el": existing_pill, "source": "PARLIAMENT", "status": "ANNOUNCED"}
     conn = SimpleNamespace(fetch=AsyncMock(return_value=[row]), execute=AsyncMock(), close=AsyncMock())
     monkeypatch.setenv("DATABASE_URL", "postgresql://example.invalid/synthetic")
     monkeypatch.setattr(asyncpg, "connect", AsyncMock(return_value=conn))
@@ -52,7 +53,7 @@ async def test_backfill_loop_skips_bad_output(
         monkeypatch.setattr(script.time, "sleep", lambda *a: None)
     await script.main()
     conn.close.assert_awaited_once()
-    if text == BAD:
+    if text == BAD and name != "backfill_summary_short":
         conn.execute.assert_not_awaited()
         invalidate.assert_not_awaited()
         assert BAD not in csv_path.read_text()
@@ -60,8 +61,12 @@ async def test_backfill_loop_skips_bad_output(
         conn.execute.assert_awaited_once()
         invalidate.assert_awaited_once()
         args = conn.execute.await_args.args
-        assert args[1] == GOOD
-        assert "summary_short_el" in json.loads(args[-1])
+        assert args[1] == text
+        if name == "backfill_summary_short":
+            assert "generated_content_provenance" not in args[0]
+        else:
+            assert "NULLIF(generated_content_provenance, 'null'::jsonb)" in args[0]
+            assert "summary_short_el" in json.loads(args[-1])
 
 
 @pytest.mark.parametrize("text", ["Tôi xin lỗi, nhưng tôi không thể cung cấp thông tin.", BAD, "≈ÀÀ«Õ… « ƒ«Ãœ —"])
