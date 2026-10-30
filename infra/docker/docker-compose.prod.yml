@@ -84,6 +84,7 @@ services:
 
   migrator:
     profiles: ["ops"]
+    logging: *default-logging
     build:
       context: ../../
       dockerfile: apps/api/Dockerfile.prod
