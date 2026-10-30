@@ -450,7 +450,7 @@ async def test_github_import_refreshes_only_unchanged_generated_summary():
     existing.parliament_url = None
     existing.submitted_date = None
     existing.parliament_vote_date = None
-    existing.pill_el = "Παλιό pill"
+    existing.pill_el = "Παλιά περιγραφή"
     existing.summary_short_el = "Παλιά αυτόματη σύνοψη"
     existing.summary_long_el = "### Πλήρη έγγραφα\n- [PDF](https://example.test/doc.pdf)"
     existing.categories = None
@@ -467,7 +467,7 @@ async def test_github_import_refreshes_only_unchanged_generated_summary():
             BillImportItem(
                 bill_id="GR-refresh",
                 title_el="Πλήρης τίτλος",
-                pill_el="Νέο pill",
+                pill_el="Νέα περιγραφή",
                 summary_short_el="Νέα αυτόματη σύνοψη",
                 summary_long_el="Νέο κείμενο που δεν επιτρέπεται να αντικαταστήσει το PDF",
             )
@@ -477,7 +477,7 @@ async def test_github_import_refreshes_only_unchanged_generated_summary():
     result = await import_parliament_bills(payload, _auth=True, db=db)
 
     assert result["updated"] == 1
-    assert existing.pill_el == "Νέο pill"
+    assert existing.pill_el == "Νέα περιγραφή"
     assert existing.summary_short_el == "Νέα αυτόματη σύνοψη"
     assert existing.summary_long_el.startswith("### Πλήρη έγγραφα")
 

@@ -23,7 +23,8 @@ from models import (
     BillStatusLog, VoteChoice, Party, Statement, GovernanceLevel,
     IdentityRecord, KeyStatus,
 )
-from services.content_provenance import clear_generated_content
+from services.content_provenance import accepted_generated_text, clear_generated_content
+from services.text_quality import GENERATED_TEXT_FIELDS
 from services.representation_cache import commit_and_invalidate_representation
 
 logger = logging.getLogger(__name__)
@@ -212,7 +213,7 @@ async def admin_update_bill(
     updates = req.model_dump(exclude_none=True)
     for field, value in updates.items():
         setattr(bill, field, value)
-        if field in {"pill_el", "summary_short_el"}:
+        if field in GENERATED_TEXT_FIELDS:
             clear_generated_content(bill, field)
     await commit_and_invalidate_representation(db)
 
@@ -358,6 +359,10 @@ async def admin_resolve_orgs(
         label = await resolve_unknown_label(uid)
         if label:
             new_pill = pill_el.replace(f"[unknown:{uid}]", label)
+            new_pill = accepted_generated_text(new_pill, field="pill_el", bill_id=bill_id)
+            if new_pill is None:
+                failed += 1
+                continue
             await db.execute(
                 text("UPDATE parliament_bills SET pill_el = :pill WHERE id = :id"),
                 {"pill": new_pill, "id": bill_id},
@@ -775,6 +780,7 @@ async def admin_set_bill_text(
     if not content:
         raise HTTPException(422, "Bill text must not be empty")
     bill.summary_long_el = content
+    clear_generated_content(bill, "summary_long_el")
     await commit_and_invalidate_representation(db)
     # Clear cache
     redis_url = os.getenv("REDIS_URL", "redis://redis:6379")

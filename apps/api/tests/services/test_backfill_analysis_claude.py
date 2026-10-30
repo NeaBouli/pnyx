@@ -8,6 +8,8 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
+from services.content_provenance import content_sha256
+
 REPO_ROOT = Path(__file__).resolve().parents[4]
 SCRIPT_PATH = REPO_ROOT / "scripts" / "backfill_analysis_claude.py"
 spec = importlib.util.spec_from_file_location("backfill_analysis_claude", SCRIPT_PATH)
@@ -628,6 +630,7 @@ async def test_main_flag_matrix(
         assert values == (
             FIXTURE_RESULT["summary_short_el"].strip(), FIXTURE_RESULT["analysis_el"].strip(),
             preview["official_text_el"], "GR-1",
+            json.dumps({field: content_sha256(FIXTURE_RESULT[field].strip()) for field in ("summary_short_el", "analysis_el")}),
         )
 
 
@@ -650,6 +653,30 @@ async def test_main_invalid_analysis_is_previewed_but_never_applied(
     assert preview["validation_errors"]
     assert harness.connection.updates == []
     assert harness.connection.close_calls == 1
+
+
+@pytest.mark.parametrize("bad", [
+    "Tôi xin lỗi, nhưng tôi không thể cung cấp thông tin. " * 10,
+    "Απάντηση: Για να βρεις την πληροφορία, αναζήτησε το έγγραφο. " * 10,
+    "≈ÀÀ«Õ… « ƒ«Ãœ — " * 30,
+])
+async def test_main_quality_rejection_is_redacted_and_never_applied(
+    monkeypatch: pytest.MonkeyPatch, main_harness: MainHarness,
+    dummy_provider_key: None, bad: str,
+) -> None:
+    harness = main_harness
+    _set_main_args(monkeypatch, harness, ["--live-calls", "--apply"])
+    harness.gated_call.return_value = (
+        {"summary_short_el": FIXTURE_RESULT["summary_short_el"], "analysis_el": bad}, FIXTURE_USAGE,
+    )
+    await backfill.main()
+    preview_text = (harness.out_dir / "claude_analysis_GR-1.json").read_text(encoding="utf-8")
+    preview = json.loads(preview_text)
+    assert preview["validation_errors"]
+    assert preview["result"]["analysis_el"] == ""
+    assert bad not in preview_text
+    assert bad not in (harness.out_dir / "claude_analysis_GR-1.md").read_text(encoding="utf-8")
+    assert harness.connection.updates == []
 
 
 @pytest.mark.parametrize("apply", [False, True], ids=["preview", "apply"])

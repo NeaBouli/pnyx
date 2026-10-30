@@ -3,7 +3,21 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 from typing import Any
+
+from services.text_quality import check_generated_text
+
+logger = logging.getLogger(__name__)
+
+
+def accepted_generated_text(text: str | None, *, field: str, bill_id: str) -> str | None:
+    """Return accepted prose, logging rejection codes without content."""
+    quality = check_generated_text(text, field=field)
+    if not quality.ok:
+        logger.warning("Generated text rejected bill_id=%s reasons=%s", bill_id, quality.reasons)
+        return None
+    return text
 
 
 SUMMARY_FIELDS = frozenset({"pill_el", "summary_short_el"})
@@ -57,6 +71,9 @@ def apply_generated_content(bill: Any, field: str, candidate: str | None) -> boo
     """Fill or refresh a system-owned summary without touching manual content."""
     if field not in SUMMARY_FIELDS:
         raise ValueError(f"Unsupported generated summary field: {field}")
+    if not candidate:
+        return False
+    candidate = accepted_generated_text(candidate, field=field, bill_id=getattr(bill, "id", "unknown"))
     if not candidate:
         return False
     if getattr(bill, "ai_summary_reviewed", False):

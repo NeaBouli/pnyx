@@ -14,6 +14,7 @@ Rules:
 import argparse
 import asyncio
 import csv
+import json
 import os
 import re
 import sys
@@ -154,7 +155,7 @@ def generate_pill(title: str, long_summary: str) -> str:
 
 # ─── Main ────────────────────────────────────────────────────────────────────
 
-async def main():
+async def main() -> None:
     parser = argparse.ArgumentParser(description="NEA-301: Backfill summary_short_el (PARLIAMENT only)")
     parser.add_argument("--apply", action="store_true", help="Write to DB (default: dry-run)")
     parser.add_argument("--limit", type=int, default=0, help="Limit bills (0=all)")
@@ -179,6 +180,7 @@ async def main():
 
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "apps", "api"))
     from services.representation_cache import invalidate_representation_cache
+    from services.content_provenance import accepted_generated_text, content_sha256
 
     import asyncpg
     conn = await asyncpg.connect(db_url)
@@ -232,19 +234,35 @@ async def main():
             skipped += 1
             continue
 
+        checked_short = accepted_generated_text(short, field="summary_short_el", bill_id=bill_id)
+        checked_pill = accepted_generated_text(pill, field="pill_el", bill_id=bill_id)
+        if checked_short is None or (pill and checked_pill is None):
+            skipped += 1
+            continue
+        short, pill = checked_short, checked_pill
+
         writer.writerow([bill_id, row["status"], len(long_el), short[:200], pill[:120] if pill else "", "UPDATE" if not dry_run else "DRY_RUN"])
 
         if not dry_run:
             if pill:
                 await conn.execute(
-                    "UPDATE parliament_bills SET summary_short_el = $1, pill_el = $2 WHERE id = $3 AND (summary_short_el IS NULL OR summary_short_el = '')",
+                    """
+                    UPDATE parliament_bills SET summary_short_el = $1, pill_el = $2,
+                        generated_content_provenance = COALESCE(generated_content_provenance, '{}'::jsonb) || $4::jsonb
+                    WHERE id = $3 AND (summary_short_el IS NULL OR summary_short_el = '')
+                    """,
                     short, pill, bill_id,
+                    json.dumps({"summary_short_el": content_sha256(short), "pill_el": content_sha256(pill)}),
                 )
                 await invalidate_representation_cache()
             else:
                 await conn.execute(
-                    "UPDATE parliament_bills SET summary_short_el = $1 WHERE id = $2 AND (summary_short_el IS NULL OR summary_short_el = '')",
-                    short, bill_id,
+                    """
+                    UPDATE parliament_bills SET summary_short_el = $1,
+                        generated_content_provenance = COALESCE(generated_content_provenance, '{}'::jsonb) || $3::jsonb
+                    WHERE id = $2 AND (summary_short_el IS NULL OR summary_short_el = '')
+                    """,
+                    short, bill_id, json.dumps({"summary_short_el": content_sha256(short)}),
                 )
                 await invalidate_representation_cache()
 

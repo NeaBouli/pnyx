@@ -520,7 +520,7 @@ async def scheduled_scrape():
     from services.representation_cache import commit_and_invalidate_representation
     from routers.scraper import prefer_scraped_title, scrape_parliament_bills
     from services.scraper_state import record_run, record_success, record_failure, is_circuit_open
-    from services.content_provenance import apply_generated_content, record_generated_content
+    from services.content_provenance import accepted_generated_text, apply_generated_content, record_generated_content
     from services.source_identity import find_existing_parliament_bill
     from database import AsyncSessionLocal
     from models import ParliamentBill, BillStatus
@@ -560,6 +560,11 @@ async def scheduled_scrape():
                 else:
                     h = hashlib.sha256(title.encode()).hexdigest()[:8]
                     bill_id = f"GR-AUTO-{h}"
+
+                # Gate generated metadata before either update or insert.
+                b = dict(b)
+                for field in ("pill_el", "summary_short_el", "summary_long_el"):
+                    b[field] = accepted_generated_text(b.get(field), field=field, bill_id=bill_id)
 
                 # Parse vote date if available (strip tz for naive DB column)
                 vote_date = None

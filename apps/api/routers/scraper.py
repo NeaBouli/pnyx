@@ -38,7 +38,8 @@ from services.ollama_service import (
     ollama_available,
     ollama_json_generate,
 )
-from services.content_provenance import apply_generated_content, record_generated_content
+from services.content_provenance import accepted_generated_text, apply_generated_content, record_generated_content
+from services.text_quality import GENERATED_TEXT_FIELDS
 from services.scraper_http import HostCooldown, SCRAPER_HTTP_HOOKS
 from services.parliament_access import USER_AGENT, RobotsDisallowed, RobotsUnavailable, is_parliament
 from services.source_identity import official_law_id
@@ -247,19 +248,30 @@ def summarize_rule_based(bill_text: str, title_el: str) -> dict:
 
 # ── Provider Router ───────────────────────────────────────────────────────────
 
-async def generate_summaries(bill_text: str, title_el: str) -> dict:
+def _gate_summaries(result: dict, *, bill_id: str) -> dict:
+    """Check provider results again at the persistence boundary."""
+    result = dict(result)
+    for field in GENERATED_TEXT_FIELDS:
+        if field in result:
+            result[field] = accepted_generated_text(result[field], field=field, bill_id=bill_id)
+    return result
+
+
+async def generate_summaries(bill_text: str, title_el: str, *, bill_id: str = "unknown") -> dict:
     """L1: Ollama → L2: HuggingFace → L3: Regel-basiert"""
     result = await summarize_ollama(bill_text, title_el)
-    if result:
+    if result and (checked := _gate_summaries(result, bill_id=bill_id)) == result:
+        result = checked
         result["_provider"] = "ollama"
         return result
 
     result = await summarize_huggingface(bill_text, title_el)
-    if result:
+    if result and (checked := _gate_summaries(result, bill_id=bill_id)) == result:
+        result = checked
         result["_provider"] = "huggingface"
         return result
 
-    result = summarize_rule_based(bill_text, title_el)
+    result = _gate_summaries(summarize_rule_based(bill_text, title_el), bill_id=bill_id)
     result["_provider"] = "rule_based"
     return result
 
@@ -871,11 +883,13 @@ async def fetch_and_store(
         raise HTTPException(422, "Konnte URL nicht abrufen")
 
     text = extract_bill_text(html)
-    summaries = await generate_summaries(text, title_el)
+    summaries = _gate_summaries(
+        await generate_summaries(text, title_el, bill_id=bill_id), bill_id=bill_id,
+    )
 
     bill = ParliamentBill(
         id=bill_id, title_el=title_el, parliament_url=url,
-        title_en=summaries.get("pill_en", "")[:200],
+        title_en=(summaries.get("pill_en") or "")[:200],
         pill_el=summaries.get("pill_el"), pill_en=summaries.get("pill_en"),
         summary_short_el=summaries.get("summary_short_el"),
         summary_short_en=summaries.get("summary_short_en"),
@@ -884,10 +898,8 @@ async def fetch_and_store(
         categories=summaries.get("categories", []),
         status=BillStatus.ANNOUNCED,
     )
-    record_generated_content(bill, "pill_el", summaries.get("pill_el"))
-    record_generated_content(
-        bill, "summary_short_el", summaries.get("summary_short_el")
-    )
+    for field in GENERATED_TEXT_FIELDS:
+        record_generated_content(bill, field, summaries.get(field))
     db.add(bill)
     await commit_and_invalidate_representation(db)
 
@@ -1139,6 +1151,15 @@ async def import_parliament_bills(
             if item.summary_short_el and (not item.official_text_verified or verified_payload_is_bound)
             else metadata_summary_short_el
         )
+        pill_el = accepted_generated_text(pill_el, field="pill_el", bill_id=item.bill_id)
+        summary_short_el = accepted_generated_text(
+            summary_short_el, field="summary_short_el", bill_id=item.bill_id,
+        )
+        summary_long_el = item.summary_long_el
+        if not verified_payload_is_bound:
+            summary_long_el = accepted_generated_text(
+                summary_long_el, field="summary_long_el", bill_id=item.bill_id,
+            )
 
         if existing_bill:
             changed = False
@@ -1168,17 +1189,18 @@ async def import_parliament_bills(
                 ):
                     changed = True
                 if (
-                    item.summary_long_el
+                    summary_long_el
                     and not existing_bill.summary_long_el
-                    and _is_parliament_document_block_only(item.summary_long_el)
+                    and _is_parliament_document_block_only(summary_long_el)
                 ):
-                    existing_bill.summary_long_el = item.summary_long_el
+                    existing_bill.summary_long_el = summary_long_el
                     changed = True
             elif verified_payload_is_bound:
                 if apply_generated_content(existing_bill, "summary_short_el", summary_short_el):
                     changed = True
                 elif (
                     not getattr(existing_bill, "ai_summary_reviewed", False)
+                    and summary_short_el is not None
                     and _is_safe_legacy_metadata_summary(existing_bill.summary_short_el)
                     and existing_bill.summary_short_el != summary_short_el
                 ):
@@ -1206,19 +1228,24 @@ async def import_parliament_bills(
 
         summaries = summarize_rule_based(item.title_el, item.title_el)
         safe_summary_long_el = None
-        if item.summary_long_el:
+        if summary_long_el:
             if verified_payload_is_bound or (
                 not item.official_text_verified
-                and _is_parliament_document_block_only(item.summary_long_el)
+                and _is_parliament_document_block_only(summary_long_el)
             ):
-                safe_summary_long_el = item.summary_long_el
+                safe_summary_long_el = summary_long_el
+
+        english = _gate_summaries({
+            "pill_en": f"Law {item.law_num}: {item.ministry[:80]}" if item.law_num else "",
+            "summary_short_en": f"Law {item.law_num} by {item.ministry}." if item.law_num else "",
+        }, bill_id=item.bill_id)
 
         bill = ParliamentBill(
             id=item.bill_id, title_el=title,
             pill_el=pill_el,
-            pill_en=f"Law {item.law_num}: {item.ministry[:80]}" if item.law_num else "",
+            pill_en=english["pill_en"],
             summary_short_el=summary_short_el,
-            summary_short_en=f"Law {item.law_num} by {item.ministry}." if item.law_num else "",
+            summary_short_en=english["summary_short_en"],
             summary_long_el=safe_summary_long_el,
             categories=summaries.get("categories", ["Νομοθεσία"]),
             status=BillStatus.ANNOUNCED,

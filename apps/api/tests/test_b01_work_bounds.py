@@ -366,7 +366,7 @@ def test_summary_generation_only_uses_allowlisted_cache_keys(limited_app, monkey
     cache = SimpleNamespace(get=AsyncMock(return_value=None), setex=AsyncMock())
     import redis.asyncio as redis
     monkeypatch.setattr(redis, "from_url", lambda *a, **k: cache)
-    generator = AsyncMock(return_value="generated")
+    generator = AsyncMock(return_value="Η ρύθμιση ορίζει τη διαδικασία.")
     monkeypatch.setattr(ollama_service, "summarize_bill", generator)
     assert client.get("/api/v1/bills/first/summary?lang=el").status_code == 200
     assert client.get("/api/v1/bills/first/summary?lang=en").status_code == 200
