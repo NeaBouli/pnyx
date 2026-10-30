@@ -185,8 +185,10 @@ class ParliamentBill(Base):
         Index("idx_bills_status", "status"),
         Index("idx_bills_vote_date", "parliament_vote_date"),
         Index("idx_bills_governance", "governance_level"),
-        Index(PUBLIC_BILL_INDEX, "id", postgresql_where=text(PUBLIC_BILL_INDEX_PREDICATE),
-              postgresql_include=["source", "status", "results_visibility", "governance_level", "dimos_id", "periferia_id"]),
+        Index(
+            PUBLIC_BILL_INDEX, "id", postgresql_where=text(PUBLIC_BILL_INDEX_PREDICATE),
+            postgresql_include=["source", "status", "results_visibility", "governance_level", "dimos_id", "periferia_id"],
+        ),
     )
 
 

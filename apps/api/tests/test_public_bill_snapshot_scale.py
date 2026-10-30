@@ -1,7 +1,5 @@
 """Exercise provenance at asyncpg scale, independent of response detail limits."""
 import asyncio
-import importlib.util
-from pathlib import Path
 import re
 from unittest.mock import AsyncMock
 
@@ -19,6 +17,7 @@ from services.public_bill_snapshot import (
 )
 from services.request_work import SingleFlight
 from services.public_bill_index import PUBLIC_BILL_INDEX, SENSITIVE_PATTERN
+from tests.pg_public_bill_schema import public_metadata_revision
 from tests.test_public_bill_snapshot import snapshot_db, seventeen_votes
 
 
@@ -38,13 +37,19 @@ def test_metadata_index_and_prepared_queries_share_the_frozen_visibility_policy(
         return re.sub(r"\s+", "", sql.lower()).replace("b.", "")
     assert normalize(ddl.split(" WHERE ")[1]) == normalize(predicate)
     assert not params
-    path = Path(__file__).resolve().parents[1] / "alembic/versions/z902a2b3c4d5_public_bill_metadata_index.py"
-    spec = importlib.util.spec_from_file_location("metadata_migration_policy", path)
-    revision = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(revision)
+    revision = public_metadata_revision()
+    assert revision.SENSITIVE_PATTERN == SENSITIVE_PATTERN
+    assert revision.FUNCTION_DDL.count(f"$rx${SENSITIVE_PATTERN}$rx$") == 3
+    assert f"'{SENSITIVE_PATTERN}'" not in revision.FUNCTION_DDL
     assert normalize(revision.PREDICATE) == normalize(predicate)
+    legacy = public_metadata_revision(legacy=True)
+    assert normalize(revision.LEGACY_PREDICATE) == normalize(legacy.PREDICATE)
+    assert legacy.PREDICATE.count(f"'{SENSITIVE_PATTERN}'") == 3
     query = compile_asyncpg(visibility_snapshot_query(candidates=["B1"]))
-    assert SENSITIVE_PATTERN in str(query)
+    assert (
+        "public_bill_sensitive(parliament_bills.source, parliament_bills.title_el, "
+        "parliament_bills.summary_short_el, parliament_bills.summary_long_el)"
+    ) in str(query)
     assert not any(value == SENSITIVE_PATTERN for value in query.params.values())
 
 

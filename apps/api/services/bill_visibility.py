@@ -3,8 +3,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import and_, func, literal, not_, or_, select
+from sqlalchemy import Boolean, and_, func, literal, not_, or_, select
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql.compiler import SQLCompiler
 from sqlalchemy.sql.elements import ColumnElement
+from sqlalchemy.sql.functions import FunctionElement
 
 from models import BillStatus, DiavgeiaDecision, ParliamentBill
 from services.public_bill_index import SENSITIVE_PATTERN
@@ -64,6 +67,31 @@ def _text_contains_sensitive_diavgeia_marker(value: str | None) -> bool:
     return any(term in text for term in DIAVGEIA_SENSITIVE_PUBLIC_TERMS)
 
 
+class _SensitiveDiavgeia(FunctionElement[bool]):
+    type = Boolean()
+    inherit_cache = True
+    _is_implicitly_boolean = True
+
+
+@compiles(_SensitiveDiavgeia)
+def _sensitive_expression(element: _SensitiveDiavgeia, compiler: SQLCompiler, **kwargs: Any) -> str:
+    source, *columns = element.clauses
+    pattern = literal(SENSITIVE_PATTERN, literal_execute=True)
+    checks = [
+        func.lower(func.coalesce(column, literal("", literal_execute=True))).regexp_match(pattern)
+        for column in columns
+    ]
+    expression = and_(
+        source == literal("DIAVGEIA", literal_execute=True), or_(*checks),
+    )
+    return f"({compiler.process(expression, **kwargs)})"
+
+
+@compiles(_SensitiveDiavgeia, "postgresql")
+def _sensitive_function(element: _SensitiveDiavgeia, compiler: SQLCompiler, **kwargs: Any) -> str:
+    return compiler.process(func.public_bill_sensitive(*element.clauses), **kwargs)
+
+
 def sensitive_diavgeia_filter() -> ColumnElement[bool]:
     """SQL predicate for DIAVGEIA rows that must not be shown publicly.
 
@@ -71,17 +99,9 @@ def sensitive_diavgeia_filter() -> ColumnElement[bool]:
     markers seen in live public rows, without blocking every hospital purchase.
     """
 
-    haystacks = (
-        func.lower(func.coalesce(column, literal("", literal_execute=True)))
-        for column in (ParliamentBill.title_el, ParliamentBill.summary_short_el, ParliamentBill.summary_long_el)
-    )
-    # Match the same literal substrings while lowercasing each large text once,
-    # rather than once per marker. Escape punctuation (notably dotted AMKA).
-    pattern = literal(SENSITIVE_PATTERN, literal_execute=True)
-    term_checks = [haystack.regexp_match(pattern) for haystack in haystacks]
-    return and_(
-        ParliamentBill.source == literal("DIAVGEIA", literal_execute=True),
-        or_(*term_checks),
+    return _SensitiveDiavgeia(
+        ParliamentBill.source, ParliamentBill.title_el,
+        ParliamentBill.summary_short_el, ParliamentBill.summary_long_el,
     )
 
 

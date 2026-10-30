@@ -3,33 +3,45 @@
 Run with the existing PNYX_TEST_POSTGRES_URL (loopback, pnyx_test_* DB).
 No planner switches disable sequential scans or force a particular plan.
 """
-import importlib.util
+from collections.abc import AsyncIterator, Iterator
+import itertools
 import json
-from pathlib import Path
+from types import ModuleType, SimpleNamespace
+from typing import Any
 from unittest.mock import patch
 from uuid import uuid4
 
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 import pytest
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy import func, select, text
+from sqlalchemy.engine import Connection
+from sqlalchemy.ext.asyncio import AsyncConnection, create_async_engine
+from sqlalchemy.pool import NullPool
+from sqlalchemy.sql import Select
 
+from models import ParliamentBill
+from services.bill_visibility import (
+    DIAVGEIA_SENSITIVE_PUBLIC_TERMS, is_public_bill, public_bill_filter,
+    public_bill_with_demo_filter,
+)
 from services.public_bill_index import PUBLIC_BILL_INDEX
 from services.public_bill_snapshot import visibility_snapshot_query
+from tests.pg_public_bill_schema import public_metadata_revision
 from tests.pg_vote_schema import disposable_postgres_url, requires_postgres
 
 pytestmark = requires_postgres
 
 
 @pytest.fixture
-async def postgres():
+async def postgres(request: pytest.FixtureRequest) -> AsyncIterator[tuple[AsyncConnection, ModuleType]]:
+    cold = getattr(request, "param", False)
     engine = create_async_engine(disposable_postgres_url())
     schema = "snapshot_" + uuid4().hex
-    async with engine.connect() as connection:
-        connection = await connection.execution_options(isolation_level="AUTOCOMMIT")
-        await connection.exec_driver_sql(f"CREATE SCHEMA {schema}")
-        try:
+    try:
+        async with engine.connect() as connection:
+            connection = await connection.execution_options(isolation_level="AUTOCOMMIT")
+            await connection.exec_driver_sql(f"CREATE SCHEMA {schema}")
             await connection.exec_driver_sql(f"SET search_path TO {schema}")
             await connection.exec_driver_sql("SET plan_cache_mode = force_generic_plan")
             for sql in (
@@ -43,48 +55,71 @@ async def postgres():
                 "CREATE INDEX idx_votes_bill ON citizen_votes (bill_id)",
                 "CREATE TABLE zk_vote_receipts (vote_scope_id varchar(128), vote_commitment varchar(10))",
                 "CREATE INDEX idx_zk_receipts_scope ON zk_vote_receipts (vote_scope_id)",
-                """INSERT INTO parliament_bills
+            ):
+                await connection.exec_driver_sql(sql)
+            if cold:
+                # Disable autovacuum as well: no visibility-map shortcut may hide the
+                # planner regression. Incompressible synthetic hashes force real TOAST.
+                await connection.exec_driver_sql(
+                    "ALTER TABLE parliament_bills SET (autovacuum_enabled = false, toast.autovacuum_enabled = false)"
+                )
+                await connection.exec_driver_sql("""INSERT INTO parliament_bills
+                    SELECT CASE WHEN g % 29 = 0 THEN 'DEMO-' ELSE 'B' END || g,
+                           CASE WHEN g % 19 = 0 THEN 'AMKA' ELSE 'Public procurement' END,
+                           left(payload, 4096), payload,
+                           CASE WHEN g % 10 = 0 THEN 'PARLIAMENT' ELSE 'DIAVGEIA' END,
+                           'OPEN_END', 'ALWAYS', g % 23 = 0, 'NATIONAL', NULL, NULL
+                    FROM generate_series(1,12000) g
+                    CROSS JOIN LATERAL (
+                        SELECT string_agg(md5(g::text || ':' || j::text), ' ') AS payload
+                        FROM generate_series(1,256) j
+                    ) synthetic""")
+            else:
+                await connection.exec_driver_sql("""INSERT INTO parliament_bills
                     SELECT 'B' || g, 'Public bill', '', repeat('ordinary public text ', 150),
                            'PARLIAMENT', 'OPEN_END', 'ALWAYS', FALSE, 'NATIONAL', NULL, NULL
-                    FROM generate_series(1,40000) g""",
+                    FROM generate_series(1,40000) g""")
+            for sql in (
                 "INSERT INTO citizen_votes SELECT id, 'YES' FROM parliament_bills",
                 "INSERT INTO zk_vote_receipts SELECT 'bill:' || id, 'YES' FROM parliament_bills",
             ):
                 await connection.exec_driver_sql(sql)
-            path = Path(__file__).resolve().parents[1] / "alembic/versions/z902a2b3c4d5_public_bill_metadata_index.py"
-            spec = importlib.util.spec_from_file_location("metadata_index_migration", path)
-            revision = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(revision)
-            def migrate(sync):
-                context = MigrationContext.configure(sync)
-                with context.begin_transaction(), patch.object(revision, "op", Operations(context)):
-                    revision.upgrade()
-            # autocommit_block() restores the server default isolation afterwards, so the
-            # migration gets its own connection and this one stays AUTOCOMMIT for VACUUM.
-            async with engine.connect() as migration:
-                await migration.exec_driver_sql(f"SET search_path TO {schema}")
-                await migration.commit()
-                await migration.run_sync(migrate)
+            revision = public_metadata_revision()
+            await migrate(connection, public_metadata_revision(legacy=True), "upgrade")
+            await migrate(connection, revision, "upgrade")
             for table in ("parliament_bills", "citizen_votes", "zk_vote_receipts"):
-                await connection.exec_driver_sql(f"VACUUM (ANALYZE) {table}")
+                await connection.exec_driver_sql(f"ANALYZE {table}" if cold else f"VACUUM (ANALYZE) {table}")
             yield connection, revision
-        finally:
-            # A failed statement or a migration test may leave a transaction open; end it
-            # and drop the schema on a fresh connection so neither masks the real error.
-            await connection.rollback()
-    async with engine.connect() as cleanup:
-        cleanup = await cleanup.execution_options(isolation_level="AUTOCOMMIT")
-        await cleanup.exec_driver_sql(f"DROP SCHEMA IF EXISTS {schema} CASCADE")
-    await engine.dispose()
+    finally:
+        async with engine.connect() as cleanup:
+            cleanup = await cleanup.execution_options(isolation_level="AUTOCOMMIT")
+            await cleanup.exec_driver_sql(f"DROP SCHEMA IF EXISTS {schema} CASCADE")
+        await engine.dispose()
 
 
-def nodes(plan):
+async def migrate(connection: AsyncConnection, revision: ModuleType, action: str) -> None:
+    schema = await connection.scalar(text("SELECT current_schema()"))
+
+    def run(sync: Connection) -> None:
+        context = MigrationContext.configure(sync)
+        with context.begin_transaction(), patch.object(revision, "op", Operations(context)):
+            getattr(revision, action)()
+
+    # autocommit_block() restores server-default isolation. Every migration, including
+    # down/up tests, gets its own connection; the fixture keeps its AUTOCOMMIT setting.
+    async with connection.engine.connect() as migration:
+        await migration.exec_driver_sql(f"SET search_path TO {schema}")
+        await migration.commit()
+        await migration.run_sync(run)
+
+
+def nodes(plan: dict[str, Any]) -> Iterator[dict[str, Any]]:
     yield plan
     for child in plan.get("Plans", []):
         yield from nodes(child)
 
 
-async def explain(connection, query):
+async def explain(connection: AsyncConnection, query: Select[Any]) -> dict[str, Any]:
     compiled = query.compile(dialect=connection.dialect, compile_kwargs={"render_postcompile": True})
     result = await connection.exec_driver_sql(
         "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) " + str(compiled),
@@ -136,15 +171,116 @@ async def test_asyncpg_executes_forty_thousand_ids_and_migration_round_trip(post
     assert await connection.scalar(text(
         "SELECT count(*) FROM parliament_bills b WHERE b.id IN (SELECT unnest(CAST(:ids AS VARCHAR[])))"
     ), {"ids": ids}) == 40_000
-    await connection.commit()
-    def cycle(sync):
-        context = MigrationContext.configure(sync)
-        with context.begin_transaction(), patch.object(revision, "op", Operations(context)):
-            revision.downgrade()
-            revision.upgrade()
-    await connection.run_sync(cycle)
+    await migrate(connection, revision, "downgrade")
+    assert await connection.scalar(text("SELECT to_regclass(:name)"), {"name": PUBLIC_BILL_INDEX}) is None
+    assert await connection.scalar(text("SELECT to_regclass(:name)"), {"name": revision.LEGACY_INDEX_NAME}) is not None
+    assert await connection.scalar(text(
+        "SELECT to_regprocedure('public_bill_sensitive(text,text,text,text)')"
+    )) is None
+    legacy = public_metadata_revision(legacy=True)
+    legacy_definition = await connection.scalar(text(
+        "SELECT pg_get_expr(indpred, indrelid) FROM pg_index WHERE indexrelid = to_regclass(:name)"
+    ), {"name": legacy.INDEX_NAME})
+    assert "public_bill_sensitive" not in legacy_definition
+    assert legacy_definition.count(" ~ ") == 3
+    await migrate(connection, revision, "upgrade")
     assert await connection.scalar(text(
         "SELECT i.indisvalid FROM pg_index i JOIN pg_class c ON c.oid=i.indexrelid "
         "WHERE c.relname=:name AND c.relnamespace=current_schema()::regnamespace"
     ), {"name": PUBLIC_BILL_INDEX}) is True
+    assert await connection.scalar(text("SELECT to_regclass(:name)"), {"name": revision.LEGACY_INDEX_NAME}) is None
     print("asyncpg: 40000 IDs execute via one array bind; concurrent migration down/up valid")
+
+
+@pytest.mark.parametrize("postgres", [True], indirect=True)
+async def test_cold_toasted_population_uses_v2_without_vacuum(postgres: Any) -> None:
+    connection, _ = postgres
+    assert await connection.scalar(text("SHOW enable_seqscan")) == "on"
+    assert await connection.scalar(text(
+        "SELECT relallvisible FROM pg_class WHERE oid = 'parliament_bills'::regclass"
+    )) == 0
+    assert await connection.scalar(text(
+        "SELECT pg_relation_size(reltoastrelid) FROM pg_class WHERE oid = 'parliament_bills'::regclass"
+    )) > 100_000_000
+    for label, query in (
+        ("count(id), public + non-demo", select(func.count(ParliamentBill.id)).where(public_bill_with_demo_filter())),
+        ("visibility snapshot k=0", visibility_snapshot_query(k=0)),
+        ("visibility snapshot k=5", visibility_snapshot_query(k=5)),
+    ):
+        plan = await explain(connection, query)
+        scans = list(nodes(plan))
+        assert any(n.get("Index Name") == PUBLIC_BILL_INDEX for n in scans), json.dumps(plan)
+        assert not any(n.get("Relation Name") == "parliament_bills" and "Seq Scan" in n["Node Type"]
+                       for n in scans), json.dumps(plan)
+        assert not any("public_bill_sensitive" in n.get("Filter", "") for n in scans), json.dumps(plan)
+        print(f"\nEXPLAIN {label}:\n{json.dumps(plan, indent=2)}")
+
+
+async def test_function_matches_frozen_sql_predicate_on_edge_cases(postgres: Any) -> None:
+    connection, _ = postgres
+    samples = [None, "", "ordinary hospital procurement", "αXμXκXα", "a.m.k.a", "α.μ.κ", "am\nka"]
+    for term in DIAVGEIA_SENSITIVE_PUBLIC_TERMS:
+        samples.extend((term, term.upper(), "prefix" + term + "suffix", "\n" + term + "\n"))
+    cases = []
+    fields = ("title_el", "summary_short_el", "summary_long_el")
+    for source, hidden, field, sample in itertools.product(
+        (None, "DIAVGEIA", "PARLIAMENT", "OTHER", "diavgeia"), (None, False, True), fields, samples,
+    ):
+        row = dict(id=f"EDGE-{len(cases)}", source=source, admin_hidden=hidden,
+                   title_el=None, summary_short_el=None, summary_long_el=None)
+        row[field] = sample
+        cases.append(row)
+    cases.extend((
+        dict(id="EDGE-split", source="DIAVGEIA", admin_hidden=False,
+             title_el="am", summary_short_el="ka", summary_long_el=None),
+        dict(id="EDGE-long", source="DIAVGEIA", admin_hidden=False,
+             title_el=None, summary_short_el=None, summary_long_el="x" * 100_000 + "ΑΣΘΕΝ"),
+    ))
+    await connection.execute(text(
+        "INSERT INTO parliament_bills (id, source, admin_hidden, title_el, summary_short_el, summary_long_el) "
+        "VALUES (:id, :source, :admin_hidden, :title_el, :summary_short_el, :summary_long_el)"
+    ), cases)
+    # Oracle: the frozen pre-z903 SQL predicate, including SQL three-valued logic
+    # (a NULL source with a sensitive marker evaluates to NULL and stays hidden).
+    revision = public_metadata_revision()
+    legacy, current = text(f"({revision.LEGACY_PREDICATE})"), text(f"({revision.PREDICATE})")
+    rows = (await connection.execute(
+        select(ParliamentBill.id, legacy, current, public_bill_filter()).where(ParliamentBill.id.like("EDGE-%"))
+    )).all()
+    assert len(rows) == len(cases)
+    for bill_id, old_public, new_public, orm_public in rows:
+        assert new_public is old_public, (bill_id, old_public, new_public)
+        assert orm_public is old_public, (bill_id, old_public, orm_public)
+    edge = ParliamentBill.id.like("EDGE-%")
+    old_ids = set((await connection.execute(select(ParliamentBill.id).where(edge, legacy))).scalars())
+    new_ids = set((await connection.execute(select(ParliamentBill.id).where(edge, public_bill_filter()))).scalars())
+    assert old_ids == new_ids
+    null_source_marker = {
+        row["id"] for row in cases if row["source"] is None and row["admin_hidden"] is not True
+        and is_public_bill(SimpleNamespace(**{**row, "source": "DIAVGEIA", "admin_hidden": False})) is False
+    }
+    assert null_source_marker and not (null_source_marker & new_ids)
+    properties = (await connection.execute(text(
+        "SELECT l.lanname, p.provolatile, p.proparallel, p.procost, p.proisstrict "
+        "FROM pg_proc p JOIN pg_language l ON l.oid = p.prolang "
+        "WHERE p.oid = 'public_bill_sensitive(text,text,text,text)'::regprocedure"
+    ))).one()
+    # asyncpg returns PostgreSQL's single-byte "char" columns as bytes.
+    decoded = tuple(v.decode() if isinstance(v, bytes) else v for v in properties)
+    assert decoded == ("plpgsql", "i", "s", 10000, False)
+
+
+async def test_regex_parsing_ignores_standard_conforming_strings(postgres: Any) -> None:
+    connection, _ = postgres
+    search_path = await connection.scalar(text("SHOW search_path"))
+    for setting in ("off", "on"):
+        # A new backend (no pool) compiles the PL/pgSQL body under this setting on first call.
+        engine = create_async_engine(disposable_postgres_url(), poolclass=NullPool)
+        async with engine.connect() as session:
+            session = await session.execution_options(isolation_level="AUTOCOMMIT")
+            await session.exec_driver_sql(f"SET search_path TO {search_path}")
+            await session.exec_driver_sql(f"SET standard_conforming_strings = {setting}")
+            check = text("SELECT public_bill_sensitive('DIAVGEIA', :title, NULL, NULL)")
+            assert await session.scalar(check, {"title": "αXμXκXα"}) is False, setting
+            assert await session.scalar(check, {"title": "α.μ.κ.α"}) is True, setting
+        await engine.dispose()
