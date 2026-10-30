@@ -13,7 +13,7 @@ import json
 import logging
 from datetime import datetime, timezone
 from typing import AsyncGenerator, Optional
-from rate_limit import enforce_route_limit, limiter, public_heavy, public_read
+from rate_limit import client_flow, enforce_route_limit, limiter, public_heavy, public_read
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from dependencies import verify_admin_key
 
@@ -148,7 +148,7 @@ async def test_publish(
 
 
 @router.get("/status", dependencies=[Depends(enforce_route_limit)])
-@public_read
+@client_flow
 async def notifications_status(request: Request = None):
     return {
         "module": "MOD-07 Push Notifications", "status": "active",

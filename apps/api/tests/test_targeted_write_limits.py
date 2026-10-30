@@ -152,7 +152,7 @@ def test_vote_limit_preserves_identity_guard_and_independent_read_budget(
     assert session.calls == 120  # Rejected before database/authentication work.
     assert client.post("/api/v1/vote", headers=IP_TWO, json=VOTE_BODY).status_code == 403
 
-    # Writes and heavy reads have separate budgets; version checks are exempt.
+    # Client reads have NAT capacity; the signed write sanity cap is independent.
     for _ in range(61):
         assert client.get("/api/v1/app/version", headers=IP_ONE).status_code == 200
     for _ in range(6):
@@ -162,8 +162,8 @@ def test_vote_limit_preserves_identity_guard_and_independent_read_budget(
     assert client.get("/api/v1/bills", headers=IP_ONE).status_code == 200
     assert client.get("/api/v1/vote/results/latest", headers=IP_ONE).status_code == 200
     calls = session.calls
-    assert client.get("/api/v1/vote/GR-other/results", headers=IP_ONE).status_code == 429
-    assert session.calls == calls
+    assert client.get("/api/v1/vote/GR-other/results", headers=IP_ONE).status_code == 404
+    assert session.calls > calls
     assert client.get("/api/v1/bills", headers=IP_TWO).status_code == 200
 
 

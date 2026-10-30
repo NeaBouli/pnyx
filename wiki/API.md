@@ -14,11 +14,13 @@ All paths below are relative to the base URL.
 
 ## Rate limits
 
-Every public route has an explicit class. Ordinary reads share 120/minute/IP;
-aggregates, analytics, searches, large feeds and exports share 20/minute/IP.
+Every public route has an explicit class. Released mobile core flows share
+1200/minute/IP, with an independent 1200/minute/IP bucket for five-second ZK
+scope polling. Other ordinary reads share 120/minute/IP; optional analytics,
+ranking/compare and exports share 20/minute/IP.
 Generation routes share 5/minute/IP plus 30/minute globally. PayPal verification
 allows 10/minute/IP plus 60/minute globally and four concurrent calls/process.
-Only the static greeting, health manifest, robots and two version endpoints are
+Only the static greeting, health manifest and robots are
 exempt; tests forbid database/provider work on each. Administrative routes and
 provider callbacks also have classes, in addition to authentication/verification.
 The [complete route policy](../docs/operations/API_RATE_LIMIT_COVERAGE.md)
@@ -26,7 +28,7 @@ lists every registered HTTP route, shared scope and exemption justification.
 Public data reads retain their additional 100/minute anonymous-IP or
 1000/minute valid-key budget. Unavailable key validation uses the anonymous
 counter. API keys do not bypass the read/heavy classes. Signed votes and signed
-status preflights retain 120/minute/IP; QR polling retains 600/minute/IP and
+status preflights use the 1200/minute/IP client-flow quota; QR polling retains 600/minute/IP and
 30/minute per validated session. Export pages default to 100 bills (maximum 500,
 offset up to 10,000). VAA questions/statements default to 30 (range 1–100).
 Summary languages are limited to `el` and `en`.

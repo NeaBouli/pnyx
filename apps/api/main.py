@@ -15,7 +15,7 @@ from apscheduler.triggers.cron import CronTrigger
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from rate_limit import enforce_route_limit, limiter, public_heavy, rate_limit_exceeded_handler, rate_limit_http_exception_handler
+from rate_limit import client_flow, enforce_route_limit, limiter, public_heavy, rate_limit_exceeded_handler, rate_limit_http_exception_handler
 from security_startup import validate_identity_kdf_config, validate_server_salt_config
 from security_headers import API_CSP, SecurityHeadersMiddleware
 from services.scheduler_state import add_persisted_interval_job, add_observed_job, initialize_job_states, install_schedule_listener
@@ -1544,8 +1544,8 @@ async def health_modules(request: Request = None):
 
 
 @app.get("/api/v1/version")
-@limiter.exempt
-async def legacy_app_version():
+@client_flow
+async def legacy_app_version(request: Request):
     """Legacy endpoint — redirects to canonical /api/v1/app/version data."""
     from routers.app_version import LATEST_VERSION, LATEST_VERSION_CODE, MIN_REQUIRED_VERSION_CODE
     from routers.app_version import RELEASE_NOTES_EL, RELEASE_NOTES_EN, PLAYSTORE_URL, DIRECT_APK_URL

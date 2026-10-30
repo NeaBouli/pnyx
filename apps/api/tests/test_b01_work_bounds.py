@@ -20,18 +20,18 @@ from tests.test_rate_limit_route_enforcement import limited_app
 
 # These handlers must reject before resolving a DB dependency, including auth.
 HEAVY_READS = [
-    "/api/v1/analytics/overview", "/api/v1/analytics/divergence-trends",
+    "/api/v1/analytics/divergence-trends",
     "/api/v1/analytics/top-divergence", "/api/v1/analytics/votes-timeline",
     "/api/v1/analytics/bill/target", "/api/v1/analytics/representation",
-    "/api/v1/consensus/representation", "/api/v1/mp/ranking",
+    "/api/v1/mp/ranking",
     "/api/v1/mp/compare/ND", "/api/v1/mp/bill/target",
     "/api/v1/municipal/1/voteable", "/api/v1/vote/results/latest",
-    "/api/v1/vote/results/in-progress", "/api/v1/vote/target/results",
+    "/api/v1/vote/results/in-progress",
     "/api/v1/politicians/", "/api/v1/politicians/target/scores",
-    "/api/v1/zk/scopes/bill:target/status", "/api/v1/export/results.json",
-    "/api/v1/bills", "/api/v1/bills/trending", "/api/v1/decisions",
+    "/api/v1/export/results.json",
+    "/api/v1/decisions",
     "/api/v1/municipal/1/decisions", "/api/v1/regions/1/decisions",
-    "/api/v1/zk/receipts/bill:target", "/api/v1/zk/roots/bill:target/members",
+    "/api/v1/zk/receipts/bill:target",
     "/api/v1/cplm/aggregate",
 ]
 
@@ -49,7 +49,7 @@ def test_heavy_class_runs_before_database(limited_app, monkeypatch, path):
         assert client.get(path).status_code == 418
     assert client.get(path).status_code == 429
     # The class is shared across routes and target IDs.
-    assert client.get("/api/v1/bills?search=another").status_code == 429
+    assert client.get("/api/v1/analytics/bill/another").status_code == 429
     assert calls == 20
 
 
@@ -344,25 +344,9 @@ def test_slowapi_capacity_rejects_new_clients_with_429_without_reset(limited_app
     monkeypatch.setitem(main.app.dependency_overrides, get_db, boundary)
     assert client.get("/api/v1/bills").status_code == 418
     assert client.get("/api/v1/bills", headers={"X-Forwarded-For": "198.51.100.200"}).status_code == 429
-    for _ in range(9): assert client.get("/api/v1/bills").status_code == 418
+    for _ in range(599): assert client.get("/api/v1/bills").status_code == 418
     assert client.get("/api/v1/bills").status_code == 429
     assert len(storage.storage) == 1
-
-
-def test_normal_mobile_read_session_and_version_polling_fit_limits(limited_app):
-    client, _, storage = limited_app
-    # Four feed refreshes, two result views and two VAA loads in one minute.
-    for _ in range(4): assert client.get("/api/v1/bills?limit=10").status_code == 200
-    for _ in range(2): assert client.get("/api/v1/vote/missing/results").status_code == 404
-    for _ in range(2): assert client.get("/api/v1/vaa/questions").status_code == 200
-    # Four polls/minute, two startup status reads and two proof root reads.
-    for _ in range(6): assert client.get("/api/v1/zk/scopes/bill:missing/status").status_code == 404
-    for suffix in ("", "/members"):
-        assert client.get("/api/v1/zk/roots/bill:missing" + suffix).status_code == 404
-    before = dict(storage.storage)
-    for _ in range(125): assert client.get("/api/v1/app/version").status_code == 200
-    assert dict(storage.storage) == before
-    assert sorted(storage.storage.values()) == [2, 14]
 
 
 def test_summary_generation_only_uses_allowlisted_cache_keys(limited_app, monkeypatch):

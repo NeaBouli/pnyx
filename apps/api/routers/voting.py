@@ -21,8 +21,9 @@ from sqlalchemy import and_, or_, select, func, union, update, text
 from sqlalchemy.exc import IntegrityError
 
 from services.representation_cache import commit_and_invalidate_representation
+from services.client_flow_cache import results_cache
 from database import get_db
-from rate_limit import enforce_route_limit, limiter, public_heavy
+from rate_limit import client_flow, enforce_route_limit, limiter, public_heavy
 from models import (
     CITIZEN_VOTE_NULLIFIER_UNIQUE_INDEX,
     CitizenVote, VoteChoice, IdentityRecord, KeyStatus,
@@ -662,6 +663,7 @@ async def _commit_vote_write(db: AsyncSession) -> None:
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
 @router.post("", response_model=VoteResponse)
+@client_flow
 @limiter.limit("120/minute")
 async def submit_vote(
     req: VoteRequest,
@@ -872,8 +874,8 @@ async def get_vote_status(
 
 
 @router.post("/{bill_id}/status", response_model=VoteStatusResponse)
-# Every signed vote/correction preflights here; allow the voting IP budget.
-@limiter.shared_limit("120/minute", scope="voting:post_vote_status")
+# Released clients preflight on detail mount; use the shared NAT read budget.
+@client_flow
 async def post_vote_status(
     bill_id: str,
     req: VoteStatusReadRequest,
@@ -929,6 +931,7 @@ class CorrectionRequest(BaseModel):
 
 
 @router.put("/{bill_id}/correct")
+@client_flow
 @limiter.shared_limit("20/minute", scope="voting:correct_vote")
 async def correct_vote(bill_id: str, req: CorrectionRequest, db: AsyncSession = Depends(get_db), request: Request = None):
     """
@@ -1221,7 +1224,7 @@ async def get_votes_in_progress(db: AsyncSession = Depends(get_db), request: Req
 
 
 @router.get("/{bill_id}/results", response_model=BillResults, dependencies=[Depends(enforce_route_limit)])
-@public_heavy
+@client_flow
 async def get_results(bill_id: str, db: AsyncSession = Depends(get_db), request: Request = None):
     """
     Abstimmungsergebnisse + Divergence Score.
@@ -1260,10 +1263,10 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db), request:
             disclaimer_el="Τα αποτελέσματα θα είναι ορατά μετά τη λήξη της ψηφοφορίας.",
         ))
 
-    totals = await aggregate_bill_vote_totals(
-        db,
-        bill_id,
-        include_zk=(bill.source or "PARLIAMENT") == "PARLIAMENT",
+    include_zk = (bill.source or "PARLIAMENT") == "PARLIAMENT"
+    totals = await results_cache.get_or_fill(
+        (bill_id, include_zk, small_cell_k()),
+        lambda: aggregate_bill_vote_totals(db, bill_id, include_zk=include_zk),
     )
     yes_c = totals.yes
     no_c = totals.no
@@ -1451,6 +1454,7 @@ class ConsensusRequest(BaseModel):
 
 
 @router.post("/{bill_id}/consensus")
+@client_flow
 @limiter.shared_limit("20/minute", scope="voting:submit_consensus")
 async def submit_consensus(
     bill_id: str,

@@ -19,6 +19,9 @@ async def commit_and_invalidate_representation(db) -> None:
 
 
 async def invalidate_representation_cache() -> None:
+    from services.client_flow_cache import invalidate_client_flow_caches
+
+    invalidate_client_flow_caches()
     outage_snapshots.clear()
     # Remove every policy variant so switching policy cannot revive stale data.
     try:

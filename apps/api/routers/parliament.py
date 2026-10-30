@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, text
 from sqlalchemy.exc import IntegrityError
 from database import get_db
-from rate_limit import enforce_route_limit, generate, limiter, public_heavy, public_read
+from rate_limit import client_flow, enforce_route_limit, generate, limiter, public_heavy, public_read
 
 DISCOURSE_BASE = os.getenv("DISCOURSE_BASE_URL", "https://pnyx.ekklesia.gr")
 from dependencies import verify_admin_key
@@ -195,7 +195,7 @@ def _region_filter_conditions(
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
 @router.get("", response_model=list[BillSummary], dependencies=[Depends(enforce_route_limit)])
-@public_heavy
+@client_flow
 async def get_bills(
     status_filter: str | None = Query(None, alias="status"),
     status_any: str | None = Query(None),
@@ -314,7 +314,7 @@ async def get_bills(
 
 
 @router.get("/trending", response_model=list[BillSummary], dependencies=[Depends(enforce_route_limit)])
-@public_heavy
+@client_flow
 async def get_trending(
     limit: int = Query(10, le=50),
     db: AsyncSession = Depends(get_db),
@@ -377,7 +377,7 @@ async def sources_freshness(request: Request = None):
 
 
 @router.get("/{bill_id}", response_model=BillDetail, dependencies=[Depends(enforce_route_limit)])
-@public_read
+@client_flow
 async def get_bill(bill_id: str, db: AsyncSession = Depends(get_db), request: Request = None):
     """Einzelner Gesetzentwurf mit vollständigen Details und KI-Zusammenfassungen."""
     result = await db.execute(

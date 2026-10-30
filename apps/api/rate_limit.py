@@ -127,7 +127,7 @@ def get_rate_limit_key(request: Request) -> str:
 # SlowAPI skips default_limits for those routes. The 60/min default is
 # NOT an API-wide guarantee: router writes need an explicit decorator or a
 # handler-level Redis guard. The coverage gate audits every registered method,
-# permitting only five tested constant-cost exemptions.
+# permitting only three tested constant-cost exemptions.
 def create_limiter(*, storage_uri: str | None = None, enabled: bool | None = None) -> Limiter:
     """Create the same shared-store and conservative-fallback policy in every worker."""
     uri = storage_uri or get_rate_limit_storage_uri()
@@ -153,6 +153,12 @@ def create_limiter(*, storage_uri: str | None = None, enabled: bool | None = Non
 limiter = create_limiter()
 
 # Shared scopes make target IDs, query parameters and route rotation irrelevant.
+CLIENT_FLOW_LIMIT = "1200/minute"
+CLIENT_POLL_LIMIT = "1200/minute"
+client_flow = limiter.shared_limit(CLIENT_FLOW_LIMIT, scope="client-flow")
+# Released 1.0.33–1.0.37 clients poll every five seconds. Keep that traffic
+# independent of startup, feeds, proof members and results behind the same NAT.
+client_poll = limiter.shared_limit(CLIENT_POLL_LIMIT, scope="client-poll")
 public_read = limiter.shared_limit("120/minute", scope="public-read")
 public_heavy = limiter.shared_limit("20/minute", scope="public-heavy")
 

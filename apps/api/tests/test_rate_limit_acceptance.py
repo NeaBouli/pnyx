@@ -58,7 +58,7 @@ def assert_quota_response(response: Response) -> None:
 
 @pytest.mark.parametrize("origin", ORIGINS)
 def test_included_route_429_contract_and_browser_headers(acceptance_client: TestClient, origin: str) -> None:
-    for _ in range(10):
+    for _ in range(1200):
         assert acceptance_client.post(PATH, json=BODY).status_code == 404
     response = acceptance_client.post(PATH, json=BODY, headers={"Origin": origin})
     assert_quota_response(response)
@@ -69,7 +69,7 @@ def test_included_route_429_contract_and_browser_headers(acceptance_client: Test
 
 
 def test_untrusted_forwarding_cannot_reset_route_bucket(acceptance_client: TestClient) -> None:
-    for index in range(10):
+    for index in range(1200):
         assert acceptance_client.post(PATH, json=BODY, headers={"X-Forwarded-For": f"203.0.113.{index}"}).status_code == 404
     response = acceptance_client.post(PATH, json=BODY, headers={"X-Forwarded-For": "203.0.113.99", "Origin": "https://untrusted.example"})
     assert_quota_response(response)
@@ -85,7 +85,7 @@ def test_outage_is_stricter_and_logs_only_event_counts(
     monkeypatch.setattr(limiter._storage, "incr", unavailable)
     monkeypatch.setattr(limiter._storage, "check", lambda: False)
     with caplog.at_level(logging.WARNING, logger="slowapi"):
-        for _ in range(5):
+        for _ in range(600):
             assert acceptance_client.post(PATH, json=BODY).status_code == 404
         response = acceptance_client.post(PATH, json=BODY, headers={"Origin": ORIGINS[0]})
     assert_quota_response(response)
@@ -104,7 +104,7 @@ def test_unreachable_redis_uses_production_factory_fallback(
     instance = create_limiter(storage_uri="redis://127.0.0.1:1", enabled=True)
     monkeypatch.setattr(limiter, "_storage", instance._storage)
     monkeypatch.setattr(limiter, "_limiter", instance._limiter)
-    for _ in range(5):
+    for _ in range(600):
         assert acceptance_client.post(PATH, json=BODY).status_code == 404
     response = acceptance_client.post(PATH, json=BODY, headers={"Origin": ORIGINS[0]})
     assert_quota_response(response)
@@ -158,7 +158,7 @@ def test_public_shared_counter_outage_keeps_http_contract(
 def test_429_expiry_lookup_failure_preserves_response(
     acceptance_client: TestClient, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    for _ in range(10):
+    for _ in range(1200):
         assert acceptance_client.post(PATH, json=BODY).status_code == 404
 
     def unavailable(*args: object) -> None:

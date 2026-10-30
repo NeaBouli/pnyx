@@ -9,6 +9,7 @@ import os
 import asyncio
 from collections import OrderedDict
 from services.request_work import SingleFlight
+from services.client_flow_cache import scope_status_cache
 from pathlib import Path
 from typing import Any
 
@@ -21,7 +22,7 @@ from starlette.concurrency import run_in_threadpool
 
 from services.representation_cache import commit_and_invalidate_representation
 from database import get_db
-from rate_limit import enforce_route_limit, limiter, public_heavy, public_read
+from rate_limit import client_flow, client_poll, enforce_route_limit, limiter, public_heavy, public_read
 from services.small_cell import small_cell_k
 from services.zk_vote_aggregation import zk_scope_publishable
 from dependencies import verify_admin_key
@@ -561,8 +562,12 @@ def _ensure_bill_scope_allowed(identity: IdentityRecord, bill: ParliamentBill) -
 
 
 @router.get("/status", response_model=ZkStatusResponse, dependencies=[Depends(enforce_route_limit)])
-@public_read
+@client_flow
 async def get_zk_status(request: Request = None) -> ZkStatusResponse:
+    return _zk_status()
+
+
+def _zk_status() -> ZkStatusResponse:
     production_enabled = zk_voting_enabled()
     return ZkStatusResponse(
         production_enabled=production_enabled,
@@ -587,7 +592,7 @@ async def get_zk_status(request: Request = None) -> ZkStatusResponse:
 
 
 @router.get("/scopes/{vote_scope_id}/status", response_model=ZkScopeStatusResponse, dependencies=[Depends(enforce_route_limit)])
-@public_heavy
+@client_poll
 async def get_zk_scope_status(
     vote_scope_id: str = FastAPIPath(
         ...,
@@ -605,58 +610,66 @@ async def get_zk_scope_status(
     scope_type, _scope_id = scope.split(":", 1)
     await _ensure_scope_public_or_safe_canary(db, scope, require_existing_bill=(scope_type == "bill"))
 
-    production_enabled = zk_voting_enabled()
-    opt_in_enabled = zk_opt_in_enabled()
-    canary_enabled = production_enabled and _env_enabled(ZK_CANARY_ENABLED_ENV)
-    global_rollout = _global_rollout_enabled()
-    allowlisted = scope in _production_scope_allowlist()
-    global_scope_allowed = False
-    if global_rollout and not allowlisted:
-        if scope_type == "bill":
-            bill_result = await db.execute(select(ParliamentBill).where(ParliamentBill.id == _scope_id))
-            global_scope_allowed = _is_public_parliament_bill_scope(bill_result.scalar_one_or_none())
+    # Recheck visibility on every hit; cache only the public status calculation.
+    # Policy changes must not revive a response from another rollout mode.
+    flags = _zk_status().model_dump_json()
+    key = (scope, flags, tuple(sorted(_production_scope_allowlist())),
+           tuple(sorted(_canary_scope_allowlist())))
 
-    active_commitments = await _count_rows(
-        db,
-        select(func.count(ZkIdentityCommitment.id)).where(
-            ZkIdentityCommitment.vote_scope_id == scope,
-            ZkIdentityCommitment.status == "ACTIVE",
-        ),
-    )
-    root_result = await db.execute(
-        select(ZkMerkleRoot)
-        .where(
-            ZkMerkleRoot.vote_scope_id == scope,
-            ZkMerkleRoot.status == "OPEN",
+    async def load_status():
+        production_enabled = zk_voting_enabled()
+        opt_in_enabled = zk_opt_in_enabled()
+        canary_enabled = production_enabled and _env_enabled(ZK_CANARY_ENABLED_ENV)
+        global_rollout = _global_rollout_enabled()
+        allowlisted = scope in _production_scope_allowlist()
+        global_scope_allowed = False
+        if global_rollout and not allowlisted:
+            if scope_type == "bill":
+                bill_result = await db.execute(select(ParliamentBill).where(ParliamentBill.id == _scope_id))
+                global_scope_allowed = _is_public_parliament_bill_scope(bill_result.scalar_one_or_none())
+
+        active_commitments = await _count_rows(
+            db,
+            select(func.count(ZkIdentityCommitment.id)).where(
+                ZkIdentityCommitment.vote_scope_id == scope,
+                ZkIdentityCommitment.status == "ACTIVE",
+            ),
         )
-        .order_by(ZkMerkleRoot.id.desc())
-        .limit(1)
-    )
-    root_published = root_result.scalar_one_or_none() is not None
-    scope_allowed = (allowlisted or global_scope_allowed) and not canary_enabled
-    can_opt_in = production_enabled and opt_in_enabled and scope_allowed
-    can_vote = can_opt_in and root_published
-    return ZkScopeStatusResponse(
-        vote_scope_id=scope,
-        scope_type=scope_type,
-        production_enabled=production_enabled,
-        verifier_enabled=production_enabled,
-        opt_in_enabled=opt_in_enabled,
-        canary_enabled=canary_enabled,
-        allowlisted=allowlisted,
-        global_rollout_enabled=global_rollout,
-        root_published=root_published,
-        active_commitments=active_commitments,
-        can_opt_in=can_opt_in,
-        can_vote=can_vote,
-        merkle_tree_depth=SEMAPHORE_MERKLE_TREE_DEPTH,
-        verifier_version="py-ecc-groth16-bn254:v1:semaphore-v4-depth16",
-        message_el=(
-            "Η προαιρετική ZK διαδρομή είναι διαθέσιμη για αυτό το θέμα."
-            if can_opt_in
-            else "Η προαιρετική ZK διαδρομή δεν είναι διαθέσιμη για αυτό το θέμα."
-        ),
-    )
+        root_result = await db.execute(
+            select(ZkMerkleRoot)
+            .where(
+                ZkMerkleRoot.vote_scope_id == scope,
+                ZkMerkleRoot.status == "OPEN",
+            )
+            .order_by(ZkMerkleRoot.id.desc())
+            .limit(1)
+        )
+        root_published = root_result.scalar_one_or_none() is not None
+        scope_allowed = (allowlisted or global_scope_allowed) and not canary_enabled
+        can_opt_in = production_enabled and opt_in_enabled and scope_allowed
+        can_vote = can_opt_in and root_published
+        return ZkScopeStatusResponse(
+            vote_scope_id=scope,
+            scope_type=scope_type,
+            production_enabled=production_enabled,
+            verifier_enabled=production_enabled,
+            opt_in_enabled=opt_in_enabled,
+            canary_enabled=canary_enabled,
+            allowlisted=allowlisted,
+            global_rollout_enabled=global_rollout,
+            root_published=root_published,
+            active_commitments=active_commitments,
+            can_opt_in=can_opt_in,
+            can_vote=can_vote,
+            merkle_tree_depth=SEMAPHORE_MERKLE_TREE_DEPTH,
+            verifier_version="py-ecc-groth16-bn254:v1:semaphore-v4-depth16",
+            message_el=(
+                "Η προαιρετική ZK διαδρομή είναι διαθέσιμη για αυτό το θέμα."
+                if can_opt_in
+                else "Η προαιρετική ZK διαδρομή δεν είναι διαθέσιμη για αυτό το θέμα."
+            ),
+        )
+    return await scope_status_cache.get_or_fill(key, load_status)
 
 
 @router.get("/canary/preflight/{vote_scope_id}", response_model=ZkCanaryPreflightResponse, dependencies=[Depends(enforce_route_limit)])
@@ -755,7 +768,7 @@ async def get_zk_canary_preflight(
 
 
 @router.post("/opt-in", response_model=ZkOptInResponse)
-@limiter.limit("10/minute")
+@client_flow
 async def opt_in_zk(req: ZkOptInRequest, db: AsyncSession = Depends(get_db), request: Request = None) -> ZkOptInResponse:
     _ensure_zk_opt_in_enabled()
 
@@ -902,7 +915,7 @@ async def list_zk_receipts(
 
 
 @router.get("/roots/{vote_scope_id}", response_model=ZkRootResponse, dependencies=[Depends(enforce_route_limit)])
-@public_heavy
+@client_flow
 async def get_current_zk_root(
     vote_scope_id: str = FastAPIPath(
         ...,
@@ -931,7 +944,7 @@ async def get_current_zk_root(
 
 
 @router.get("/roots/{vote_scope_id}/members", response_model=ZkRootMembersResponse, dependencies=[Depends(enforce_route_limit)])
-@public_heavy
+@client_flow
 async def get_current_zk_root_members(
     vote_scope_id: str = FastAPIPath(
         ...,
@@ -1044,6 +1057,7 @@ async def publish_zk_root(
 
 
 @router.post("/vote", response_model=ZkVoteAcceptResponse)
+@client_flow
 @limiter.limit("20/minute")
 async def accept_zk_vote(req: ZkVoteRequest, db: AsyncSession = Depends(get_db), request: Request = None) -> ZkVoteAcceptResponse:
     if not zk_voting_enabled():
@@ -1139,6 +1153,7 @@ async def accept_zk_vote(req: ZkVoteRequest, db: AsyncSession = Depends(get_db),
 
 
 @router.post("/verify", response_model=ZkVerifyResponse)
+@client_flow
 @limiter.limit("10/minute")
 async def verify_zk_proof(req: ZkVerifyRequest, db: AsyncSession = Depends(get_db), request: Request = None) -> ZkVerifyResponse:
     if not zk_voting_enabled():

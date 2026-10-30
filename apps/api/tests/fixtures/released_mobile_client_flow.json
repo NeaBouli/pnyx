@@ -1,0 +1,164 @@
+{
+  "released_ref": "origin/main",
+  "released_commit": "30e20e6c7618cdca0c3c9e4f4c197c4d1320f9c3",
+  "versions": "1.0.33-1.0.37",
+  "poll_seconds": 5,
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/api/v1/app/version",
+      "frequency": "2-3/startup (Home, banner, eligible rotation); manual profile check",
+      "source": "HomeScreen.tsx:51; components/UpdateBanner.tsx:31; lib/key-rotation.ts:116"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/version",
+      "frequency": "Legacy alias; no call in this snapshot",
+      "source": "server compatibility alias"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/analytics/overview",
+      "frequency": "1/Home mount",
+      "source": "HomeScreen.tsx:41"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/bills",
+      "frequency": "2/ALL first page or refocus; 1/page/filter; F-Droid +1/foreground at most 1/min",
+      "source": "BillsScreen.tsx:142-155; lib/notifications.ts:304"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/bills/trending",
+      "frequency": "1/Trending mount or refresh",
+      "source": "TrendingScreen.tsx:20"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/bills/{bill_id}",
+      "frequency": "1/vote detail mount",
+      "source": "VoteScreen.tsx:132"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/vote/{bill_id}/status",
+      "frequency": "1/vote detail mount with a verified identity; signed POST",
+      "source": "VoteScreen.tsx:163"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/vote",
+      "frequency": "1/confirmed vote",
+      "source": "lib/api.ts:358"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/vote/{bill_id}/correct",
+      "frequency": "1/confirmed correction",
+      "source": "lib/api.ts:375"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/vote/{bill_id}/consensus",
+      "frequency": "1/confirmed DIAVGEIA score",
+      "source": "VoteScreen.tsx:783"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/vote/{bill_id}/results",
+      "frequency": "1/results focus or refresh",
+      "source": "ResultScreen.tsx:67-77"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/consensus/representation",
+      "frequency": "1/DIAVGEIA results focus or refresh",
+      "source": "DiavgeiaResultsScreen.tsx:48-67"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/zk/status",
+      "frequency": "1/vote detail or ZK screen mount",
+      "source": "VoteScreen.tsx:176; ZkSemaphoreScreen.tsx:74"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/zk/scopes/{vote_scope_id}/status",
+      "frequency": "1/detail + 1/opt-in completion + immediate pending poll, then every 5 s (12/min/user)",
+      "source": "VoteScreen.tsx:190,232,465-473"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/zk/roots/{vote_scope_id}",
+      "frequency": "Compatibility root read; helper defined, proof path uses members",
+      "source": "lib/api.ts:291-296"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/zk/roots/{vote_scope_id}/members",
+      "frequency": "1/proof creation; verify and submit each create a proof",
+      "source": "lib/zkCanaryFlow.ts:64"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/zk/opt-in",
+      "frequency": "1/confirmed opt-in",
+      "source": "lib/api.ts:266"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/zk/verify",
+      "frequency": "1/explicit proof verification",
+      "source": "lib/api.ts:310"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/zk/vote",
+      "frequency": "1/confirmed ZK vote",
+      "source": "lib/api.ts:333"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/identity/status",
+      "frequency": "1/profile mount when verified",
+      "source": "ProfileScreen.tsx:62"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v2/identity/rotate-key",
+      "frequency": "1/eligible legacy startup; foreground retries at least 60 s apart",
+      "source": "lib/key-rotation.ts:192,227"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/periferia",
+      "frequency": "1/onboarding or profile mount",
+      "source": "OnboardingScreen.tsx:38; ProfileScreen.tsx:44"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/periferia/{periferia_id}/dimos",
+      "frequency": "1/selected region change",
+      "source": "OnboardingScreen.tsx:44; ProfileScreen.tsx:95"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/notify/register",
+      "frequency": "1/verified Home mount on push builds; at most 1 idempotent retry",
+      "source": "HomeScreen.tsx:43; lib/push-registration.ts:167"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/notifications/status",
+      "frequency": "Compatibility status read; notifications acknowledge locally, no HTTP ACK",
+      "source": "lib/notifications.ts:markNotificationEventRead"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/polis/tickets",
+      "frequency": "1/POLIS tab mount, category change or refresh",
+      "source": "TicketsScreen.tsx:77"
+    }
+  ]
+}

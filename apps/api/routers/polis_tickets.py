@@ -18,7 +18,7 @@ from nacl.signing import VerifyKey
 from nacl.exceptions import BadSignatureError
 
 from database import get_db
-from rate_limit import enforce_route_limit, limiter, public_read
+from rate_limit import client_flow, enforce_route_limit, limiter, public_read
 from crypto.polis import (
     PolisTicketPayload,
     PolisVotePayload,
@@ -177,7 +177,7 @@ async def register_polis_key(
 # ─── GET /polis/tickets ──────────────────────────────────────────────────────
 
 @router.get("/tickets", dependencies=[Depends(enforce_route_limit)])
-@public_read
+@client_flow
 async def list_tickets(
     category: str | None = None,
     status: str | None = None,

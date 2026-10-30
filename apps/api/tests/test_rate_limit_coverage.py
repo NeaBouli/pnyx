@@ -7,6 +7,7 @@ authentication dependencies must be preceded by a limiter dependency.
 """
 
 from collections.abc import Iterator
+from inspect import unwrap
 from pathlib import Path
 from typing import Any
 
@@ -30,14 +31,11 @@ WRITE_EXCEPTIONS = {
     ("POST", "/api/v1/public/keys/generate"): "Existing Redis guard: 5/IP/hour before generating a key.",
     ("POST", "/api/v1/newsletter/subscribe"): "Redis: 10/IP/hour and 3/email/day; confirmed subscriptions return without consuming quota.",
     ("POST", "/api/v1/contact/ngo"): "Existing Redis guard: 3/IP/hour before sending mail.",
-    ("POST", "/api/v1/notify/register"): "Redis: 600/IP/hour before auth, 20/identity/day for changed device registrations.",
 }
 READ_EXCEPTIONS = {
     "/": "Constant API greeting; no database or provider access.",
     "/health": "Static module manifest and process liveness; no database or provider access.",
     "/robots.txt": "Constant crawler policy; no database or provider access.",
-    "/api/v1/app/version": "Static release metadata and environment feature flags; no database or provider access.",
-    "/api/v1/version": "Static legacy release metadata; no database or provider access.",
 }
 # Preserve the established admin-authentication audit without exemptions.
 ADMIN_AUTH_REQUIRED = {
@@ -138,8 +136,8 @@ def route_policy(route: Any, method: str) -> tuple[str, str] | None:
         name = f"{route.endpoint.__module__}.{route.endpoint.__name__}"
         limits = limiter._route_limits[name]
         scopes = {item.scope for item in limits}
-        cls = next((name for name in ("generate", "paypal-verify", "public-heavy", "public-read") if name in scopes), "explicit")
-        return cls, "; ".join(f"{item.limit}" + (f" ({item.scope})" if item.scope else "") for item in limits)
+        cls = next((name for name in ("generate", "paypal-verify", "client-flow", "client-poll", "public-heavy", "public-read") if name in scopes), "explicit")
+        return ("client-flow" if cls == "client-poll" else cls), "; ".join(f"{item.limit}" + (f" ({item.scope})" if item.scope else "") for item in limits)
     if key in WRITE_EXCEPTIONS:
         return "dedicated-redis", WRITE_EXCEPTIONS[key]
     name = f"{route.endpoint.__module__}.{route.endpoint.__name__}"
@@ -155,12 +153,17 @@ def has_explicit_limit(endpoint: Any, method: str) -> bool:
     limits = limiter._route_limits.get(name, [])
     if not any(not item.methods or method.lower() in item.methods for item in limits):
         return False
-    originals = limiter._Limiter__marked_for_limiting.get(name, [])
+    # Tests may register unrelated functions under the same module/name.
+    original_function = unwrap(endpoint)
+    originals = [original for original in limiter._Limiter__marked_for_limiting.get(name, [])
+                 if unwrap(original) is original_function]
+    wrapped = set()
     while hasattr(endpoint, "__wrapped__"):
         endpoint = endpoint.__wrapped__
-        if endpoint in originals:
-            return True
-    return False
+        wrapped.add(endpoint)
+    # Stacked action and client-flow policies require BOTH wrappers. Finding
+    # just one must not certify a class whose wrapper was accidentally removed.
+    return bool(originals) and all(original in wrapped for original in originals)
 
 
 def has_route_limit(route: Any, method: str) -> bool:

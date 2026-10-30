@@ -2,7 +2,7 @@
 
 Historical acceptance snapshot. The active PR #706 / B01 policy is
 [API_RATE_LIMIT_COVERAGE.md](API_RATE_LIMIT_COVERAGE.md); its explicit shared
-read/heavy/generate classes supersede the exemptions described below.
+client-flow/read/heavy/generate classes supersede the exemptions described below.
 
 2026-10-10, T-9052; owner decision: preserve the observed default-limit gap,
 document it, and protect missing unauthenticated write entry points explicitly.

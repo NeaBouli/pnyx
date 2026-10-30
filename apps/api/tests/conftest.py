@@ -174,3 +174,11 @@ def campaign_support(monkeypatch):
     monkeypatch.setattr(newsletter_dispatch, "temporary_campaign_list", target)
     from routers import newsletter_admin
     monkeypatch.setattr(newsletter_admin, "temporary_campaign_list", target)
+
+
+@pytest.fixture(autouse=True)
+def isolate_client_flow_caches():
+    from services.client_flow_cache import invalidate_client_flow_caches
+    invalidate_client_flow_caches()
+    yield
+    invalidate_client_flow_caches()

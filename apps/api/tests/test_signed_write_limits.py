@@ -175,9 +175,9 @@ def test_public_reads_keep_independent_classes_after_signed_writes_exhausted(
         assert client.get("/api/v1/bills", headers=IP_ONE).status_code == 200
         assert client.get("/api/v1/vote/GR-missing/results", headers=IP_ONE).status_code == 404
     calls = session.calls
-    assert client.get("/api/v1/bills", headers=IP_ONE).status_code == 429
-    assert session.calls == calls
-    for _ in range(120):
+    assert client.get("/api/v1/bills", headers=IP_ONE).status_code == 200
+    assert session.calls > calls
+    for _ in range(1118):
         assert client.get("/api/v1/polis/tickets", headers=IP_ONE).status_code == 200
     calls = session.calls
     assert client.get("/api/v1/polis/tickets", headers=IP_ONE).status_code == 429

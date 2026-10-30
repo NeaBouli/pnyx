@@ -73,7 +73,7 @@ SIGNATURE = "0" * 128
     ("POST", "/api/v1/vote/{target}/consensus", {
         "score": 1, "nullifier_hash": NULLIFIER, "signature_hex": SIGNATURE,
     }, 20, 404),
-    ("POST", "/api/v1/identity/status", {"nullifier_hash": NULLIFIER}, 10, 404),
+    ("POST", "/api/v1/identity/status", {"nullifier_hash": NULLIFIER}, 1200, 404),
     ("PATCH", "/api/v1/identity/profile/location", {
         "nullifier_hash": NULLIFIER, "signature_hex": SIGNATURE,
     }, 20, 403),
@@ -123,9 +123,7 @@ def test_api_key_status_rate_limit_cannot_be_reset_by_changing_keys(limited_app,
 
 
 @pytest.mark.parametrize("path,status", [
-    ("/api/v1/bills", 200),
     ("/api/v1/export/results.json?min_votes=1", 200),
-    ("/api/v1/vote/missing/results", 404),
 ])
 def test_heavy_public_reads_bound_shared_ssr_traffic(limited_app, monkeypatch, path, status):
     client, session, storage = limited_app
@@ -213,7 +211,7 @@ def test_vote_preflight_rate_limit_allows_eleven_shared_ip_identities_and_full_v
 
     session.execute.side_effect = query
     identities = list(keys)
-    for index in range(120):
+    for index in range(1200):
         bill_id = f"GR-preflight-{index}"
         nullifier = identities[index % len(identities)]
         payload = build_vote_status_read_payload(bill_id, nullifier, timestamp)
@@ -224,9 +222,9 @@ def test_vote_preflight_rate_limit_allows_eleven_shared_ip_identities_and_full_v
         response = client.post(f"/api/v1/vote/{bill_id}/status", json=body)
         assert response.status_code == 200, response.text
         assert response.headers["x-vote-read-integrity"] == "signed"
-    assert session.execute.await_count == 360
+    assert session.execute.await_count == 3600
     assert client.post("/api/v1/vote/rotated/status", json=body).status_code == 429
-    assert session.execute.await_count == 360
+    assert session.execute.await_count == 3600
 
 
 class QRRedis:

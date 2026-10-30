@@ -3,7 +3,7 @@ MOD-20: Push Notifications (Expo Push API)
 POST /api/v1/notify/register — register device push token (signed, EKA-05)
 POST /api/v1/notify/send     — admin: send push to all (ADMIN_KEY required)
 """
-from rate_limit import enforce_route_limit, public_heavy
+from rate_limit import client_flow, enforce_route_limit, public_heavy
 import os
 import json
 import logging
@@ -105,6 +105,7 @@ class SendRequest(BaseModel):
 
 
 @router.post("/register")
+@client_flow
 async def register_push(
     req: RegisterRequest,
     request: Request,
