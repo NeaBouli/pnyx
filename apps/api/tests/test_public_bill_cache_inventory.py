@@ -66,9 +66,11 @@ def test_all_cached_public_bill_schemas_use_the_shared_serve_helper():
         print(f"CACHE {function.__module__}.{function.__name__}: {schema} -> serve_public_bill_body")
 
 
-def test_guard_rejects_a_bill_cache_without_the_helper(monkeypatch):
-    monkeypatch.setattr(parliament.get_trending, "public_visibility_filter", None)
-    with pytest.raises(AssertionError, match="get_trending"):
+@pytest.mark.parametrize("function", [parliament.get_trending, *(function for function, _ in INLINE_CACHES)],
+                         ids=lambda function: function.__name__)
+def test_guard_rejects_a_bill_cache_without_the_helper(monkeypatch, function):
+    monkeypatch.setattr(function, "public_visibility_filter", None)
+    with pytest.raises(AssertionError, match=function.__name__):
         assert_bill_cache_inventory()
 
 

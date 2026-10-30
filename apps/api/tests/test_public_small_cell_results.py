@@ -105,6 +105,8 @@ class Rows:
 
 
 class Db:
+    snapshot_counts = ([10] * 4, [0] * 4)
+
     def __init__(self, bill=None, rows=(), scalars=()):
         self.bill = bill or bill_fixture()
         self.rows = list(rows)
@@ -118,7 +120,9 @@ class Db:
         self.queries.append(query)
         if " AS results_visible" in str(query):
             from services.bill_visibility import is_public_bill, results_hidden
-            return Rows([(self.bill.id, not results_hidden(self.bill), *([10] * 4), *([0] * 4))]
+            tier, zk = self.snapshot_counts
+            return Rows([(self.bill.id, not results_hidden(self.bill), *tier, *zk,
+                          self.bill.status, self.bill.results_visibility)]
                         if is_public_bill(self.bill) else [])
         if str(query).startswith("SELECT parliament_bills.id \n"):
             from services.bill_visibility import is_public_bill
@@ -141,6 +145,11 @@ def bill_fixture():
 
 
 def aggregate(monkeypatch, module, counts):
+    tier, zk = list(counts), [0] * 4
+    first = next(i for i, count in enumerate(counts) if count)
+    tier[first] -= 1
+    zk[first] = 1
+    monkeypatch.setattr(Db, "snapshot_counts", (tier, zk))
     async def fake(*_, **__):
         return VoteTotals(*counts, sum(counts) - 1, 1)
     monkeypatch.setattr(module, "aggregate_bill_vote_totals", fake)
@@ -506,6 +515,7 @@ async def test_alltime_11_10_10_10_minus_seven_day_10_each_withholds_windows(mon
 
 @pytest.mark.asyncio
 async def test_40_public_zk_receipts_cannot_be_subtracted_from_combined_41(monkeypatch):
+    monkeypatch.setattr(Db, "snapshot_counts", ([1, 0, 0, 0], [10] * 4))
     async def fake(*_, **__):
         return VoteTotals(11, 10, 10, 10, 1, 40)
     for module in (voting, public_api, analytics, mp):

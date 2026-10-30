@@ -1,4 +1,4 @@
-"""One DB visibility snapshot and private provenance for an aggregate build."""
+"""One DB visibility/results snapshot and private cache decision inputs."""
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 
@@ -14,6 +14,16 @@ class BillVisibilitySnapshot:
     listed: frozenset[str]
     results: frozenset[str]
     contributors: set[str] = field(default_factory=set)
+    result_inputs: dict[str, "BillResultInputs"] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class BillResultInputs:
+    """Counts include four choices, both source totals and the release decision."""
+    k: int
+    status: str
+    results_visibility: str | None
+    counts: tuple[int, int, int, int, int, int, bool]
 
 
 building_snapshot = ContextVar("public_bill_snapshot", default=None)
@@ -46,19 +56,22 @@ async def read_visibility_snapshot(db):
                 if index:
                     count = case((func.coalesce(ParliamentBill.source, "PARLIAMENT") == "PARLIAMENT", count), else_=0)
                 query = query.add_columns(count)
-    listed, results = set(), set()
+        query = query.add_columns(ParliamentBill.status, ParliamentBill.results_visibility)
+    listed, results, result_inputs = set(), set(), {}
     for row in (await db.execute(query)).all():
         bill_id, visible, *counts = row
         listed.add(bill_id)
-        if not visible:
-            continue
         if k:
-            tier, zk = tuple(counts[:4]), tuple(counts[4:])
+            tier, zk = tuple(counts[:4]), tuple(counts[4:8])
             combined = tuple(a + b for a, b in zip(tier, zk))
-            if not publishable_set({bill_id: (combined, tuple(c for c in (tier, zk) if sum(c)))}, k=k):
-                continue
-        results.add(bill_id)
-    return BillVisibilitySnapshot(frozenset(listed), frozenset(results))
+            publishable = bool(publishable_set({bill_id: (combined, tuple(c for c in (tier, zk) if sum(c)))}, k=k))
+            status, visibility = counts[8:]
+            result_inputs[bill_id] = BillResultInputs(
+                k, status.value, visibility, (*combined, sum(tier), sum(zk), publishable),
+            )
+        if visible and (not k or publishable):
+            results.add(bill_id)
+    return BillVisibilitySnapshot(frozenset(listed), frozenset(results), result_inputs=result_inputs)
 
 
 def snapshot_bill_filter(column=ParliamentBill.id, *, results=False):

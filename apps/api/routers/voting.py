@@ -22,7 +22,7 @@ from sqlalchemy.exc import IntegrityError
 
 from services.representation_cache import commit_and_invalidate_representation
 from services.client_flow_cache import public_policy_key, results_cache, with_cache_db
-from services.public_bill_response import public_bill_response
+from services.public_bill_response import capture_public_bill_body, public_bill_response, serve_public_bill_body
 from database import get_db
 from rate_limit import client_flow, enforce_route_limit, limiter, public_heavy
 from models import (
@@ -1278,19 +1278,41 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db), request:
             disclaimer_el="Τα αποτελέσματα θα είναι ορατά μετά τη λήξη της ψηφοφορίας.",
         ))
 
+    async def load_totals(session):
+        async def calculate():
+            return await aggregate_bill_vote_totals(session, bill_id, include_zk=include_zk)
+        if small_cell_k():
+            return await capture_public_bill_body(calculate, db=session, point_results=bill_id)
+        return await calculate()
+
     async def refresh_totals(session):
         current = (await session.execute(
             select(ParliamentBill).where(ParliamentBill.id == bill_id)
         )).scalar_one_or_none()
         if not current or not is_public_bill(current) or results_hidden(current):
             raise HTTPException(404, "Public results are no longer visible")
-        return await aggregate_bill_vote_totals(session, bill_id, include_zk=include_zk)
+        return await load_totals(session)
 
-    totals = await results_cache.get_or_fill(
-        totals_key,
-        lambda: aggregate_bill_vote_totals(db, bill_id, include_zk=include_zk),
-        background_factory=lambda: with_cache_db(refresh_totals),
-    )
+    async def cached_totals():
+        return await results_cache.get_or_fill(
+            totals_key, lambda: load_totals(db),
+            background_factory=lambda: with_cache_db(refresh_totals),
+        )
+
+    totals = await cached_totals()
+    if small_cell_k():
+        async def rebuild_totals():
+            nonlocal totals
+            entry = results_cache.entries.get(totals_key)
+            if entry is not None and entry[1] is totals:
+                results_cache.invalidate(totals_key)
+            totals = await cached_totals()
+            return totals
+
+        totals = await serve_public_bill_body(
+            totals, db=db, schema="point", bill_ids=(bill_id,),
+            point_results=True, refresh=rebuild_totals,
+        )
     yes_c = totals.yes
     no_c = totals.no
     abs_c = totals.abstain

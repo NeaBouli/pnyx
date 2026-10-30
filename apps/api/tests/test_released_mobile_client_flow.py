@@ -112,7 +112,9 @@ async def released_backend(monkeypatch):
         params = statement.compile().params
         if " AS results_visible" in sql:
             from services.bill_visibility import is_public_bill, results_hidden
-            return Rows([(bill.id, not results_hidden(bill))] if is_public_bill(bill) else [])
+            from services.small_cell import small_cell_k
+            inputs = (*db.vote_counts, bill.status, bill.results_visibility) if small_cell_k() else ()
+            return Rows([(bill.id, not results_hidden(bill), *inputs)] if is_public_bill(bill) else [])
         if sql.startswith("SELECT parliament_bills.id \n"):
             from services.bill_visibility import is_public_bill
             return Rows([bill.id] if is_public_bill(bill) else [])
@@ -131,7 +133,8 @@ async def released_backend(monkeypatch):
             return Rows(("ADA-released", "Βουλευτής", "Region", "Released politician", True, 1, None))
         return Rows()
 
-    db = SimpleNamespace(execute=AsyncMock(side_effect=execute), scalar=AsyncMock(return_value=0))
+    db = SimpleNamespace(execute=AsyncMock(side_effect=execute), scalar=AsyncMock(return_value=0),
+                         vote_counts=(0,) * 8)
     monkeypatch.setitem(main.app.dependency_overrides, get_db, lambda: db)
 
     @asynccontextmanager
@@ -320,6 +323,7 @@ async def test_results_cache_reuses_totals_but_checks_visibility_and_privacy(rel
     monkeypatch.setattr(limiter, "enabled", False)
     totals = AsyncMock(return_value=VoteTotals(yes=2, no=1, abstain=0, unknown=0,
                                              tier1_total=3, zk_total=0))
+    db.vote_counts = (2, 1, 0, 0, 0, 0, 0, 0)
     monkeypatch.setattr(voting, "aggregate_bill_vote_totals", totals)
     for _ in range(25):
         await voting.get_results("GR-released", db=db)

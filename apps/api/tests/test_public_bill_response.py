@@ -70,7 +70,7 @@ async def test_failed_visibility_query_never_authorizes_a_cached_body(schema):
     body = {"rows": [{"id": "H"}], "point": {"id": "H"}, "representation": snapshot,
             "aggregate": snapshot, "history": [snapshot]}[schema]
     with pytest.raises(RuntimeError, match="visibility unavailable"):
-        await serve_public_bill_body(body, db=db, schema=schema, bill_ids=["H"])
+        await serve_public_bill_body(body, db=db, schema=schema, bill_ids=["H"], point_results=schema == "point")
 
 
 async def test_capture_before_calculation_rejects_a_racing_hide(db):
