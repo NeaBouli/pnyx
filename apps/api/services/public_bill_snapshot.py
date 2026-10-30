@@ -29,7 +29,7 @@ class BillResultInputs:
 building_snapshot = ContextVar("public_bill_snapshot", default=None)
 
 
-async def read_visibility_snapshot(db):
+async def read_visibility_snapshot(db, *, candidates=None):
     """A single statement, scalar columns only; Redis and ORM state cannot authorize.
 
     With suppression disabled this is just an ID/visibility scan. With it enabled,
@@ -38,6 +38,8 @@ async def read_visibility_snapshot(db):
     """
     k = small_cell_k()
     query = select(ParliamentBill.id, results_visible_filter().label("results_visible")).where(public_bill_filter())
+    if candidates is not None:
+        query = query.where(ParliamentBill.id.in_(candidates))
     if k:
         sources = []
         for model, key, choice in (

@@ -32,8 +32,8 @@ async def public_bill_ids(db, candidates=None):
     return set((await db.execute(query)).scalars().all())
 
 
-async def capture_public_bill_body(factory, *, db, point_results=None):
-    snapshot = await read_visibility_snapshot(db)
+async def capture_public_bill_body(factory, *, db, point_results=None, candidates=None):
+    snapshot = await read_visibility_snapshot(db, candidates=candidates)
     if point_results is not None:
         if point_results not in snapshot.result_inputs or results_hidden(snapshot.result_inputs[point_results]):
             raise HTTPException(404, "Public results are no longer visible")
@@ -90,7 +90,13 @@ async def serve_public_bill_body(body, *, db, schema, refresh=None, bill_ids=(),
     try:
         async with asyncio.timeout(10):
             while True:
-                current = await read_visibility_snapshot(db)
+                # Representation contains only the captured bill population.
+                # Recheck all of it (including contributors outside the detail
+                # limit), without scanning unrelated imported bills' text.
+                candidates = None
+                if schema == "representation":
+                    candidates = (set(body[IDS_KEY]) | set(body[RESULTS_IDS_KEY])) if verified_body(body) else ()
+                current = await read_visibility_snapshot(db, candidates=candidates)
                 if schema == "point" and set(bill_ids) - current.listed:
                     raise HTTPException(404, "Public bill not found")
                 inputs_verified = (not point_results or (

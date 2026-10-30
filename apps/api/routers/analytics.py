@@ -621,6 +621,22 @@ async def _load_representation(db, *, force=False):
     return await result_policy.with_result_cache_policy(under_policy)
 
 
+async def _capture_representation(db):
+    # Only bills with votes can enter this aggregate. Scanning the whole bill
+    # corpus here both reads unrelated large texts and expands every public ID
+    # into the aggregate's snapshot IN clause, even on an otherwise tiny fill.
+    candidates = union_all(
+        select(CitizenVote.bill_id),
+        select(func.substr(ZkVoteReceipt.vote_scope_id, 6)).where(
+            ZkVoteReceipt.vote_scope_id.like("bill:%"),
+            ZkVoteReceipt.vote_commitment.in_([choice.value for choice in VoteChoice]),
+        ),
+    )
+    return await capture_public_bill_body(
+        lambda: compute_cumulative_representation(db), db=db, candidates=candidates,
+    )
+
+
 async def _get_cached_representation(db: AsyncSession, generation, *, force=False, policy) -> dict:
     # Policy changes never reuse a less restrictive aggregate. Expiry bounds
     # vote/metadata staleness to 30s from query start, including empty results;
@@ -632,7 +648,7 @@ async def _get_cached_representation(db: AsyncSession, generation, *, force=Fals
     ) as cache:
         await result_policy.result_cache_policy.prepare_redis(cache, REPRESENTATION_CACHE_PREFIX)
         if policy[0] > 0:
-            return await capture_public_bill_body(lambda: compute_cumulative_representation(db), db=db)
+            return await _capture_representation(db)
         available = True
         try:
             async with asyncio.timeout(0.1):
@@ -653,7 +669,7 @@ async def _get_cached_representation(db: AsyncSession, generation, *, force=Fals
 
         await cache_fill_quota("representation")
         expires_at = monotonic() + REPRESENTATION_CACHE_TTL
-        result = await capture_public_bill_body(lambda: compute_cumulative_representation(db), db=db)
+        result = await _capture_representation(db)
         # Round down: a fractional remainder must not extend the visibility bound.
         ttl = int(expires_at - monotonic())
         if (available and generation is not None and ttl > 0
