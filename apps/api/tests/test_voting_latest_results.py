@@ -27,6 +27,9 @@ class _FakeDb:
         self.statement = None
 
     async def execute(self, statement):
+        if str(statement).startswith("SELECT parliament_bills.id \n"):
+            from services.bill_visibility import is_public_bill
+            return _ScalarRows([bill.id for bill in self._bills if is_public_bill(bill)])
         self.statement = statement
         return _ScalarRows(self._bills)
 

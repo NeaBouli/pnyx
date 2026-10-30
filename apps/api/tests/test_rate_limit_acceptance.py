@@ -139,6 +139,8 @@ def test_storage_recovery_restores_shared_backend(
 def test_public_shared_counter_outage_keeps_http_contract(
     acceptance_client: TestClient, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    # The exact Retry-After assertion needs a fixed window clock under suite load.
+    monkeypatch.setattr(ip_utils, "time", SimpleNamespace(monotonic=lambda: 100.0))
     monkeypatch.setattr(ip_utils, "_fallback_counts", {})
     redis = SimpleNamespace(eval=AsyncMock(side_effect=RedisConnectionError("client-identifier")))
     monkeypatch.setattr(public_api, "get_redis", AsyncMock(return_value=redis))

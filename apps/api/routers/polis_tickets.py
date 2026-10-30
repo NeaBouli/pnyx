@@ -179,7 +179,7 @@ async def register_polis_key(
 
 @router.get("/tickets", dependencies=[Depends(enforce_route_limit)])
 @client_flow
-@public_client_cache()
+@public_client_cache(bill_schema="independent")
 async def list_tickets(
     category: str | None = None,
     status: str | None = None,

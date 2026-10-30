@@ -636,10 +636,11 @@ async def public_cplm_history(
     days: int = 30,
     _key=Depends(rate_limit_check),
     request: Request = None,
+    db: AsyncSession = Depends(get_db),
 ):
     """CPLM historical snapshots. CC BY 4.0."""
     from services.cplm import get_cplm_history
-    entries = await get_cplm_history(min(days, 365))
+    entries = await get_cplm_history(min(days, 365), db=db)
     return {"snapshots": entries, "count": len(entries), "data_license": "CC BY 4.0"}
 
 

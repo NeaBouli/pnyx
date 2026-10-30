@@ -31,7 +31,7 @@ router = APIRouter(prefix="/api/v1", tags=["MOD-16 Municipal"])
 
 @router.get("/periferia", dependencies=[Depends(enforce_route_limit)])
 @client_flow
-@public_client_cache()
+@public_client_cache(bill_schema="independent")
 async def list_periferies(
     is_active: Optional[bool] = Query(True, description="Filter by active status"),
     db: AsyncSession = Depends(get_db),
@@ -64,7 +64,7 @@ async def _validate_periferia(*, periferia_id, db, **kwargs):
 
 @router.get("/periferia/{periferia_id}/dimos", dependencies=[Depends(enforce_route_limit)])
 @client_flow
-@public_client_cache(validate=_validate_periferia, sensitive=True)
+@public_client_cache(bill_schema="independent", validate=_validate_periferia, sensitive=True)
 async def list_dimos_by_periferia(
     periferia_id: int = Path(..., ge=1),
     is_active: Optional[bool] = Query(True, description="Filter by active status"),

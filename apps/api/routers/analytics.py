@@ -34,13 +34,13 @@ from services.source_links import parliament_attribution_fields
 from models import ParliamentBill, CitizenVote, BillStatus, VoteChoice, ZkVoteReceipt
 from services.bill_visibility import (
     is_public_bill,
-    filter_public_bill_rows,
     public_bill_filter,
     public_bill_raw_sql,
     public_bill_with_demo_filter,
     results_hidden,
     results_visible_filter,
 )
+from services.public_bill_response import BODY_KEY, capture_public_bill_body, public_bill_response
 from services.zk_vote_aggregation import (
     VoteTotals,
     aggregate_bill_vote_totals,
@@ -129,7 +129,7 @@ async def compute_divergence(
 
 @router.get("/overview", dependencies=[Depends(enforce_route_limit)])
 @client_flow
-@public_client_cache(quota="30/minute", aggregate=True, sensitive=True)
+@public_client_cache(bill_schema="aggregate", quota="30/minute", aggregate=True, sensitive=True)
 async def analytics_overview(db: AsyncSession = Depends(get_db), request: Request = None):
     """Plattform-weite Statistiken + Divergence Übersicht."""
     _real = public_bill_with_demo_filter()
@@ -588,19 +588,18 @@ async def compute_cumulative_representation(db: AsyncSession) -> dict:
 @router.get("/representation", dependencies=[Depends(enforce_route_limit)])
 @public_heavy
 async def cumulative_representation(db: AsyncSession = Depends(get_db), request: Request = None) -> dict:
-    result = await get_cached_representation(db)
-    # Include last_bill in the same indexed visibility check as the detail list.
-    rows = result["bills"] + ([result["last_bill"]] if result["last_bill"] else [])
-    visible = await filter_public_bill_rows(rows, db=db, id_key="bill_id")
-    ids = {row["bill_id"] for row in visible}
-    return dict(result, bills=[row for row in result["bills"] if row["bill_id"] in ids],
-                last_bill=result["last_bill"] if result["last_bill"] and result["last_bill"]["bill_id"] in ids else None)
+    return await get_cached_representation(db)
 
 
 _representation_flights = SingleFlight()
 
 
+@public_bill_response("representation")
 async def get_cached_representation(db: AsyncSession) -> dict:
+    return await _load_representation(db)
+
+
+async def _load_representation(db):
     async def current(generation):
         return await _representation_flights.run(
             (small_cell_k(), generation), lambda: _get_cached_representation(db, generation),
@@ -623,10 +622,11 @@ async def _get_cached_representation(db: AsyncSession, generation) -> dict:
                 raw = await cache.get(key)
             if raw and generation is not None:
                 cached = json.loads(raw)
-                if (isinstance(cached, dict) and "cumulative_representation" in cached
-                        and isinstance(cached.get("bills"), list)
+                value = cached.get(BODY_KEY, {}) if isinstance(cached, dict) else {}
+                if ("cumulative_representation" in value
+                        and isinstance(value.get("bills"), list)
                         and cached.pop("_public_visibility_generation", None) == generation):
-                    cached["bills"] = cached["bills"][-200:]
+                    value["bills"] = value["bills"][-200:]
                     return cached
         except (RedisError, OSError):
             available = False
@@ -636,7 +636,7 @@ async def _get_cached_representation(db: AsyncSession, generation) -> dict:
 
         await cache_fill_quota("representation")
         expires_at = monotonic() + REPRESENTATION_CACHE_TTL
-        result = await compute_cumulative_representation(db)
+        result = await capture_public_bill_body(lambda: compute_cumulative_representation(db), db=db)
         # Round down: a fractional remainder must not extend the visibility bound.
         ttl = int(expires_at - monotonic())
         if available and generation is not None and ttl > 0:

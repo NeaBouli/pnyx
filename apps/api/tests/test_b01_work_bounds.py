@@ -226,7 +226,10 @@ async def test_cplm_concurrent_misses_compute_once(monkeypatch):
         return {"x": 0.1, "y": 0.2}
     calculate = AsyncMock(side_effect=compute)
     monkeypatch.setattr(cplm, "compute_cplm", calculate)
-    results = await asyncio.gather(*(cplm.get_cplm_cached(object()) for _ in range(50)))
+    db = SimpleNamespace(execute=AsyncMock(return_value=SimpleNamespace(
+        scalars=lambda: SimpleNamespace(all=lambda: []),
+    )))
+    results = await asyncio.gather(*(cplm.get_cplm_cached(db) for _ in range(50)))
     assert all(result == results[0] for result in results)
     assert calculate.await_count == store.lpush.await_count == 1
 
@@ -309,7 +312,10 @@ async def test_zk_members_cache_is_by_published_root_off_thread_and_detects_chan
     members = ["1", "2"]
     monkeypatch.setattr(zk, "_ensure_scope_public_or_safe_canary", AsyncMock())
     monkeypatch.setattr(zk, "list_public_group_members_for_scope", AsyncMock(side_effect=lambda *a, **k: list(members)))
-    db = SimpleNamespace(execute=AsyncMock(return_value=SimpleNamespace(scalar_one_or_none=lambda: root)))
+    db = SimpleNamespace(execute=AsyncMock(return_value=SimpleNamespace(
+        scalar_one_or_none=lambda: root,
+        scalars=lambda: SimpleNamespace(all=lambda: ["target"]),
+    )))
     threads = []
     def build(values):
         threads.append(threading.get_ident())
@@ -352,7 +358,11 @@ def test_summary_generation_only_uses_allowlisted_cache_keys(limited_app, monkey
     from services import ollama_service
     client, session, _ = limited_app
     bill = SimpleNamespace(summary_short_el=None, summary_short_en=None, summary_long_el=None, summary_long_en=None, pill_el=None, pill_en=None, source="PARLIAMENT", title_el="title", title_en=None, status=BillStatus.ACTIVE, categories=[])
-    session.execute.return_value = SimpleNamespace(scalar_one_or_none=lambda: bill)
+    async def execute(statement):
+        if str(statement).startswith("SELECT parliament_bills.id \n"):
+            return SimpleNamespace(scalars=lambda: SimpleNamespace(all=lambda: ["first"]))
+        return SimpleNamespace(scalar_one_or_none=lambda: bill)
+    session.execute.side_effect = execute
     cache = SimpleNamespace(get=AsyncMock(return_value=None), setex=AsyncMock())
     import redis.asyncio as redis
     monkeypatch.setattr(redis, "from_url", lambda *a, **k: cache)

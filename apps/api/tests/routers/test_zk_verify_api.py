@@ -68,8 +68,13 @@ class _FakeSequenceDb:
         self.committed = False
         self.rolled_back = False
         self._next_id = 1
+        from services.bill_visibility import is_public_bill
+        self.visible_bill_ids = [value.id for value in values
+                                 if hasattr(value, "source") and is_public_bill(value)]
 
     async def execute(self, statement):
+        if str(statement).startswith("SELECT parliament_bills.id \n"):
+            return _FakeResult(self.visible_bill_ids)
         self.executed.append(statement)
         value = self.values.pop(0)
         if isinstance(value, list):

@@ -16,8 +16,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from database import get_db
 from models import BillStatus
-from routers import admin, analytics, notifications, parliament
+from routers import admin, analytics, notifications, parliament, public_api
 from services import bill_lifecycle
+from services.public_bill_response import BODY_KEY, IDS_KEY
 
 CHOICES = ("YES", "NO", "ABSTAIN", "UNKNOWN")
 
@@ -153,7 +154,8 @@ async def test_endpoint_contract_combines_sources_and_preserves_rounding(
     result = response.json()
     cached = json.loads(cache.writes[0][2])
     assert cached.pop("_public_visibility_generation") == 0
-    assert cached == result
+    assert cached[IDS_KEY] == ["A", "B", "C"]
+    assert cached[BODY_KEY] == result
     for projected in result["bills"] + [result["last_bill"]]:
         assert projected.pop("source") == "PARLIAMENT"
         assert projected.pop("parliament_url") is None
@@ -270,7 +272,8 @@ async def test_delayed_fill_expires_from_snapshot_start(
     monkeypatch.setattr(analytics, "compute_cumulative_representation", delayed_compute)
     response = await client.get("/api/v1/analytics/representation")
     assert response.status_code == 200
-    assert response.json()["bills_analyzed"] == (0 if empty else 1)
+    assert response.json()["bills_analyzed"] == (0 if empty else None)
+    assert response.json()["bills"] == []
     remaining = int(30 - delay)
     if remaining > 0:
         assert len(cache.writes) == 1
@@ -519,7 +522,7 @@ async def test_invalidation_client_setup_failure_does_not_fail_write(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("outage", [False, True])
-async def test_representation_misses_coalesce_and_outage_recomputes(cache, monkeypatch, outage):
+async def test_representation_misses_coalesce_and_outage_recomputes(db, cache, monkeypatch, outage):
     import asyncio
     from services.representation_cache import invalidate_representation_cache
     cache.read_error = outage
@@ -528,16 +531,16 @@ async def test_representation_misses_coalesce_and_outage_recomputes(cache, monke
         return {"cumulative_representation": 50, "bills": [], "last_bill": None}
     calculate = AsyncMock(side_effect=compute)
     monkeypatch.setattr(analytics, "compute_cumulative_representation", calculate)
-    responses = await asyncio.gather(*(analytics.cumulative_representation(db=object()) for _ in range(50)))
+    responses = await asyncio.gather(*(analytics.cumulative_representation(db=db) for _ in range(50)))
     assert all(response == responses[0] for response in responses)
     assert calculate.await_count == 1
-    await analytics.cumulative_representation(db=object())
+    await analytics.cumulative_representation(db=db)
     assert calculate.await_count == (2 if outage else 1)
     await invalidate_representation_cache()
-    await analytics.cumulative_representation(db=object())
+    await analytics.cumulative_representation(db=db)
     assert calculate.await_count == (3 if outage else 2)
     cache.now = 31
-    await analytics.cumulative_representation(db=object())
+    await analytics.cumulative_representation(db=db)
     assert calculate.await_count == (4 if outage else 3)
 
 
@@ -600,3 +603,42 @@ async def test_representation_generation_outage_never_reuses_a_body(
         assert response["bills"] == []
         assert response["bills_analyzed"] == 0
         assert len(cache.writes) == 1  # An unverified generation is never stored.
+
+
+@pytest.mark.parametrize("path", ["/api/v1/public/representation", "/api/v1/analytics/representation"])
+@pytest.mark.parametrize("hide", ["admin_hidden = TRUE", "source = 'DIAVGEIA', summary_long_el = 'AMKA'"])
+async def test_one_second_old_representation_after_committed_hide_and_redis_recovery(
+    db, cache, visibility_redis, monkeypatch, path, hide,
+):
+    from services.representation_cache import commit_and_invalidate_representation
+    app = FastAPI()
+    app.include_router(public_api.router)
+    app.include_router(analytics.router)
+    app.dependency_overrides[get_db] = lambda: db
+    app.dependency_overrides[public_api.rate_limit_check] = lambda: None
+    await bill(db, "Z-HIDDEN", title="Hidden title", party={"ND": "YES"})
+    await votes(db, "Z-HIDDEN", (17, 0, 0, 0))
+    await bill(db, "A-VISIBLE", title="Visible title", party={"ND": "NO"})
+    await votes(db, "A-VISIBLE", (10, 0, 0, 0))
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as http:
+        assert (await http.get(path)).json()["total_citizen_votes"] == 27
+        stored = dict(cache.values)
+        visibility_redis.down = True
+        cache.write_error = True
+        await db.execute(text(f"UPDATE parliament_bills SET {hide} WHERE id = 'Z-HIDDEN'"))
+        await commit_and_invalidate_representation(db)
+        assert cache.values == stored  # Failed bump and deletion left the body alive.
+        assert cache.generation == visibility_redis.generation == 0
+        visibility_redis.down = cache.write_error = False
+        cache.now = 1
+        monkeypatch.setattr(analytics, "compute_cumulative_representation",
+                            AsyncMock(side_effect=RuntimeError("refresh unavailable")))
+        response = await http.get(path)
+        assert response.status_code == 200
+        result = response.json()
+        assert [row["bill_id"] for row in result["bills"]] == ["A-VISIBLE"]
+        assert result["last_bill"] is None  # HIDDEN is last in the query's bill-ID order.
+        assert all(result[key] is None for key in ("total_citizen_votes", "bills_analyzed",
+                                                   "cumulative_representation", "cumulative_divergence"))
+        assert "Hidden title" not in response.text and "Z-HIDDEN" not in response.text
+        assert cache.values == stored

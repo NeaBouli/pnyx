@@ -16,7 +16,10 @@ import os
 from models import CitizenVote, VoteChoice, ParliamentBill, BillStatus
 from services.bill_visibility import public_bill_filter, results_visible_filter
 from services.small_cell import small_cell_k
-from services.request_work import coalesce, cache_fill_quota
+from services.request_work import SingleFlight, cache_fill_quota
+from services.public_bill_response import (
+    BODY_KEY, capture_public_bill_body, public_bill_response, serve_public_bill_body,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -187,34 +190,53 @@ def _store_snapshot(snapshot: dict, k: int) -> str:
 def _read_snapshot(raw: str, k: int) -> dict:
     stored = json.loads(raw)
     verified = bool(k and stored.get("policy") == "publishable-v1")
-    return publish_cplm(stored["snapshot"] if verified else stored, verified=verified)
+    snapshot = stored["snapshot"] if verified else stored
+    if BODY_KEY in snapshot:
+        return dict(snapshot, **{BODY_KEY: publish_cplm(snapshot[BODY_KEY], verified=verified)})
+    return publish_cplm(snapshot, verified=verified)
 
 
-@coalesce(lambda: f"cplm:k{small_cell_k()}")
+async def _fresh_cplm(db):
+    return await _get_cplm_cached(db, force=True)
+
+
+@public_bill_response("aggregate", refresh=_fresh_cplm)
 async def get_cplm_cached(db: AsyncSession) -> dict:
+    return await _get_cplm_cached(db)
+
+
+_cplm_flights = SingleFlight()
+
+
+async def _get_cplm_cached(db: AsyncSession, *, force=False) -> dict:
+    return await _cplm_flights.run((small_cell_k(), force), lambda: _load_cplm(db, force=force))
+
+
+async def _load_cplm(db, *, force=False):
     """Get CPLM aggregate, using Redis cache if available."""
     r = aioredis.from_url(REDIS_URL, decode_responses=True)
     try:
-        # Keep flag-off cache/history byte-compatible and never reuse its unchecked
-        # trend deltas when suppression is enabled (including after changing k).
+        # Never reuse unchecked trend deltas after enabling suppression or changing k.
+        # The private envelope also fences snapshots written before this rollout.
         k = small_cell_k()
         suffix = f":publishable-v1:k{k}" if k else ""
         cache_key, history_key = CACHE_KEY + suffix, HISTORY_KEY + suffix
         cached = await r.get(cache_key)
-        if cached:
+        if cached and not force:
             return _read_snapshot(cached, k)
 
         await cache_fill_quota("cplm")
-        result = await compute_cplm(db)
+        snapshot = await capture_public_bill_body(lambda: compute_cplm(db), db=db)
+        result = snapshot[BODY_KEY]
 
         # Cache + store history snapshot
-        await r.setex(cache_key, CACHE_TTL, _store_snapshot(result, k))
+        await r.setex(cache_key, CACHE_TTL, _store_snapshot(snapshot, k))
 
         # Compute trend from previous snapshot
         prev = await r.lindex(history_key, 0)
         if prev:
-            prev_data = _read_snapshot(prev, k)
-        if prev and result["x"] is not None and prev_data["x"] is not None:
+            prev_data = await serve_public_bill_body(_read_snapshot(prev, k), db=db, schema="aggregate")
+        if prev and prev_data and result["x"] is not None and prev_data["x"] is not None:
             x_delta = result["x"] - prev_data.get("x", 0)
             y_delta = result["y"] - prev_data.get("y", 0)
             if abs(x_delta) > abs(y_delta):
@@ -226,16 +248,17 @@ async def get_cplm_cached(db: AsyncSession) -> dict:
             result["trend"] = {"x_delta": round(x_delta, 4), "y_delta": round(y_delta, 4), "direction": direction}
 
         # Push to history (keep last 365 entries)
-        await r.lpush(history_key, _store_snapshot(result, k))
+        await r.lpush(history_key, _store_snapshot(snapshot, k))
         await r.ltrim(history_key, 0, 364)
 
-        return result
+        return snapshot
 
     finally:
         await r.aclose()
 
 
-async def get_cplm_history(days: int = 30) -> list[dict]:
+@public_bill_response("history")
+async def get_cplm_history(days: int = 30, *, db: AsyncSession) -> list[dict]:
     """Get historical CPLM snapshots from Redis."""
     r = aioredis.from_url(REDIS_URL, decode_responses=True)
     k = small_cell_k()

@@ -1,7 +1,6 @@
 """Small, short-lived caches for released clients sharing public reads."""
 import asyncio
 from collections import OrderedDict
-from copy import deepcopy
 from functools import wraps
 from inspect import signature
 import logging
@@ -12,6 +11,7 @@ from fastapi.params import Param
 from limits import parse
 from services.request_work import SingleFlight, WaitingWorkSlots
 from services.public_visibility_cache import with_public_visibility_generation
+from services.public_bill_response import BILL_SCHEMAS, capture_public_bill_body, serve_public_bill_body
 
 
 logger = logging.getLogger(__name__)
@@ -174,8 +174,7 @@ def public_policy_key():
     return ("public-visibility-v1", tuple(DIAVGEIA_SENSITIVE_PUBLIC_TERMS), small_cell_k())
 
 
-def public_client_cache(*, quota="600/minute", aggregate=False, validate=None, sensitive=False,
-                        filter_bills=None):
+def public_client_cache(*, bill_schema, quota="600/minute", aggregate=False, validate=None, sensitive=False):
     """Cache only explicitly decorated public responses, never signed reads.
 
     All declared path/query arguments participate, including defaults. Undeclared
@@ -183,6 +182,8 @@ def public_client_cache(*, quota="600/minute", aggregate=False, validate=None, s
     contain identity material). Headers, Request and DB sessions are not keys.
     Validation precedes all cache accounting. Soft budgets only log leaders.
     """
+    if bill_schema not in BILL_SCHEMAS - {"point", "history"}:
+        raise ValueError(f"Unknown public bill schema: {bill_schema}")
     def decorate(function):
         name = f"{function.__module__}.{function.__name__}"
         cache = public_caches.setdefault(name, ClientFlowCache(
@@ -191,6 +192,8 @@ def public_client_cache(*, quota="600/minute", aggregate=False, validate=None, s
             visibility_sensitive=True,
         ))
         budget = SoftFillBudget(name, quota)
+        cache.public_bill_schema = bill_schema
+        cache.public_visibility_filter = serve_public_bill_body
         parameters = signature(function)
 
         @wraps(function)
@@ -214,7 +217,11 @@ def public_client_cache(*, quota="600/minute", aggregate=False, validate=None, s
 
             async def fill():
                 budget.observe()
-                return await function(*bound.args, **bound.kwargs)
+                async def calculate():
+                    return await function(*bound.args, **bound.kwargs)
+                if bill_schema in {"aggregate", "representation"}:
+                    return await capture_public_bill_body(calculate, db=bound.arguments["db"])
+                return await calculate()
 
             async def refresh():
                 async def using_db(db):
@@ -222,18 +229,33 @@ def public_client_cache(*, quota="600/minute", aggregate=False, validate=None, s
                     if validate is not None:
                         await cache.check_eligibility(lambda: validate(**arguments), key=key)
                     budget.observe()
-                    return await function(**arguments)
+                    async def calculate():
+                        return await function(**arguments)
+                    if bill_schema in {"aggregate", "representation"}:
+                        return await capture_public_bill_body(calculate, db=db)
+                    return await calculate()
                 return await with_cache_db(using_db)
 
             # Callers may modify Pydantic models/lists without changing a hit.
-            body = deepcopy(await cache.get_or_fill(key, fill, background_factory=refresh))
-            if filter_bills is not None:
-                body = await filter_bills(body, **bound.arguments)
-            return body
+            body = await cache.get_or_fill(key, fill, background_factory=refresh)
+
+            async def refresh_visible():
+                nonlocal body
+                entry = cache.entries.get(key)
+                if entry is not None and entry[1] is body:
+                    cache.invalidate(key)
+                body = await cache.get_or_fill(key, fill, background_factory=refresh)
+                return body
+
+            return await serve_public_bill_body(
+                body, db=bound.arguments.get("db"), schema=bill_schema, refresh=refresh_visible,
+            )
 
         wrapped.public_cache = cache
         wrapped.public_fill_budget = budget
         wrapped.public_cache_parameters = frozenset(parameters.parameters) - {"db", "request"}
+        wrapped.public_bill_schema = bill_schema
+        wrapped.public_visibility_filter = serve_public_bill_body
         return wrapped
     return decorate
 

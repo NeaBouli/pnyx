@@ -116,6 +116,9 @@ class Db:
 
     async def execute(self, query, *_):
         self.queries.append(query)
+        if str(query).startswith("SELECT parliament_bills.id \n"):
+            from services.bill_visibility import is_public_bill
+            return Rows([self.bill.id] if is_public_bill(self.bill) else [])
         return Rows(self.rows.pop(0))
 
     async def scalar(self, *_):
@@ -438,8 +441,12 @@ async def test_cplm_one_yes_is_withheld_in_compute_cache_and_http_history(monkey
             return json.dumps(legacy)
         async def lrange(self, *_):
             return [json.dumps(legacy), json.dumps({**legacy, "total_voters": 10})]
-        async def aclose(self):
-            pass
+        async def setex(self, *_): pass
+        async def lindex(self, *_): return None
+        async def lpush(self, *_): pass
+        async def ltrim(self, *_): pass
+        async def aclose(self): pass
+    monkeypatch.setattr(cplm, "compute_cplm", AsyncMock(return_value=computed))
     monkeypatch.setattr(cplm.aioredis, "from_url", lambda *_, **__: Redis())
     app = FastAPI()
     app.include_router(cplm_router.router)
@@ -447,10 +454,10 @@ async def test_cplm_one_yes_is_withheld_in_compute_cache_and_http_history(monkey
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         aggregate_response = (await client.get("/api/v1/cplm/aggregate")).json()
         history = (await client.get("/api/v1/cplm/history")).json()["snapshots"]
-    for point in (aggregate_response, history[0]):
+    for point in (aggregate_response,):
         assert point["suppressed"] is True and point["suppression_k"] == 10
         assert all(point[key] is None for key in ("x", "y", "quadrant", "total_votes", "total_voters", "trend"))
-    assert history[1]["x"] is None and history[1]["suppressed"] is True
+    assert history == []  # Unverified legacy bill provenance cannot authorize history.
 
 
 @pytest.mark.asyncio
@@ -668,17 +675,17 @@ async def test_cplm_safe_economic_plus_one_social_vote_never_enters_compute_cach
     class Redis:
         async def get(self, key):
             keys.append(key)
-            return cplm._store_snapshot(computed, 10)
+            return cplm._store_snapshot({"_public_bill_body": computed, "_public_bill_ids": []}, 10)
         async def lrange(self, key, *_):
             keys.append(key)
-            return [cplm._store_snapshot(computed, 10), json.dumps({**computed, 'total_votes': 41, 'y': .0012})]
+            return [cplm._store_snapshot({"_public_bill_body": computed, "_public_bill_ids": []}, 10), json.dumps({**computed, 'total_votes': 41, 'y': .0012})]
         async def aclose(self):
             pass
     monkeypatch.setattr(cplm.aioredis, 'from_url', lambda *_, **__: Redis())
     assert await cplm.get_cplm_cached(Db()) == computed
-    history = await cplm.get_cplm_history()
+    history = await cplm.get_cplm_history(db=Db())
     assert history[0] == computed
-    assert history[1]['total_votes'] is None and history[1]['y'] is None
+    assert len(history) == 1  # Legacy history without bill provenance is withheld.
     assert all(':publishable-v1:k10' in key for key in keys)
 
 

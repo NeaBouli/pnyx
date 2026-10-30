@@ -22,6 +22,7 @@ from sqlalchemy.exc import IntegrityError
 
 from services.representation_cache import commit_and_invalidate_representation
 from services.client_flow_cache import public_policy_key, results_cache, with_cache_db
+from services.public_bill_response import public_bill_response
 from database import get_db
 from rate_limit import client_flow, enforce_route_limit, limiter, public_heavy
 from models import (
@@ -1231,6 +1232,7 @@ async def get_votes_in_progress(db: AsyncSession = Depends(get_db), request: Req
 
 @router.get("/{bill_id}/results", response_model=BillResults, dependencies=[Depends(enforce_route_limit)])
 @client_flow
+@public_bill_response("point")
 async def get_results(bill_id: str, db: AsyncSession = Depends(get_db), request: Request = None):
     """
     Abstimmungsergebnisse + Divergence Score.

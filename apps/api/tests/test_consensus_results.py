@@ -25,6 +25,9 @@ class _Result:
     def mappings(self):
         return self
 
+    def scalars(self):
+        return self
+
     def all(self):
         return self._rows
 
@@ -37,8 +40,12 @@ class _Session:
         self.results = list(results)
         self.params = []
         self.statements = []
+        self.visibility_queries = []
 
     async def execute(self, statement, params=None):
+        if str(statement).startswith("SELECT parliament_bills.id \n"):
+            self.visibility_queries.append(statement)
+            return _Result(rows=["DIAV-1", "DIAV-2", "DIAV-3"])
         self.statements.append(str(statement))
         self.params.append(params or {})
         return self.results.pop(0)
@@ -181,6 +188,7 @@ async def test_representation_endpoint_keeps_views_separate_and_public():
     assert result["views"]["regional"]["bill_count"] == 0
     assert result["views"]["national"]["consensus_vote_count"] == 2
     assert result["coverage"]["complete_geographic_representation"] is False
+    assert len(db.visibility_queries) == 2  # Provenance at fill, fresh authorization at serve.
     assert all("sensitive_term_0" in params for params in db.params[2:])
     assert all(params["k_anonymity_min"] == K_ANONYMITY_MIN for params in db.params[3:])
     assert all("HAVING COUNT(*) >= :k_anonymity_min" in statement for statement in db.statements[3:])

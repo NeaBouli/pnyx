@@ -110,6 +110,9 @@ async def released_backend(monkeypatch):
     async def execute(statement, *args):
         sql = str(statement)
         params = statement.compile().params
+        if sql.startswith("SELECT parliament_bills.id \n"):
+            from services.bill_visibility import is_public_bill
+            return Rows([bill.id] if is_public_bill(bill) else [])
         if "identity_records" in sql:
             if args:
                 return Rows(keys[args[0]["nullifier"]].verify_key.encode().hex())

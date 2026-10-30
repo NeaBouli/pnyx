@@ -16,11 +16,12 @@ from sqlalchemy import select, func, text
 from sqlalchemy.exc import IntegrityError
 from database import get_db
 from services.client_flow_cache import public_client_cache
+from services.public_bill_response import public_bill_response
 from rate_limit import client_flow, enforce_route_limit, generate, limiter, public_heavy, public_read
 
 DISCOURSE_BASE = os.getenv("DISCOURSE_BASE_URL", "https://pnyx.ekklesia.gr")
 from dependencies import verify_admin_key
-from services.bill_visibility import filter_public_bill_rows, is_public_bill, public_bill_with_demo_filter
+from services.bill_visibility import is_public_bill, public_bill_with_demo_filter
 from services.citizen_action_integrity import (
     build_flag_payload,
     citizen_action_timestamp_is_fresh,
@@ -212,7 +213,7 @@ def _region_filter_conditions(
 
 @router.get("", response_model=list[BillSummary], dependencies=[Depends(enforce_route_limit)])
 @client_flow
-@public_client_cache(validate=_validate_bill_filters, filter_bills=filter_public_bill_rows)
+@public_client_cache(bill_schema="rows", validate=_validate_bill_filters)
 async def get_bills(
     status_filter: str | None = Query(None, alias="status"),
     status_any: str | None = Query(None),
@@ -327,7 +328,7 @@ async def get_bills(
 
 @router.get("/trending", response_model=list[BillSummary], dependencies=[Depends(enforce_route_limit)])
 @client_flow
-@public_client_cache(quota="60/minute", filter_bills=filter_public_bill_rows)
+@public_client_cache(bill_schema="rows", quota="60/minute")
 async def get_trending(
     limit: int = Query(10, ge=1, le=50),
     db: AsyncSession = Depends(get_db),
@@ -437,6 +438,7 @@ async def get_bill(bill_id: str, db: AsyncSession = Depends(get_db), request: Re
 
 @router.get("/{bill_id}/summary", dependencies=[Depends(enforce_route_limit)])
 @generate
+@public_bill_response("point")
 async def get_bill_summary(
     request: Request,
     bill_id: str,

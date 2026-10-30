@@ -9,6 +9,7 @@ import os
 from collections import OrderedDict
 from services.request_work import BoundedExecutor, SingleFlight
 from services.client_flow_cache import scope_status_cache, with_cache_db
+from services.public_bill_response import public_bill_response
 from pathlib import Path
 from typing import Any
 
@@ -593,6 +594,9 @@ def _zk_status() -> ZkStatusResponse:
 
 @router.get("/scopes/{vote_scope_id}/status", response_model=ZkScopeStatusResponse, dependencies=[Depends(enforce_route_limit)])
 @client_poll
+@public_bill_response("point", bill_ids=lambda arguments: (
+    () if _env_enabled(ZK_CANARY_ENABLED_ENV) else (arguments["vote_scope_id"].split(":", 1)[1],)
+))
 async def get_zk_scope_status(
     vote_scope_id: str = FastAPIPath(
         ...,
@@ -953,6 +957,9 @@ async def get_current_zk_root(
 
 @router.get("/roots/{vote_scope_id}/members", response_model=ZkRootMembersResponse, dependencies=[Depends(enforce_route_limit)])
 @client_flow
+@public_bill_response("point", bill_ids=lambda arguments: (
+    () if _env_enabled(ZK_CANARY_ENABLED_ENV) else (arguments["vote_scope_id"].split(":", 1)[1],)
+))
 async def get_current_zk_root_members(
     vote_scope_id: str = FastAPIPath(
         ...,

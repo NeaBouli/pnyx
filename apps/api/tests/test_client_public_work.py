@@ -19,7 +19,11 @@ def overview_data(monkeypatch, db, count=100):
     bills = [ParliamentBill(id=f'GR-{i}', title_el=f'Public {i}', source='PARLIAMENT',
                            status=BillStatus.PARLIAMENT_VOTED, party_votes_parliament={'ND': 'YES'})
              for i in range(count)]
-    db.execute = AsyncMock(return_value=Rows(bills))
+    async def execute(statement):
+        if str(statement).startswith("SELECT parliament_bills.id \n"):
+            return Rows([bill.id for bill in bills])
+        return Rows(bills)
+    db.execute = AsyncMock(side_effect=execute)
     db.scalar = AsyncMock(return_value=count)
     votes = AsyncMock(wraps=analytics.count_public_votes)
     monkeypatch.setattr(analytics, 'count_public_votes', votes)
@@ -42,14 +46,14 @@ async def test_fifty_overview_http_reads_aggregate_one_hundred_bills_once(releas
         assert all(r.status_code == 200 for r in responses)
         assert all(r.json() == responses[0].json() for r in responses)
         assert totals.await_count == 100
-        assert db.execute.await_count == 1 and db.scalar.await_count == 9
+        assert db.execute.await_count == 52 and db.scalar.await_count == 9
         assert votes.await_count == 3
         # Hits don't extend TTL; the next window recomputes exactly once.
         clock.now += 5
         assert (await client.get('/api/v1/analytics/overview')).status_code == 200
         await asyncio.gather(*analytics.analytics_overview.public_cache.flights._tasks)
         assert totals.await_count == 200
-    print('overview 50 concurrent HTTP 200s / 100 bills: 100 aggregations, 1 bill scan, 9 count SQL calls (one fill)')
+    print('overview 50 concurrent HTTP 200s / 100 bills: 100 aggregations, 1 bill scan, 51 visibility checks, 9 counts (one fill)')
 
 
 @pytest.mark.asyncio
@@ -75,7 +79,7 @@ async def test_overview_soft_fill_budget_logs_without_rejecting_other_clients(re
             with caplog.at_level('INFO', logger='services.client_flow_cache'):
                 response = await other.get('/api/v1/analytics/overview')
         assert response.status_code == 200
-        assert db.execute.await_count == calls + 1
+        assert db.execute.await_count == calls + 3
         assert budget.count == 31
         assert 'event=soft_budget_exceeded route=routers.analytics.analytics_overview' in caplog.text
 
@@ -119,6 +123,8 @@ async def test_mp_ranking_aggregates_each_bill_once_across_parties_and_readers(r
              for i in range(100)]
     async def execute(statement):
         await asyncio.sleep(0)
+        if str(statement).startswith("SELECT parliament_bills.id \n"):
+            return Rows([bill.id for bill in bills])
         return Rows(bills if 'parliament_bills' in str(statement) else parties)
     db.execute = AsyncMock(side_effect=execute)
     majority = AsyncMock(return_value=('YES', 50, 30, 80))
@@ -126,7 +132,7 @@ async def test_mp_ranking_aggregates_each_bill_once_across_parties_and_readers(r
     async with AsyncClient(transport=ASGITransport(app=main.app), base_url='http://test') as client:
         responses = await asyncio.gather(*(client.get('/api/v1/mp/ranking') for _ in range(50)))
         assert all(r.status_code == 200 and len(r.json()['ranking']) == 8 for r in responses)
-        assert majority.await_count == 100 and db.execute.await_count == 2
+        assert majority.await_count == 100 and db.execute.await_count == 53
 
 
 @pytest.mark.asyncio

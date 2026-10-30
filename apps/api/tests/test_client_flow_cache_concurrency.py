@@ -21,6 +21,8 @@ def slow_released_sql(released_backend, monkeypatch):
     async def execute(statement, *args):
         await asyncio.sleep(0.02)
         sql = str(statement)
+        if sql.startswith("SELECT parliament_bills.id \n"):
+            return Rows(statement.compile().params.get("id_1", ["GR-released"]))
         if "FROM periferia WHERE" in sql:
             return Rows(1)
         if "FROM dimos WHERE" in sql:
@@ -289,7 +291,7 @@ async def test_background_refresh_owns_db_and_invalidation_separates_inflight_ge
 
     monkeypatch.setattr("database.AsyncSessionLocal", session)
 
-    @client_flow_cache.public_client_cache(quota="1/minute")
+    @client_flow_cache.public_client_cache(bill_schema="independent", quota="1/minute")
     async def read(db):
         seen.append(db)
         if db is refresh_db:
