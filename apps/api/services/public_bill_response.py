@@ -12,6 +12,7 @@ from models import ParliamentBill
 from services.bill_visibility import filter_public_bill_rows, public_bill_filter, results_hidden
 from services.public_bill_snapshot import building_snapshot, read_visibility_snapshot
 from services.result_cache_policy import with_result_cache_policy
+from services.bill_id_set import bill_ids_filter
 
 
 BILL_SCHEMAS = frozenset({"independent", "rows", "aggregate", "representation", "point", "history"})
@@ -26,14 +27,16 @@ async def public_bill_ids(db, candidates=None):
     if candidates is not None and not candidates:
         return set()
     query = select(ParliamentBill.id).where(public_bill_filter())
-    if candidates is not None and len(candidates) <= 500:
-        query = query.where(ParliamentBill.id.in_(candidates))
+    if candidates is not None:
+        query = query.where(bill_ids_filter(ParliamentBill.id, candidates))
     # Scalar SQL bypasses stale ORM visibility fields in the identity map.
     return set((await db.execute(query)).scalars().all())
 
 
-async def capture_public_bill_body(factory, *, db, point_results=None):
-    snapshot = await read_visibility_snapshot(db)
+async def capture_public_bill_body(factory, *, db, point_results=None, candidates=None):
+    if point_results is not None:
+        candidates = (point_results,)
+    snapshot = await read_visibility_snapshot(db, candidates=candidates)
     if point_results is not None:
         if point_results not in snapshot.result_inputs or results_hidden(snapshot.result_inputs[point_results]):
             raise HTTPException(404, "Public results are no longer visible")
@@ -65,6 +68,10 @@ def safe_body(body, snapshot):
                     for bill_id, inputs in body.get(RESULTS_INPUTS_KEY, {}).items()))
 
 
+def captured_bill_ids(body):
+    return set(body[IDS_KEY]) | set(body[RESULTS_IDS_KEY]) if verified_body(body) else set()
+
+
 async def serve_public_bill_body(body, *, db, schema, refresh=None, bill_ids=(), point_results=False):
     """Filter rows, deny hidden points, or rebuild/drop unsafe aggregates.
 
@@ -84,13 +91,17 @@ async def serve_public_bill_body(body, *, db, schema, refresh=None, bill_ids=(),
             raise HTTPException(404, "Public bill not found")
         return deepcopy(body)
     if schema == "history":
-        current = await read_visibility_snapshot(db)
+        candidates = set().union(*(captured_bill_ids(entry) for entry in body))
+        current = await read_visibility_snapshot(db, candidates=candidates)
         return [deepcopy(entry[BODY_KEY]) for entry in body if safe_body(entry, current)]
 
     try:
         async with asyncio.timeout(10):
             while True:
-                current = await read_visibility_snapshot(db)
+                # Counts/coverage retain unvoted IDs; details limits never bound
+                # aggregate provenance. Old populations also authorize trends.
+                candidates = captured_bill_ids(body) | set(bill_ids)
+                current = await read_visibility_snapshot(db, candidates=candidates)
                 if schema == "point" and set(bill_ids) - current.listed:
                     raise HTTPException(404, "Public bill not found")
                 inputs_verified = (not point_results or (

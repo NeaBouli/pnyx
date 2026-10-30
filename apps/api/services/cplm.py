@@ -225,7 +225,7 @@ async def _load_cplm(db, *, force=False, policy):
     try:
         await result_policy.result_cache_policy.prepare_redis(r, CACHE_KEY, HISTORY_KEY)
         if policy[0] > 0:
-            return await capture_public_bill_body(lambda: compute_cplm(db), db=db)
+            return await _capture_cplm(db)
         k = 0
         cache_key = result_policy.result_cache_policy.key(CACHE_KEY, policy)
         history_key = result_policy.result_cache_policy.key(HISTORY_KEY, policy)
@@ -233,12 +233,12 @@ async def _load_cplm(db, *, force=False, policy):
             cached = await r.get(cache_key)
         except (RedisError, OSError):
             await cache_fill_quota("cplm")
-            return await capture_public_bill_body(lambda: compute_cplm(db), db=db)
+            return await _capture_cplm(db)
         if cached and not force:
             return _read_snapshot(cached, k)
 
         await cache_fill_quota("cplm")
-        snapshot = await capture_public_bill_body(lambda: compute_cplm(db), db=db)
+        snapshot = await _capture_cplm(db)
         result = snapshot[BODY_KEY]
 
         # Compute trend from previous snapshot
@@ -281,6 +281,12 @@ async def _load_cplm(db, *, force=False, policy):
 
     finally:
         await r.aclose()
+
+
+async def _capture_cplm(db):
+    return await capture_public_bill_body(
+        lambda: compute_cplm(db), db=db, candidates=select(CitizenVote.bill_id),
+    )
 
 
 @public_bill_response("history")

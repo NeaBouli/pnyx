@@ -5,11 +5,12 @@ from rate_limit import client_flow, enforce_route_limit
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from services.bill_visibility import public_bill_raw_sql
+from models import ParliamentBill
+from services.bill_visibility import public_bill_metadata_sql
 from services.public_bill_snapshot import snapshot_raw_filter, record_result_contributors
 from services.bill_visibility import results_visible_raw_sql
 from services.geographic_scope import validate_public_region_filters
@@ -21,9 +22,9 @@ ViewName = Literal["municipal", "regional", "national"]
 K_ANONYMITY_MIN = 10
 
 
-def _public_visibility_sql() -> tuple[str, dict[str, str]]:
+def _public_visibility_sql(db=None) -> tuple[str, dict]:
     """Mirror the shared public DIAVGEIA guard with bound raw-SQL terms."""
-    return public_bill_raw_sql("pb")
+    return public_bill_metadata_sql("pb", db=db)
 
 
 def _scope_sql(view: ViewName) -> str:
@@ -99,8 +100,8 @@ async def _load_view(
     if view == "regional" and periferia_id is None:
         return _empty_view(view, False)
 
-    visibility_sql, visibility_params = _public_visibility_sql()
-    snapshot_guard, snapshot_params = snapshot_raw_filter("pb", results=True)
+    visibility_sql, visibility_params = _public_visibility_sql(db)
+    snapshot_guard, snapshot_params = snapshot_raw_filter("pb", results=True, db=db)
     statement = text(f"""
         WITH bill_consensus AS (
             SELECT
@@ -155,7 +156,8 @@ async def _load_view(
 
 @router.get("/representation", dependencies=[Depends(enforce_route_limit)])
 @client_flow
-@public_client_cache(bill_schema="aggregate", aggregate=True, sensitive=True, validate=validate_public_region_filters)
+@public_client_cache(bill_schema="aggregate", aggregate=True, sensitive=True, validate=validate_public_region_filters,
+                     bill_candidates=lambda _: select(ParliamentBill.id).where(ParliamentBill.source == "DIAVGEIA"))
 async def get_consensus_representation(
     dimos_id: int | None = Query(None, ge=1),
     periferia_id: int | None = Query(None, ge=1),
@@ -164,8 +166,8 @@ async def get_consensus_representation(
     request: Request = None,
 ):
     """Return separate aggregate views; never return individual consensus rows."""
-    visibility_sql, visibility_params = _public_visibility_sql()
-    snapshot_guard, snapshot_params = snapshot_raw_filter("pb")
+    visibility_sql, visibility_params = _public_visibility_sql(db)
+    snapshot_guard, snapshot_params = snapshot_raw_filter("pb", db=db)
     coverage_result = await db.execute(text(f"""
         SELECT
             COUNT(*)::integer AS total_diavgeia_bills,

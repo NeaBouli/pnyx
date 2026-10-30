@@ -1,5 +1,8 @@
 """Representation contract, one-query aggregation and bounded public-result cache."""
+import asyncio
 import json
+import re
+import threading
 from collections.abc import AsyncIterator
 from datetime import datetime, timedelta, timezone
 from fnmatch import fnmatchcase
@@ -21,6 +24,13 @@ from services import bill_lifecycle
 from services.public_bill_response import BODY_KEY, IDS_KEY, RESULTS_IDS_KEY
 
 CHOICES = ("YES", "NO", "ABSTAIN", "UNKNOWN")
+SCHEMA_SQL = (
+    "CREATE TABLE parliament_bills (id TEXT PRIMARY KEY, title_el TEXT, parliament_url TEXT, created_at TEXT, source TEXT, status TEXT, results_visibility TEXT, admin_hidden BOOLEAN, summary_short_el TEXT, summary_long_el TEXT, party_votes_parliament TEXT)",
+    "CREATE TABLE citizen_votes (bill_id TEXT, vote TEXT)",
+    "CREATE INDEX idx_votes_bill ON citizen_votes (bill_id)",
+    "CREATE TABLE zk_vote_receipts (vote_scope_id TEXT, vote_commitment TEXT)",
+    "CREATE INDEX idx_zk_receipts_scope ON zk_vote_receipts (vote_scope_id)",
+)
 
 
 class Cache:
@@ -86,13 +96,7 @@ async def db() -> AsyncIterator[AsyncSession]:
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
     try:
         async with engine.begin() as conn:
-            for sql in (
-                "CREATE TABLE parliament_bills (id TEXT PRIMARY KEY, title_el TEXT, parliament_url TEXT, created_at TEXT, source TEXT, status TEXT, results_visibility TEXT, admin_hidden BOOLEAN, summary_short_el TEXT, summary_long_el TEXT, party_votes_parliament TEXT)",
-                "CREATE TABLE citizen_votes (bill_id TEXT, vote TEXT)",
-                "CREATE INDEX idx_votes_bill ON citizen_votes (bill_id)",
-                "CREATE TABLE zk_vote_receipts (vote_scope_id TEXT, vote_commitment TEXT)",
-                "CREATE INDEX idx_zk_receipts_scope ON zk_vote_receipts (vote_scope_id)",
-            ):
+            for sql in SCHEMA_SQL:
                 await conn.execute(text(sql))
         async with AsyncSession(engine) as session:
             yield session
@@ -137,6 +141,130 @@ async def client(db: AsyncSession, cache: Cache) -> AsyncIterator[AsyncClient]:
     app.dependency_overrides[get_db] = dependency
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as http:
         yield http
+
+
+@pytest.mark.parametrize("path", ["/api/v1/analytics/representation", "/api/v1/public/representation"])
+@pytest.mark.parametrize("warm", [False, True])
+async def test_unrelated_bill_scan_cannot_exhaust_representation_deadline(db, cache, path, warm):
+    """Real SQLite worker/SQLAlchemy/asyncio: an unrelated text read can stall.
+
+    Production has a much larger imported corpus than the voted population.
+    Block its text predicate in the driver's thread to make the cost of scanning
+    that corpus deterministic, without mocking DB execution or the cache path.
+    Both cold fills and serve-time checks must read only possible contributors.
+    """
+    await bill(db, "VOTED", party={"ND": "YES"})
+    await votes(db, "VOTED", (10, 0, 0, 0))
+    await bill(db, "UNRELATED", source="DIAVGEIA", summary="unrelated slow text")
+    await db.commit()
+    app = FastAPI()
+    app.include_router(analytics.router)
+    app.include_router(public_api.router)
+    app.dependency_overrides[get_db] = lambda: db
+    app.dependency_overrides[public_api.rate_limit_check] = lambda: None
+    release, entered = threading.Event(), threading.Event()
+    loop_thread = threading.get_ident()
+
+    def regexp(pattern, value):
+        if value == "unrelated slow text":
+            assert threading.get_ident() != loop_thread
+            entered.set()
+            release.wait(1)
+        return bool(re.search(pattern, value or ""))
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as http:
+        if warm:
+            assert (await http.get(path)).status_code == 200
+        connection = await db.connection()
+        raw = await connection.get_raw_connection()
+        await raw.driver_connection.create_function("regexp", 2, regexp)
+        try:
+            # A cancelled SQLite query drains its worker before closing; the
+            # predicate's one-second bound also bounds failure/teardown time.
+            for _ in range(2):
+                response = await asyncio.wait_for(http.get(path), timeout=0.5)
+                assert response.status_code == 200, response.text
+                assert response.json()["total_citizen_votes"] == 10
+            assert not entered.is_set(), "Representation scanned an unrelated bill's text"
+        finally:
+            release.set()
+
+
+async def test_representation_concurrency_with_independent_sessions_and_two_connections(
+    cache, monkeypatch, tmp_path,
+):
+    engine = create_async_engine(
+        f"sqlite+aiosqlite:///{tmp_path / 'representation.db'}",
+        pool_size=2, max_overflow=0, pool_timeout=0.5,
+    )
+    app = FastAPI()
+    app.include_router(analytics.router)
+    app.include_router(public_api.router)
+
+    async def dependency():
+        async with AsyncSession(engine) as session:
+            yield session
+
+    app.dependency_overrides[get_db] = dependency
+    app.dependency_overrides[public_api.rate_limit_check] = lambda: None
+    # Redis I/O yields while a leader fills. Keep real scheduling and locking
+    # here rather than AsyncMocks that complete without suspending the loop.
+    redis_lock = asyncio.Lock()
+    get = cache.get
+
+    async def redis_get(key):
+        async with redis_lock:
+            await asyncio.sleep(0)
+            return await get(key)
+
+    monkeypatch.setattr(cache, "get", redis_get)
+    compute = analytics.compute_cumulative_representation
+    entered, release = asyncio.Event(), asyncio.Event()
+    calls = 0
+
+    async def calculate(session):
+        nonlocal calls
+        calls += 1
+        entered.set()
+        await release.wait()
+        return await compute(session)
+
+    monkeypatch.setattr(analytics, "compute_cumulative_representation", calculate)
+    tasks = []
+    try:
+        async with engine.begin() as connection:
+            for sql in SCHEMA_SQL:
+                await connection.execute(text(sql))
+        async with AsyncSession(engine) as writer:
+            await bill(writer, "VOTED", party={"ND": "YES"})
+            await votes(writer, "VOTED", (10, 0, 0, 0))
+            await writer.commit()
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as http:
+            paths = ["/api/v1/analytics/representation", "/api/v1/public/representation"] * 10
+            tasks = [asyncio.create_task(http.get(path)) for path in paths]
+            await asyncio.wait_for(entered.wait(), timeout=2)
+            # All followers must be able to wait without checking out a DB
+            # connection or occupying a worker needed by the fill.
+            await asyncio.sleep(0.02)
+            assert not any(task.done() for task in tasks)
+            release.set()
+            responses = await asyncio.wait_for(asyncio.gather(*tasks), timeout=2)
+            assert all(response.status_code == 200 for response in responses)
+            assert all(response.json()["total_citizen_votes"] == 10 for response in responses)
+            assert calls == 1
+            async with AsyncSession(engine) as writer:
+                await writer.execute(text("UPDATE parliament_bills SET admin_hidden = TRUE"))
+                await writer.commit()  # Deliberately leave the Redis body and generation intact.
+            responses = await asyncio.wait_for(asyncio.gather(*(http.get(path) for path in paths)), timeout=2)
+            assert all(response.status_code == 200 for response in responses)
+            assert all(response.json()["bills"] == [] for response in responses)
+            assert all(response.json()["total_citizen_votes"] == 0 for response in responses)
+    finally:
+        release.set()
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        await engine.dispose()
 
 
 async def test_endpoint_contract_combines_sources_and_preserves_rounding(

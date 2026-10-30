@@ -136,8 +136,8 @@ def test_public_visibility_guard_matches_sensitive_diavgeia_policy():
     assert "summary_short_el" in predicate
     assert "summary_long_el" in predicate
     assert "NOT (" in predicate
-    assert set(params.values()) == {f"%{term}%" for term in DIAVGEIA_SENSITIVE_PUBLIC_TERMS}
-    assert all(term not in predicate for term in DIAVGEIA_SENSITIVE_PUBLIC_TERMS)
+    assert not params  # Fixed policy literals must match the partial index under generic plans.
+    assert all(term in predicate for term in ("αμκα", "amka", "ασθεν", "εοπυυ", "eopyy"))
 
 
 @pytest.mark.asyncio
@@ -194,6 +194,6 @@ async def test_representation_endpoint_keeps_views_separate_and_public():
     assert result["views"]["national"]["consensus_vote_count"] == 2
     assert result["coverage"]["complete_geographic_representation"] is False
     assert len(db.visibility_queries) == 2  # Provenance at fill, fresh authorization at serve.
-    assert all("sensitive_term_0" in params for params in db.params[2:])
+    assert all("sensitive_term_0" not in params for params in db.params[2:])
     assert all(params["k_anonymity_min"] == K_ANONYMITY_MIN for params in db.params[3:])
     assert all("HAVING COUNT(*) >= :k_anonymity_min" in statement for statement in db.statements[3:])
