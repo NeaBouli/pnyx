@@ -39,7 +39,8 @@ def test_metadata_index_and_prepared_queries_share_the_frozen_visibility_policy(
     assert not params
     revision = public_metadata_revision()
     assert revision.SENSITIVE_PATTERN == SENSITIVE_PATTERN
-    assert revision.FUNCTION_DDL.count(f"'{SENSITIVE_PATTERN}'") == 3
+    assert revision.FUNCTION_DDL.count(f"$rx${SENSITIVE_PATTERN}$rx$") == 3
+    assert f"'{SENSITIVE_PATTERN}'" not in revision.FUNCTION_DDL
     assert normalize(revision.PREDICATE) == normalize(predicate)
     legacy = public_metadata_revision(legacy=True)
     assert normalize(revision.LEGACY_PREDICATE) == normalize(legacy.PREDICATE)
