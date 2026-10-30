@@ -303,6 +303,132 @@ def test_cli_legacy_source_and_field_are_independent(monkeypatch: pytest.MonkeyP
     monkeypatch.setattr(sys, "argv", [str(SCRIPT), "--include-legacy", "DIAVGEIA", "--fields", "summary_long_el"])
     args = audit_script.parse_args()
     assert args.include_legacy == ["DIAVGEIA"] and args.fields == ["summary_long_el"]
+    assert frozenset(args.legacy_reasons) == audit_script.DEFAULT_LEGACY_REASONS
+    assert "non_greek" not in args.legacy_reasons
+
+
+@pytest.mark.parametrize("apply", [False, True])
+@pytest.mark.parametrize("owned", [False, True])
+@pytest.mark.parametrize("explicit_non_greek", [False, True])
+async def test_non_greek_legacy_is_report_only_unless_explicitly_selected(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], invalidate: AsyncMock,
+    apply: bool, owned: bool, explicit_non_greek: bool,
+) -> None:
+    value = "A synthetic description of the administrative procedure."
+    row = _legacy("L-language", value=value)
+    if owned:
+        row["generated_content_provenance"] = {"summary_long_el": content_sha256(value)}
+    reasons = {"legacy_reasons": frozenset({"non_greek"})} if explicit_non_greek else {}
+    conn = LegacyConnection([row], tmp_path / "language.csv")
+    eligible = owned or explicit_non_greek
+    assert await audit_script.audit(
+        conn, fields=("summary_long_el",), apply=apply, backup_path=conn.backup,
+        legacy_sources=frozenset({"DIAVGEIA"}), **reasons,
+    ) == int(apply and eligible)
+    output = capsys.readouterr().out
+    assert "sample_ids\twould_clear\treport_only" in output
+    assert f"\tnon_greek\t1\tL-language\t{int(eligible)}\t{int(not eligible)}" in output
+    assert value not in output
+    if apply and eligible:
+        with conn.backup.open(newline="", encoding="utf-8") as stream:
+            assert list(csv.DictReader(stream)) == [{"id": "L-language", "field": "summary_long_el", "old_value": value}]
+        assert len(conn.writes) == 1
+        invalidate.assert_awaited_once()
+    else:
+        assert not conn.writes and not conn.backup.exists()
+        invalidate.assert_not_awaited()
+
+
+@pytest.mark.parametrize("value,reason", [
+    (BAD, "refusal_or_meta"),
+    ("Title: Έγγραφο\nURL Source: https://example.test/source\nΚείμενο", "reader_metadata"),
+    ("Î•Î»Î»Î·Î½Î¹ÎºÏŒ", "mojibake"),
+    ("<html><title>403 Forbidden</title><body>Access denied</body></html>", "error_page"),
+    ("Правила синтетического документа", "foreign_script"),
+    ("Για να βridge το προβλήμα", "mixed_script"),
+])
+@pytest.mark.parametrize("apply", [False, True])
+async def test_legacy_default_allows_each_high_precision_reason(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], invalidate: AsyncMock,
+    value: str, reason: str, apply: bool,
+) -> None:
+    conn = LegacyConnection([_legacy("L-precise", value=value)], tmp_path / "precise.csv")
+    assert await audit_script.audit(
+        conn, fields=("summary_long_el",), apply=apply, backup_path=conn.backup,
+        legacy_sources=frozenset({"DIAVGEIA"}),
+    ) == int(apply)
+    output = capsys.readouterr().out
+    assert f"\t{reason}\t1\tL-precise\t1\t0" in output
+    if "\tnon_greek\t" in output:
+        assert "\tnon_greek\t1\tL-precise\t0\t1" in output
+    if apply:
+        # Multiple reasons authorize a single field backup/update.
+        assert len(conn.writes) == 1
+        with conn.backup.open(newline="", encoding="utf-8") as stream:
+            assert len(list(csv.DictReader(stream))) == 1
+        invalidate.assert_awaited_once()
+    else:
+        assert not conn.writes and not conn.backup.exists()
+        invalidate.assert_not_awaited()
+
+
+async def test_explicit_legacy_reasons_replace_defaults_and_do_not_restrict_owned_fields(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], invalidate: AsyncMock,
+) -> None:
+    conn = LegacyConnection([_legacy("L-refusal"), _row("G-refusal")], tmp_path / "selected.csv")
+    assert await audit_script.audit(
+        conn, fields=("summary_long_el",), apply=True, backup_path=conn.backup,
+        legacy_sources=frozenset({"DIAVGEIA"}), legacy_reasons=frozenset({"non_greek"}),
+    ) == 1
+    output = capsys.readouterr().out
+    assert "DIAVGEIA\tsummary_long_el\trefusal_or_meta\t1\tL-refusal\t0\t1" in output
+    assert "SYNTHETIC\tsummary_long_el\trefusal_or_meta\t1\tG-refusal\t1\t0" in output
+    assert [values[0] for _, values in conn.writes] == ["G-refusal"]
+
+
+async def test_explicit_legacy_reasons_still_require_source_and_preserve_reviewed_or_edited_fields(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], invalidate: AsyncMock,
+) -> None:
+    value = "A synthetic description of the administrative procedure."
+    edited = _legacy("L-edited", value=value)
+    edited["generated_content_provenance"] = {"summary_long_el": content_sha256(GOOD)}
+    rows = [_legacy("L-other", source="PARLIAMENT", value=value),
+            _legacy("L-reviewed", reviewed=True, value=value), edited]
+    conn = LegacyConnection(rows, tmp_path / "protected.csv")
+    assert await audit_script.audit(
+        conn, fields=("summary_long_el",), apply=True, backup_path=conn.backup,
+        legacy_sources=frozenset({"DIAVGEIA"}), legacy_reasons=frozenset({"non_greek"}),
+    ) == 0
+    output = capsys.readouterr().out
+    assert "DIAVGEIA\tsummary_long_el\tnon_greek\t2\tL-reviewed,L-edited\t0\t2" in output
+    assert "PARLIAMENT\tsummary_long_el\tnon_greek\t1\tL-other\t0\t1" in output
+    assert not conn.writes and not conn.backup.exists()
+    invalidate.assert_not_awaited()
+
+
+@pytest.mark.parametrize("reasons", [
+    ["non_greek"], ["mixed_script", "non_greek"], ["error_page", "foreign_script"],
+])
+def test_cli_accepts_explicit_legacy_reason_list(monkeypatch: pytest.MonkeyPatch, reasons: list[str]) -> None:
+    import sys
+
+    monkeypatch.setattr(sys, "argv", [str(SCRIPT), "--include-legacy", "DIAVGEIA", "--legacy-reasons", *reasons])
+    assert audit_script.parse_args().legacy_reasons == reasons
+
+
+def test_cli_rejects_unknown_legacy_reason(monkeypatch: pytest.MonkeyPatch) -> None:
+    import sys
+
+    monkeypatch.setattr(sys, "argv", [str(SCRIPT), "--legacy-reasons", "non_grek"])
+    with pytest.raises(SystemExit) as error:
+        audit_script.parse_args()
+    assert error.value.code == 2
+
+
+async def test_unknown_legacy_reason_rejected_before_sql(tmp_path: Path) -> None:
+    conn = LegacyConnection([], tmp_path / "unknown.csv")
+    with pytest.raises(ValueError, match="Unsupported legacy reasons"):
+        await audit_script.audit(conn, legacy_reasons=frozenset({"non_grek"}))
 
 
 async def test_clearing_other_fields_cannot_expose_sensitive_bill(tmp_path: Path, invalidate: AsyncMock) -> None:

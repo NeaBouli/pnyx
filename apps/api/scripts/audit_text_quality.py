@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """Audit bill prose without printing it. Default: database reads only.
 
-Apply requires both an unreviewed row and an exact generation ownership digest.
+Apply requires an unreviewed row and either an exact generation ownership digest
+or explicit legacy source/reason eligibility.
 Legacy fields without provenance are reported but only cleared when an operator
 names their source with --include-legacy after reviewing a dry run: their
 ownership cannot be distinguished from human edits or official text otherwise.
+Legacy clearing defaults to high-precision reasons; non_greek is report-only
+unless explicitly selected with --legacy-reasons (which replaces the defaults).
 The exclusive, mode-0600 CSV backup is flushed to disk before any UPDATE.
 """
 
@@ -26,6 +29,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from services.content_provenance import contains_sensitive_marker, content_sha256
 from services.public_bill_index import SENSITIVE_PATTERN
 from services.text_quality import GENERATED_TEXT_FIELDS, GREEK_FIELDS, check_generated_text
+
+
+DEFAULT_LEGACY_REASONS = frozenset({
+    "refusal_or_meta", "reader_metadata", "mojibake", "error_page", "foreign_script", "mixed_script",
+})
+LEGACY_REASON_CHOICES = DEFAULT_LEGACY_REASONS | {"non_greek"}
 
 
 def _ownership(row: Any) -> dict[str, str]:
@@ -51,16 +60,20 @@ async def audit(
     conn: Any, *, fields: tuple[str, ...] = GREEK_FIELDS,
     sample_limit: int = 5, apply: bool = False, backup_path: Path | None = None,
     legacy_sources: frozenset[str] = frozenset(),
+    legacy_reasons: frozenset[str] = DEFAULT_LEGACY_REASONS,
 ) -> int:
     """Print aggregate counts and IDs; return number of fields cleared."""
     if not fields or any(field not in GENERATED_TEXT_FIELDS for field in fields):
         raise ValueError("Unsupported audit fields")
     if sample_limit < 0:
         raise ValueError("sample_limit must be non-negative")
+    if not legacy_reasons <= LEGACY_REASON_CHOICES:
+        raise ValueError("Unsupported legacy reasons")
     if apply and backup_path is None:
         raise ValueError("--apply requires --backup-csv")
     fields = tuple(dict.fromkeys(fields))
     counts: Counter[tuple[str, str, str]] = Counter()
+    would_clear: Counter[tuple[str, str, str]] = Counter()
     samples: dict[tuple[str, str, str], list[str]] = defaultdict(list)
     row_count = generated_count = legacy_count = 0
     # The server cursor and disk spool bound memory independently of prose volume.
@@ -76,28 +89,34 @@ async def audit(
                     value = row[field]
                     sensitive = contains_sensitive_marker(value)
                     reasons = ("skipped_sensitive",) if sensitive else check_generated_text(value, field=field).reasons
+                    permitted_reasons: tuple[str, ...] = ()
+                    source = None
+                    if not sensitive and reasons and not row["ai_summary_reviewed"]:
+                        if ownership.get(field) == content_sha256(value):
+                            generated_count += 1
+                            permitted_reasons = reasons
+                        elif field not in ownership and row["source"] in legacy_sources:
+                            permitted_reasons = tuple(reason for reason in reasons if reason in legacy_reasons)
+                            if permitted_reasons:
+                                legacy_count += 1
+                                source = row["source"]
                     for reason in reasons:
                         key = (row["source"] or "UNKNOWN", field, reason)
                         counts[key] += 1
+                        if reason in permitted_reasons:
+                            would_clear[key] += 1
                         if len(samples[key]) < sample_limit:
                             samples[key].append(row["id"])
-                    if sensitive or not reasons or row["ai_summary_reviewed"]:
-                        continue
-                    source = None
-                    if ownership.get(field) == content_sha256(value):
-                        generated_count += 1
-                    elif field not in ownership and row["source"] in legacy_sources:
-                        legacy_count += 1
-                        source = row["source"]
-                    else:
-                        continue
-                    if apply:
+                    if apply and permitted_reasons:
                         candidates.write(json.dumps((row["id"], field, value, source)) + "\n")
-        print("source\tfield\treason\tcount\tsample_ids")
+        # Counts describe permission per reason. A field with several permitted
+        # reasons is still backed up and cleared only once.
+        print("source\tfield\treason\tcount\tsample_ids\twould_clear\treport_only")
         for key, count in sorted(counts.items()):
-            print("\t".join((*key, str(count), ",".join(samples[key]))))
+            print("\t".join((*key, str(count), ",".join(samples[key]), str(would_clear[key]), str(count - would_clear[key]))))
         print(f"{'APPLY' if apply else 'DRY-RUN'}: {row_count} rows; {generated_count} failing fields with generation ownership; "
-              f"{legacy_count} failing legacy fields without provenance in {sorted(legacy_sources) or 'no named source'}")
+              f"{legacy_count} eligible failing legacy fields without provenance in {sorted(legacy_sources) or 'no named source'}; "
+              f"legacy reasons: {', '.join(sorted(legacy_reasons)) or 'none'}")
         if not apply or not (generated_count or legacy_count):
             return 0
         assert backup_path is not None
@@ -152,10 +171,13 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--fields", nargs="+", choices=GENERATED_TEXT_FIELDS, default=list(GREEK_FIELDS))
     parser.add_argument("--samples", type=int, default=5, help="Maximum sample IDs per source/field/reason")
-    parser.add_argument("--apply", action="store_true", help="Clear only unreviewed, provably generated failures")
+    parser.add_argument("--apply", action="store_true", help="Clear eligible unreviewed failures after writing the backup")
     parser.add_argument("--backup-csv", type=Path, help="New private CSV file, required with --apply")
     parser.add_argument("--include-legacy", metavar="SOURCE", action="append", default=[],
-                        help="Also clear failing unreviewed fields without provenance for this bill source")
+                        help="Also clear high-precision failures in unreviewed fields without provenance for this bill source")
+    parser.add_argument("--legacy-reasons", nargs="+", choices=sorted(LEGACY_REASON_CHOICES),
+                        default=sorted(DEFAULT_LEGACY_REASONS),
+                        help="Replace the legacy clearing reasons; defaults to all except non_greek (report-only)")
     args = parser.parse_args()
     if args.samples < 0:
         parser.error("--samples must be non-negative")
@@ -171,13 +193,10 @@ async def main() -> None:
     db_url = os.environ["DATABASE_URL"].replace("postgresql+asyncpg://", "postgresql://")
     conn = await asyncpg.connect(db_url)
     try:
-        if args.apply:
-            await audit(conn, fields=tuple(args.fields), sample_limit=args.samples,
-                        apply=True, backup_path=args.backup_csv,
-                        legacy_sources=frozenset(args.include_legacy))
-        else:
-            await audit(conn, fields=tuple(args.fields), sample_limit=args.samples,
-                        legacy_sources=frozenset(args.include_legacy))
+        await audit(conn, fields=tuple(args.fields), sample_limit=args.samples,
+                    apply=args.apply, backup_path=args.backup_csv,
+                    legacy_sources=frozenset(args.include_legacy),
+                    legacy_reasons=frozenset(args.legacy_reasons))
     finally:
         await conn.close()
 

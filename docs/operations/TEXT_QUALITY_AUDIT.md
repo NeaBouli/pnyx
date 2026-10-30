@@ -1,0 +1,62 @@
+# Bill text quality audit
+
+Run from `apps/api` with `DATABASE_URL` pointing to the intended database:
+
+```sh
+python scripts/audit_text_quality.py --fields summary_short_el summary_long_el --include-legacy DIAVGEIA --include-legacy PARLIAMENT
+```
+
+The default is a dry run. Output includes source, field, reason, count, sample
+IDs, `would_clear`, and `report_only`. It never prints the bill text.
+The last two columns count permission for each reason, so a legacy field with
+both `non_greek` and `foreign_script` appears as report-only for `non_greek`
+and would-clear for `foreign_script`. A field is eligible if at least one reason
+permits clearing, and is backed up and cleared once. The summary counts eligible
+fields rather than summing reasons. `would_clear` reflects scan-time eligibility;
+a concurrent edit or review can still prevent the guarded update.
+
+Fields whose current content matches their generation provenance use every
+quality reason. Fields without provenance are eligible only for sources named
+by `--include-legacy`, and default to these reasons:
+
+- `refusal_or_meta`
+- `reader_metadata`
+- `mojibake`
+- `error_page`
+- `foreign_script`
+- `mixed_script`
+
+`non_greek` is report-only for legacy fields by default: official source text can
+contain foreign names and titles. `--legacy-reasons` replaces the default list.
+An explicit override such as `--legacy-reasons non_greek mixed_script` permits
+those two reasons for the named legacy sources. It does not limit reasons for
+provenance-owned fields. Review the dry run with the same options before apply.
+
+To apply, add `--apply --backup-csv /path/to/new-private-backup.csv`. The backup
+must be a new file; it is written with mode 0600 and flushed to disk before any
+updates. Reviewed fields, edited fields whose provenance no longer matches, and
+sensitive fields remain protected. Applying invalidates the representation cache
+after each batch that changes fields.
+
+## Language signals
+
+Greek fields require a Greek share of at least 0.6 over letters, excluding URLs
+and complete quoted Latin titles. The existing short-pill acronym exception
+remains. Consecutive whole Latin words, including brands and acronym runs, do not
+independently fail the gate.
+
+`mixed_script` counts words containing both Greek letters and Latin letters
+outside the case-sensitive homoglyph allowance `ABCEHIKMNOPTXYZaceiopuvxy`.
+For example, `Aπόφαση` is accepted, while `κίνδυnu` contains a non-homoglyph `n`.
+Two suspect words fail at any length; one fails in prose of at most 200 words.
+This catches corruption in short summaries while tolerating one isolated typo
+in longer official documents. Tests cover the 200/201-word boundary and two
+suspect words in 1,000 words. This is a deterministic heuristic, not a measured
+precision claim for the production corpus.
+
+`foreign_script` checks explicitly enumerated Unicode script-name prefixes for
+Cyrillic, CJK (including Japanese and Korean), Indic scripts, Arabic, Hebrew,
+and Thai, plus the existing Vietnamese-specific Latin letters. Modifier letters
+(category `Lm`), symbols, and ordinary accented Latin names do not trigger it.
+Foreign letters are checked even inside quotes. Greek numeral signs U+02B9,
+U+0374, and U+0375 are accepted.

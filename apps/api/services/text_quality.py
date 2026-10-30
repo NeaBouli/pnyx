@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from dataclasses import dataclass
+from functools import lru_cache
 
 from services.error_pages import looks_like_error_page
 
@@ -57,6 +58,22 @@ _STRONG_ARTEFACTS = frozenset("≈ÀÕƒÃœÎÏ�")
 _ARTEFACTS = _STRONG_ARTEFACTS | frozenset("«»…—∆∂¬√")
 _LATIN_TOKEN = re.compile(r"[A-Za-z]+(?:[-\d]+[A-Za-z\d]*)*")
 _ACRONYM = re.compile(r"[A-Z]{2,5}|(?=[A-Z\d-]*\d)[A-Z][A-Z\d]*(?:-[A-Z\d]+)*")
+_WORD_TOKEN = re.compile(r"[^\W\d_]+")
+# Latin lookalikes found in Greek typography (including lunate sigma/epsilon).
+# Keep case: Latin N resembles Greek Ν, but n is evidence in e.g. κίνδυnu.
+_GREEK_HOMOGLYPHS = frozenset("ABCEHIKMNOPTXYZaceiopuvxy")
+_FOREIGN_SCRIPT_PREFIXES = (
+    "CYRILLIC ", "CJK ", "HIRAGANA ", "KATAKANA ", "HANGUL ", "BOPOMOFO ", "YI ",
+    "HALFWIDTH KATAKANA ", "HALFWIDTH HANGUL ",
+    "DEVANAGARI ", "BENGALI ", "GURMUKHI ", "GUJARATI ", "ORIYA ",
+    "TAMIL ", "TELUGU ", "KANNADA ", "MALAYALAM ", "SINHALA ",
+    "BRAHMI ", "KAITHI ", "SHARADA ", "KHOJKI ", "KHUDAWADI ", "GRANTHA ",
+    "NEWA ", "TIRHUTA ", "SIDDHAM ", "MODI ", "TAKRI ", "DOGRA ", "NANDINAGARI ",
+    "DIVES AKURU ", "SAURASHTRA ", "OL CHIKI ", "MEETEI MAYEK ", "LEPCHA ",
+    "LIMBU ", "SYLOTI NAGRI ", "GUNJALA GONDI ", "MASARAM GONDI ",
+    "CHAKMA ", "MAHAJANI ", "BHAIKSUKI ",
+    "ARABIC ", "HEBREW ", "THAI ",
+)
 _FAILURE_TOKEN = re.compile(r"\b(?:error|sorry|refusal|refused|forbidden|denied|rejected|failure|failed|timeout|unauthorized|unavailable)\b", re.IGNORECASE)
 
 
@@ -66,8 +83,38 @@ class QualityResult:
     reasons: tuple[str, ...]
 
 
+# Character classifications repeat throughout long documents. Bound each cache
+# independently of input size, including when auditing many different scripts.
+@lru_cache(maxsize=1024)
 def _is_greek_letter(char: str) -> bool:
     return not char.isascii() and char.isalpha() and "GREEK" in unicodedata.name(char, "")
+
+
+@lru_cache(maxsize=1024)
+def _is_foreign_letter(char: str) -> bool:
+    # Numeral signs and phonetic modifiers are typography, not foreign prose.
+    if char.isascii() or not char.isalpha() or unicodedata.category(char) == "Lm":
+        return False
+    return (char.casefold() in "ăđơư" or "\u1ea0" <= char <= "\u1ef9"
+            or unicodedata.name(char, "").startswith(_FOREIGN_SCRIPT_PREFIXES))
+
+
+@lru_cache(maxsize=1024)
+def _is_non_homoglyph_latin_letter(char: str) -> bool:
+    return char not in _GREEK_HOMOGLYPHS and "LATIN" in unicodedata.name(char, "")
+
+
+def _has_mixed_words(prose: str) -> bool:
+    words = mixed = 0
+    for match in _WORD_TOKEN.finditer(prose):
+        token = match[0]
+        words += 1
+        if (any(_is_greek_letter(c) for c in token)
+                and any(_is_non_homoglyph_latin_letter(c) for c in token)):
+            mixed += 1
+    # One corrupt word in a short summary is significant. In a longer official
+    # document tolerate one isolated typo, but reject repeated corruption.
+    return mixed >= 2 or (mixed == 1 and words <= 200)
 
 
 def _without_latin_quotes(text: str) -> str:
@@ -130,19 +177,8 @@ def _check(text: str | None, *, field: str, greek_share: float | None) -> Qualit
         short_acronyms = field == "pill_el" and len(letters) <= 20 and acronyms_only
         if not short_acronyms and (not letters or greek_letters / len(letters) < greek_share):
             reasons.append("non_greek")
-        # A short translated phrase can hide inside a high aggregate Greek share.
-        previous_end = -1
-        untranslated_words = 0
-        for token in _LATIN_TOKEN.finditer(prose):
-            if previous_end < 0 or prose[previous_end:token.start()].strip(" \t"):
-                untranslated_words = 0
-            if not _ACRONYM.fullmatch(token[0]) and len(token[0]) >= 2:
-                untranslated_words += 1
-            if untranslated_words >= 2:
-                if "non_greek" not in reasons:
-                    reasons.append("non_greek")
-                break
-            previous_end = token.end()
+        if _has_mixed_words(prose):
+            reasons.append("mixed_script")
 
     folded = _without_accents(prose)
     lines = [line.lstrip(" \t#*>_-").replace("**", "").replace("__", "") for line in folded.splitlines()]
@@ -160,12 +196,6 @@ def _check(text: str | None, *, field: str, greek_share: float | None) -> Qualit
     if (_PUNCTUATION_ARTEFACT.search(normalized) or len(_UTF8_ARTEFACT.findall(normalized)) >= 2
             or (strong >= 3 and density >= 0.08)):
         reasons.append("mojibake")
-    if any(
-        not c.isascii() and (
-            c.isalpha() and "GREEK" not in unicodedata.name(c, "") and "LATIN" not in unicodedata.name(c, "")
-            or c.casefold() in "ăđơư" or "\u1ea0" <= c <= "\u1ef9"
-        )
-        for c in normalized
-    ):
+    if any(_is_foreign_letter(c) for c in normalized):
         reasons.append("foreign_script")
     return QualityResult(not reasons, tuple(reasons))
