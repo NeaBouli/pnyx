@@ -14,7 +14,7 @@ import pytest
 from services.content_provenance import content_sha256
 
 
-SCRIPT = Path(__file__).resolve().parents[4] / "scripts" / "audit_text_quality.py"
+SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "audit_text_quality.py"
 spec = importlib.util.spec_from_file_location("audit_text_quality", SCRIPT)
 assert spec and spec.loader
 audit_script = importlib.util.module_from_spec(spec)
@@ -133,3 +133,75 @@ async def test_apply_requires_backup(tmp_path: Path) -> None:
     conn = Connection([], tmp_path / "backup.csv")
     with pytest.raises(ValueError, match="requires"):
         await audit_script.audit(conn, apply=True)
+
+
+class LegacyConnection:
+    def __init__(self, rows: list[dict[str, Any]], backup: Path) -> None:
+        self.rows, self.backup = rows, backup
+        self.writes: list[tuple[str, tuple[Any, ...]]] = []
+
+    async def fetch(self, query: str) -> list[dict[str, Any]]:
+        return self.rows
+
+    @asynccontextmanager
+    async def transaction(self) -> AsyncIterator[None]:
+        yield
+
+    async def execute(self, query: str, *values: Any) -> str:
+        assert stat.S_IMODE(self.backup.stat().st_mode) == 0o600
+        self.writes.append((query, values))
+        return "UPDATE 1"
+
+
+def _legacy(bill_id: str, *, source: str = "DIAVGEIA", reviewed: bool | None = False,
+            value: str = BAD) -> dict[str, Any]:
+    return {"id": bill_id, "source": source, "ai_summary_reviewed": reviewed,
+            "generated_content_provenance": None, "summary_long_el": value}
+
+
+@pytest.mark.asyncio
+async def test_legacy_fields_need_an_explicit_source(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setitem(__import__("sys").modules, "services.representation_cache",
+                        type("M", (), {"invalidate_representation_cache": AsyncMock()}))
+    backup = tmp_path / "legacy.csv"
+    conn = LegacyConnection([_legacy("L-1")], backup)
+    cleared = await audit_script.audit(conn, fields=("summary_long_el",), apply=True, backup_path=backup)
+    assert cleared == 0 and conn.writes == [] and not backup.exists()
+
+
+@pytest.mark.asyncio
+async def test_include_legacy_clears_only_named_unreviewed_failures(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    invalidate = AsyncMock()
+    monkeypatch.setitem(__import__("sys").modules, "services.representation_cache",
+                        type("M", (), {"invalidate_representation_cache": invalidate}))
+    backup = tmp_path / "legacy.csv"
+    rows = [
+        _legacy("L-bad"),
+        _legacy("L-other-source", source="PARLIAMENT"),
+        _legacy("L-reviewed", reviewed=True),
+        _legacy("L-good", value=GOOD),
+    ]
+    conn = LegacyConnection(rows, backup)
+    cleared = await audit_script.audit(
+        conn, fields=("summary_long_el",), apply=True, backup_path=backup,
+        legacy_sources=frozenset({"DIAVGEIA"}),
+    )
+    assert cleared == 1
+    with backup.open(newline="", encoding="utf-8") as stream:
+        assert list(csv.DictReader(stream)) == [{"id": "L-bad", "field": "summary_long_el", "old_value": BAD}]
+    [(query, values)] = conn.writes
+    assert values == ("L-bad", BAD, "DIAVGEIA", "summary_long_el")
+    for guard in ("summary_long_el = $2", "ai_summary_reviewed IS NOT TRUE", "source = $3", "? $4::text"):
+        assert guard in query
+    assert BAD not in query
+    invalidate.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_include_legacy_dry_run_writes_nothing(tmp_path: Path) -> None:
+    backup = tmp_path / "legacy.csv"
+    conn = LegacyConnection([_legacy("L-bad")], backup)
+    cleared = await audit_script.audit(conn, fields=("summary_long_el",), legacy_sources=frozenset({"DIAVGEIA"}))
+    assert cleared == 0 and conn.writes == [] and not backup.exists()

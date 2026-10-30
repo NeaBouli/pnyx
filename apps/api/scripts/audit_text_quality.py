@@ -2,8 +2,9 @@
 """Audit bill prose without printing it. Default: database reads only.
 
 Apply requires both an unreviewed row and an exact generation ownership digest.
-Legacy fields without provenance are reported but never automatically cleared:
-their ownership cannot be distinguished from human edits or official text.
+Legacy fields without provenance are reported but only cleared when an operator
+names their source with --include-legacy after reviewing a dry run: their
+ownership cannot be distinguished from human edits or official text otherwise.
 The exclusive, mode-0600 CSV backup is flushed to disk before any UPDATE.
 """
 
@@ -19,7 +20,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "apps" / "api"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from services.content_provenance import content_sha256
 from services.text_quality import GENERATED_TEXT_FIELDS, GREEK_FIELDS, check_generated_text
 
@@ -46,6 +47,7 @@ def write_backup(path: Path, failures: list[tuple[str, str, str]]) -> None:
 async def audit(
     conn: Any, *, fields: tuple[str, ...] = GREEK_FIELDS,
     sample_limit: int = 5, apply: bool = False, backup_path: Path | None = None,
+    legacy_sources: frozenset[str] = frozenset(),
 ) -> int:
     """Print aggregate counts and IDs; return number of fields cleared."""
     if not fields or any(field not in GENERATED_TEXT_FIELDS for field in fields):
@@ -62,6 +64,7 @@ async def audit(
     counts: Counter[tuple[str, str, str]] = Counter()
     samples: dict[tuple[str, str, str], list[str]] = defaultdict(list)
     generated: list[tuple[str, str, str]] = []
+    legacy: list[tuple[str, str, str, str]] = []
     for row in rows:
         ownership = _ownership(row)
         for field in fields:
@@ -72,19 +75,21 @@ async def audit(
                 counts[key] += 1
                 if len(samples[key]) < sample_limit:
                     samples[key].append(row["id"])
-            if (
-                not quality.ok and not row["ai_summary_reviewed"]
-                and ownership.get(field) == content_sha256(value)
-            ):
+            if quality.ok or row["ai_summary_reviewed"]:
+                continue
+            if ownership.get(field) == content_sha256(value):
                 generated.append((row["id"], field, value))
+            elif field not in ownership and row["source"] in legacy_sources:
+                legacy.append((row["id"], field, value, row["source"]))
     print("source\tfield\treason\tcount\tsample_ids")
     for key, count in sorted(counts.items()):
         print("\t".join((*key, str(count), ",".join(samples[key]))))
-    print(f"{'APPLY' if apply else 'DRY-RUN'}: {len(rows)} rows; {len(generated)} failing fields with generation ownership")
-    if not apply or not generated:
+    print(f"{'APPLY' if apply else 'DRY-RUN'}: {len(rows)} rows; {len(generated)} failing fields with generation ownership; "
+          f"{len(legacy)} failing legacy fields without provenance in {sorted(legacy_sources) or 'no named source'}")
+    if not apply or not (generated or legacy):
         return 0
     assert backup_path is not None
-    write_backup(backup_path, generated)
+    write_backup(backup_path, generated + [entry[:3] for entry in legacy])
     updated = 0
     async with conn.transaction():
         for bill_id, field, value in generated:
@@ -96,6 +101,15 @@ async def audit(
                 f"WHERE id = $1 AND {field} = $2 AND ai_summary_reviewed IS NOT TRUE "
                 "AND generated_content_provenance ->> $3::text = $4",
                 bill_id, value, field, content_sha256(value),
+            )
+            updated += int(status.split()[-1])
+        for bill_id, field, value, source in legacy:
+            # Same value/review recheck; still no provenance entry for this field.
+            status = await conn.execute(
+                f"UPDATE parliament_bills SET {field} = NULL "
+                f"WHERE id = $1 AND {field} = $2 AND ai_summary_reviewed IS NOT TRUE AND source = $3 "
+                "AND NOT (coalesce(generated_content_provenance, '{}'::jsonb) ? $4::text)",
+                bill_id, value, source, field,
             )
             updated += int(status.split()[-1])
     if updated:
@@ -112,6 +126,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--samples", type=int, default=5, help="Maximum sample IDs per source/field/reason")
     parser.add_argument("--apply", action="store_true", help="Clear only unreviewed, provably generated failures")
     parser.add_argument("--backup-csv", type=Path, help="New private CSV file, required with --apply")
+    parser.add_argument("--include-legacy", metavar="SOURCE", action="append", default=[],
+                        help="Also clear failing unreviewed fields without provenance for this bill source")
     args = parser.parse_args()
     if args.samples < 0:
         parser.error("--samples must be non-negative")
@@ -129,10 +145,12 @@ async def main() -> None:
     try:
         if args.apply:
             await audit(conn, fields=tuple(args.fields), sample_limit=args.samples,
-                        apply=True, backup_path=args.backup_csv)
+                        apply=True, backup_path=args.backup_csv,
+                        legacy_sources=frozenset(args.include_legacy))
         else:
             async with conn.transaction(readonly=True):
-                await audit(conn, fields=tuple(args.fields), sample_limit=args.samples)
+                await audit(conn, fields=tuple(args.fields), sample_limit=args.samples,
+                            legacy_sources=frozenset(args.include_legacy))
     finally:
         await conn.close()
 
