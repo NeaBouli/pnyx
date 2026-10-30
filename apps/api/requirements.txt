@@ -7,15 +7,15 @@ uvicorn[standard]==0.54.0
 
 # Database
 asyncpg==0.32.0
-sqlalchemy[asyncio]==2.1.5
-alembic==1.20.0
+sqlalchemy[asyncio]==2.1.6
+alembic==1.20.1
 
 # Cache
 redis==8.1.0
 
 # Config & Validation
 pydantic[email]==2.14.1
-pydantic-settings==2.16.0
+pydantic-settings==2.16.1
 
 # Crypto
 PyNaCl==1.6.2
@@ -54,4 +54,4 @@ pytest-asyncio==1.4.0
 aiosqlite==0.22.1
 anyio==4.15.1
 respx>=0.23.1
-sentry-sdk[fastapi]>=2.72.0
+sentry-sdk[fastapi]>=2.73.0
