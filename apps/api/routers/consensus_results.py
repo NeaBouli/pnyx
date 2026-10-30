@@ -146,7 +146,7 @@ async def _load_view(
 
 @router.get("/representation", dependencies=[Depends(enforce_route_limit)])
 @client_flow
-@public_client_cache(aggregate=True, validate=validate_public_region_filters)
+@public_client_cache(aggregate=True, sensitive=True, validate=validate_public_region_filters)
 async def get_consensus_representation(
     dimos_id: int | None = Query(None, ge=1),
     periferia_id: int | None = Query(None, ge=1),

@@ -38,8 +38,10 @@ method errors and WebSockets are outside this registered HTTP inventory.
 - Bill summaries accept only `el` and `en` (422 otherwise), producing just two
   language cache variants per bill. The generate class runs before DB/provider work.
 - ZK members use a bounded 16-entry cache keyed by scope, published root, size
-  and depth. Concurrent fills coalesce; Poseidon runs in a thread, using 16
-  execution slots and a FIFO wait queue per event loop. Membership changes still return
+  and depth. Concurrent fills coalesce; Poseidon uses one dedicated 16-thread
+  executor with completion-held submission permits shared across event loops.
+  True CPU saturation after ten seconds returns 503 with `Retry-After: 1`.
+  Membership changes still return
   409 for a stale root; cache hits compare members without rebuilding Poseidon.
 - JSON and both result CSV exports default to 100 bills, cap at 500, and bound
   offset to 10,000. Pagination happens in SQL before aggregation; vote queries
@@ -99,7 +101,8 @@ counts/root readiness with five-second freshness, coalesces concurrent fills and
 bounds the cache to 128 entries/process. Visibility is checked on every hit and
 rollout flags/allowlists participate in the key. Expired snapshots serve while
 refreshing; readiness appears on a subsequent released five-second poll after
-the refresh finishes. Failed refreshes preserve the last good snapshot.
+the refresh finishes. Failed refreshes preserve the last good snapshot only
+until 30 seconds beyond its fresh TTL; older snapshots require a fresh read.
 Results cache vote totals with five-second freshness/128 entries, keyed by bill, vote
 sources and privacy policy; visibility and suppression still run on every request.
 Successful vote/root/opt-in commits invalidate all local public caches through the
@@ -155,7 +158,10 @@ Compatibility aliases with no observed caller are marked explicitly.
 
 The released inventory is derived mechanically by
 `scripts/released_mobile_inventory.py` from all production TS/TSX files under
-`apps/mobile/src` at `origin/main`, including request helpers and direct fetches.
+`apps/mobile/src` in the working tree, including request helpers and direct fetches.
+The inventory does not require Git refs in shallow CI checkouts. A separate test
+compares `apps/mobile` against the merge base with `origin/main` when available;
+only that change check skips when the ref or merge base is unavailable.
 The fixture pins all **45 call sites / 38 HTTP patterns** with source lines.
 The test regenerates that evidence, resolves every pattern against registered
 routes, requires client-flow/polling for every automatic read, and fails on
@@ -194,8 +200,16 @@ bills/trending, consensus representation, region/municipality lists and tickets.
 Results also cache regional population aggregates.
 Each is bounded to 128 entries/process with five-second freshness anchored before
 work; hits do not renew it. Expired entries retain the last good value and serve
-immediately while one background refresh runs with its own database session.
-Refresh failures preserve that value. Keys include every declared path/query argument
+immediately while one background refresh runs with its own database session,
+only until a hard stale deadline. Vote/status, eligibility-sensitive politician
+reads, results/totals (including overview, ranking and consensus representation)
+allow at most 30 seconds beyond freshness; other public aggregates allow ten
+minutes. Beyond that deadline requests await fresh computation for at most ten
+seconds and never return the old body. An unavailable fresh computation propagates
+its error; an expired read exceeding that wait returns 504. Refresh failures never
+extend the deadline. Fresh eligibility/visibility guards run before serving hits;
+403/404/410 denials invalidate cached bodies immediately and fence off older
+in-flight fills. Keys include every declared path/query argument
 (including defaults), the visibility policy version and sensitive-term list,
 small-cell threshold and the endpoint's anonymity thresholds. Unknown query
 fields do not affect handlers and are never retained; request headers, sessions,
@@ -203,15 +217,26 @@ nullifiers and signatures are excluded. Only explicitly public endpoints can
 use this wrapper. Returned payloads are copied so callers cannot mutate hits.
 
 Concurrent identical misses share one result/error per process/event loop.
-Ordinary reads have 32 execution slots per loop; overview, ranking, consensus
+Ordinary async reads have 32 execution slots per loop; overview, ranking, consensus
 representation and result aggregates use a separate eight-slot pool. Each pool
 has a FIFO queue of at most 128 waiters with a ten-second admission deadline.
 At the deadline, a cold request computes inline; background refreshes may defer
 to the next request. Queue overflow waits out the same deadline without joining
 the queue. Followers wait up to ten seconds for the single in-flight result,
-then compute inline without cancelling the leader. Saturation never produces
-429 or 5xx. The 128-key single-flight registry also falls back through the pool
+then compute inline without cancelling the leader. Async I/O admission never
+produces a capacity error. The 128-key single-flight registry also falls back through the pool
 when full, without rejecting navigation.
+
+CPU-bound ZK member tree builds use one dedicated 16-thread bounded executor
+per process. Every submission, including a single-flight timeout fallback, must
+acquire a permit. At most 16 jobs can be submitted and unfinished; no backlog
+can accumulate in the executor's internal queue beyond that bound. Permits are
+released by the underlying job's completion, even when its request or leader is
+cancelled. Admission waits at most ten seconds; true proof/tree CPU saturation
+returns 503 with `Retry-After: 1`. This exception applies only to CPU builds.
+Other client-flow reads retain the no-cache-generated-429 rule. ZK member hits
+still recheck current scope visibility, the published root and current members;
+the immutable root validation cache never substitutes older response data.
 
 Framework parameter validation and semantic bill/status/governance/geographic
 validation run before any cache lookup, single-flight registration or budget
@@ -226,8 +251,8 @@ Overview's 50 identical concurrent HTTP reads over 100 completed bills perform
 Ranking computes each bill's majority once per fill, reused across parties.
 The shared representation commit hook clears all local public caches after a
 successful commit; evaluation/ticket writes clear them locally too. Failed
-commits do not invalidate. Other workers refresh after five seconds; during
-refresh failures they can continue serving their last good policy-keyed value.
+commits do not invalidate. Other workers refresh after five seconds and can
+serve their last good policy-keyed value only within the route's hard stale window.
 
 ## Shared storage, fallback and privacy
 
@@ -593,3 +618,49 @@ after that full run started:
 Logs are in `/private/tmp/b01-r4-*.log`; the full output and skip reasons are in
 `/private/tmp/b01-r4-full-api.log`. Design and final log tails are in
 `/private/tmp/b01-r4-final-stdout.txt`. No commit was created.
+
+### Round 5 validation
+
+Hard stale deadlines now apply in `client_flow_cache`: 30 seconds beyond the
+fresh TTL for status/eligibility/results/totals, ten minutes for other public
+aggregates. Expired reads await fresh computation with a bounded wait. Fresh
+politician/scope/result visibility checks precede hits, and refresh-time
+403/404/410 responses invalidate entries and prevent older fills restoring them.
+
+ZK tree builds use a dedicated bounded executor. Sixty cancelled fills leave
+eight running jobs in an eight-worker test pool, zero queued jobs and zero
+leaked threads after shutdown. Follower timeout fallbacks cannot bypass permits;
+only true CPU saturation returns 503 with `Retry-After: 1`.
+
+The mobile inventory scans working-tree source without Git refs. The separate
+mobile change assertion uses a merge base only when available. Mobile source
+remains unchanged. Focused tails (`TZ=UTC`, same local framework overlay):
+
+```text
+b01-r5-freshness.log: 13 passed in 5.43s
+b01-r5-executor.log: 2 passed in 3.94s
+b01-r5-inventory.log: 6 passed in 6.26s
+b01-r5-focused.log: 240 passed, 1 warning in 372.82s (0:06:12)
+b01-r5-post-full-corrections.log: 102 passed, 4 deselected in 12.38s
+```
+
+The full API suite ran once with `TZ=UTC`:
+
+```text
+5 failed, 4410 passed, 95 skipped, 25 xfailed, 21 warnings, 4 subtests passed in 1181.49s (0:19:41)
+```
+
+Four failures exposed a redundant cold scope-status visibility lookup. The
+correction preserves the per-request guard and checks background refreshes in
+their own session. The fifth was a source-inspection artifact: after the running
+process loaded the old file positions, the corrected file made inspection read
+the preceding receipt handler instead of the root handler. All five cases pass
+against the final files, without relaxing assertions or repeating the full suite:
+
+```text
+b01-r5-full-failures-recheck.log: 5 passed in 1.60s
+```
+
+The 95 skips cover unconfigured external PostgreSQL/Redis and optional service
+checks. Complete output is in `/private/tmp/b01-r5-full-api.log`; per-item tails
+are in `/private/tmp/b01-r5-final-stdout.txt`. No commit was created.

@@ -1,4 +1,4 @@
-"""Derive HTTP calls from every production mobile TS/TSX file at a Git ref.
+"""Derive HTTP calls from production mobile TS/TSX files in a tree or Git ref.
 
 The token scanner retains templates as one argument, strips comments and pairs
 parentheses, so methods belong to the enclosing call rather than the next call.
@@ -79,13 +79,18 @@ def calls_in_source(source, filename):
     return found
 
 
-def released_calls(ref='origin/main'):
-    paths = git('ls-tree', '-r', '--name-only', ref, '--', 'apps/mobile/src').splitlines()
+def released_calls(ref=None):
+    if ref is None:
+        paths = sorted(path.relative_to(ROOT).as_posix() for path in (ROOT / 'apps/mobile/src').rglob('*')
+                       if path.is_file())
+    else:
+        paths = git('ls-tree', '-r', '--name-only', ref, '--', 'apps/mobile/src').splitlines()
     calls = []
     for path in paths:
         if not path.endswith(('.ts', '.tsx')) or re.search(r'\.(test|spec)\.tsx?$', path) or '/__tests__/' in path:
             continue
-        calls.extend(calls_in_source(git('show', f'{ref}:{path}'), path))
+        source = (ROOT / path).read_text() if ref is None else git('show', f'{ref}:{path}')
+        calls.extend(calls_in_source(source, path))
     return sorted(calls, key=lambda row: (row['path'], row['method'], row['source']))
 
 

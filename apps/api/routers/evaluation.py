@@ -133,9 +133,13 @@ async def _get_enabled_politician(ada_number: str, db: AsyncSession) -> dict:
 # ─── Endpoints ───────────────────────────────────────────────────────────────
 
 
+async def _validate_public_politician(*, ada_number, db, **kwargs):
+    await _get_enabled_politician(ada_number, db)
+
+
 @router.get("/", dependencies=[Depends(enforce_route_limit)])
 @client_flow
-@public_client_cache(quota="60/minute")
+@public_client_cache(quota="60/minute", sensitive=True)
 async def list_politicians(db: AsyncSession = Depends(get_db), request: Request = None):
     """Public: all politicians who opted-in to evaluation, with avg scores."""
     result = await db.execute(text("""
@@ -200,7 +204,7 @@ async def get_my_evaluations_bulk(
 
 @router.get("/{ada_number}/questions", dependencies=[Depends(enforce_route_limit)])
 @client_flow
-@public_client_cache(quota="60/minute")
+@public_client_cache(quota="60/minute", sensitive=True, validate=_validate_public_politician)
 async def get_questions(
     ada_number: str,
     db: AsyncSession = Depends(get_db),
@@ -347,7 +351,7 @@ async def evaluate_politician(
 
 @router.get("/{ada_number}/scores", dependencies=[Depends(enforce_route_limit)])
 @client_flow
-@public_client_cache(quota="60/minute")
+@public_client_cache(quota="60/minute", sensitive=True, validate=_validate_public_politician)
 async def get_scores(
     ada_number: str,
     db: AsyncSession = Depends(get_db),

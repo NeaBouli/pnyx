@@ -57,9 +57,14 @@ async def list_periferies(
 
 # ─── GET /api/v1/periferia/{id}/dimos ─────────────────────────────────────────
 
+async def _validate_periferia(*, periferia_id, db, **kwargs):
+    if not await db.get(Periferia, periferia_id):
+        raise HTTPException(status_code=404, detail="Periferia not found")
+
+
 @router.get("/periferia/{periferia_id}/dimos", dependencies=[Depends(enforce_route_limit)])
 @client_flow
-@public_client_cache()
+@public_client_cache(validate=_validate_periferia, sensitive=True)
 async def list_dimos_by_periferia(
     periferia_id: int = Path(..., ge=1),
     is_active: Optional[bool] = Query(True, description="Filter by active status"),
@@ -67,10 +72,6 @@ async def list_dimos_by_periferia(
     request: Request = None,
 ):
     """List all Dimos (Municipalities) within a Periferia."""
-    periferia = await db.get(Periferia, periferia_id)
-    if not periferia:
-        raise HTTPException(status_code=404, detail="Periferia not found")
-
     stmt = select(Dimos).where(Dimos.periferia_id == periferia_id)
     if is_active is not None:
         stmt = stmt.where(Dimos.is_active == is_active)

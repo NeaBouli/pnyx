@@ -6,9 +6,8 @@ Semaphore proof payloads when ZK_VOTING_ENABLED is explicitly enabled.
 from __future__ import annotations
 
 import os
-import asyncio
 from collections import OrderedDict
-from services.request_work import SingleFlight, WaitingWorkSlots
+from services.request_work import BoundedExecutor, SingleFlight
 from services.client_flow_cache import scope_status_cache, with_cache_db
 from pathlib import Path
 from typing import Any
@@ -75,7 +74,7 @@ from services.vote_scope import ensure_bill_scope_allowed
 router = APIRouter(prefix="/api/v1/zk", tags=["GH#112 ZK V2"])
 _root_members_cache = OrderedDict()
 _root_members_flights = SingleFlight(capacity=128, reject_on_capacity=False)
-_root_members_workers = WaitingWorkSlots(capacity=16)
+_root_members_workers = BoundedExecutor(capacity=16)
 
 VKEY_PATH = Path(__file__).resolve().parents[1] / "data" / "semaphore-v4-depth16-vkey.json"
 ZK_VOTING_ENABLED_ENV = "ZK_VOTING_ENABLED"
@@ -609,7 +608,9 @@ async def get_zk_scope_status(
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid vote_scope_id") from exc
     scope_type, _scope_id = scope.split(":", 1)
-    await _ensure_scope_public_or_safe_canary(db, scope, require_existing_bill=(scope_type == "bill"))
+    await scope_status_cache.check_eligibility(lambda: _ensure_scope_public_or_safe_canary(
+        db, scope, require_existing_bill=(scope_type == "bill"),
+    ))
 
     # Recheck visibility on every hit; cache only the public status calculation.
     # Policy changes must not revive a response from another rollout mode.
@@ -670,8 +671,12 @@ async def get_zk_scope_status(
                 else "Η προαιρετική ZK διαδρομή δεν είναι διαθέσιμη για αυτό το θέμα."
             ),
         )
+    async def refresh_status(db):
+        await _ensure_scope_public_or_safe_canary(db, scope, require_existing_bill=(scope_type == "bill"))
+        return await load_status(db)
+
     return await scope_status_cache.get_or_fill(
-        key, load_status, background_factory=lambda: with_cache_db(load_status),
+        key, load_status, background_factory=lambda: with_cache_db(refresh_status),
     )
 
 
@@ -983,7 +988,7 @@ async def get_current_zk_root_members(
         if cached is not None:
             valid = cached == tuple(members)
         else:
-            current_group = await asyncio.to_thread(build_semaphore_group_root, members)
+            current_group = await _root_members_workers.run(build_semaphore_group_root, members)
             valid = (str(current_group.root) == str(root.merkle_root)
                      and current_group.size == int(root.group_size)
                      and int(root.merkle_depth) == SEMAPHORE_MERKLE_TREE_DEPTH)
@@ -998,7 +1003,7 @@ async def get_current_zk_root_members(
             _root_members_cache.popitem(last=False)
         return tuple(members)
 
-    validated_members = await _root_members_flights.run(key, lambda: _root_members_workers.run(validate_members))
+    validated_members = await _root_members_flights.run(key, validate_members)
     # A concurrent caller may have observed a different membership revision.
     if validated_members != tuple(members):
         raise HTTPException(409, "ZK root is stale; publish a fresh root before proof generation")

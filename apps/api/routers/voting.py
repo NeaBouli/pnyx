@@ -1237,15 +1237,22 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db), request:
     Visibility: HIDDEN (default for ACTIVE), WINDOW (24h), ALWAYS.
     PARLIAMENT_VOTED/OPEN_END always visible.
     """
-    bill_result = await db.execute(
-        select(ParliamentBill).where(ParliamentBill.id == bill_id)
-    )
-    bill = bill_result.scalar_one_or_none()
-    if not bill or not is_public_bill(bill):
-        raise HTTPException(status_code=404, detail=f"Το νομοσχέδιο {bill_id} δεν βρέθηκε.")
+    async def eligible_bill():
+        bill_result = await db.execute(
+            select(ParliamentBill).where(ParliamentBill.id == bill_id)
+        )
+        bill = bill_result.scalar_one_or_none()
+        if not bill or not is_public_bill(bill):
+            raise HTTPException(status_code=404, detail=f"Το νομοσχέδιο {bill_id} δεν βρέθηκε.")
+        return bill
+
+    bill = await results_cache.check_eligibility(eligible_bill)
+    include_zk = (bill.source or "PARLIAMENT") == "PARLIAMENT"
+    totals_key = (bill_id, include_zk, small_cell_k())
 
     # Visibility check (shared with every public results surface)
     if results_hidden(bill):
+        results_cache.invalidate(totals_key)
         vote_date = bill.parliament_vote_date.strftime("%d/%m/%Y") if bill.parliament_vote_date else None
         return publish_bill_results(BillResults(
             bill_id=bill_id, title_el=bill.title_el, status=bill.status.value,
@@ -1269,13 +1276,18 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db), request:
             disclaimer_el="Τα αποτελέσματα θα είναι ορατά μετά τη λήξη της ψηφοφορίας.",
         ))
 
-    include_zk = (bill.source or "PARLIAMENT") == "PARLIAMENT"
+    async def refresh_totals(session):
+        current = (await session.execute(
+            select(ParliamentBill).where(ParliamentBill.id == bill_id)
+        )).scalar_one_or_none()
+        if not current or not is_public_bill(current) or results_hidden(current):
+            raise HTTPException(404, "Public results are no longer visible")
+        return await aggregate_bill_vote_totals(session, bill_id, include_zk=include_zk)
+
     totals = await results_cache.get_or_fill(
-        (bill_id, include_zk, small_cell_k()),
+        totals_key,
         lambda: aggregate_bill_vote_totals(db, bill_id, include_zk=include_zk),
-        background_factory=lambda: with_cache_db(
-            lambda session: aggregate_bill_vote_totals(session, bill_id, include_zk=include_zk),
-        ),
+        background_factory=lambda: with_cache_db(refresh_totals),
     )
     yes_c = totals.yes
     no_c = totals.no

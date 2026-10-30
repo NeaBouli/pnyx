@@ -2,8 +2,11 @@
 from __future__ import annotations
 
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from functools import wraps
+import threading
+from time import monotonic
 from weakref import WeakKeyDictionary
 
 from fastapi import HTTPException, Request
@@ -84,10 +87,11 @@ class SingleFlight:
 
 
 class WaitingWorkSlots:
-    """FIFO execution slots with bounded waiters; cold reads fall back inline.
+    """Async I/O slots with bounded waiters; cold reads fall back inline.
 
     A full queue waits out the same deadline without joining the semaphore's
-    wait list. Saturation never becomes an HTTP error.
+    wait list. Saturation never becomes an HTTP error. Thread work must use
+    BoundedExecutor instead: an async task's lifetime does not bound a thread.
     """
 
     DEFERRED = object()
@@ -126,6 +130,42 @@ class WaitingWorkSlots:
             return await factory()
         finally:
             slots.release()
+
+
+class BoundedExecutor:
+    """One executor per CPU pool, with no submissions beyond its worker count.
+
+    Admission is shared across event loops. Only completion of the concurrent
+    future releases a permit; caller cancellation cannot release running work.
+    Async waiters never occupy executor threads or its unbounded internal queue.
+    """
+
+    def __init__(self, capacity=16, wait_timeout=10, *, thread_name_prefix="proof-tree"):
+        self.capacity = capacity
+        self.wait_timeout = wait_timeout
+        self.executor = ThreadPoolExecutor(max_workers=capacity, thread_name_prefix=thread_name_prefix)
+        self._permits = threading.BoundedSemaphore(capacity)
+
+    async def run(self, function, *args, **kwargs):
+        deadline = monotonic() + self.wait_timeout
+        while not self._permits.acquire(blocking=False):
+            remaining = deadline - monotonic()
+            if remaining <= 0:
+                raise HTTPException(503, "Proof/tree build capacity reached", headers={"Retry-After": "1"})
+            await asyncio.sleep(min(0.01, remaining))
+        try:
+            job = self.executor.submit(function, *args, **kwargs)
+        except BaseException:
+            self._permits.release()
+            raise
+        job.add_done_callback(lambda _: self._permits.release())
+        result = asyncio.wrap_future(job)
+        # Consume late failures even if the request has already been cancelled.
+        result.add_done_callback(lambda future: None if future.cancelled() else future.exception())
+        return await asyncio.shield(result)
+
+    def shutdown(self):
+        self.executor.shutdown(wait=True)
 
 
 _flights = SingleFlight()

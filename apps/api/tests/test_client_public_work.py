@@ -143,7 +143,7 @@ async def test_politician_public_scans_coalesce_and_errors_are_not_cached(releas
             responses = await asyncio.gather(*(client.get(path) for _ in range(50)))
             assert all(r.status_code == 200 for r in responses)
         assert db.execute.await_count == 3
-        assert enabled.await_count == 2
+        assert enabled.await_count == 102  # Eligibility on every request, plus two leaders.
         monkeypatch.setattr(evaluation, 'EVALUATION_K_ANONYMITY_MIN', 20)
         assert (await client.get('/api/v1/politicians/ADA-1/scores')).status_code == 200
         assert db.execute.await_count == 4

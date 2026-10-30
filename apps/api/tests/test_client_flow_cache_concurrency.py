@@ -48,7 +48,7 @@ async def test_twenty_simultaneous_distinct_politician_mounts_behind_nat(slow_re
             for target in range(20) for suffix in ("questions", "scores")
         ))
     assert [response.status_code for response in responses] == [200] * 40
-    assert slow_released_sql.execute.await_count == 80
+    assert slow_released_sql.execute.await_count == 120  # Fresh eligibility, then each leader's lookup + scan.
     print("NAT distinct-politicians=20 simultaneous-reads=40 SQL-latency=20ms: zero 429/5xx")
 
 

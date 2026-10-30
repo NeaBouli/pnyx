@@ -2,6 +2,7 @@
 from inspect import getsource, signature, unwrap
 from pathlib import Path
 import re
+import subprocess
 import sys
 
 import pytest
@@ -29,8 +30,7 @@ def test_all_released_mobile_calls_are_in_inventory_and_classified():
         route = routes.get((call['method'], call['path']))
         assert route is not None, f'Released route not registered: {call}'
         derived.append(dict(call, path=route.path))
-    assert INVENTORY['released_commit'] == git('rev-parse', 'origin/main').strip()
-    assert derived == INVENTORY['source_calls'], 'Regenerate source_calls from origin/main; review every new pattern'
+    assert derived == INVENTORY['source_calls'], 'Regenerate source_calls from apps/mobile/src; review every new pattern'
     actions = {(r['method'], r['path']): r['reason'] for r in INVENTORY['justified_actions']}
     flow = {(r['method'], r['path']) for r in INVENTORY['routes']}
     seen = {(r['method'], r['path']) for r in derived}
@@ -44,6 +44,21 @@ def test_all_released_mobile_calls_are_in_inventory_and_classified():
         else:
             assert key in flow, f'Missing released request pattern: {call}'
             assert route_policy(route, call['method'])[0] == 'client-flow', call
+
+
+def test_pr_does_not_modify_mobile():
+    try:
+        base = git('merge-base', 'HEAD', 'origin/main').strip()
+    except subprocess.CalledProcessError:
+        pytest.skip('Merge base unavailable in this checkout; working-tree inventory is still checked')
+    assert not git('diff', '--name-only', base, '--', 'apps/mobile').strip(), 'PR modifies apps/mobile'
+    assert not git('ls-files', '--others', '--exclude-standard', '--', 'apps/mobile').strip(), 'Untracked mobile changes'
+
+
+def test_working_tree_inventory_does_not_need_git_refs(monkeypatch):
+    import released_mobile_inventory as scanner
+    monkeypatch.setattr(scanner, 'git', lambda *args: pytest.fail('Working-tree inventory must not need Git refs'))
+    assert scanner.released_calls()
 
 
 def test_scanner_covers_templates_multiline_methods_and_new_wrappers():
