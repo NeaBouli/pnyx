@@ -28,7 +28,7 @@ from services.citizen_action_integrity import (
 from services.source_links import official_source_url
 from services.source_freshness import get_source_freshness, bill_freshness
 from services.representation_cache import commit_and_invalidate_representation
-from services.geographic_scope import validate_region_filter
+from services.geographic_scope import validate_public_region_filters
 from models import (
     ParliamentBill, BillStatus, BillStatusLog, BillRelevanceVote,
     CitizenVote, VoteChoice, GovernanceLevel, IdentityRecord, KeyStatus,
@@ -154,11 +154,26 @@ def _parse_status_any(status_any: str | None) -> list[BillStatus]:
         try:
             status = BillStatus(value)
         except ValueError:
-            raise HTTPException(400, f"Ungültiger Status: {raw_status.strip()}") from None
+            raise HTTPException(422, f"Ungültiger Status: {raw_status.strip()}") from None
         if status not in seen:
             seen.add(status)
             statuses.append(status)
     return statuses
+
+
+async def _validate_bill_filters(*, status_filter=None, status_any=None, governance=None, **kwargs):
+    _parse_status_any(status_any)
+    if status_filter:
+        try:
+            BillStatus(status_filter.upper())
+        except ValueError:
+            raise HTTPException(422, f"Ungültiger Status: {status_filter}") from None
+    if governance:
+        try:
+            GovernanceLevel(governance.upper())
+        except ValueError:
+            raise HTTPException(422, f"Ungültige Governance-Ebene: {governance}") from None
+    await validate_public_region_filters(**kwargs)
 
 
 def _region_filter_conditions(
@@ -197,7 +212,7 @@ def _region_filter_conditions(
 
 @router.get("", response_model=list[BillSummary], dependencies=[Depends(enforce_route_limit)])
 @client_flow
-@public_client_cache(quota="60/minute")
+@public_client_cache(validate=_validate_bill_filters)
 async def get_bills(
     status_filter: str | None = Query(None, alias="status"),
     status_any: str | None = Query(None),
@@ -205,11 +220,11 @@ async def get_bills(
     governance: str | None = Query(None),
     source: str | None = Query(None),
     q: str | None = Query(None, min_length=1, max_length=200),
-    periferia_id: int | None = Query(None),
-    dimos_id: int | None = Query(None),
+    periferia_id: int | None = Query(None, ge=1),
+    dimos_id: int | None = Query(None, ge=1),
     include_institutional: bool = Query(True),
-    limit: int = Query(20, le=500),
-    offset: int = Query(0),
+    limit: int = Query(20, ge=1, le=500),
+    offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
     request: Request = None,
 ):
@@ -235,7 +250,7 @@ async def get_bills(
             s = BillStatus(status_filter.upper())
             query = query.where(ParliamentBill.status == s)
         except ValueError:
-            raise HTTPException(400, f"Ungültiger Status: {status_filter}")
+            raise HTTPException(422, f"Ungültiger Status: {status_filter}")
 
     if governance:
         try:
@@ -250,7 +265,7 @@ async def get_bills(
             else:
                 query = query.where(ParliamentBill.governance_level == governance_level)
         except ValueError:
-            raise HTTPException(400, f"Ungültige Governance-Ebene: {governance}")
+            raise HTTPException(422, f"Ungültige Governance-Ebene: {governance}")
 
     if source:
         query = query.where(ParliamentBill.source == source.upper())
@@ -268,11 +283,6 @@ async def get_bills(
 
     # Region filter: show NATIONAL + INSTITUTIONAL + matching REGIONAL/MUNICIPAL
     if periferia_id is not None or dimos_id is not None:
-        await validate_region_filter(
-            db,
-            periferia_id=periferia_id,
-            dimos_id=dimos_id,
-        )
         region_conditions = _region_filter_conditions(
             periferia_id=periferia_id,
             dimos_id=dimos_id,
@@ -319,7 +329,7 @@ async def get_bills(
 @client_flow
 @public_client_cache(quota="60/minute")
 async def get_trending(
-    limit: int = Query(10, le=50),
+    limit: int = Query(10, ge=1, le=50),
     db: AsyncSession = Depends(get_db),
     request: Request = None,
 ):

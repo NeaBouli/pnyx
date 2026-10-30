@@ -47,15 +47,19 @@ async def test_fifty_overview_http_reads_aggregate_one_hundred_bills_once(releas
         # Hits don't extend TTL; the next window recomputes exactly once.
         clock.now += 5
         assert (await client.get('/api/v1/analytics/overview')).status_code == 200
+        await asyncio.gather(*analytics.analytics_overview.public_cache.flights._tasks)
         assert totals.await_count == 200
     print('overview 50 concurrent HTTP 200s / 100 bills: 100 aggregations, 1 bill scan, 9 count SQL calls (one fill)')
 
 
 @pytest.mark.asyncio
-async def test_overview_fill_budget_is_global_and_hits_do_not_consume_it(released_backend, monkeypatch):
-    _, db, _ = released_backend
+async def test_overview_soft_fill_budget_logs_without_rejecting_other_clients(released_backend, monkeypatch, caplog):
+    clock, db, _ = released_backend
     totals, _ = overview_data(monkeypatch, db, count=1)
     cache = analytics.analytics_overview.public_cache
+    budget = analytics.analytics_overview.public_fill_budget
+    monkeypatch.setattr(budget, 'started', clock.now)
+    monkeypatch.setattr(budget, 'count', 0)
     async with AsyncClient(transport=ASGITransport(app=main.app), base_url='http://test') as client:
         for _ in range(30):
             cache.clear()
@@ -63,13 +67,17 @@ async def test_overview_fill_budget_is_global_and_hits_do_not_consume_it(release
         assert totals.await_count == 30
         for _ in range(50):
             assert (await client.get('/api/v1/analytics/overview')).status_code == 200
+        assert budget.count == 30
         cache.clear()
         calls = db.execute.await_count
         async with AsyncClient(transport=ASGITransport(app=main.app, client=('203.0.113.99', 9)),
                                base_url='http://test') as other:
-            response = await other.get('/api/v1/analytics/overview')
-        assert response.status_code == 429 and int(response.headers['retry-after']) > 0
-        assert db.execute.await_count == calls
+            with caplog.at_level('INFO', logger='services.client_flow_cache'):
+                response = await other.get('/api/v1/analytics/overview')
+        assert response.status_code == 200
+        assert db.execute.await_count == calls + 1
+        assert budget.count == 31
+        assert 'event=soft_budget_exceeded route=routers.analytics.analytics_overview' in caplog.text
 
 
 @pytest.mark.asyncio
@@ -99,6 +107,7 @@ async def test_public_cache_keys_query_defaults_privacy_and_visibility_rules(rel
         assert db.execute.await_count == len(paths) + 2
         clock.now += 1
         await client.get(paths[0])
+        await asyncio.gather(*parliament.get_bills.public_cache.flights._tasks)
         assert db.execute.await_count == len(paths) + 3
 
 
@@ -177,4 +186,5 @@ async def test_results_regional_population_scan_is_shared(released_backend):
     assert db.execute.await_count == 1
     clock.now += 5
     await representativity_for_bill(db, bill, 80)
+    await asyncio.gather(*client_flow_cache.results_cache.flights._tasks)
     assert db.execute.await_count == 2

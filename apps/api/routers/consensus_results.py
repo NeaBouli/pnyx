@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from services.bill_visibility import public_bill_raw_sql
-from services.geographic_scope import validate_region_filter
+from services.geographic_scope import validate_public_region_filters
 
 
 router = APIRouter(prefix="/api/v1/consensus", tags=["consensus-results"])
@@ -146,7 +146,7 @@ async def _load_view(
 
 @router.get("/representation", dependencies=[Depends(enforce_route_limit)])
 @client_flow
-@public_client_cache(quota="60/minute")
+@public_client_cache(aggregate=True, validate=validate_public_region_filters)
 async def get_consensus_representation(
     dimos_id: int | None = Query(None, ge=1),
     periferia_id: int | None = Query(None, ge=1),
@@ -155,13 +155,6 @@ async def get_consensus_representation(
     request: Request = None,
 ):
     """Return separate aggregate views; never return individual consensus rows."""
-    if dimos_id is not None or periferia_id is not None:
-        await validate_region_filter(
-            db,
-            periferia_id=periferia_id,
-            dimos_id=dimos_id,
-        )
-
     visibility_sql, visibility_params = _public_visibility_sql()
     coverage_result = await db.execute(text(f"""
         SELECT

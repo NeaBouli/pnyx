@@ -136,7 +136,7 @@ async def test_representation_rejects_mismatched_dimos_and_periferia():
     with pytest.raises(HTTPException) as exc_info:
         await get_consensus_representation(dimos_id=22, periferia_id=7, limit=20, db=db)
 
-    assert exc_info.value.status_code == 400
+    assert exc_info.value.status_code == 422
 
 
 @pytest.mark.asyncio

@@ -127,7 +127,7 @@ async def compute_divergence(
 
 @router.get("/overview", dependencies=[Depends(enforce_route_limit)])
 @client_flow
-@public_client_cache(quota="30/minute")
+@public_client_cache(quota="30/minute", aggregate=True)
 async def analytics_overview(db: AsyncSession = Depends(get_db), request: Request = None):
     """Plattform-weite Statistiken + Divergence Übersicht."""
     _real = public_bill_with_demo_filter()

@@ -148,7 +148,7 @@ async def party_comparison(party_abbr: str, db: AsyncSession = Depends(get_db), 
 
 @router.get("/ranking", dependencies=[Depends(enforce_route_limit)])
 @client_flow
-@public_client_cache(quota="30/minute")
+@public_client_cache(quota="30/minute", aggregate=True)
 async def party_ranking(db: AsyncSession = Depends(get_db), request: Request = None):
     """Rangliste aller Parteien nach Übereinstimmung mit Bürgermehrheit."""
     result = await db.execute(select(Party))

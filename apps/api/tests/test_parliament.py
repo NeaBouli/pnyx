@@ -55,7 +55,7 @@ class TestStatusAny:
         with pytest.raises(HTTPException) as exc:
             _parse_status_any("ACTIVE,NOT_A_STATUS")
 
-        assert exc.value.status_code == 400
+        assert exc.value.status_code == 422
 
 
 class TestRegionFilterConditions:

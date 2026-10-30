@@ -8,8 +8,8 @@ from __future__ import annotations
 import os
 import asyncio
 from collections import OrderedDict
-from services.request_work import SingleFlight
-from services.client_flow_cache import scope_status_cache
+from services.request_work import SingleFlight, WaitingWorkSlots
+from services.client_flow_cache import scope_status_cache, with_cache_db
 from pathlib import Path
 from typing import Any
 
@@ -74,7 +74,8 @@ from services.vote_scope import ensure_bill_scope_allowed
 
 router = APIRouter(prefix="/api/v1/zk", tags=["GH#112 ZK V2"])
 _root_members_cache = OrderedDict()
-_root_members_flights = SingleFlight(capacity=4)
+_root_members_flights = SingleFlight(capacity=128, reject_on_capacity=False)
+_root_members_workers = WaitingWorkSlots(capacity=16)
 
 VKEY_PATH = Path(__file__).resolve().parents[1] / "data" / "semaphore-v4-depth16-vkey.json"
 ZK_VOTING_ENABLED_ENV = "ZK_VOTING_ENABLED"
@@ -616,7 +617,7 @@ async def get_zk_scope_status(
     key = (scope, flags, tuple(sorted(_production_scope_allowlist())),
            tuple(sorted(_canary_scope_allowlist())))
 
-    async def load_status():
+    async def load_status(db=db):
         production_enabled = zk_voting_enabled()
         opt_in_enabled = zk_opt_in_enabled()
         canary_enabled = production_enabled and _env_enabled(ZK_CANARY_ENABLED_ENV)
@@ -669,7 +670,9 @@ async def get_zk_scope_status(
                 else "Η προαιρετική ZK διαδρομή δεν είναι διαθέσιμη για αυτό το θέμα."
             ),
         )
-    return await scope_status_cache.get_or_fill(key, load_status)
+    return await scope_status_cache.get_or_fill(
+        key, load_status, background_factory=lambda: with_cache_db(load_status),
+    )
 
 
 @router.get("/canary/preflight/{vote_scope_id}", response_model=ZkCanaryPreflightResponse, dependencies=[Depends(enforce_route_limit)])
@@ -993,10 +996,11 @@ async def get_current_zk_root_members(
         _root_members_cache.move_to_end(key)
         while len(_root_members_cache) > 16:
             _root_members_cache.popitem(last=False)
+        return tuple(members)
 
-    await _root_members_flights.run(key, validate_members)
+    validated_members = await _root_members_flights.run(key, lambda: _root_members_workers.run(validate_members))
     # A concurrent caller may have observed a different membership revision.
-    if _root_members_cache.get(key) != tuple(members):
+    if validated_members != tuple(members):
         raise HTTPException(409, "ZK root is stale; publish a fresh root before proof generation")
 
     response = _zk_root_response(root)

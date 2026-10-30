@@ -7,7 +7,7 @@ GET /api/v1/decisions              — Decisions (filter by level, periferia_id,
 from typing import Optional
 from datetime import datetime, timezone, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
 from pydantic import BaseModel
 from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
@@ -61,7 +61,7 @@ async def list_periferies(
 @client_flow
 @public_client_cache()
 async def list_dimos_by_periferia(
-    periferia_id: int,
+    periferia_id: int = Path(..., ge=1),
     is_active: Optional[bool] = Query(True, description="Filter by active status"),
     db: AsyncSession = Depends(get_db),
     request: Request = None,

@@ -38,8 +38,8 @@ method errors and WebSockets are outside this registered HTTP inventory.
 - Bill summaries accept only `el` and `en` (422 otherwise), producing just two
   language cache variants per bill. The generate class runs before DB/provider work.
 - ZK members use a bounded 16-entry cache keyed by scope, published root, size
-  and depth. Concurrent fills coalesce; Poseidon runs in a thread, with at most
-  four different fills in flight per event loop. Membership changes still return
+  and depth. Concurrent fills coalesce; Poseidon runs in a thread, using 16
+  execution slots and a FIFO wait queue per event loop. Membership changes still return
   409 for a stale root; cache hits compare members without rebuilding Poseidon.
 - JSON and both result CSV exports default to 100 bills, cap at 500, and bound
   offset to 10,000. Pagination happens in SQL before aggregation; vote queries
@@ -95,15 +95,15 @@ QR polling keeps 30/minute/session and 600/minute/IP; it is a browser flow.
 The mobile code in this PR is byte-for-byte unchanged from `origin/main`.
 The installed 1.0.33–1.0.37 behaviour is the compatibility contract: pending
 scope status polls immediately and every **5 seconds**. Scope status caches
-counts/root readiness for at most five seconds, coalesces concurrent fills and
+counts/root readiness with five-second freshness, coalesces concurrent fills and
 bounds the cache to 128 entries/process. Visibility is checked on every hit and
-rollout flags/allowlists participate in the key. Other workers can retain an old
-snapshot for five seconds; combined with the released five-second poll interval,
-readiness can take up to ten seconds to appear without local invalidation.
-Results cache vote totals for five seconds/128 entries, keyed by bill, vote
+rollout flags/allowlists participate in the key. Expired snapshots serve while
+refreshing; readiness appears on a subsequent released five-second poll after
+the refresh finishes. Failed refreshes preserve the last good snapshot.
+Results cache vote totals with five-second freshness/128 entries, keyed by bill, vote
 sources and privacy policy; visibility and suppression still run on every request.
 Successful vote/root/opt-in commits invalidate all local public caches through the
-existing shared commit hook. Other workers observe changes within the TTL.
+existing shared commit hook. Other workers refresh expired values in the background.
 Proof members retain the existing cache by published root and stale-root checks.
 
 ### Released client-flow inventory
@@ -192,8 +192,10 @@ member caches retain their per-request visibility or stale-root checks.
 New public caches cover overview, MP ranking, politician list/questions/scores,
 bills/trending, consensus representation, region/municipality lists and tickets.
 Results also cache regional population aggregates.
-Each is bounded to 128 entries/process with a five-second TTL anchored before
-work; hits do not renew it. Keys include every declared path/query argument
+Each is bounded to 128 entries/process with five-second freshness anchored before
+work; hits do not renew it. Expired entries retain the last good value and serve
+immediately while one background refresh runs with its own database session.
+Refresh failures preserve that value. Keys include every declared path/query argument
 (including defaults), the visibility policy version and sensitive-term list,
 small-cell threshold and the endpoint's anonymity thresholds. Unknown query
 fields do not affect handlers and are never retained; request headers, sessions,
@@ -201,20 +203,31 @@ nullifiers and signatures are excluded. Only explicitly public endpoints can
 use this wrapper. Returned payloads are copied so callers cannot mutate hits.
 
 Concurrent identical misses share one result/error per process/event loop.
-Different fills have four execution slots per loop, with immediate rejection at
-capacity. Each endpoint has a global Redis fill quota: overview/ranking allow
-30 fills/minute, other public caches 60/minute (half per process on Redis
-outage). Only leaders consume quota, before SQL; hits/followers do not. The
-quota and short TTL also bound repeated work if a slow fill exceeds the TTL.
-Single-flight and stored payloads are process-local; quotas are shared across
-workers. Cache backend availability cannot disable these local bounds.
+Ordinary reads have 32 execution slots per loop; overview, ranking, consensus
+representation and result aggregates use a separate eight-slot pool. Each pool
+has a FIFO queue of at most 128 waiters with a ten-second admission deadline.
+At the deadline, a cold request computes inline; background refreshes may defer
+to the next request. Queue overflow waits out the same deadline without joining
+the queue. Followers wait up to ten seconds for the single in-flight result,
+then compute inline without cancelling the leader. Saturation never produces
+429 or 5xx. The 128-key single-flight registry also falls back through the pool
+when full, without rejecting navigation.
+
+Framework parameter validation and semantic bill/status/governance/geographic
+validation run before any cache lookup, single-flight registration or budget
+accounting. Invalid filters return 422. Only per-IP route limits may throttle
+client-flow/polling traffic. Public fill budgets are local per-route soft
+telemetry (600/minute by default); crossing a budget logs an event and never
+rejects a fill. The heavy non-app routes retain their rate limits and hard fill
+quotas. Single-flight, queues, stored payloads and soft counters are process-local.
 
 Overview's 50 identical concurrent HTTP reads over 100 completed bills perform
 100 bill aggregations and one bill scan, plus nine count SQL calls, in one fill.
 Ranking computes each bill's majority once per fill, reused across parties.
 The shared representation commit hook clears all local public caches after a
 successful commit; evaluation/ticket writes clear them locally too. Failed
-commits do not invalidate. Other workers retain at most the five-second TTL.
+commits do not invalidate. Other workers refresh after five seconds; during
+refresh failures they can continue serving their last good policy-keyed value.
 
 ## Shared storage, fallback and privacy
 
@@ -542,3 +555,41 @@ No production code changed after starting that full run. The existing API wiki
 wording is registered through `scripts/redesign/approved_audit_delta.py`; its
 HTML is unchanged in round 3. New limits/cache/inventory documentation is kept
 in this operations file. No commit was created.
+
+### Round 4 validation
+
+Client-flow caches now use stale-while-revalidate, non-rejecting single-flight,
+bounded FIFO worker admission and inline cold fallbacks at the wait deadline.
+Semantic bill/geographic validation runs before cache accounting and returns
+422 for invalid filters. Public fill budgets only log; the heavy non-app limits
+remain in place. Background refreshes own their database sessions, and cache
+invalidation separates in-flight generations.
+
+The concurrent HTTP regressions use 20 ms mocked SQL behind one NAT IP:
+20 distinct politician detail mounts (40 reads) and 50 localized Bills mounts
+(100 reads) all return 200. Additional checks cover concurrent root-member
+targets/followers, invalid filters from IP A followed by valid traffic from IP B,
+cold bursts beyond cache capacity, FIFO/timeout/overflow behavior, aggregate
+isolation, stale refresh failures, session lifetime and racing invalidation.
+The released 10/50-user, five-minute polling replays also pass.
+
+The initial focused run exposed three legacy assertions requiring hard fill
+throttling or synchronous refreshes; those assertions now enforce the new
+contract. Final focused tails (`TZ=UTC`):
+
+```text
+b01-r4-focused-final.log: 123 passed, 2 deselected, 2 xfailed, 1 warning in 79.12s (0:01:19)
+b01-r4-corrections.log: 123 passed, 2 xfailed, 1 warning in 239.71s (0:03:59)
+```
+
+The full API suite ran once after the focused checks, with `TZ=UTC`, using the
+same interpreter/framework overlay documented above. No implementation changed
+after that full run started:
+
+```text
+4398 passed, 95 skipped, 25 xfailed, 21 warnings, 4 subtests passed in 1213.18s (0:20:13)
+```
+
+Logs are in `/private/tmp/b01-r4-*.log`; the full output and skip reasons are in
+`/private/tmp/b01-r4-full-api.log`. Design and final log tails are in
+`/private/tmp/b01-r4-final-stdout.txt`. No commit was created.

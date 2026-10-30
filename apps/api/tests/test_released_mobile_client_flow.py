@@ -1,6 +1,7 @@
 """Released origin/main flows on the real app, singleton, middleware and routes."""
 import asyncio
 from collections import Counter, OrderedDict
+from contextlib import asynccontextmanager
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -82,7 +83,7 @@ class Rows:
 
 
 @pytest.fixture
-def released_backend(monkeypatch):
+async def released_backend(monkeypatch):
     instance = create_limiter(storage_uri="memory://", enabled=True)
     for name in ("enabled", "_storage", "_limiter", "_fallback_storage", "_fallback_limiter",
                  "_storage_dead", "_Limiter__last_check_backend", "_Limiter__check_backend_count"):
@@ -126,6 +127,12 @@ def released_backend(monkeypatch):
 
     db = SimpleNamespace(execute=AsyncMock(side_effect=execute), scalar=AsyncMock(return_value=0))
     monkeypatch.setitem(main.app.dependency_overrides, get_db, lambda: db)
+
+    @asynccontextmanager
+    async def refresh_session():
+        yield db
+
+    monkeypatch.setattr("database.AsyncSessionLocal", refresh_session)
     monkeypatch.setattr(parliament, "get_source_freshness", AsyncMock(return_value={}))
     monkeypatch.setattr(zk, "list_public_group_members_for_scope", AsyncMock(return_value=["1", "2"]))
     monkeypatch.setattr(zk, "build_semaphore_group_root", lambda members: SimpleNamespace(root="3", size=2))
@@ -142,7 +149,10 @@ def released_backend(monkeypatch):
     redis = SimpleNamespace(eval=AsyncMock(side_effect=increment), get=AsyncMock(return_value=None),
                             setex=AsyncMock())
     monkeypatch.setattr(notify, "_get_redis", AsyncMock(return_value=redis))
-    return clock, db, keys
+    yield clock, db, keys
+    for cache in [client_flow_cache.scope_status_cache, client_flow_cache.results_cache,
+                  *client_flow_cache.public_caches.values()]:
+        await asyncio.gather(*cache.flights._tasks, return_exceptions=True)
 
 
 async def request_ok(client, method, path, **kwargs):
@@ -263,6 +273,7 @@ async def test_scope_cache_coalesces_expires_and_rechecks_policy_and_visibility(
     assert counts.await_count == 1
     clock.now += 1
     await zk.get_zk_scope_status(vote_scope_id=scope, db=db)
+    await asyncio.gather(*client_flow_cache.scope_status_cache.flights._tasks)
     assert counts.await_count == 2
     monkeypatch.setenv("ZK_VOTING_ENABLED", "false")
     assert not (await zk.get_zk_scope_status(vote_scope_id=scope, db=db)).can_vote
@@ -309,6 +320,7 @@ async def test_results_cache_reuses_totals_but_checks_visibility_and_privacy(rel
     assert totals.await_count == 1
     clock.now += 5
     await voting.get_results("GR-released", db=db)
+    await asyncio.gather(*client_flow_cache.results_cache.flights._tasks)
     assert totals.await_count == 2
     monkeypatch.setenv("PUBLIC_RESULTS_MIN_COUNT", "5")
     result = await voting.get_results("GR-released", db=db)
@@ -331,7 +343,7 @@ async def test_slow_fill_and_invalidation_cannot_renew_stale_cache(monkeypatch):
         return "old"
 
     assert await cache.get_or_fill("slow", slow) == "old"
-    assert "slow" not in cache.entries
+    assert cache.entries["slow"][0] <= now[0]
     entered, finish = asyncio.Event(), asyncio.Event()
 
     async def racing():

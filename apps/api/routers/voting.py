@@ -21,7 +21,7 @@ from sqlalchemy import and_, or_, select, func, union, update, text
 from sqlalchemy.exc import IntegrityError
 
 from services.representation_cache import commit_and_invalidate_representation
-from services.client_flow_cache import public_policy_key, results_cache
+from services.client_flow_cache import public_policy_key, results_cache, with_cache_db
 from database import get_db
 from rate_limit import client_flow, enforce_route_limit, limiter, public_heavy
 from models import (
@@ -188,7 +188,7 @@ async def representativity_for_bill(
             scope_label_el="Δήμος",
         )
     if level == GovernanceLevel.REGIONAL and getattr(bill, "periferia_id", None):
-        async def load_population():
+        async def load_population(db=db):
             result = await db.execute(
                 text(
                     "SELECT COALESCE(SUM(population), 0) FROM dimos "
@@ -200,6 +200,7 @@ async def representativity_for_bill(
 
         population = await results_cache.get_or_fill(
             ("regional-population", bill.periferia_id, public_policy_key()), load_population,
+            background_factory=lambda: with_cache_db(load_population),
         )
         return compute_representativity(
             total_votes,
@@ -1272,6 +1273,9 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db), request:
     totals = await results_cache.get_or_fill(
         (bill_id, include_zk, small_cell_k()),
         lambda: aggregate_bill_vote_totals(db, bill_id, include_zk=include_zk),
+        background_factory=lambda: with_cache_db(
+            lambda session: aggregate_bill_vote_totals(session, bill_id, include_zk=include_zk),
+        ),
     )
     yes_c = totals.yes
     no_c = totals.no
