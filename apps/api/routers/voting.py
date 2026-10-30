@@ -1137,10 +1137,13 @@ async def get_votes_in_progress(db: AsyncSession = Depends(get_db), request: Req
     )
     allowed = None
     if small_cell_k():
+        from services.bill_id_set import raw_bill_ids_filter
         from services.public_result_windows import load_publishable_bill_ids
         allowed = await load_publishable_bill_ids(db)
-        visibility_sql += " AND b.id IN :publishable_ids"
-        visibility_params["publishable_ids"] = list(allowed)
+        # An empty expanding IN renders as an integer NULL on PostgreSQL; bind a typed array.
+        ids_sql, ids_params = raw_bill_ids_filter("b.id", allowed, name="publishable_ids", db=db)
+        visibility_sql += f" AND {ids_sql}"
+        visibility_params.update(ids_params)
     query = text(f"""
         SELECT
             b.id,
@@ -1189,9 +1192,6 @@ async def get_votes_in_progress(db: AsyncSession = Depends(get_db), request: Req
         ORDER BY (COALESCE(tier.total_votes, 0) + COALESCE(zk.total_votes, 0)) DESC, b.created_at DESC
         LIMIT 6
     """)
-    if allowed is not None:
-        from sqlalchemy import bindparam
-        query = query.bindparams(bindparam("publishable_ids", expanding=True))
     result = await db.execute(query, {"threshold": threshold, **visibility_params})
     bills = []
     for row in result.mappings():
