@@ -14,7 +14,7 @@ from services import cplm
 import main
 from routers import analytics, consensus_results, mp
 from services.public_bill_response import (
-    BODY_KEY, IDS_KEY, capture_public_bill_body, serve_public_bill_body,
+    BODY_KEY, IDS_KEY, RESULTS_IDS_KEY, capture_public_bill_body, serve_public_bill_body,
 )
 from tests.test_analytics_representation import bill, db
 from tests.test_released_mobile_client_flow import Rows, released_backend
@@ -29,13 +29,13 @@ async def test_every_bill_schema_rechecks_the_database_after_hide(db, schema):
                       "last_bill": {"bill_id": "H", "title": "Hidden title", "votes": 17},
                       "total_citizen_votes": 27, "bills_analyzed": 2, "cumulative_representation": 50,
                       "cumulative_divergence": 50, "label_en": "Old aggregate", "color": "red"}
-    snapshot = {IDS_KEY: ["H", "V"], BODY_KEY: representation if schema == "representation" else {"votes": 27}}
+    snapshot = {RESULTS_IDS_KEY: ["H", "V"], IDS_KEY: ["H", "V"], BODY_KEY: representation if schema == "representation" else {"votes": 27}}
     body = {"rows": rows, "point": rows[0], "representation": snapshot, "aggregate": snapshot,
-            "history": [snapshot, {IDS_KEY: ["V"], BODY_KEY: {"votes": 10}}, {"votes": 27}]}[schema]
+            "history": [snapshot, {RESULTS_IDS_KEY: ["V"], IDS_KEY: ["V"], BODY_KEY: {"votes": 10}}, {"votes": 27}]}[schema]
     original = deepcopy(body)
     await db.execute(text("UPDATE parliament_bills SET admin_hidden = TRUE WHERE id = 'H'"))
     await db.commit()
-    refresh = AsyncMock(return_value={IDS_KEY: ["V"], BODY_KEY: {"votes": 10}})
+    refresh = AsyncMock(return_value={RESULTS_IDS_KEY: ["V"], IDS_KEY: ["V"], BODY_KEY: {"votes": 10}})
     if schema == "point":
         with pytest.raises(HTTPException) as exc:
             await serve_public_bill_body(body, db=db, schema=schema, bill_ids=["H"])
@@ -47,34 +47,26 @@ async def test_every_bill_schema_rechecks_the_database_after_hide(db, schema):
             assert result == [rows[1]]
         elif schema == "history":
             assert result == [{"votes": 10}]
-        elif schema == "aggregate":
+        else:
             assert result == {"votes": 10}
             refresh.assert_awaited_once()
-        else:
-            assert [row["bill_id"] for row in result["bills"]] == ["V"]
-            assert result["last_bill"] is None
-            assert all(result[key] is None for key in ("total_citizen_votes", "bills_analyzed",
-                                                       "cumulative_representation", "cumulative_divergence", "label_en", "color"))
-            refresh.assert_not_awaited()
     assert body == original
 
 
 async def test_hidden_contributor_outside_representation_details_withholds_aggregates(db):
     await bill(db, "VISIBLE")
-    snapshot = {IDS_KEY: ["HIDDEN-OUTSIDE-200", "VISIBLE"], BODY_KEY: {
+    snapshot = {RESULTS_IDS_KEY: ["HIDDEN-OUTSIDE-200", "VISIBLE"], IDS_KEY: ["HIDDEN-OUTSIDE-200", "VISIBLE"], BODY_KEY: {
         "bills": [{"bill_id": "VISIBLE"}], "last_bill": {"bill_id": "VISIBLE"},
         "total_citizen_votes": 2010, "bills_analyzed": 201, "cumulative_divergence": 10,
     }}
     result = await serve_public_bill_body(snapshot, db=db, schema="representation")
-    assert result["bills"] == [{"bill_id": "VISIBLE"}]
-    assert result["last_bill"] == {"bill_id": "VISIBLE"}
-    assert result["total_citizen_votes"] is result["bills_analyzed"] is result["cumulative_divergence"] is None
+    assert result is None
 
 
 @pytest.mark.parametrize("schema", ["rows", "point", "representation", "aggregate", "history"])
 async def test_failed_visibility_query_never_authorizes_a_cached_body(schema):
     db = SimpleNamespace(execute=AsyncMock(side_effect=RuntimeError("visibility unavailable")))
-    snapshot = {IDS_KEY: ["H"], BODY_KEY: {"bills": [], "last_bill": None, "votes": 17}}
+    snapshot = {RESULTS_IDS_KEY: ["H"], IDS_KEY: ["H"], BODY_KEY: {"bills": [], "last_bill": None, "votes": 17}}
     body = {"rows": [{"id": "H"}], "point": {"id": "H"}, "representation": snapshot,
             "aggregate": snapshot, "history": [snapshot]}[schema]
     with pytest.raises(RuntimeError, match="visibility unavailable"):
@@ -127,7 +119,7 @@ async def test_registered_aggregate_rejects_a_one_second_old_body_after_hide(
 ):
     clock, db, _ = released_backend
     visible = {"H", "V"}
-    db.execute = AsyncMock(side_effect=lambda *_: Rows(sorted(visible)))
+    db.execute = AsyncMock(side_effect=lambda *_: Rows([(bill_id, True) for bill_id in sorted(visible)]))
     function = unwrap(route)
     thresholds = tuple((name, function.__globals__[name]) for name in
                        ("K_MIN", "K_ANONYMITY_MIN", "EVALUATION_K_ANONYMITY_MIN")
@@ -135,12 +127,12 @@ async def test_registered_aggregate_rejects_a_one_second_old_body_after_hide(
     key = (tuple(sorted(values.items())), client_flow_cache.public_policy_key(), thresholds)
     cache = route.public_cache
     cache.public_generation = 0
-    cache.entries[key] = (clock.now + cache.ttl, {IDS_KEY: ["H", "V"], BODY_KEY: old}, 0)
+    cache.entries[key] = (clock.now + cache.ttl, {RESULTS_IDS_KEY: ["H", "V"], IDS_KEY: ["H", "V"], BODY_KEY: old}, 0)
     async with AsyncClient(transport=ASGITransport(app=main.app, raise_app_exceptions=False), base_url="http://test") as http:
         assert (await http.get(path)).json() == old
         visible.remove("H")
         clock.now += 1
-        capture = AsyncMock(return_value={IDS_KEY: ["V"], BODY_KEY: fresh},
+        capture = AsyncMock(return_value={RESULTS_IDS_KEY: ["V"], IDS_KEY: ["V"], BODY_KEY: fresh},
                             side_effect=RuntimeError("refresh unavailable") if refresh_fails else None)
         monkeypatch.setattr(client_flow_cache, "capture_public_bill_body", capture)
         response = await http.get(path)

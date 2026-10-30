@@ -10,6 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from services.bill_visibility import public_bill_raw_sql
+from services.public_bill_snapshot import snapshot_raw_filter, record_result_contributors
+from services.bill_visibility import results_visible_raw_sql
 from services.geographic_scope import validate_public_region_filters
 
 
@@ -98,6 +100,7 @@ async def _load_view(
         return _empty_view(view, False)
 
     visibility_sql, visibility_params = _public_visibility_sql()
+    snapshot_guard, snapshot_params = snapshot_raw_filter("pb", results=True)
     statement = text(f"""
         WITH bill_consensus AS (
             SELECT
@@ -123,10 +126,13 @@ async def _load_view(
             JOIN bill_consensus bc ON bc.bill_id = pb.id
             WHERE pb.source = 'DIAVGEIA'
               AND {visibility_sql}
+              AND {results_visible_raw_sql("pb")}
+              AND {snapshot_guard}
               AND ({_scope_sql(view)})
         )
         SELECT
             scoped.*,
+            ARRAY_AGG(bill_id) OVER () AS contributor_ids,
             COUNT(*) OVER ()::integer AS total_bills,
             SUM(consensus_count) OVER ()::integer AS total_consensus_votes,
             SUM(consensus_score * consensus_count) OVER ()::float AS weighted_score_sum
@@ -135,13 +141,16 @@ async def _load_view(
         LIMIT :limit
     """)
     result = await db.execute(statement, {
-        **visibility_params,
+        **visibility_params, **snapshot_params,
         "dimos_id": dimos_id,
         "periferia_id": periferia_id,
         "k_anonymity_min": K_ANONYMITY_MIN,
         "limit": limit,
     })
-    return _view_payload(view, [dict(row) for row in result.mappings().all()])
+    rows = [dict(row) for row in result.mappings().all()]
+    if rows:
+        record_result_contributors(rows[0]["contributor_ids"])
+    return _view_payload(view, rows)
 
 
 @router.get("/representation", dependencies=[Depends(enforce_route_limit)])
@@ -156,6 +165,7 @@ async def get_consensus_representation(
 ):
     """Return separate aggregate views; never return individual consensus rows."""
     visibility_sql, visibility_params = _public_visibility_sql()
+    snapshot_guard, snapshot_params = snapshot_raw_filter("pb")
     coverage_result = await db.execute(text(f"""
         SELECT
             COUNT(*)::integer AS total_diavgeia_bills,
@@ -174,7 +184,8 @@ async def get_consensus_representation(
         FROM parliament_bills pb
         WHERE pb.source = 'DIAVGEIA'
           AND {visibility_sql}
-    """), visibility_params)
+          AND {snapshot_guard}
+    """), {**visibility_params, **snapshot_params})
     coverage_row = coverage_result.mappings().one()
     institutional_or_unresolved = int(coverage_row["institutional_or_unresolved_bills"] or 0)
     mapping_gaps = int(coverage_row["geographic_mapping_gaps"] or 0)

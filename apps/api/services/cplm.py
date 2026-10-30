@@ -11,14 +11,16 @@ from datetime import datetime, timezone
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 import redis.asyncio as aioredis
+from redis.exceptions import RedisError
 import os
 
 from models import CitizenVote, VoteChoice, ParliamentBill, BillStatus
 from services.bill_visibility import public_bill_filter, results_visible_filter
 from services.small_cell import small_cell_k
+from services.public_bill_snapshot import snapshot_bill_filter, record_result_contributors
 from services.request_work import SingleFlight, cache_fill_quota
 from services.public_bill_response import (
-    BODY_KEY, capture_public_bill_body, public_bill_response, serve_public_bill_body,
+    BODY_KEY, IDS_KEY, RESULTS_IDS_KEY, capture_public_bill_body, public_bill_response, serve_public_bill_body,
 )
 
 logger = logging.getLogger(__name__)
@@ -97,11 +99,13 @@ async def compute_cplm(db: AsyncSession) -> dict:
         select(CitizenVote, ParliamentBill)
         .join(ParliamentBill, CitizenVote.bill_id == ParliamentBill.id)
         .where(public_bill_filter())
-        .where(results_visible_filter())
+        .where(results_visible_filter(), snapshot_bill_filter(results=True))
     )
     rows = result.all()
     if allowed is not None:
         rows = [(vote, bill) for vote, bill in rows if bill.id in allowed]
+
+    record_result_contributors(bill.id for _, bill in rows)
 
     if not rows:
         return publish_cplm({
@@ -214,14 +218,18 @@ async def _get_cplm_cached(db: AsyncSession, *, force=False) -> dict:
 
 async def _load_cplm(db, *, force=False):
     """Get CPLM aggregate, using Redis cache if available."""
-    r = aioredis.from_url(REDIS_URL, decode_responses=True)
+    r = aioredis.from_url(REDIS_URL, decode_responses=True, socket_connect_timeout=0.05, socket_timeout=0.05)
     try:
         # Never reuse unchecked trend deltas after enabling suppression or changing k.
         # The private envelope also fences snapshots written before this rollout.
         k = small_cell_k()
         suffix = f":publishable-v1:k{k}" if k else ""
         cache_key, history_key = CACHE_KEY + suffix, HISTORY_KEY + suffix
-        cached = await r.get(cache_key)
+        try:
+            cached = await r.get(cache_key)
+        except (RedisError, OSError):
+            await cache_fill_quota("cplm")
+            return await capture_public_bill_body(lambda: compute_cplm(db), db=db)
         if cached and not force:
             return _read_snapshot(cached, k)
 
@@ -229,14 +237,19 @@ async def _load_cplm(db, *, force=False):
         snapshot = await capture_public_bill_body(lambda: compute_cplm(db), db=db)
         result = snapshot[BODY_KEY]
 
-        # Cache + store history snapshot
-        await r.setex(cache_key, CACHE_TTL, _store_snapshot(snapshot, k))
-
         # Compute trend from previous snapshot
-        prev = await r.lindex(history_key, 0)
+        try:
+            prev = await r.lindex(history_key, 0)
+        except (RedisError, OSError):
+            return snapshot
         if prev:
-            prev_data = await serve_public_bill_body(_read_snapshot(prev, k), db=db, schema="aggregate")
+            previous = _read_snapshot(prev, k)
+            prev_data = await serve_public_bill_body(previous, db=db, schema="aggregate")
         if prev and prev_data and result["x"] is not None and prev_data["x"] is not None:
+            # The delta is derived from both populations, including contributors
+            # absent from today's votes. Keep their provenance until this body expires.
+            for key in (IDS_KEY, RESULTS_IDS_KEY):
+                snapshot[key] = sorted(set(snapshot[key]) | set(previous[key]))
             x_delta = result["x"] - prev_data.get("x", 0)
             y_delta = result["y"] - prev_data.get("y", 0)
             if abs(x_delta) > abs(y_delta):
@@ -248,8 +261,12 @@ async def _load_cplm(db, *, force=False):
             result["trend"] = {"x_delta": round(x_delta, 4), "y_delta": round(y_delta, 4), "direction": direction}
 
         # Push to history (keep last 365 entries)
-        await r.lpush(history_key, _store_snapshot(snapshot, k))
-        await r.ltrim(history_key, 0, 364)
+        try:
+            await r.setex(cache_key, CACHE_TTL, _store_snapshot(snapshot, k))
+            await r.lpush(history_key, _store_snapshot(snapshot, k))
+            await r.ltrim(history_key, 0, 364)
+        except (RedisError, OSError):
+            logger.warning("CPLM cache write unavailable")
 
         return snapshot
 
@@ -260,17 +277,21 @@ async def _load_cplm(db, *, force=False):
 @public_bill_response("history")
 async def get_cplm_history(days: int = 30, *, db: AsyncSession) -> list[dict]:
     """Get historical CPLM snapshots from Redis."""
-    r = aioredis.from_url(REDIS_URL, decode_responses=True)
+    r = aioredis.from_url(REDIS_URL, decode_responses=True, socket_connect_timeout=0.05, socket_timeout=0.05)
     k = small_cell_k()
     suffix = f":publishable-v1:k{k}" if k else ""
-    entries = await r.lrange(HISTORY_KEY + suffix, 0, min(days * 4, 364))  # ~4 snapshots/day
-    await r.aclose()
+    try:
+        entries = await r.lrange(HISTORY_KEY + suffix, 0, min(days * 4, 364))
+    except (RedisError, OSError):
+        entries = []
+    finally:
+        await r.aclose()
     return [_read_snapshot(e, k) for e in entries]
 
 
 async def refresh_cplm_cache(db: AsyncSession) -> dict:
     """Force refresh the CPLM cache (called by scheduler)."""
-    r = aioredis.from_url(REDIS_URL, decode_responses=True)
+    r = aioredis.from_url(REDIS_URL, decode_responses=True, socket_connect_timeout=0.05, socket_timeout=0.05)
     k = small_cell_k()
     suffix = f":publishable-v1:k{k}" if k else ""
     await r.delete(CACHE_KEY + suffix)

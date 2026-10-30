@@ -110,6 +110,9 @@ async def released_backend(monkeypatch):
     async def execute(statement, *args):
         sql = str(statement)
         params = statement.compile().params
+        if " AS results_visible" in sql:
+            from services.bill_visibility import is_public_bill, results_hidden
+            return Rows([(bill.id, not results_hidden(bill))] if is_public_bill(bill) else [])
         if sql.startswith("SELECT parliament_bills.id \n"):
             from services.bill_visibility import is_public_bill
             return Rows([bill.id] if is_public_bill(bill) else [])

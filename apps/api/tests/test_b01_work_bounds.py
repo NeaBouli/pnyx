@@ -227,7 +227,7 @@ async def test_cplm_concurrent_misses_compute_once(monkeypatch):
     calculate = AsyncMock(side_effect=compute)
     monkeypatch.setattr(cplm, "compute_cplm", calculate)
     db = SimpleNamespace(execute=AsyncMock(return_value=SimpleNamespace(
-        scalars=lambda: SimpleNamespace(all=lambda: []),
+        all=lambda: [], scalars=lambda: SimpleNamespace(all=lambda: []),
     )))
     results = await asyncio.gather(*(cplm.get_cplm_cached(db) for _ in range(50)))
     assert all(result == results[0] for result in results)

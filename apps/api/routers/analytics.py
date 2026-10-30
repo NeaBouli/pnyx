@@ -41,6 +41,7 @@ from services.bill_visibility import (
     results_visible_filter,
 )
 from services.public_bill_response import BODY_KEY, capture_public_bill_body, public_bill_response
+from services.public_bill_snapshot import snapshot_bill_filter, snapshot_raw_filter, record_result_contributors
 from services.zk_vote_aggregation import (
     VoteTotals,
     aggregate_bill_vote_totals,
@@ -64,6 +65,8 @@ def representation_query() -> tuple[str, dict[str, str]]:
     or full bill objects are selected.
     """
     public_guard, params = public_bill_raw_sql("b")
+    snapshot_guard, snapshot_params = snapshot_raw_filter("b", results=True)
+    params.update(snapshot_params)
     params.update(voted="PARLIAMENT_VOTED", open_end="OPEN_END", diavgeia="DIAVGEIA",
                   bill_scope="bill:%", yes="YES", no="NO", abstain="ABSTAIN", unknown="UNKNOWN")
     choices = ("yes", "no", "abstain", "unknown")
@@ -96,7 +99,8 @@ def representation_query() -> tuple[str, dict[str, str]]:
         )
         SELECT b.id, b.title_el, b.source, b.parliament_url, b.created_at, b.party_votes_parliament, t.*
         FROM totals t JOIN parliament_bills b ON b.id = t.bill_id
-        WHERE b.status IN (:voted, :open_end)
+        WHERE {snapshot_guard}
+          AND b.status IN (:voted, :open_end)
           AND COALESCE(b.admin_hidden, FALSE) = FALSE
           AND (b.source <> :diavgeia OR ({public_guard}))
         ORDER BY b.id
@@ -132,7 +136,7 @@ async def compute_divergence(
 @public_client_cache(bill_schema="aggregate", quota="30/minute", aggregate=True, sensitive=True)
 async def analytics_overview(db: AsyncSession = Depends(get_db), request: Request = None):
     """Plattform-weite Statistiken + Divergence Übersicht."""
-    _real = public_bill_with_demo_filter()
+    _real = and_(public_bill_with_demo_filter(), snapshot_bill_filter())
     total_bills  = await db.scalar(select(func.count(ParliamentBill.id)).where(_real)) or 0
     total_votes = await count_public_votes(db)
     active_bills = await db.scalar(
@@ -155,7 +159,7 @@ async def analytics_overview(db: AsyncSession = Depends(get_db), request: Reques
     today_votes = await count_public_votes(db, since=today)
 
     result = await db.execute(
-        select(ParliamentBill).where(_real, ParliamentBill.status == BillStatus.PARLIAMENT_VOTED)
+        select(ParliamentBill).where(_real, snapshot_bill_filter(results=True), ParliamentBill.status == BillStatus.PARLIAMENT_VOTED)
     )
     voted = result.scalars().all()
 
@@ -163,6 +167,7 @@ async def analytics_overview(db: AsyncSession = Depends(get_db), request: Reques
     for bill in voted:
         score = await compute_divergence(db, bill.id, bill)
         if score is not None:
+            record_result_contributors([bill.id])
             divergence_scores.append(score)
 
     avg_divergence = round(sum(divergence_scores) / len(divergence_scores), 3) if divergence_scores else None
@@ -529,6 +534,7 @@ async def compute_cumulative_representation(db: AsyncSession) -> dict:
 
         # Do not include hidden bill totals in an otherwise reconstructable sum.
         if totals.publishable:
+            record_result_contributors([row["id"]])
             total_citizen_votes += total
 
         party_votes = row["party_votes_parliament"]
@@ -594,20 +600,24 @@ async def cumulative_representation(db: AsyncSession = Depends(get_db), request:
 _representation_flights = SingleFlight()
 
 
-@public_bill_response("representation")
+async def _fresh_representation(db):
+    return await _load_representation(db, force=True)
+
+
+@public_bill_response("representation", refresh=_fresh_representation)
 async def get_cached_representation(db: AsyncSession) -> dict:
     return await _load_representation(db)
 
 
-async def _load_representation(db):
+async def _load_representation(db, *, force=False):
     async def current(generation):
         return await _representation_flights.run(
-            (small_cell_k(), generation), lambda: _get_cached_representation(db, generation),
+            (small_cell_k(), generation, force), lambda: _get_cached_representation(db, generation, force=force),
         )
     return await with_public_visibility_generation(current)
 
 
-async def _get_cached_representation(db: AsyncSession, generation) -> dict:
+async def _get_cached_representation(db: AsyncSession, generation, *, force=False) -> dict:
     # Policy changes never reuse a less restrictive aggregate. Expiry bounds
     # vote/metadata staleness to 30s from query start, including empty results;
     # hits don't renew it and slow fills don't get a fresh TTL.
@@ -620,7 +630,7 @@ async def _get_cached_representation(db: AsyncSession, generation) -> dict:
         try:
             async with asyncio.timeout(0.1):
                 raw = await cache.get(key)
-            if raw and generation is not None:
+            if raw and generation is not None and not force:
                 cached = json.loads(raw)
                 value = cached.get(BODY_KEY, {}) if isinstance(cached, dict) else {}
                 if ("cumulative_representation" in value

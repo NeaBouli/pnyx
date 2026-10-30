@@ -43,6 +43,9 @@ class _Session:
         self.visibility_queries = []
 
     async def execute(self, statement, params=None):
+        if " AS results_visible" in str(statement):
+            self.visibility_queries.append(statement)
+            return _Result(rows=[(bill_id, True) for bill_id in ("DIAV-1", "DIAV-2", "DIAV-3", "DIAV-OUTSIDE-LIMIT")])
         if str(statement).startswith("SELECT parliament_bills.id \n"):
             self.visibility_queries.append(statement)
             return _Result(rows=["DIAV-1", "DIAV-2", "DIAV-3"])
@@ -68,7 +71,8 @@ def test_national_scope_excludes_institutional_and_unmapped_rows():
 def test_view_payload_is_weighted_by_vote_count_and_aggregate_only():
     rows = [
         {
-            "bill_id": "DIAV-1",
+            "contributor_ids": ["DIAV-1", "DIAV-OUTSIDE-LIMIT"],
+        "bill_id": "DIAV-1",
             "title_el": "Απόφαση 1",
             "governance_level": "MUNICIPAL",
             "dimos_id": 22,
@@ -155,6 +159,7 @@ async def test_representation_endpoint_keeps_views_separate_and_public():
         "geographic_mapping_gaps": 0,
     }
     row = {
+        "contributor_ids": ["DIAV-1", "DIAV-OUTSIDE-LIMIT"],
         "bill_id": "DIAV-1",
         "title_el": "Απόφαση 1",
         "governance_level": "MUNICIPAL",

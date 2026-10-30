@@ -116,6 +116,10 @@ class Db:
 
     async def execute(self, query, *_):
         self.queries.append(query)
+        if " AS results_visible" in str(query):
+            from services.bill_visibility import is_public_bill, results_hidden
+            return Rows([(self.bill.id, not results_hidden(self.bill), *([10] * 4), *([0] * 4))]
+                        if is_public_bill(self.bill) else [])
         if str(query).startswith("SELECT parliament_bills.id \n"):
             from services.bill_visibility import is_public_bill
             return Rows([self.bill.id] if is_public_bill(self.bill) else [])
@@ -675,10 +679,10 @@ async def test_cplm_safe_economic_plus_one_social_vote_never_enters_compute_cach
     class Redis:
         async def get(self, key):
             keys.append(key)
-            return cplm._store_snapshot({"_public_bill_body": computed, "_public_bill_ids": []}, 10)
+            return cplm._store_snapshot({"_public_bill_body": computed, "_public_bill_ids": [], "_public_bill_results_ids": []}, 10)
         async def lrange(self, key, *_):
             keys.append(key)
-            return [cplm._store_snapshot({"_public_bill_body": computed, "_public_bill_ids": []}, 10), json.dumps({**computed, 'total_votes': 41, 'y': .0012})]
+            return [cplm._store_snapshot({"_public_bill_body": computed, "_public_bill_ids": [], "_public_bill_results_ids": []}, 10), json.dumps({**computed, 'total_votes': 41, 'y': .0012})]
         async def aclose(self):
             pass
     monkeypatch.setattr(cplm.aioredis, 'from_url', lambda *_, **__: Redis())

@@ -20,6 +20,10 @@ def overview_data(monkeypatch, db, count=100):
                            status=BillStatus.PARLIAMENT_VOTED, party_votes_parliament={'ND': 'YES'})
              for i in range(count)]
     async def execute(statement):
+        if " AS results_visible" in str(statement):
+            return Rows([(bill.id, True) for bill in bills])
+        if "count(" in str(statement).lower():
+            return Rows([(1, bills[0].id)])
         if str(statement).startswith("SELECT parliament_bills.id \n"):
             return Rows([bill.id for bill in bills])
         return Rows(bills)
@@ -46,7 +50,7 @@ async def test_fifty_overview_http_reads_aggregate_one_hundred_bills_once(releas
         assert all(r.status_code == 200 for r in responses)
         assert all(r.json() == responses[0].json() for r in responses)
         assert totals.await_count == 100
-        assert db.execute.await_count == 52 and db.scalar.await_count == 9
+        assert db.execute.await_count == 58 and db.scalar.await_count == 3
         assert votes.await_count == 3
         # Hits don't extend TTL; the next window recomputes exactly once.
         clock.now += 5
@@ -79,7 +83,7 @@ async def test_overview_soft_fill_budget_logs_without_rejecting_other_clients(re
             with caplog.at_level('INFO', logger='services.client_flow_cache'):
                 response = await other.get('/api/v1/analytics/overview')
         assert response.status_code == 200
-        assert db.execute.await_count == calls + 3
+        assert db.execute.await_count == calls + 9
         assert budget.count == 31
         assert 'event=soft_budget_exceeded route=routers.analytics.analytics_overview' in caplog.text
 
@@ -123,6 +127,10 @@ async def test_mp_ranking_aggregates_each_bill_once_across_parties_and_readers(r
              for i in range(100)]
     async def execute(statement):
         await asyncio.sleep(0)
+        if " AS results_visible" in str(statement):
+            return Rows([(bill.id, True) for bill in bills])
+        if "count(" in str(statement).lower():
+            return Rows([(1, bills[0].id)])
         if str(statement).startswith("SELECT parliament_bills.id \n"):
             return Rows([bill.id for bill in bills])
         return Rows(bills if 'parliament_bills' in str(statement) else parties)

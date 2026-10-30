@@ -9,11 +9,14 @@ from sqlalchemy import select
 
 from models import ParliamentBill
 from services.bill_visibility import filter_public_bill_rows, public_bill_filter
+from services.public_bill_snapshot import building_snapshot, read_visibility_snapshot
 
 
 BILL_SCHEMAS = frozenset({"independent", "rows", "aggregate", "representation", "point", "history"})
 BODY_KEY = "_public_bill_body"
 IDS_KEY = "_public_bill_ids"
+RESULTS_IDS_KEY = "_public_bill_results_ids"
+CONTRIBUTOR_KEYS = frozenset({IDS_KEY, RESULTS_IDS_KEY})
 
 
 async def public_bill_ids(db, candidates=None):
@@ -27,10 +30,22 @@ async def public_bill_ids(db, candidates=None):
 
 
 async def capture_public_bill_body(factory, *, db):
-    # Capture before calculation: a hide during calculation must also invalidate
-    # the resulting aggregate. Provenance stays private, including truncated rows.
-    ids = await public_bill_ids(db)
-    return {IDS_KEY: sorted(ids), BODY_KEY: await factory()}
+    snapshot = await read_visibility_snapshot(db)
+    token = building_snapshot.set(snapshot)
+    try:
+        body = await factory()
+        return {IDS_KEY: sorted(snapshot.listed), RESULTS_IDS_KEY: sorted(snapshot.contributors), BODY_KEY: body}
+    finally:
+        building_snapshot.reset(token)
+
+
+def verified_body(body):
+    return isinstance(body, dict) and CONTRIBUTOR_KEYS <= body.keys() and BODY_KEY in body
+
+
+def safe_body(body, snapshot):
+    return (verified_body(body) and not set(body[IDS_KEY]) - snapshot.listed
+            and not set(body[RESULTS_IDS_KEY]) - snapshot.results)
 
 
 async def serve_public_bill_body(body, *, db, schema, refresh=None, bill_ids=()):
@@ -52,42 +67,15 @@ async def serve_public_bill_body(body, *, db, schema, refresh=None, bill_ids=())
             raise HTTPException(404, "Public bill not found")
         return deepcopy(body)
     if schema == "history":
-        ids = {bill_id for snapshot in body if isinstance(snapshot, dict) and BODY_KEY in snapshot
-               for bill_id in snapshot.get(IDS_KEY, ())}
-        visible_ids = await public_bill_ids(db, ids)
-        entries = []
-        for snapshot in body:
-            if (isinstance(snapshot, dict) and IDS_KEY in snapshot and BODY_KEY in snapshot
-                    and not set(snapshot[IDS_KEY]) - visible_ids):
-                entries.append(deepcopy(snapshot[BODY_KEY]))
-        return entries
+        current = await read_visibility_snapshot(db)
+        return [deepcopy(entry[BODY_KEY]) for entry in body if safe_body(entry, current)]
 
     try:
         async with asyncio.timeout(10):
             while True:
-                verified = isinstance(body, dict) and IDS_KEY in body and BODY_KEY in body
-                if verified:
-                    ids = set(body[IDS_KEY])
-                    value = body[BODY_KEY]
-                    if schema == "representation":
-                        rows = value.get("bills", []) + ([value["last_bill"]] if value.get("last_bill") else [])
-                        ids.update(row["bill_id"] for row in rows)
-                    visible = await public_bill_ids(db, ids)
-                    if not ids - visible:
-                        return deepcopy(value)
-                    if schema == "representation":
-                        # The detail list is truncated; its rows cannot safely
-                        # reconstruct all-time totals or cumulative scores.
-                        result = deepcopy(value)
-                        result["bills"] = [row for row in result.get("bills", []) if row["bill_id"] in visible]
-                        last = result.get("last_bill")
-                        if last and last["bill_id"] not in visible:
-                            result["last_bill"] = None
-                        for field in ("cumulative_representation", "cumulative_divergence", "bills_analyzed",
-                                      "total_citizen_votes", "label_el", "label_en", "color"):
-                            if field in result:
-                                result[field] = None
-                        return result
+                current = await read_visibility_snapshot(db)
+                if safe_body(body, current):
+                    return deepcopy(body[BODY_KEY])
                 if refresh is None:
                     return None
                 body = await refresh()
@@ -115,6 +103,7 @@ def public_bill_response(schema, *, refresh=None, bill_ids=None):
                 refresh=(lambda: refresh(**bound.arguments)) if refresh else None,
                 bill_ids=ids,
             )
+        wrapped.public_bill_contributor_keys = CONTRIBUTOR_KEYS if schema in {"aggregate", "representation", "history"} else frozenset()
         wrapped.public_bill_schema = schema
         wrapped.public_visibility_filter = serve_public_bill_body
         return wrapped

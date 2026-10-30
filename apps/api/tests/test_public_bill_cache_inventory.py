@@ -7,7 +7,7 @@ import pytest
 import main
 from routers import analytics, parliament, voting, zk
 from services import client_flow_cache, cplm
-from services.public_bill_response import serve_public_bill_body
+from services.public_bill_response import CONTRIBUTOR_KEYS, serve_public_bill_body
 from tests.test_rate_limit_coverage import iter_api_routes
 
 
@@ -43,6 +43,9 @@ def assert_bill_cache_inventory():
     for name, schema in PUBLIC_CACHES.items():
         endpoint = endpoints[name]
         assert endpoint.public_bill_schema == schema, name
+        if schema in {"aggregate", "representation"}:
+            assert endpoint.public_bill_contributor_keys == CONTRIBUTOR_KEYS, name
+            assert endpoint.public_cache.public_bill_contributor_keys == CONTRIBUTOR_KEYS, name
         assert endpoint.public_visibility_filter is serve_public_bill_body, name
         assert endpoint.public_cache is client_flow_cache.public_caches[name], name
     for name, cache in client_flow_cache.public_caches.items():
@@ -50,6 +53,8 @@ def assert_bill_cache_inventory():
         assert cache.public_bill_schema in {"rows", "aggregate", "representation", "independent"}, name
     for function, schema in INLINE_CACHES:
         assert function.public_bill_schema == schema, function.__name__
+        if schema in {"aggregate", "representation", "history"}:
+            assert function.public_bill_contributor_keys == CONTRIBUTOR_KEYS, function.__name__
         assert function.public_visibility_filter is serve_public_bill_body, function.__name__
 
 
@@ -88,3 +93,9 @@ def test_inline_client_cache_calls_cannot_bypass_inventory_review():
         ("routers/voting.py", "results_cache"): 2,  # Bill totals and independent regional population.
         ("routers/zk.py", "scope_status_cache"): 1,
     }), "Review every new inline public cache and wire bill-derived bodies through the helper"
+
+
+def test_guard_rejects_missing_contributor_sets(monkeypatch):
+    monkeypatch.setattr(analytics.analytics_overview, "public_bill_contributor_keys", frozenset())
+    with pytest.raises(AssertionError, match="analytics_overview"):
+        assert_bill_cache_inventory()

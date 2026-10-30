@@ -20,6 +20,7 @@ from services.source_links import parliament_attribution_fields
 from models import ParliamentBill, CitizenVote, Party, BillStatus, VoteChoice
 from services.bill_visibility import is_public_bill, public_bill_filter, results_hidden
 from services.small_cell import small_cell_k, suppress_public_cells
+from services.public_bill_snapshot import snapshot_bill_filter, record_result_contributors
 from services.zk_vote_aggregation import aggregate_bill_vote_totals, include_zk_for_bill
 
 logger = logging.getLogger(__name__)
@@ -157,7 +158,7 @@ async def party_ranking(db: AsyncSession = Depends(get_db), request: Request = N
     bills_result = await db.execute(
         select(ParliamentBill).where(
             ParliamentBill.status.in_([BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END]),
-            public_bill_filter(),
+            public_bill_filter(), snapshot_bill_filter(results=True),
         )
     )
     bills = bills_result.scalars().all()
@@ -165,6 +166,8 @@ async def party_ranking(db: AsyncSession = Depends(get_db), request: Request = N
     # Aggregate each bill once, independent of the number of parties.
     majorities = {bill.id: await citizen_majority_for(db, bill.id, bill)
                   for bill in bills if bill.party_votes_parliament}
+    record_result_contributors(bill_id for bill_id, (majority, _, _, total) in majorities.items()
+                               if majority is not None and total >= K_MIN)
     ranking = []
     for party in parties:
         agree = disagree = 0

@@ -18,7 +18,7 @@ from database import get_db
 from models import BillStatus
 from routers import admin, analytics, notifications, parliament, public_api
 from services import bill_lifecycle
-from services.public_bill_response import BODY_KEY, IDS_KEY
+from services.public_bill_response import BODY_KEY, IDS_KEY, RESULTS_IDS_KEY
 
 CHOICES = ("YES", "NO", "ABSTAIN", "UNKNOWN")
 
@@ -87,7 +87,7 @@ async def db() -> AsyncIterator[AsyncSession]:
     try:
         async with engine.begin() as conn:
             for sql in (
-                "CREATE TABLE parliament_bills (id TEXT PRIMARY KEY, title_el TEXT, parliament_url TEXT, created_at TEXT, source TEXT, status TEXT, admin_hidden BOOLEAN, summary_short_el TEXT, summary_long_el TEXT, party_votes_parliament TEXT)",
+                "CREATE TABLE parliament_bills (id TEXT PRIMARY KEY, title_el TEXT, parliament_url TEXT, created_at TEXT, source TEXT, status TEXT, results_visibility TEXT, admin_hidden BOOLEAN, summary_short_el TEXT, summary_long_el TEXT, party_votes_parliament TEXT)",
                 "CREATE TABLE citizen_votes (bill_id TEXT, vote TEXT)",
                 "CREATE INDEX idx_votes_bill ON citizen_votes (bill_id)",
                 "CREATE TABLE zk_vote_receipts (vote_scope_id TEXT, vote_commitment TEXT)",
@@ -155,6 +155,7 @@ async def test_endpoint_contract_combines_sources_and_preserves_rounding(
     cached = json.loads(cache.writes[0][2])
     assert cached.pop("_public_visibility_generation") == 0
     assert cached[IDS_KEY] == ["A", "B", "C"]
+    assert cached[RESULTS_IDS_KEY] == ["A", "B", "C"]
     assert cached[BODY_KEY] == result
     for projected in result["bills"] + [result["last_bill"]]:
         assert projected.pop("source") == "PARLIAMENT"
@@ -272,16 +273,16 @@ async def test_delayed_fill_expires_from_snapshot_start(
     monkeypatch.setattr(analytics, "compute_cumulative_representation", delayed_compute)
     response = await client.get("/api/v1/analytics/representation")
     assert response.status_code == 200
-    assert response.json()["bills_analyzed"] == (0 if empty else None)
+    assert response.json()["bills_analyzed"] == 0
     assert response.json()["bills"] == []
     remaining = int(30 - delay)
     if remaining > 0:
-        assert len(cache.writes) == 1
+        assert len(cache.writes) == (1 if empty else 2)
         key, ttl, _ = cache.writes[0]
         assert ttl == remaining
-        assert cache.values[key][0] <= 30
+        assert cache.values[key][0] <= (30 if empty else delay + 30)
     else:
-        assert cache.writes == []
+        assert len(cache.writes) == (0 if empty else 1)
 
     # A completed snapshot must never stay cached until t=delay+30.
     monkeypatch.setattr(analytics, "compute_cumulative_representation", compute)
@@ -574,7 +575,7 @@ async def test_cached_representation_rechecks_visible_rows_and_last_bill(
     if refresh_fails:
         monkeypatch.setattr(analytics, "compute_cumulative_representation",
                             AsyncMock(side_effect=RuntimeError("refresh unavailable")))
-    if generation_changed and refresh_fails:
+    if refresh_fails:
         with pytest.raises(RuntimeError, match="refresh unavailable"):
             await client.get("/api/v1/analytics/representation")
     else:
@@ -633,12 +634,10 @@ async def test_one_second_old_representation_after_committed_hide_and_redis_reco
         cache.now = 1
         monkeypatch.setattr(analytics, "compute_cumulative_representation",
                             AsyncMock(side_effect=RuntimeError("refresh unavailable")))
-        response = await http.get(path)
-        assert response.status_code == 200
-        result = response.json()
-        assert [row["bill_id"] for row in result["bills"]] == ["A-VISIBLE"]
-        assert result["last_bill"] is None  # HIDDEN is last in the query's bill-ID order.
-        assert all(result[key] is None for key in ("total_citizen_votes", "bills_analyzed",
-                                                   "cumulative_representation", "cumulative_divergence"))
-        assert "Hidden title" not in response.text and "Z-HIDDEN" not in response.text
+        if path == "/api/v1/public/representation":
+            response = await http.get(path)
+            assert response.json() == {"error": "Representation data not available", "data_license": "CC BY 4.0"}
+        else:
+            with pytest.raises(RuntimeError, match="refresh unavailable"):
+                await http.get(path)
         assert cache.values == stored

@@ -12,6 +12,7 @@ from models import CitizenVote, ParliamentBill, VoteChoice, ZkVoteReceipt
 from services.bill_visibility import public_bill_filter, results_visible_filter
 from services.zk_tier_lock import VoteScopeType, canonical_vote_scope_id
 from services.small_cell import small_cell_k, publishable_set
+from services.public_bill_snapshot import building_snapshot, snapshot_bill_filter, record_result_contributors
 
 
 @dataclass(frozen=True)
@@ -73,8 +74,13 @@ async def aggregate_bill_vote_totals(
     *,
     include_zk: bool,
 ) -> VoteTotals:
+    snapshot = building_snapshot.get()
+    if snapshot is not None and bill_id not in snapshot.results:
+        return VoteTotals(0, 0, 0, 0, 0, 0)
     tier_counts = await _count_tier1_votes(db, bill_id)
     zk_counts = await _count_zk_votes(db, bill_id) if include_zk else _empty_counts()
+    if sum(tier_counts.values()) + sum(zk_counts.values()):
+        record_result_contributors([bill_id])
     return VoteTotals(
         yes=tier_counts[VoteChoice.YES] + zk_counts[VoteChoice.YES],
         no=tier_counts[VoteChoice.NO] + zk_counts[VoteChoice.NO],
@@ -105,11 +111,17 @@ async def count_public_votes(
     tier1_query = (
         select(func.count(CitizenVote.id))
         .join(ParliamentBill, CitizenVote.bill_id == ParliamentBill.id)
-        .where(public_bill_filter(), results_visible_filter(), ~CitizenVote.bill_id.like("DEMO-%"))
+        .where(public_bill_filter(), results_visible_filter(), snapshot_bill_filter(results=True), ~CitizenVote.bill_id.like("DEMO-%"))
     )
     if since is not None:
         tier1_query = tier1_query.where(CitizenVote.created_at >= since)
-    tier1_total = int(await db.scalar(tier1_query) or 0)
+    snapshot = building_snapshot.get()
+    if snapshot is None:
+        tier1_total = int(await db.scalar(tier1_query) or 0)
+    else:
+        tier_rows = (await db.execute(tier1_query.add_columns(ParliamentBill.id).group_by(ParliamentBill.id))).all()
+        record_result_contributors(bill_id for count, bill_id in tier_rows if count)
+        tier1_total = sum(count for count, _ in tier_rows)
 
     zk_query = (
         select(func.count(ZkVoteReceipt.id))
@@ -119,7 +131,7 @@ async def count_public_votes(
         )
         .where(
             public_bill_filter(),
-            results_visible_filter(),
+            results_visible_filter(), snapshot_bill_filter(results=True),
             ParliamentBill.source == "PARLIAMENT",
             ~ParliamentBill.id.like("DEMO-%"),
             ZkVoteReceipt.vote_commitment.in_([choice.value for choice in VoteChoice]),
@@ -127,7 +139,12 @@ async def count_public_votes(
     )
     if since is not None:
         zk_query = zk_query.where(ZkVoteReceipt.created_at >= since)
-    zk_total = int(await db.scalar(zk_query) or 0)
+    if snapshot is None:
+        zk_total = int(await db.scalar(zk_query) or 0)
+    else:
+        zk_rows = (await db.execute(zk_query.add_columns(ParliamentBill.id).group_by(ParliamentBill.id))).all()
+        record_result_contributors(bill_id for count, bill_id in zk_rows if count)
+        zk_total = sum(count for count, _ in zk_rows)
     return tier1_total + zk_total
 
 

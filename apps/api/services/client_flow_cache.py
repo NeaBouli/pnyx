@@ -11,7 +11,7 @@ from fastapi.params import Param
 from limits import parse
 from services.request_work import SingleFlight, WaitingWorkSlots
 from services.public_visibility_cache import with_public_visibility_generation
-from services.public_bill_response import BILL_SCHEMAS, capture_public_bill_body, serve_public_bill_body
+from services.public_bill_response import CONTRIBUTOR_KEYS, BILL_SCHEMAS, capture_public_bill_body, serve_public_bill_body
 
 
 logger = logging.getLogger(__name__)
@@ -192,6 +192,7 @@ def public_client_cache(*, bill_schema, quota="600/minute", aggregate=False, val
             visibility_sensitive=True,
         ))
         budget = SoftFillBudget(name, quota)
+        cache.public_bill_contributor_keys = CONTRIBUTOR_KEYS if bill_schema in {"aggregate", "representation"} else frozenset()
         cache.public_bill_schema = bill_schema
         cache.public_visibility_filter = serve_public_bill_body
         parameters = signature(function)
@@ -254,6 +255,7 @@ def public_client_cache(*, bill_schema, quota="600/minute", aggregate=False, val
         wrapped.public_cache = cache
         wrapped.public_fill_budget = budget
         wrapped.public_cache_parameters = frozenset(parameters.parameters) - {"db", "request"}
+        wrapped.public_bill_contributor_keys = cache.public_bill_contributor_keys
         wrapped.public_bill_schema = bill_schema
         wrapped.public_visibility_filter = serve_public_bill_body
         return wrapped
