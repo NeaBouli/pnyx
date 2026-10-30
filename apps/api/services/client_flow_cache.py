@@ -11,6 +11,7 @@ from fastapi import HTTPException
 from fastapi.params import Param
 from limits import parse
 from services.request_work import SingleFlight, WaitingWorkSlots
+from services.public_visibility_cache import with_public_visibility_generation
 
 
 logger = logging.getLogger(__name__)
@@ -49,7 +50,7 @@ class ClientFlowCache:
     """Bound memory and stale age, and coalesce queued refreshes."""
 
     def __init__(self, capacity=128, ttl=5, *, max_stale=PUBLIC_MAX_STALE,
-                 workers=None, wait_timeout=10):
+                 workers=None, wait_timeout=10, visibility_sensitive=False):
         self.capacity = capacity
         self.ttl = ttl
         self.max_stale = max_stale
@@ -58,6 +59,8 @@ class ClientFlowCache:
         self.flights = SingleFlight(capacity=capacity, reject_on_capacity=False, wait_timeout=wait_timeout)
         self.workers = workers or _read_slots
         self.generation = 0
+        self.visibility_sensitive = visibility_sensitive
+        self.public_generation = None
 
     def clear(self):
         self.generation += 1
@@ -82,11 +85,31 @@ class ClientFlowCache:
     async def get_or_fill(self, key, factory, *, background_factory=None, validate=None):
         if validate is not None:
             await self.check_eligibility(validate, key=key)
+        if self.visibility_sensitive:
+            async def current(public_generation):
+                if public_generation != self.public_generation:
+                    self.clear()
+                    self.public_generation = public_generation
+                return await self._get_or_fill(
+                    key, factory, background_factory=background_factory,
+                    public_generation=public_generation,
+                )
+            return await with_public_visibility_generation(current, wait_timeout=self.wait_timeout)
+        return await self._get_or_fill(key, factory, background_factory=background_factory)
+
+    async def _get_or_fill(self, key, factory, *, background_factory=None, public_generation=None):
         generation = self.generation
+
+        def lookup():
+            entry = self.entries.get(key)
+            if entry is not None and self.visibility_sensitive:
+                if public_generation is None or entry[2] != public_generation:
+                    return None
+            return entry
 
         async def fill(background=False):
             now = monotonic()
-            cached = self.entries.get(key)
+            cached = lookup()
             if cached is not None and cached[0] > now:
                 return cached
 
@@ -104,7 +127,9 @@ class ClientFlowCache:
                     raise
                 # Freshness is anchored before work, never renewed by failures.
                 entry = (started + self.ttl, value)
-                if generation == self.generation:
+                if self.visibility_sensitive:
+                    entry += (public_generation,)
+                if generation == self.generation and (not self.visibility_sensitive or public_generation is not None):
                     self.entries[key] = entry
                     self.entries.move_to_end(key)
                     while len(self.entries) > self.capacity:
@@ -113,7 +138,7 @@ class ClientFlowCache:
 
             return await self.workers.run(compute, background=background)
 
-        cached = self.entries.get(key)
+        cached = lookup()
         if cached is not None and monotonic() < cached[0] + self.max_stale:
             if cached[0] <= monotonic():
                 self.flights.start((generation, key), lambda: fill(background=True))
@@ -137,8 +162,8 @@ class ClientFlowCache:
             raise HTTPException(504, "Fresh public data is temporarily unavailable") from exc
 
 
-scope_status_cache = ClientFlowCache(max_stale=SENSITIVE_MAX_STALE)
-results_cache = ClientFlowCache(max_stale=SENSITIVE_MAX_STALE, workers=_aggregate_slots)
+scope_status_cache = ClientFlowCache(max_stale=SENSITIVE_MAX_STALE, visibility_sensitive=True)
+results_cache = ClientFlowCache(max_stale=SENSITIVE_MAX_STALE, workers=_aggregate_slots, visibility_sensitive=True)
 public_caches = {}
 
 
@@ -149,7 +174,8 @@ def public_policy_key():
     return ("public-visibility-v1", tuple(DIAVGEIA_SENSITIVE_PUBLIC_TERMS), small_cell_k())
 
 
-def public_client_cache(*, quota="600/minute", aggregate=False, validate=None, sensitive=False):
+def public_client_cache(*, quota="600/minute", aggregate=False, validate=None, sensitive=False,
+                        filter_bills=None):
     """Cache only explicitly decorated public responses, never signed reads.
 
     All declared path/query arguments participate, including defaults. Undeclared
@@ -162,6 +188,7 @@ def public_client_cache(*, quota="600/minute", aggregate=False, validate=None, s
         cache = public_caches.setdefault(name, ClientFlowCache(
             workers=_aggregate_slots if aggregate else _read_slots,
             max_stale=SENSITIVE_MAX_STALE if sensitive else PUBLIC_MAX_STALE,
+            visibility_sensitive=True,
         ))
         budget = SoftFillBudget(name, quota)
         parameters = signature(function)
@@ -199,7 +226,10 @@ def public_client_cache(*, quota="600/minute", aggregate=False, validate=None, s
                 return await with_cache_db(using_db)
 
             # Callers may modify Pydantic models/lists without changing a hit.
-            return deepcopy(await cache.get_or_fill(key, fill, background_factory=refresh))
+            body = deepcopy(await cache.get_or_fill(key, fill, background_factory=refresh))
+            if filter_bills is not None:
+                body = await filter_bills(body, **bound.arguments)
+            return body
 
         wrapped.public_cache = cache
         wrapped.public_fill_budget = budget

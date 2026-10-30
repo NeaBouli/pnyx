@@ -24,8 +24,9 @@ from sqlalchemy import DateTime, String, cast, select, func, and_, extract, Inte
 
 from database import get_db
 from config import settings
-from services.request_work import coalesce, cache_fill_quota
-from services.representation_cache import REPRESENTATION_CACHE_PREFIX, outage_snapshots
+from services.request_work import SingleFlight, cache_fill_quota
+from services.representation_cache import REPRESENTATION_CACHE_PREFIX
+from services.public_visibility_cache import with_public_visibility_generation
 from services.small_cell import (
     small_cell_k, suppress_public_cells, suppress_public_series,
 )
@@ -33,6 +34,7 @@ from services.source_links import parliament_attribution_fields
 from models import ParliamentBill, CitizenVote, BillStatus, VoteChoice, ZkVoteReceipt
 from services.bill_visibility import (
     is_public_bill,
+    filter_public_bill_rows,
     public_bill_filter,
     public_bill_raw_sql,
     public_bill_with_demo_filter,
@@ -586,16 +588,31 @@ async def compute_cumulative_representation(db: AsyncSession) -> dict:
 @router.get("/representation", dependencies=[Depends(enforce_route_limit)])
 @public_heavy
 async def cumulative_representation(db: AsyncSession = Depends(get_db), request: Request = None) -> dict:
-    return await get_cached_representation(db)
+    result = await get_cached_representation(db)
+    # Include last_bill in the same indexed visibility check as the detail list.
+    rows = result["bills"] + ([result["last_bill"]] if result["last_bill"] else [])
+    visible = await filter_public_bill_rows(rows, db=db, id_key="bill_id")
+    ids = {row["bill_id"] for row in visible}
+    return dict(result, bills=[row for row in result["bills"] if row["bill_id"] in ids],
+                last_bill=result["last_bill"] if result["last_bill"] and result["last_bill"]["bill_id"] in ids else None)
 
 
-@coalesce(lambda: f"representation:k{small_cell_k()}")
+_representation_flights = SingleFlight()
+
+
 async def get_cached_representation(db: AsyncSession) -> dict:
+    async def current(generation):
+        return await _representation_flights.run(
+            (small_cell_k(), generation), lambda: _get_cached_representation(db, generation),
+        )
+    return await with_public_visibility_generation(current)
+
+
+async def _get_cached_representation(db: AsyncSession, generation) -> dict:
     # Policy changes never reuse a less restrictive aggregate. Expiry bounds
     # vote/metadata staleness to 30s from query start, including empty results;
     # hits don't renew it and slow fills don't get a fresh TTL.
     key = f"{REPRESENTATION_CACHE_PREFIX}{small_cell_k()}"
-    local = outage_snapshots.setdefault(asyncio.get_running_loop(), {})
     async with aioredis.from_url(
         settings.redis_url, decode_responses=True,
         socket_connect_timeout=0.05, socket_timeout=0.05,
@@ -604,11 +621,11 @@ async def get_cached_representation(db: AsyncSession) -> dict:
         try:
             async with asyncio.timeout(0.1):
                 raw = await cache.get(key)
-            if raw:
+            if raw and generation is not None:
                 cached = json.loads(raw)
                 if (isinstance(cached, dict) and "cumulative_representation" in cached
-                        and isinstance(cached.get("bills"), list)):
-                    local.pop(key, None)
+                        and isinstance(cached.get("bills"), list)
+                        and cached.pop("_public_visibility_generation", None) == generation):
                     cached["bills"] = cached["bills"][-200:]
                     return cached
         except (RedisError, OSError):
@@ -617,27 +634,18 @@ async def get_cached_representation(db: AsyncSession) -> dict:
         except (ValueError, TypeError):
             logger.warning("Representation cache entry invalid")
 
-        if not available and key in local:
-            end, snapshot = local[key]
-            if monotonic() < end:
-                return snapshot
-            local.pop(key, None)
         await cache_fill_quota("representation")
         expires_at = monotonic() + REPRESENTATION_CACHE_TTL
         result = await compute_cumulative_representation(db)
         # Round down: a fractional remainder must not extend the visibility bound.
         ttl = int(expires_at - monotonic())
-        if available and ttl > 0:
+        if available and generation is not None and ttl > 0:
             try:
                 async with asyncio.timeout(0.1):
-                    await cache.setex(key, ttl, json.dumps(result))
+                    await cache.setex(key, ttl, json.dumps(dict(result, _public_visibility_generation=generation)))
             except (RedisError, OSError):
                 available = False
                 logger.warning("Representation cache write unavailable")
-        if not available and ttl > 0:
-            if len(local) >= 16:
-                local.pop(next(iter(local)))
-            local[key] = (expires_at, result)
         return result
 
 

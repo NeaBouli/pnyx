@@ -1,5 +1,24 @@
 T-9166 representation performance
 
+Round 6 of PR #706 adds a persistent Redis public-visibility generation. Every
+inventoried committing boundary below increments it best-effort after commit,
+before deleting representation keys. Increment and deletion failures are
+independent. Both process-local public bodies and Redis representation bodies
+record the generation they were built under. Requests check the generation
+before and after cache work; a mismatch discards the body and joins a fresh
+calculation under single-flight, with a ten-second deadline. Fills racing with
+a generation bump cannot authorize the old body. Redis generation read failure
+forces fresh calculation, without storing or reusing an outage snapshot.
+
+`/bills`, `/bills/trending`, and `/analytics/representation` also query the current
+public visibility of their candidate primary keys before returning rows, including
+`last_bill`. This check uses the shared SQL visibility predicate and scalar IDs,
+so it cannot reuse visibility from the ORM identity map. Empty lists need no
+query. Check failures propagate. Filtering copies the response instead of
+changing the cached body. A warm nonempty representation response now performs
+one indexed visibility query; the historical zero-query measurement below
+predates this defence. The benchmark asserts this new query count.
+
 The original function loaded every public `PARLIAMENT_VOTED`/`OPEN_END` bill,
 including long summaries and bills without votes. It then awaited one grouped
 Tier-1 count per bill and another grouped ZK count per Parliament bill. Query

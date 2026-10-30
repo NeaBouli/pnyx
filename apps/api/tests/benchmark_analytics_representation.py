@@ -42,6 +42,9 @@ class MemoryCache:
         pass
 
     async def get(self, _key: str) -> str | None:
+        from services.public_visibility_cache import PUBLIC_VISIBILITY_GENERATION_KEY
+        if _key == PUBLIC_VISIBILITY_GENERATION_KEY:
+            return None
         return self.value
 
     async def setex(self, _key: str, _ttl: int, value: str) -> None:
@@ -128,7 +131,7 @@ async def run(baseline_path: str) -> None:
                     started = perf_counter()
                     assert await analytics.cumulative_representation(db) == before
                     warm.append((perf_counter() - started) * 1000)
-                assert query_count == 0
+                assert query_count == 20  # One indexed current-visibility check per response.
             warm_queries = query_count
             sql, params = analytics.representation_query()
             plan = (await db.execute(text("EXPLAIN QUERY PLAN " + sql), params)).all()

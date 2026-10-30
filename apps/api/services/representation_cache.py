@@ -1,15 +1,14 @@
 """Shared commit boundary for writes affecting the representation aggregate."""
 import asyncio
 import logging
-from weakref import WeakKeyDictionary
 
 import redis.asyncio as aioredis
 
 from config import settings
+from services.public_visibility_cache import bump_public_visibility_generation
 
 logger = logging.getLogger(__name__)
 REPRESENTATION_CACHE_PREFIX = "analytics:representation:v1:k"
-outage_snapshots = WeakKeyDictionary()
 
 
 async def commit_and_invalidate_representation(db) -> None:
@@ -22,13 +21,15 @@ async def invalidate_representation_cache() -> None:
     from services.client_flow_cache import invalidate_client_flow_caches
 
     invalidate_client_flow_caches()
-    outage_snapshots.clear()
     # Remove every policy variant so switching policy cannot revive stale data.
     try:
         async with aioredis.from_url(
             settings.redis_url, decode_responses=True,
             socket_connect_timeout=0.05, socket_timeout=0.05,
         ) as cache:
+            # Bump before deletion: an old in-flight fill may recreate a body,
+            # but other workers will reject the generation it was built under.
+            await bump_public_visibility_generation(cache)
             async with asyncio.timeout(0.1):
                 async for key in cache.scan_iter(match=f"{REPRESENTATION_CACHE_PREFIX}*"):
                     await cache.delete(key)

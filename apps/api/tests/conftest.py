@@ -12,6 +12,37 @@ from routers import public_api
 
 
 @pytest.fixture(autouse=True)
+def visibility_redis(monkeypatch):
+    """Generation reads stay offline; individual tests can exercise outages."""
+    from contextlib import asynccontextmanager
+    from services import public_visibility_cache
+
+    class Store:
+        generation = 0
+        down = False
+
+        async def get(self, key):
+            assert key == public_visibility_cache.PUBLIC_VISIBILITY_GENERATION_KEY
+            if self.down:
+                raise ConnectionError("Redis unavailable")
+            return str(self.generation)
+
+        async def incr(self, key):
+            await self.get(key)
+            self.generation += 1
+            return self.generation
+
+    store = Store()
+
+    @asynccontextmanager
+    async def connection():
+        yield store
+
+    monkeypatch.setattr(public_visibility_cache, "_connection", connection)
+    return store
+
+
+@pytest.fixture(autouse=True)
 def scraper_redis(monkeypatch):
     """Offline Redis commands/scripts with expiry, independent time and lost ACKs."""
     import json

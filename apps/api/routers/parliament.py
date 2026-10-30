@@ -20,7 +20,7 @@ from rate_limit import client_flow, enforce_route_limit, generate, limiter, publ
 
 DISCOURSE_BASE = os.getenv("DISCOURSE_BASE_URL", "https://pnyx.ekklesia.gr")
 from dependencies import verify_admin_key
-from services.bill_visibility import is_public_bill, public_bill_with_demo_filter
+from services.bill_visibility import filter_public_bill_rows, is_public_bill, public_bill_with_demo_filter
 from services.citizen_action_integrity import (
     build_flag_payload,
     citizen_action_timestamp_is_fresh,
@@ -212,7 +212,7 @@ def _region_filter_conditions(
 
 @router.get("", response_model=list[BillSummary], dependencies=[Depends(enforce_route_limit)])
 @client_flow
-@public_client_cache(validate=_validate_bill_filters)
+@public_client_cache(validate=_validate_bill_filters, filter_bills=filter_public_bill_rows)
 async def get_bills(
     status_filter: str | None = Query(None, alias="status"),
     status_any: str | None = Query(None),
@@ -327,7 +327,7 @@ async def get_bills(
 
 @router.get("/trending", response_model=list[BillSummary], dependencies=[Depends(enforce_route_limit)])
 @client_flow
-@public_client_cache(quota="60/minute")
+@public_client_cache(quota="60/minute", filter_bills=filter_public_bill_rows)
 async def get_trending(
     limit: int = Query(10, ge=1, le=50),
     db: AsyncSession = Depends(get_db),
