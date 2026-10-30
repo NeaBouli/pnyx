@@ -21,7 +21,7 @@ from sqlalchemy import and_, or_, select, func, union, update, text
 from sqlalchemy.exc import IntegrityError
 
 from services.representation_cache import commit_and_invalidate_representation
-from services.client_flow_cache import results_cache
+from services.client_flow_cache import public_policy_key, results_cache
 from database import get_db
 from rate_limit import client_flow, enforce_route_limit, limiter, public_heavy
 from models import (
@@ -188,14 +188,19 @@ async def representativity_for_bill(
             scope_label_el="Δήμος",
         )
     if level == GovernanceLevel.REGIONAL and getattr(bill, "periferia_id", None):
-        result = await db.execute(
-            text(
-                "SELECT COALESCE(SUM(population), 0) FROM dimos "
-                "WHERE periferia_id = :periferia_id AND is_active IS TRUE"
-            ),
-            {"periferia_id": bill.periferia_id},
+        async def load_population():
+            result = await db.execute(
+                text(
+                    "SELECT COALESCE(SUM(population), 0) FROM dimos "
+                    "WHERE periferia_id = :periferia_id AND is_active IS TRUE"
+                ),
+                {"periferia_id": bill.periferia_id},
+            )
+            return result.scalar_one_or_none() or None
+
+        population = await results_cache.get_or_fill(
+            ("regional-population", bill.periferia_id, public_policy_key()), load_population,
         )
-        population = result.scalar_one_or_none() or None
         return compute_representativity(
             total_votes,
             eligible_voters=None,

@@ -13,6 +13,7 @@ from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from services.client_flow_cache import public_client_cache
 from database import get_db
 from rate_limit import client_flow, enforce_route_limit, limiter, public_heavy, public_read
 from services.small_cell import suppress_public_cells
@@ -30,6 +31,7 @@ router = APIRouter(prefix="/api/v1", tags=["MOD-16 Municipal"])
 
 @router.get("/periferia", dependencies=[Depends(enforce_route_limit)])
 @client_flow
+@public_client_cache()
 async def list_periferies(
     is_active: Optional[bool] = Query(True, description="Filter by active status"),
     db: AsyncSession = Depends(get_db),
@@ -57,6 +59,7 @@ async def list_periferies(
 
 @router.get("/periferia/{periferia_id}/dimos", dependencies=[Depends(enforce_route_limit)])
 @client_flow
+@public_client_cache()
 async def list_dimos_by_periferia(
     periferia_id: int,
     is_active: Optional[bool] = Query(True, description="Filter by active status"),

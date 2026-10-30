@@ -1,4 +1,5 @@
 """Public, aggregate-only DIAVGEIA consensus representation views."""
+from services.client_flow_cache import public_client_cache
 from rate_limit import client_flow, enforce_route_limit
 
 from typing import Literal
@@ -145,6 +146,7 @@ async def _load_view(
 
 @router.get("/representation", dependencies=[Depends(enforce_route_limit)])
 @client_flow
+@public_client_cache(quota="60/minute")
 async def get_consensus_representation(
     dimos_id: int | None = Query(None, ge=1),
     periferia_id: int | None = Query(None, ge=1),

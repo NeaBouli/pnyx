@@ -75,16 +75,21 @@ class WorkSlots:
             yield
 
 
-def _fill_guard(name):
+def _fill_guard(name, quota="6/minute"):
     async def guard(request: Request):
         return Response(status_code=204)
     guard.__name__ = f"fill_{name}"
-    return limiter.shared_limit("6/minute", scope=f"cache-fill:{name}", key_func=global_key)(guard)
+    return limiter.shared_limit(quota, scope=f"cache-fill:{name}", key_func=global_key)(guard)
 
 
 _fill_guards = {name: _fill_guard(name) for name in ("cplm", "representation", "newsletter")}
 
 
+def register_public_fill_budget(name: str, quota: str) -> None:
+    if name not in _fill_guards:
+        _fill_guards[name] = _fill_guard(name, quota)
+
+
 async def cache_fill_quota(name: str):
-    """Shared across workers; outage fallback permits three fills/minute/process."""
+    """Shared across workers; outage fallback permits half the configured quota."""
     await _fill_guards[name](request=Request({"type": "http", "path": "/cache-fill", "headers": []}))

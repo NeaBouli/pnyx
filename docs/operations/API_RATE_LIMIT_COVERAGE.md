@@ -11,12 +11,12 @@ policy table and an HTTP test forbidding database and provider access.
 
 | Class | Count | Policy |
 | --- | ---: | --- |
-| `client-flow` | 26 | 1200/minute/IP across core released-client requests; scope polling has an independent 1200/minute/IP bucket. Action sanity caps below still apply. |
+| `client-flow` | 32 | 1200/minute/IP across core released-client requests; scope polling has an independent 1200/minute/IP bucket. Action sanity caps below still apply. |
 | `public-read` | 17 | 120/minute/IP across other ordinary reads. |
-| `public-heavy` | 97 | 20/minute/IP across optional analytics, exports, ranking/compare, admin work and provider callbacks. |
+| `public-heavy` | 93 | 20/minute/IP across optional analytics, exports, compare, additional analytics, admin work and provider callbacks. |
 | `generate` | 5 | 5/minute/IP shared plus 30/minute globally across generation-capable routes. |
 | `paypal-verify` | 1 | 10/minute/IP plus 60/minute globally; four verification slots/process. |
-| `explicit` | 46 | Existing signed/action/polling policies outside the core client inventory. |
+| `explicit` | 44 | Existing signed/action/polling policies outside the core client inventory. |
 | `dedicated-redis` | 5 | Existing HLR, key generation, newsletter and contact counters. |
 | `cheap-exempt` | 3 | Greeting, health manifest and robots; no DB or provider access. |
 
@@ -102,13 +102,13 @@ snapshot for five seconds; combined with the released five-second poll interval,
 readiness can take up to ten seconds to appear without local invalidation.
 Results cache vote totals for five seconds/128 entries, keyed by bill, vote
 sources and privacy policy; visibility and suppression still run on every request.
-Successful vote/root/opt-in commits invalidate both local caches through the
+Successful vote/root/opt-in commits invalidate all local public caches through the
 existing shared commit hook. Other workers observe changes within the TTL.
 Proof members retain the existing cache by published root and stale-root checks.
 
 ### Released client-flow inventory
 
-Source: `origin/main` at `30e20e6c7618cdca0c3c9e4f4c197c4d1320f9c3`, the
+Source: `origin/main` at `7bef83431635042f3c01241840ab6cefac12b817`, the
 requested released 1.0.33–1.0.37 behaviour. Frequencies below are observed from
 that source's effects, focus hooks and timers, not estimated user activity.
 Paths in the source column are under `apps/mobile/src/` (screens unless stated).
@@ -145,27 +145,76 @@ Compatibility aliases with no observed caller are marked explicitly.
 | POST | `/api/v1/notify/register` | 1/verified Home mount on push builds; at most 1 idempotent retry | `HomeScreen.tsx:43; lib/push-registration.ts:167` |
 | GET | `/api/v1/notifications/status` | Compatibility status read; notifications acknowledge locally, no HTTP ACK | `lib/notifications.ts:markNotificationEventRead` |
 | GET | `/api/v1/polis/tickets` | 1/POLIS tab mount, category change or refresh | `TicketsScreen.tsx:77` |
+| GET | `/api/v1/mp/ranking` | 1/MP mount (parties tab) | `apps/mobile/src/lib/api.ts:541` |
+| GET | `/api/v1/politicians/` | 1/MP politicians tab activation | `apps/mobile/src/lib/api.ts:585` |
+| GET | `/api/v1/politicians/my-evaluations/bulk` | 1/verified MP politicians tab activation; signed personal read | `apps/mobile/src/lib/api.ts:679` |
+| GET | `/api/v1/politicians/{ada_number}/my-evaluation` | 1/verified politician detail mount; signed personal read | `apps/mobile/src/lib/api.ts:664` |
+| GET | `/api/v1/politicians/{ada_number}/questions` | 1/politician detail mount | `apps/mobile/src/lib/api.ts:590` |
+| GET | `/api/v1/politicians/{ada_number}/scores` | 1/politician detail mount; 1/confirmed evaluation refresh | `apps/mobile/src/lib/api.ts:622` |
 <!-- client-flow:end -->
 
-Analytics overview is automatic on Home mount, so it is client-flow despite its
-name. Optional MP ranking is fetched when the user opens the MP tab; compare,
-additional analytics and exports remain public-heavy. Optional politician
-questions/scores/evaluations and POLIS ticket writes retain their existing
-policies; none is part of startup → bills → vote/results → bills. Account
-verification (HLR), explicit profile location changes, share tracking and QR
-browser login retain their dedicated action guards. Notification reads and
-acknowledgements are local; the F-Droid foreground fallback reads `/bills` at
-most once/minute and push builds register on verified Home mount.
+The released inventory is derived mechanically by
+`scripts/released_mobile_inventory.py` from all production TS/TSX files under
+`apps/mobile/src` at `origin/main`, including request helpers and direct fetches.
+The fixture pins all **45 call sites / 38 HTTP patterns** with source lines.
+The test regenerates that evidence, resolves every pattern against registered
+routes, requires client-flow/polling for every automatic read, and fails on
+missing, changed or unclassified calls. Compatibility aliases remain explicit.
 
-The HTTP compatibility test uses the real included routes and enabled production
-limiter with deterministic time and local DB/Redis/provider fixtures. It replays
-startup, both first-page bills queries, detail, valid signed vote-status reads,
-ZK status, encoded scope status, proof members, results and both return-to-bills
-queries. **10 and 50 users behind one IP for five minutes** each get zero 429s,
-including immediate and five-second polls and a core session every minute.
-Three complete startup/core sessions also succeed (the reported 21-read case).
-The same test exhausts public-heavy at 20 calls, verifies the next heavy route
-returns 429, and checks that results and scope status still succeed.
+MP mounts fetch party ranking. Activating politicians fetches the public list
+and, for verified users, a signed personal evaluation summary. Politician detail
+mounts fetch questions, public scores and a signed personal evaluation read.
+All six reads use client-flow. Personal reads retain signature verification and
+`private, no-store`; shared caches never contain their data or identity keys.
+
+Eight explicit actions retain their action/provider guards: HLR enrollment,
+profile location update, QR authorization, POLIS key registration, ticket
+creation, ticket voting, evaluation submission and share tracking. Their exact
+methods, paths and justifications are recorded in `justified_actions` in the
+fixture. No automatic GET has an action exemption.
+
+The HTTP compatibility test replays startup, both bills queries, trending,
+consensus, detail, signed vote status, roots/members, results, return-to-bills
+and MP → politicians → detail (including valid signed personal reads).
+**10 and 50 users behind one IP for five minutes**, polling every five seconds
+and repeating navigation every minute, get zero 429s. Public-heavy still exhausts
+at 20 calls; its next call returns 429 while released reads continue to succeed.
+These deterministic HTTP checks use local DB/Redis/provider fixtures and are
+not a production throughput benchmark.
+
+### Public cache work policy
+
+Every client-flow/polling GET must either use a bounded public single-flight
+cache or have a reviewed constant/point/private-read classification. A new
+client read fails the policy test until reviewed. Existing results/scope/root
+member caches retain their per-request visibility or stale-root checks.
+
+New public caches cover overview, MP ranking, politician list/questions/scores,
+bills/trending, consensus representation, region/municipality lists and tickets.
+Results also cache regional population aggregates.
+Each is bounded to 128 entries/process with a five-second TTL anchored before
+work; hits do not renew it. Keys include every declared path/query argument
+(including defaults), the visibility policy version and sensitive-term list,
+small-cell threshold and the endpoint's anonymity thresholds. Unknown query
+fields do not affect handlers and are never retained; request headers, sessions,
+nullifiers and signatures are excluded. Only explicitly public endpoints can
+use this wrapper. Returned payloads are copied so callers cannot mutate hits.
+
+Concurrent identical misses share one result/error per process/event loop.
+Different fills have four execution slots per loop, with immediate rejection at
+capacity. Each endpoint has a global Redis fill quota: overview/ranking allow
+30 fills/minute, other public caches 60/minute (half per process on Redis
+outage). Only leaders consume quota, before SQL; hits/followers do not. The
+quota and short TTL also bound repeated work if a slow fill exceeds the TTL.
+Single-flight and stored payloads are process-local; quotas are shared across
+workers. Cache backend availability cannot disable these local bounds.
+
+Overview's 50 identical concurrent HTTP reads over 100 completed bills perform
+100 bill aggregations and one bill scan, plus nine count SQL calls, in one fill.
+Ranking computes each bill's majority once per fill, reused across parties.
+The shared representation commit hook clears all local public caches after a
+successful commit; evaluation/ticket writes clear them locally too. Failed
+commits do not invalidate. Other workers retain at most the five-second TTL.
 
 ## Shared storage, fallback and privacy
 
@@ -234,7 +283,7 @@ exception statuses retain FastAPI's existing response shape.
 200 method/path entries: client-flow 26, public-read 17, public-heavy 97, generate 5, paypal-verify 1, explicit 46, dedicated-redis 5, cheap-exempt 3.
 
 <!-- route-policy:start -->
-| Method | Registered path | Class | Limit or exemption reason |
+| Method | Route | Class | Limit / reason |
 | --- | --- | --- | --- |
 | GET | `/` | cheap-exempt | Constant API greeting; no database or provider access. |
 | GET | `/api/v1/admin/bills` | public-heavy | 20 per 1 minute (public-heavy) |
@@ -326,7 +375,7 @@ exception statuses retain FastAPI's existing response shape.
 | GET | `/api/v1/mp/compare/{party_abbr}` | public-heavy | 20 per 1 minute (public-heavy) |
 | GET | `/api/v1/mp/info` | public-heavy | 20 per 1 minute (public-heavy) |
 | GET | `/api/v1/mp/parties` | public-heavy | 20 per 1 minute (public-heavy) |
-| GET | `/api/v1/mp/ranking` | public-heavy | 20 per 1 minute (public-heavy) |
+| GET | `/api/v1/mp/ranking` | client-flow | 1200 per 1 minute (client-flow) |
 | POST | `/api/v1/municipal/vote` | explicit | 20 per 1 minute |
 | GET | `/api/v1/municipal/{dimos_id}/decisions` | public-heavy | 20 per 1 minute (public-heavy) |
 | GET | `/api/v1/municipal/{dimos_id}/voteable` | public-heavy | 20 per 1 minute (public-heavy) |
@@ -362,12 +411,12 @@ exception statuses retain FastAPI's existing response shape.
 | GET | `/api/v1/polis/tickets` | client-flow | 1200 per 1 minute (client-flow) |
 | POST | `/api/v1/polis/tickets` | explicit | 120 per 1 minute |
 | POST | `/api/v1/polis/tickets/{ticket_id}/votes` | explicit | 120 per 1 minute (polis-ticket-vote) |
-| GET | `/api/v1/politicians/` | public-heavy | 20 per 1 minute (public-heavy) |
-| GET | `/api/v1/politicians/my-evaluations/bulk` | explicit | 10 per 1 minute |
+| GET | `/api/v1/politicians/` | client-flow | 1200 per 1 minute (client-flow) |
+| GET | `/api/v1/politicians/my-evaluations/bulk` | client-flow | 1200 per 1 minute (client-flow) |
 | POST | `/api/v1/politicians/{ada_number}/evaluate` | explicit | 20 per 1 minute (evaluation:evaluate_politician) |
-| GET | `/api/v1/politicians/{ada_number}/my-evaluation` | explicit | 10 per 1 minute (evaluation:get_my_evaluation) |
-| GET | `/api/v1/politicians/{ada_number}/questions` | public-heavy | 20 per 1 minute (public-heavy) |
-| GET | `/api/v1/politicians/{ada_number}/scores` | public-heavy | 20 per 1 minute (public-heavy) |
+| GET | `/api/v1/politicians/{ada_number}/my-evaluation` | client-flow | 1200 per 1 minute (client-flow) |
+| GET | `/api/v1/politicians/{ada_number}/questions` | client-flow | 1200 per 1 minute (client-flow) |
+| GET | `/api/v1/politicians/{ada_number}/scores` | client-flow | 1200 per 1 minute (client-flow) |
 | GET | `/api/v1/public/bills` | public-heavy | 20 per 1 minute (public-heavy) |
 | GET | `/api/v1/public/bills/{bill_id}/results` | public-heavy | 20 per 1 minute (public-heavy) |
 | GET | `/api/v1/public/cplm` | public-heavy | 20 per 1 minute (public-heavy) |
@@ -438,55 +487,58 @@ exception statuses retain FastAPI's existing response shape.
 | GET | `/robots.txt` | cheap-exempt | Constant crawler policy; no database or provider access. |
 <!-- route-policy:end -->
 
-## Local acceptance evidence (2026-10-30, B01 round 2)
+## Local acceptance evidence (2026-10-30, B01 round 3)
 
-Compatibility checks use the released source patterns and enabled production
-limiter. Ten and fifty users each complete a five-minute simulation behind one
-IP, polling every five seconds; all client-flow requests succeed. The three
-startup → bills → vote/results → bills sessions succeed too. These are HTTP
-checks with deterministic clocks and local DB/Redis/provider fixtures, not a
-production throughput benchmark.
+Compatibility checks replay the released mobile source with the production
+limiter enabled and deterministic time. Ten and fifty users each complete
+five minutes behind one IP, including MP/politician navigation, signed personal
+reads, immediate/five-second polls, and a full navigation session every minute.
+Both simulations report zero 429s. The heavy bucket still rejects its 21st call
+while released routes continue to succeed.
 
-The interpreter is the existing `scratchpad/venv-fa/bin/python` (Python 3.11.5),
-with `PYTHONPATH=/private/tmp/eka32-framework` (FastAPI 0.143.0; the project
-requires 0.143.3), Starlette 1.10.0, SlowAPI 0.1.10, limits 5.8.0, pytest 9.1.1,
-Pydantic 2.14.1 and SQLAlchemy 2.1.5. Dependency files are unchanged. External
-Redis/PostgreSQL gates require their configured test services.
+The existing `scratchpad/venv-fa/bin/python` runs the API checks with
+`TZ=UTC PYTHONPATH=/private/tmp/eka32-framework`. The local framework overlay
+provides FastAPI 0.143.0 (the project requires 0.143.3). Dependency files and
+mobile source are unchanged; external Redis/PostgreSQL gates require their
+configured services. These fixture-backed HTTP checks are not a production
+throughput benchmark.
 
-From `apps/api`, focused checks cover released compatibility, route coverage,
-request work bounds, 429/CORS/outage acceptance, signed and targeted writes,
-result privacy, ZK routes, notification registration, proxies and security
-headers. The full API suite runs once with `TZ=UTC` after focused checks.
+From `apps/api`, the work/policy checks are reproducible with:
 
 ```sh
-TZ=UTC PYTHONPATH=/private/tmp/eka32-framework ../../../venv-fa/bin/python -m pytest tests/test_released_mobile_client_flow.py tests/test_rate_limit_coverage.py tests/test_b01_work_bounds.py tests/test_rate_limit_acceptance.py tests/test_rate_limit_route_enforcement.py tests/test_targeted_write_limits.py tests/test_signed_write_limits.py tests/test_public_small_cell_results.py tests/test_voting_latest_results.py tests/test_zk*.py -q --tb=short
-TZ=UTC PYTHONPATH=/private/tmp/eka32-framework ../../../venv-fa/bin/python -m pytest tests/test_rate_limit_middleware.py tests/test_rate_limit_privacy.py tests/test_ip_utils.py tests/test_notify_register.py tests/test_security_headers.py -q --tb=short
+TZ=UTC PYTHONPATH=/private/tmp/eka32-framework ../../../venv-fa/bin/python -m pytest tests/test_released_mobile_client_flow.py tests/test_released_mobile_inventory.py tests/test_client_public_work.py tests/test_rate_limit_coverage.py tests/test_b01_work_bounds.py tests/test_rate_limit_route_enforcement.py tests/test_rate_limit_acceptance.py tests/test_signed_write_limits.py -q --tb=short
 TZ=UTC PYTHONPATH=/private/tmp/eka32-framework ../../../venv-fa/bin/python -m pytest tests/ -q --tb=short -rs
 ```
 
-Results (local log files use `/private/tmp/b01-r2-*.log`):
+From the repository root, the docs preservation gate is:
 
-```text
-Released compatibility, final: 34 passed in 180.00s (0:02:59)
-Initial broad focused run: 3 failed, 250 passed, 1 warning in 597.00s (0:09:56)
-Three focused corrections: 3 passed, 1 warning in 9.28s
-Additional focused checks: 110 passed, 3 skipped, 1 warning in 8.30s
-Production policy / wiki / fallback: 26 passed, 1 warning in 12.53s
-Development policy: 16 passed, 1 warning in 7.74s
-Full API, TZ=UTC, one run: 1 failed, 4371 passed, 95 skipped, 25 xfailed, 21 warnings, 4 subtests passed in 1064.20s (0:17:44)
-Identity rotation after assertion correction: 22 passed in 3.01s
-Static documentation: 82 passed; zero failures
-CSP inventory current; project facts current; git diff --check passed
+```sh
+python3 -m unittest discover -s scripts/redesign -p 'test_*.py'
 ```
 
-The initial focused run exposed three test defects: a direct decorated call
-without a Request, an audit expecting only one wrapper on a stacked policy,
-and a missing URL in a fallback test. All three were corrected and passed.
-The full run's sole failure was an old assertion that rotation still had the
-10/minute IP limit. It now asserts 1200/minute with the `client-flow` scope;
-all 22 identity-rotation tests pass. No production code changed after the full
-run, and the full suite was not repeated. The 95 skips are listed in the full
-log (external Redis/PostgreSQL gates); the 25 expected failures remain expected.
-The API wiki source hash was refreshed after its policy text changed; all 82
-static documentation tests pass. Mobile files match `origin/main`; HEAD remains
-`a5f34964` and no commit was created.
+Round 3 local logs use `/private/tmp/b01-r3-*.log`:
+
+- `core`: 174 passed (released HTTP/NAT, evaluation integrity/demo exclusion,
+  consensus, small-cell privacy and bill contracts).
+- `focused`: 224 passed, 3 skipped; four old expectations failed (three moved
+  routes still listed as heavy, and one assertion requiring SQL on a cache hit).
+- `corrections`: 43 passed, including the updated heavy inventory, source-derived
+  route/cache policies, overview/ranking work bounds and regional population cache.
+- `signed-correction`: the remaining updated cache-hit expectation passed.
+- `docs-final`: 391 tests ran successfully, with 2 skipped.
+
+The full API suite ran once after focused corrections with `TZ=UTC`:
+
+```text
+4386 passed, 95 skipped, 25 xfailed, 21 warnings, 4 subtests passed in 1192.48s (0:19:52)
+```
+
+The 95 skips include external Redis/PostgreSQL checks without their configured
+services. Complete output and skip reasons are in
+`/private/tmp/b01-r3-full-api.log`. The final inventory diff, caches, file list
+and log tails are recorded in `/private/tmp/b01-r3-final-stdout.txt`.
+
+No production code changed after starting that full run. The existing API wiki
+wording is registered through `scripts/redesign/approved_audit_delta.py`; its
+HTML is unchanged in round 3. New limits/cache/inventory documentation is kept
+in this operations file. No commit was created.

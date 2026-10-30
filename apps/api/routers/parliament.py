@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, text
 from sqlalchemy.exc import IntegrityError
 from database import get_db
+from services.client_flow_cache import public_client_cache
 from rate_limit import client_flow, enforce_route_limit, generate, limiter, public_heavy, public_read
 
 DISCOURSE_BASE = os.getenv("DISCOURSE_BASE_URL", "https://pnyx.ekklesia.gr")
@@ -196,6 +197,7 @@ def _region_filter_conditions(
 
 @router.get("", response_model=list[BillSummary], dependencies=[Depends(enforce_route_limit)])
 @client_flow
+@public_client_cache(quota="60/minute")
 async def get_bills(
     status_filter: str | None = Query(None, alias="status"),
     status_any: str | None = Query(None),
@@ -315,6 +317,7 @@ async def get_bills(
 
 @router.get("/trending", response_model=list[BillSummary], dependencies=[Depends(enforce_route_limit)])
 @client_flow
+@public_client_cache(quota="60/minute")
 async def get_trending(
     limit: int = Query(10, le=50),
     db: AsyncSession = Depends(get_db),

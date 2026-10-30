@@ -7,7 +7,8 @@ Format: {"ΝΔ": "ΝΑΙ", "ΣΥΡΙΖΑ": "ΟΧΙ", "ΠΑΣΟΚ": "ΠΑΡΩΝ",
 
 @ai-anchor MOD12_MP_COMPARISON
 """
-from rate_limit import enforce_route_limit, public_heavy
+from services.client_flow_cache import public_client_cache
+from rate_limit import client_flow, enforce_route_limit, public_heavy
 import logging
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -146,7 +147,8 @@ async def party_comparison(party_abbr: str, db: AsyncSession = Depends(get_db), 
 
 
 @router.get("/ranking", dependencies=[Depends(enforce_route_limit)])
-@public_heavy
+@client_flow
+@public_client_cache(quota="30/minute")
 async def party_ranking(db: AsyncSession = Depends(get_db), request: Request = None):
     """Rangliste aller Parteien nach Übereinstimmung mit Bürgermehrheit."""
     result = await db.execute(select(Party))
@@ -160,6 +162,9 @@ async def party_ranking(db: AsyncSession = Depends(get_db), request: Request = N
     )
     bills = bills_result.scalars().all()
 
+    # Aggregate each bill once, independent of the number of parties.
+    majorities = {bill.id: await citizen_majority_for(db, bill.id, bill)
+                  for bill in bills if bill.party_votes_parliament}
     ranking = []
     for party in parties:
         agree = disagree = 0
@@ -170,7 +175,7 @@ async def party_ranking(db: AsyncSession = Depends(get_db), request: Request = N
             if not pvr:
                 continue
             pv = normalize_vote(pvr)
-            majority, yes, no_cnt, total = await citizen_majority_for(db, bill.id, bill)
+            majority, yes, no_cnt, total = majorities[bill.id]
             if majority is None or total < K_MIN:
                 continue
             if (majority == "YES" and pv == "YES") or (majority == "NO" and pv == "NO"):

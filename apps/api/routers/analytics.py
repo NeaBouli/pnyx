@@ -7,6 +7,7 @@ k-Anonymity: Demografische Daten nur wenn Gruppe >= 10 Stimmen.
 
 @ai-anchor MOD06_ANALYTICS
 """
+from services.client_flow_cache import public_client_cache
 from rate_limit import client_flow, enforce_route_limit, public_heavy
 import asyncio
 import json
@@ -126,6 +127,7 @@ async def compute_divergence(
 
 @router.get("/overview", dependencies=[Depends(enforce_route_limit)])
 @client_flow
+@public_client_cache(quota="30/minute")
 async def analytics_overview(db: AsyncSession = Depends(get_db), request: Request = None):
     """Plattform-weite Statistiken + Divergence Übersicht."""
     _real = public_bill_with_demo_filter()

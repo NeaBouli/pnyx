@@ -85,8 +85,8 @@ SIGNATURE = "0" * 128
         "nullifier_hash": NULLIFIER, "signature_hex": SIGNATURE,
         "scores": [{"question_id": 1, "score": 1}],
     }, 20, 404),
-    ("GET", f"/api/v1/politicians/{{target}}/my-evaluation?nullifier_hash={NULLIFIER}", None, 10, 200),
-    ("GET", f"/api/v1/politicians/my-evaluations/bulk?nullifier_hash={NULLIFIER}", None, 10, 200),
+    ("GET", f"/api/v1/politicians/{{target}}/my-evaluation?nullifier_hash={NULLIFIER}", None, 1200, 200),
+    ("GET", f"/api/v1/politicians/my-evaluations/bulk?nullifier_hash={NULLIFIER}", None, 1200, 200),
     ("GET", "/api/v1/export/bills.csv", None, 20, 200),
 ])
 def test_new_rate_limits_reject_before_handler_work_and_cannot_rotate_targets(

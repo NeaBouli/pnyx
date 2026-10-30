@@ -19,6 +19,7 @@ from routers import notify, parliament, zk
 from services import client_flow_cache
 from services.citizen_action_integrity import build_vote_status_read_payload
 from services.push_registration import build_push_register_payload
+from services.evaluation_integrity import build_evaluation_read_payload
 from tests.test_rate_limit_coverage import iter_api_routes, route_policy
 
 
@@ -64,7 +65,20 @@ class Rows:
         return self
 
     def all(self):
-        return []
+        return self.value if isinstance(self.value, list) else []
+
+    def fetchall(self):
+        return self.all()
+
+    def fetchone(self):
+        return self.value
+
+    def mappings(self):
+        return self
+
+    def one(self):
+        return {key: 0 for key in ("total_diavgeia_bills", "geographically_represented_bills",
+                                  "institutional_or_unresolved_bills", "geographic_mapping_gaps")}
 
 
 @pytest.fixture
@@ -96,6 +110,8 @@ def released_backend(monkeypatch):
         sql = str(statement)
         params = statement.compile().params
         if "identity_records" in sql:
+            if args:
+                return Rows(keys[args[0]["nullifier"]].verify_key.encode().hex())
             key = keys[params["nullifier_hash_1"]]
             return Rows(SimpleNamespace(public_key_hex=key.verify_key.encode().hex(),
                                         status=KeyStatus.ACTIVE, created_at=None,
@@ -104,6 +120,8 @@ def released_backend(monkeypatch):
             return Rows(bill)
         if "zk_merkle_roots" in sql:
             return Rows(root)
+        if "FROM representative_tokens WHERE ada_number" in sql:
+            return Rows(("ADA-released", "Βουλευτής", "Region", "Released politician", True, 1, None))
         return Rows()
 
     db = SimpleNamespace(execute=AsyncMock(side_effect=execute), scalar=AsyncMock(return_value=0))
@@ -149,6 +167,7 @@ async def startup(client, nullifier, key, now):
         await request_ok(client, "GET", "/api/v1/app/version")
     await request_ok(client, "GET", "/api/v1/bills?limit=50")
     await request_ok(client, "GET", "/api/v1/analytics/overview")
+    await request_ok(client, "GET", "/api/v1/bills/trending?limit=10")
     device = f"00000000-0000-4000-8000-{nullifier[-12:]}"
     token = f"ExponentPushToken[released-{nullifier[-4:]}]"
     timestamp = int(now * 1000)
@@ -168,9 +187,27 @@ async def session(client, nullifier, key, now):
     await request_ok(client, "GET", "/api/v1/zk/scopes/bill%3AGR-released/status")
     await request_ok(client, "GET", "/api/v1/zk/roots/bill%3AGR-released/members")
     await request_ok(client, "GET", "/api/v1/vote/GR-released/results")
+    await request_ok(client, "GET", "/api/v1/consensus/representation?limit=20")
+    await mp_navigation(client, nullifier, key, now)
     # Returning to Bills refocuses and repeats BOTH first-page queries.
     for suffix in ("?limit=40", "?governance=NATIONAL&source=PARLIAMENT&limit=4"):
         await request_ok(client, "GET", "/api/v1/bills" + suffix)
+
+
+async def mp_navigation(client, nullifier, key, now):
+    """MP mount, politicians mode, then detail including both personal reads."""
+    for path in ("/api/v1/mp/ranking", "/api/v1/politicians/",
+                 "/api/v1/politicians/ADA-released/questions", "/api/v1/politicians/ADA-released/scores"):
+        await request_ok(client, "GET", path)
+    for ada, path in ((None, "/api/v1/politicians/my-evaluations/bulk"),
+                      ("ADA-released", "/api/v1/politicians/ADA-released/my-evaluation")):
+        timestamp = int(now * 1000)
+        payload = build_evaluation_read_payload(ada, nullifier, timestamp)
+        response = await request_ok(client, "GET", path, params={"nullifier_hash": nullifier}, headers={
+            "X-Evaluation-Read-Timestamp": str(timestamp),
+            "X-Evaluation-Read-Signature": key.sign(payload.encode()).signature.hex(),
+        })
+        assert response.headers["cache-control"] == "private, no-store"
 
 
 @pytest.mark.asyncio
@@ -202,6 +239,7 @@ async def test_released_five_second_polling_for_five_minutes_behind_one_ip(relea
                 if second and second % 60 == 0:
                     await session(client, nullifier, key, clock.now)
         assert status_counts == {200: users * 60}
+        print(f"NAT users={users} duration=300s MP+politician+signed-reads+core+5s-polls: zero 429; polls={users * 60}")
         # Exhaust the independent heavy bucket, then rotate heavy route/target.
         for _ in range(20):
             assert (await client.get("/api/v1/export/results.json")).status_code == 200

@@ -13,7 +13,8 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from rate_limit import enforce_route_limit, limiter, public_heavy
+from services.client_flow_cache import invalidate_client_flow_caches, public_client_cache
+from rate_limit import client_flow, enforce_route_limit, limiter
 from ip_utils import log_reference
 from keypair import verify_signature
 from models import EvaluationQuestion, PoliticianEvaluation, IdentityRecord, KeyStatus
@@ -133,7 +134,8 @@ async def _get_enabled_politician(ada_number: str, db: AsyncSession) -> dict:
 
 
 @router.get("/", dependencies=[Depends(enforce_route_limit)])
-@public_heavy
+@client_flow
+@public_client_cache(quota="60/minute")
 async def list_politicians(db: AsyncSession = Depends(get_db), request: Request = None):
     """Public: all politicians who opted-in to evaluation, with avg scores."""
     result = await db.execute(text("""
@@ -167,8 +169,8 @@ async def list_politicians(db: AsyncSession = Depends(get_db), request: Request 
     return politicians
 
 
-@router.get("/my-evaluations/bulk")
-@limiter.limit("10/minute")
+@router.get("/my-evaluations/bulk", dependencies=[Depends(enforce_route_limit)])
+@client_flow
 async def get_my_evaluations_bulk(
     nullifier_hash: str,
     response: Response,
@@ -197,7 +199,8 @@ async def get_my_evaluations_bulk(
 
 
 @router.get("/{ada_number}/questions", dependencies=[Depends(enforce_route_limit)])
-@public_heavy
+@client_flow
+@public_client_cache(quota="60/minute")
 async def get_questions(
     ada_number: str,
     db: AsyncSession = Depends(get_db),
@@ -216,8 +219,8 @@ async def get_questions(
     } for q in questions]
 
 
-@router.get("/{ada_number}/my-evaluation")
-@limiter.shared_limit("10/minute", scope="evaluation:get_my_evaluation")
+@router.get("/{ada_number}/my-evaluation", dependencies=[Depends(enforce_route_limit)])
+@client_flow
 async def get_my_evaluation(
     ada_number: str,
     nullifier_hash: str,
@@ -328,6 +331,7 @@ async def evaluate_politician(
             DO UPDATE SET score = :score, updated_at = NOW()
         """), {"ada": ada_number, "null": req.nullifier_hash, "qid": s.question_id, "score": s.score})
     await db.commit()
+    invalidate_client_flow_caches()
 
     logger.info(
         "[EVAL] Citizen evaluated ada_ref=%s: %d scores, payload_version=%d",
@@ -342,7 +346,8 @@ async def evaluate_politician(
 
 
 @router.get("/{ada_number}/scores", dependencies=[Depends(enforce_route_limit)])
-@public_heavy
+@client_flow
+@public_client_cache(quota="60/minute")
 async def get_scores(
     ada_number: str,
     db: AsyncSession = Depends(get_db),
