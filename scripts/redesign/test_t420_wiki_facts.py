@@ -50,10 +50,15 @@ def runtime_sql() -> str:
     return "".join(p.read_text(encoding="utf-8") for p in files)
 
 
+# Table-valued SQL functions appear after FROM but are not tables.
+SQL_TABLE_FUNCTIONS = {"json_each", "unnest", "generate_series"}
+
+
 def runtime_raw_sql_tables() -> set[str]:
     """Tables hit by raw SQL in routers/services that have no ORM model (CTEs excluded)."""
     code = runtime_sql()
-    return set(SQL_TABLE_REF.findall(code)) - set(SQL_CTE_NAME.findall(code)) - orm_tables()
+    return (set(SQL_TABLE_REF.findall(code)) - set(SQL_CTE_NAME.findall(code)) - orm_tables()
+            - SQL_TABLE_FUNCTIONS)
 
 
 class Cells(HTMLParser):
