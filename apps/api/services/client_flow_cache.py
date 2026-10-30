@@ -1,6 +1,7 @@
 """Small, short-lived caches for released clients sharing public reads."""
 import asyncio
 from collections import OrderedDict
+from contextlib import nullcontext
 from functools import wraps
 from inspect import signature
 import logging
@@ -13,6 +14,7 @@ from services.request_work import SingleFlight, WaitingWorkSlots
 from services.public_visibility_cache import with_public_visibility_generation
 from services.public_bill_response import CONTRIBUTOR_KEYS, BILL_SCHEMAS, capture_public_bill_body, serve_public_bill_body
 from services import result_cache_policy as result_policy
+from services.overview_timing import overview_timing, timing
 
 
 logger = logging.getLogger(__name__)
@@ -51,7 +53,8 @@ class ClientFlowCache:
     """Bound memory and stale age, and coalesce queued refreshes."""
 
     def __init__(self, capacity=128, ttl=5, *, max_stale=PUBLIC_MAX_STALE,
-                 workers=None, wait_timeout=10, visibility_sensitive=False, suppression_sensitive=False):
+                 workers=None, wait_timeout=10, visibility_sensitive=False, suppression_sensitive=False,
+                 inline_foreground=False):
         self.capacity = capacity
         self.ttl = ttl
         self.max_stale = max_stale
@@ -59,6 +62,7 @@ class ClientFlowCache:
         self.entries = OrderedDict()
         self.flights = SingleFlight(capacity=capacity, reject_on_capacity=False, wait_timeout=wait_timeout)
         self.workers = workers or _read_slots
+        self.inline_foreground = inline_foreground
         self.generation = 0
         self.visibility_sensitive = visibility_sensitive
         self.public_generation = None
@@ -95,7 +99,8 @@ class ClientFlowCache:
                     # Only concurrent requests share work; completed results
                     # never enter entries or stale/background refresh paths.
                     return await self.flights.run(
-                        ("uncached", policy, self.generation, key), lambda: self.workers.run(factory),
+                        ("uncached", policy, self.generation, key),
+                        factory if self.inline_foreground else lambda: self.workers.run(factory),
                     )
                 return await self._get_visible_or_fill(key, factory, background_factory=background_factory)
             return await result_policy.with_result_cache_policy(under_policy)
@@ -135,7 +140,8 @@ class ClientFlowCache:
                 started = monotonic()
                 try:
                     calculate = (background_factory or factory) if background else factory
-                    value = await calculate()
+                    with timing("body.compute"):
+                        value = await calculate()
                 except Exception as exc:
                     if isinstance(exc, HTTPException) and exc.status_code in {403, 404, 410}:
                         self.invalidate(key)
@@ -157,6 +163,10 @@ class ClientFlowCache:
                         self.entries.popitem(last=False)
                 return entry
 
+            if self.inline_foreground and not background:
+                # The request owns this fill and its AsyncSession. Only other
+                # requests joining its single flight wait for completion.
+                return await compute()
             return await self.workers.run(compute, background=background)
 
         cached = lookup()
@@ -175,7 +185,7 @@ class ClientFlowCache:
                 raise HTTPException(504, "Fresh public data is temporarily unavailable")
             return entry[1]
 
-        if cached is None:
+        if cached is None or self.inline_foreground:
             return await fresh()
         try:
             return await asyncio.wait_for(fresh(), self.wait_timeout)
@@ -197,7 +207,7 @@ def public_policy_key():
 
 
 def public_client_cache(*, bill_schema, quota="600/minute", aggregate=False, validate=None, sensitive=False,
-                        bill_candidates=None):
+                        bill_candidates=None, inline_foreground=False, trace_overview=False):
     """Cache only explicitly decorated public responses, never signed reads.
 
     All declared path/query arguments participate, including defaults. Undeclared
@@ -214,6 +224,7 @@ def public_client_cache(*, bill_schema, quota="600/minute", aggregate=False, val
             max_stale=SENSITIVE_MAX_STALE if sensitive else PUBLIC_MAX_STALE,
             visibility_sensitive=True,
             suppression_sensitive=bill_schema != "independent",
+            inline_foreground=inline_foreground,
         ))
         budget = SoftFillBudget(name, quota)
         cache.public_bill_contributor_keys = CONTRIBUTOR_KEYS if bill_schema in {"aggregate", "representation"} else frozenset()
@@ -223,6 +234,10 @@ def public_client_cache(*, bill_schema, quota="600/minute", aggregate=False, val
 
         @wraps(function)
         async def wrapped(*args, **kwargs):
+            with overview_timing() if trace_overview else nullcontext():
+                return await respond_to_request(*args, **kwargs)
+
+        async def respond_to_request(*args, **kwargs):
             bound = parameters.bind(*args, **kwargs)
             bound.apply_defaults()
             for key, value in bound.arguments.items():
@@ -268,7 +283,8 @@ def public_client_cache(*, bill_schema, quota="600/minute", aggregate=False, val
 
             async def respond(_policy):
                 # Callers may modify Pydantic models/lists without changing a hit.
-                body = await cache.get_or_fill(key, fill, background_factory=refresh)
+                with timing("cache.lookup_or_fill"):
+                    body = await cache.get_or_fill(key, fill, background_factory=refresh)
 
                 async def refresh_visible():
                     nonlocal body
@@ -278,9 +294,10 @@ def public_client_cache(*, bill_schema, quota="600/minute", aggregate=False, val
                     body = await cache.get_or_fill(key, fill, background_factory=refresh)
                     return body
 
-                return await serve_public_bill_body(
-                    body, db=bound.arguments.get("db"), schema=bill_schema, refresh=refresh_visible,
-                )
+                with timing("body.revalidate"):
+                    return await serve_public_bill_body(
+                        body, db=bound.arguments.get("db"), schema=bill_schema, refresh=refresh_visible,
+                    )
 
             if cache.suppression_sensitive:
                 return await result_policy.with_result_cache_policy(respond)

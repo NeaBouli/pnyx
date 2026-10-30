@@ -13,7 +13,6 @@ from alembic.migration import MigrationContext
 from alembic.operations import Operations
 import pytest
 from sqlalchemy import text
-from sqlalchemy.dialects.postgresql import asyncpg
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from services.public_bill_index import PUBLIC_BILL_INDEX
@@ -78,7 +77,7 @@ def nodes(plan):
 
 
 async def explain(connection, query):
-    compiled = query.compile(dialect=asyncpg.dialect(), compile_kwargs={"render_postcompile": True})
+    compiled = query.compile(dialect=connection.dialect, compile_kwargs={"render_postcompile": True})
     result = await connection.exec_driver_sql(
         "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) " + str(compiled),
         tuple(compiled.params[name] for name in compiled.positiontup),
@@ -110,12 +109,24 @@ async def test_suppression_groups_only_indexed_candidate_votes(postgres):
     print("k=10 three candidates: idx_votes_bill + idx_zk_receipts_scope before grouping")
 
 
+async def test_generic_plan_expands_large_id_population_once(postgres):
+    connection, _ = postgres
+    ids = [f"B{i}" for i in range(1, 40_001)]
+    plan = await explain(connection, visibility_snapshot_query(candidates=ids))
+    scans = list(nodes(plan))
+    expansions = [node for node in scans if node["Node Type"] == "ProjectSet"]
+    assert expansions and sum(node["Actual Loops"] for node in expansions) == 1, json.dumps(plan)
+    assert sum(node["Actual Rows"] for node in expansions) == len(ids)
+    assert not any("summary_long_el" in node.get("Filter", "") for node in scans)
+    print("generic plan 40000 contributor IDs: one unnest; no per-bill array scan or text filter")
+
+
 async def test_asyncpg_executes_forty_thousand_ids_and_migration_round_trip(postgres):
     connection, revision = postgres
     ids = [f"B{i}" for i in range(1, 40_001)]
     assert len((await connection.execute(visibility_snapshot_query(candidates=ids))).all()) == 40_000
     assert await connection.scalar(text(
-        "SELECT count(*) FROM parliament_bills b WHERE b.id = ANY(CAST(:ids AS VARCHAR[]))"
+        "SELECT count(*) FROM parliament_bills b WHERE b.id IN (SELECT unnest(CAST(:ids AS VARCHAR[])))"
     ), {"ids": ids}) == 40_000
     await connection.commit()
     def cycle(sync):

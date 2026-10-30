@@ -18,7 +18,9 @@ class _IdSet(FunctionElement):
 @compiles(_IdSet)
 def _postgres_ids(element, compiler, **kwargs):
     column, ids = element.clauses
-    return f"{compiler.process(column, **kwargs)} = ANY ({compiler.process(ids, **kwargs)})"
+    # A relation permits a hash/semi join even with a generic prepared plan.
+    # ANY(parameter) can scan the entire array for every candidate bill.
+    return f"{compiler.process(column, **kwargs)} IN (SELECT unnest({compiler.process(ids, **kwargs)}))"
 
 
 @compiles(_IdSet, "sqlite")
@@ -39,10 +41,16 @@ def bill_ids_filter(column, ids):
 def raw_bill_ids_filter(column, ids, *, name, db=None):
     if db_dialect(db).name == "sqlite":
         return f"{column} IN (SELECT value FROM json_each(:{name}))", {name: json.dumps(sorted(ids))}
-    return f"{column} = ANY(CAST(:{name} AS VARCHAR[]))", {name: sorted(ids)}
+    return f"{column} IN (SELECT unnest(CAST(:{name} AS VARCHAR[])))", {name: sorted(ids)}
 
 
 def db_dialect(db):
-    from sqlalchemy.dialects.postgresql import dialect as postgres_dialect
+    from sqlalchemy.dialects.postgresql.asyncpg import dialect as postgres_dialect
     dialect = getattr(getattr(db, "bind", None), "dialect", None)
-    return dialect if isinstance(dialect, Dialect) else postgres_dialect()
+    if isinstance(dialect, Dialect):
+        return dialect
+    dialect = postgres_dialect()
+    # Offline raw fragments use PostgreSQL's default standard-conforming
+    # strings, just like the frozen index DDL. Connected dialects discover it.
+    dialect._backslash_escapes = False
+    return dialect

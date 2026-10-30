@@ -20,11 +20,13 @@ import redis.asyncio as aioredis
 from redis.exceptions import RedisError
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import load_only
 from sqlalchemy import DateTime, String, cast, select, func, and_, extract, Integer, union_all, text
 
 from database import get_db
 from config import settings
 from services.request_work import SingleFlight, cache_fill_quota
+from services.overview_timing import timing
 from services.representation_cache import REPRESENTATION_CACHE_PREFIX
 from services.public_visibility_cache import with_public_visibility_generation
 from services.small_cell import (
@@ -136,42 +138,54 @@ async def compute_divergence(
 @router.get("/overview", dependencies=[Depends(enforce_route_limit)])
 @client_flow
 @public_client_cache(bill_schema="aggregate", quota="30/minute", aggregate=True, sensitive=True,
+                     inline_foreground=True, trace_overview=True,
                      bill_candidates=lambda _: select(ParliamentBill.id).where(~ParliamentBill.id.like("DEMO-%")))
 async def analytics_overview(db: AsyncSession = Depends(get_db), request: Request = None):
     """Plattform-weite Statistiken + Divergence Übersicht."""
     _real = and_(public_bill_with_demo_filter(), snapshot_bill_filter())
-    total_bills  = await db.scalar(select(func.count(ParliamentBill.id)).where(_real)) or 0
-    total_votes = await count_public_votes(db)
-    active_bills = await db.scalar(
-        select(func.count(ParliamentBill.id)).where(
-            _real,
-            ParliamentBill.status.in_([BillStatus.ACTIVE, BillStatus.WINDOW_24H])
-        )
-    ) or 0
-    voted_bills = await db.scalar(
-        select(func.count(ParliamentBill.id)).where(
-            _real,
-            ParliamentBill.status == BillStatus.PARLIAMENT_VOTED
-        )
-    ) or 0
+    with timing("overview.bill_counts"):
+        total_bills = await db.scalar(select(func.count(ParliamentBill.id)).where(_real)) or 0
+        active_bills = await db.scalar(
+            select(func.count(ParliamentBill.id)).where(
+                _real,
+                ParliamentBill.status.in_([BillStatus.ACTIVE, BillStatus.WINDOW_24H])
+            )
+        ) or 0
+        voted_bills = await db.scalar(
+            select(func.count(ParliamentBill.id)).where(
+                _real,
+                ParliamentBill.status == BillStatus.PARLIAMENT_VOTED
+            )
+        ) or 0
+    with timing("overview.total_votes"):
+        total_votes = await count_public_votes(db)
 
     week_ago = datetime.utcnow() - timedelta(days=7)  # naive to match DB column
-    recent_votes = await count_public_votes(db, since=week_ago)
+    with timing("overview.recent_votes"):
+        recent_votes = await count_public_votes(db, since=week_ago)
 
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-    today_votes = await count_public_votes(db, since=today)
+    with timing("overview.today_votes"):
+        today_votes = await count_public_votes(db, since=today)
 
-    result = await db.execute(
-        select(ParliamentBill).where(_real, snapshot_bill_filter(results=True), ParliamentBill.status == BillStatus.PARLIAMENT_VOTED)
-    )
-    voted = result.scalars().all()
-
-    divergence_scores = []
-    for bill in voted:
-        score = await compute_divergence(db, bill.id, bill)
-        if score is not None:
-            record_result_contributors([bill.id])
-            divergence_scores.append(score)
+    with timing("overview.divergence"):
+        # Unvoted bills cannot produce a divergence score. Keep their IDs in
+        # count provenance, but avoid their text/JSON and two vote queries each.
+        result = await db.execute(
+            select(ParliamentBill).options(load_only(
+                ParliamentBill.id, ParliamentBill.source, ParliamentBill.party_votes_parliament,
+            )).where(
+                _real, snapshot_bill_filter(results=True),
+                ParliamentBill.status == BillStatus.PARLIAMENT_VOTED,
+                ParliamentBill.id.in_(vote_bearing_bill_ids()),
+            )
+        )
+        divergence_scores = []
+        for bill in result.scalars().all():
+            score = await compute_divergence(db, bill.id, bill)
+            if score is not None:
+                record_result_contributors([bill.id])
+                divergence_scores.append(score)
 
     avg_divergence = round(sum(divergence_scores) / len(divergence_scores), 3) if divergence_scores else None
 

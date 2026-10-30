@@ -23,7 +23,9 @@ from tests.test_public_bill_snapshot import snapshot_db, seventeen_votes
 
 
 def compile_asyncpg(query):
-    return query.compile(dialect=asyncpg.dialect(), compile_kwargs={"render_postcompile": True})
+    dialect = asyncpg.dialect()
+    dialect._backslash_escapes = False  # PostgreSQL default, discovered on connect.
+    return query.compile(dialect=dialect, compile_kwargs={"render_postcompile": True})
 
 
 def test_metadata_index_and_prepared_queries_share_the_frozen_visibility_policy():
@@ -60,11 +62,11 @@ def test_forty_thousand_ids_keep_bind_counts_constant(k):
             ]
             compiled = [compile_asyncpg(query) for query in queries]
             raw, params = snapshot_raw_filter("b", results=True)
-            assert "ANY(CAST(:snapshot_b_ids AS VARCHAR[]))" in raw
+            assert "IN (SELECT unnest(CAST(:snapshot_b_ids AS VARCHAR[])))" in raw
             assert len(params) == 1 and len(params["snapshot_b_ids"]) == size
             aggregate, aggregate_params = analytics.representation_query()
             assert len(aggregate_params["snapshot_b_ids"]) == size
-            assert all("ANY (" in str(query) and "::VARCHAR[]" in str(query) for query in compiled)
+            assert all("IN (SELECT unnest(" in str(query) and "::VARCHAR[]" in str(query) for query in compiled)
             assert all("POSTCOMPILE" not in str(query) for query in compiled)
             counts.append([len(query.positiontup) for query in compiled] + [len(params), len(aggregate_params)])
         finally:

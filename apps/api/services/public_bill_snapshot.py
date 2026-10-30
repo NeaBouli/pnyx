@@ -8,6 +8,7 @@ from models import CitizenVote, ParliamentBill, VoteChoice, ZkVoteReceipt
 from services.bill_visibility import public_bill_filter, results_visible_filter
 from services.small_cell import publishable_set, small_cell_k
 from services.bill_id_set import bill_ids_filter, raw_bill_ids_filter
+from services.overview_timing import timing
 
 
 @dataclass
@@ -86,7 +87,9 @@ async def read_visibility_snapshot(db, *, candidates=None):
     k = small_cell_k()
     query = visibility_snapshot_query(candidates=candidates, k=k)
     listed, results, result_inputs = set(), set(), {}
-    for row in (await db.execute(query)).all():
+    with timing("visibility.query"):
+        rows = (await db.execute(query)).all()
+    for row in rows:
         bill_id, visible, *counts = row
         listed.add(bill_id)
         if k:
