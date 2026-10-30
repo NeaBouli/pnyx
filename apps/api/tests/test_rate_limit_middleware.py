@@ -1,13 +1,18 @@
-"""Regression guards for EKA-32's default 60/min/IP endpoint limit."""
+"""Regression guards for EKA-32's direct-route default and public shared quota."""
 
 from collections.abc import AsyncIterator, Callable, Generator
 from dataclasses import dataclass
+import asyncio
 import os
+import subprocess
+import sys
 from typing import Any
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
+import redis.asyncio as aioredis
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from limits import parse
 from slowapi import Limiter
@@ -15,8 +20,8 @@ from slowapi.middleware import SlowAPIMiddleware
 
 import main
 from database import get_db
-from ip_utils import rate_limit_key_for_ip
-from rate_limit import get_rate_limit_storage_uri, limiter
+from ip_utils import rate_limit_key_for_ip, redis_fixed_window_limit
+from rate_limit import create_limiter, get_rate_limit_storage_uri, limiter
 from routers import agent, public_api
 from services import cplm
 
@@ -91,19 +96,54 @@ def test_runtime_storage_uses_configured_shared_backend() -> None:
 def test_redis_backend_coordinates_independent_limiter_instances() -> None:
     storage_uri = os.environ["REDIS_URL"]
     bucket = f"eka32-test-{uuid4()}"
-    first = Limiter(
-        key_func=lambda: "subject",
-        storage_uri=storage_uri,
-    )
-    second = Limiter(
-        key_func=lambda: "subject",
-        storage_uri=storage_uri,
-    )
-    limit = parse("2/second")
+    first = create_limiter(storage_uri=storage_uri, enabled=True)
+    second = create_limiter(storage_uri=storage_uri, enabled=True)
+    limit = parse("2/minute")
 
     assert first.limiter.hit(limit, bucket, "/shared") is True
     assert second.limiter.hit(limit, bucket, "/shared") is True
     assert first.limiter.hit(limit, bucket, "/shared") is False
+
+
+@pytest.mark.skipif(not os.getenv("REDIS_URL"), reason="Redis integration unavailable")
+def test_redis_backend_coordinates_separate_worker_processes() -> None:
+    bucket = f"eka32-process-test-{uuid4()}"
+    code = """
+import sys
+from limits import parse
+from rate_limit import create_limiter
+instance = create_limiter(enabled=True)
+print(int(instance.limiter.hit(parse('2/minute'), sys.argv[1], '/shared-workers')))
+"""
+    environment = {**os.environ, "RATE_LIMIT_STORAGE_URI": os.environ["REDIS_URL"]}
+    outcomes = [subprocess.run(
+        [sys.executable, "-c", code, bucket], env=environment,
+        capture_output=True, text=True, check=True, timeout=15,
+    ).stdout.strip() for _ in range(3)]
+    assert outcomes == ["1", "1", "0"]
+
+
+@pytest.mark.skipif(not os.getenv("REDIS_URL"), reason="Redis integration unavailable")
+@pytest.mark.asyncio
+async def test_async_redis_counter_is_shared_atomic_and_expiring() -> None:
+    key = f"ratelimit:eka32-test:{uuid4()}"
+    async with (
+        aioredis.from_url(os.environ["REDIS_URL"]) as first,
+        aioredis.from_url(os.environ["REDIS_URL"]) as second,
+    ):
+        try:
+            outcomes = await asyncio.gather(*(
+                redis_fixed_window_limit(first if index % 2 else second, key, 4, 60)
+                for index in range(20)
+            ), return_exceptions=True)
+            assert sorted(value for value in outcomes if isinstance(value, int)) == [1, 2, 3, 4]
+            errors = [value for value in outcomes if isinstance(value, HTTPException)]
+            assert len(errors) == 16
+            assert all(error.status_code == 429 and error.headers == {"Retry-After": "60"} for error in errors)
+            assert int(await first.get(key)) == 20
+            assert 0 < await second.ttl(key) <= 60
+        finally:
+            await first.delete(key)
 
 
 def test_sixty_first_request_is_rejected(

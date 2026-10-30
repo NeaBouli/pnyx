@@ -12,6 +12,33 @@ Swagger UI: `http://localhost:8000/docs`
 
 All paths below are relative to the base URL.
 
+## Rate limits
+
+Limits are endpoint-specific; there is no universal 60 requests/minute policy.
+The [complete route policy](../docs/operations/API_RATE_LIMIT_COVERAGE.md)
+lists every registered HTTP route and its limit or justified exemption.
+Public API data reads share 100/minute per anonymous IP or 1000/minute per
+valid API key. Signed vote submissions and signed vote-status preflights
+retain 120/minute per IP; personal reads retain their existing route quotas.
+Public feeds used by server rendering and authenticated administrative batch
+operations have explicit exemptions from citizen-IP quotas. Provider webhooks
+retain signature/provider authentication and deduplication.
+
+Workers share Redis counters when `RATE_LIMIT_STORAGE_URI` (or `REDIS_URL`)
+is configured. Counter outages use memory per process at half the normal quota
+(rounded down, minimum one); these counters are not shared across workers.
+Separate data stores, locks and paid-provider fail-closed guards still require
+Redis. Client IP attribution accepts forwarded headers only from configured
+trusted proxy hops. Limiter logs contain event counts without identifiers.
+
+A quota response is HTTP 429 with JSON fields `error` (`Rate limit exceeded`),
+`detail` (the existing route message or public-quota object), and `retry_after`
+(positive seconds), plus a matching `Retry-After` header. Allowed browser
+origins receive CORS headers exposing `Retry-After`; CSP and `nosniff` apply.
+Clients should wait for that interval before retrying. The mobile API transport
+keeps its existing behaviour: selected public GETs can use the read-only mirror
+after a 429; that transport does not automatically replay signed reads or writes.
+
 ## MOD-01: Identity
 
 | Method | Endpoint | Description |

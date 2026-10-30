@@ -12,10 +12,10 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.cron import CronTrigger
-from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
-from rate_limit import limiter
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from rate_limit import limiter, rate_limit_exceeded_handler, rate_limit_http_exception_handler
 from security_startup import validate_identity_kdf_config, validate_server_salt_config
 from security_headers import API_CSP, SecurityHeadersMiddleware
 from services.scheduler_state import add_persisted_interval_job, add_observed_job, initialize_job_states, install_schedule_listener
@@ -1282,7 +1282,8 @@ app = FastAPI(
 )
 
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+app.add_exception_handler(StarletteHTTPException, rate_limit_http_exception_handler)
 
 
 @app.exception_handler(Exception)
@@ -1313,7 +1314,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "X-API-Key"],
-    expose_headers=["X-Data-License", "X-Rep-Role", "X-Vote-Read-Integrity"],
+    expose_headers=["X-Data-License", "X-Rep-Role", "X-Vote-Read-Integrity", "Retry-After"],
 )
 
 

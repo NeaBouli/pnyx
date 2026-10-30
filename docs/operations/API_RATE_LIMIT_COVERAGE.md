@@ -1,251 +1,375 @@
-# API rate-limit coverage — T-9136 / EVA-011
+# API rate-limit policy and acceptance — EKA-32 / B01
 
-Source audit of all **186 registered router HTTP endpoints: 132 public, 54 admin**. Admin status follows actual dependency chains, including admin-only routes outside `/admin`. WebSockets and framework metadata are outside this HTTP inventory. PATCH is included alongside POST/PUT/DELETE.
+Reviewed 2026-10-30 against `30e20e6c` plus the uncommitted B01 changes. This is
+source and local HTTP acceptance, not deployment verification. Limits are
+endpoint-specific, with explicit exemptions. There is
+**no universal 60/minute ceiling**. The coverage test traverses actual registered
+routes, including FastAPI's lazy included routers, all HTTP methods and admin
+authentication dependencies. It requires the real decorator wrapper and checks
+that representative token authentication follows the limiter dependency.
+New admin routes, public reads, methods or exemptions require an explicit policy;
+the table below is checked against the registered application.
 
-Every public GET is classified. Limits are per IP unless a valid-key or identity/email quota is stated. “Main” below means the base `HEAD` behavior; “staged” means the original uncommitted T-9136 implementation before this correction. This is local source/test evidence, not deployment verification.
+## Policy classes
 
-## Class changes
+| Class | Policy |
+| --- | --- |
+| `explicit` | Existing route decorators: 5, 10, 20, 30, 120 or 600/minute/IP. Shared scopes resist rotating target IDs. |
+| `dedicated-redis` | Existing HLR, key generation, newsletter, contact and push registration counters; exact quotas below. |
+| `public-shared-redis` | One combined budget across seven public-data GETs: 100/minute/anonymous IP or 1000/minute/valid key; invalid keys retain the IP bucket. |
+| `public-read-exempt` | Public catalogues, paginated feeds and shared aggregates; retain access for SSR visitors sharing one server IP. These exemptions do not introduce a cache. |
+| `provider-exempt` | Stripe signature, PayPal IPN verification, or authenticated Brevo event batches and existing deduplication; provider retries/bursts share source addresses. |
+| `admin-exempt` | Exact listed routes require admin-key dependencies; operator batch/maintenance traffic retains its exemption from citizen-IP quotas. Authentication must remain present. |
+| `direct-default` | Direct main-app endpoints, including health, use the existing 60/minute/IP per endpoint middleware default. |
 
-| Class of the 62 newly limited GETs | Count | Original staged policy | Corrected policy |
-| --- | ---: | --- | --- |
-| (a) Personal/identity/token oracle or auth-session operation | 13 | Usually 10/min; QR status 30/min | Keep 10/min; QR status 30/min/validated session plus 600/min/IP |
-| (b) Expensive download, live provider probe, detailed representative analysis or SSE subscription | 13 | 5–30/min | 30/min |
-| (c) Public cacheable read | 36 | 10–120/min | Remove the new per-IP decorator; restore main behavior |
+Development-only `/openapi.json`, `/docs`, `/docs/oauth2-redirect`, and `/redoc`
+(including their automatic HEAD methods) use the same `direct-default` class when
+enabled. Browser CORS preflight is handled outside the limiter and consumes no
+quota. Unmatched URLs and method errors have no endpoint policy; WebSockets are
+outside this HTTP inventory. `/api/v1/admin/sentry/status` has the direct default;
+its namespace does not imply an authentication dependency.
 
-“Public cacheable” describes data shared by visitors; it does **not** introduce caching or weaken visibility rules. In particular, the SSR helpers still fetch `no-store`. Public analytics/MP/CPLM/consensus aggregates remain class (c), including DB aggregation work. CSV generation, external provider fan-out and representative-only detailed analytics are class (b). `/export/results.json` is class (c) despite its export-shaped URL: it is the web results page's shared public feed. `/export/parties.json` is a small public catalogue. ZK receipt lists and public roots/members are public audit material, unlike token-based personal vote receipts. HLR credits reads coarse Redis counters, not a live HLR provider, and is class (c).
+## Proxy attribution and mobile behaviour
 
-| Public route category | Main | Original staged | Corrected |
-| --- | ---: | ---: | ---: |
-| Explicitly decorated writes | 9 | 32 | 32 |
-| Writes with existing Redis guards | 6 | 6 | 6 |
-| Writes with neither decorator nor Redis guard | 26 | 3 provider webhooks | 3 provider webhooks |
-| Explicitly decorated GETs | 0 | 62 | 26 |
-| GETs with existing shared Redis quota | 7 | 7 | 7 |
-| Other GETs without explicit limits | 84 | 22 | 58 |
+`TRUSTED_PROXY_CIDRS` allows immediate proxy peers (default loopback networks).
+Untrusted peers cannot set their bucket through `X-Forwarded-For`.
+`TRUSTED_PROXY_COUNT` bounds traversal from the right (default one). Every skipped
+proxy hop must also be trusted; traversal stops at the nearest untrusted address.
+Repeated forwarding fields form one ordered chain, so a client-supplied first
+field cannot hide the peer appended by a trusted proxy in a later field.
+Malformed required hops fall back to the socket peer rather than shifting a
+client-supplied leftmost value into the selected position. Too-short chains use
+the nearest valid asserted hop. Invalid CIDRs are ignored; invalid/nonpositive
+counts use one. IPv6 text is canonicalized before hashing. Ensure the ASGI server
+preserves the actual peer; any server-level proxy rewriting needs an independently
+correct trust configuration. The application cannot recover a peer already
+replaced by an overly broad server-level proxy setting.
 
-All 23 new explicit write limits, nine established write decorators, six existing Redis write guards and three verified provider-webhook exceptions are preserved. The seven `/public` data routes keep their existing shared **100/minute anonymous IP or 1000/minute valid API key** quota; no second limiter is added.
+Web SSR feeds retain their exemptions. Signed vote submission and signed status
+preflight retain 120/minute/IP; the compatibility test exercises 120 valid signed
+preflights for eleven identities sharing an IP. QR polling retains 30/minute per
+validated session plus 600/minute/IP (six concurrent sessions at 2.5-second
+intervals fit). `apps/mobile/src/lib/api.ts` retries only opted-in public GETs on
+the mirror after 408/429/5xx; signed reads and writes do not automatically retry
+or become unsigned. Key rotation has a separate foreground retry with a
+60-second minimum interval, which fits its existing 10/minute quota and the
+5/minute outage fallback. Notification acknowledgements retain their separate
+single idempotent retry. No mobile code or normal-operation quotas are changed.
 
-## SSR, client IP and polling audit
+## Shared storage, fallback and privacy
 
-`infra/docker/docker-compose.prod.yml:90` sets `NEXT_PUBLIC_API_URL=https://api.ekklesia.gr`. `apps/web/src/lib/api.ts` uses that same public origin. `src/lib/initial-data.ts` sends only `Accept: application/json`, with no cookies, identity or visitor forwarding headers. The web server makes one upstream GET per rendered view, with `cache: "no-store"`.
+All workers use the same `RATE_LIMIT_STORAGE_URI`, falling back to `REDIS_URL`;
+`memory://` is the local-development default when neither is configured. Runtime
+workers need a shared Redis URI and the same `RATE_LIMIT_SALT`/`SERVER_SALT`.
+`RATE_LIMIT_ENABLED` defaults to `true`; disabling it bypasses SlowAPI policies,
+while dedicated handler counters remain independent. API tests disable SlowAPI
+by default and explicitly enable it in the enforcement/acceptance fixtures.
+SlowAPI uses the `ekklesia-api` prefix and daily HMAC IP buckets. Redis fixed
+windows use atomic INCR/EXPIRE Lua; dependent public-data routes share one key.
+Redis connect/read waits for SlowAPI counters are bounded to 0.2 seconds each.
 
-`rate_limit_key_for_ip` calls `get_client_ip` in `apps/api/ip_utils.py`. It trusts `X-Forwarded-For` **only when `request.client.host` belongs to `TRUSTED_PROXY_CIDRS`** (default loopback networks). It validates each address, then selects the `TRUSTED_PROXY_COUNT`-th address from the **right** (default 1), rather than the spoofable leftmost value. If the peer is untrusted or forwarding data is unusable, it uses the peer address. The resulting limiter key is a daily HMAC, not a raw IP.
+On counter-storage failure, SlowAPI and the common asynchronous Redis counter
+helper allow **floor(normal quota / 2), minimum one**, in the original window
+and scope. For example 10/minute becomes 5/minute and signed votes/status become
+60/minute. Memory is **per process**, starts fresh, is lost on restart, and cannot
+provide a global bound across workers. More workers can therefore increase the
+overall outage allowance; this is a deliberately degraded mode. SlowAPI probes
+for recovery and returns to the shared backend; local usage is not replayed.
+The async helper retries Redis on each call; its bounded 10,000 live buckets
+reject new buckets with 429 when full instead of evicting/resetting live quotas.
+A failed expiry lookup while forming a 429 retains a conservative full-window
+retry delay and never replaces the response with a storage 5xx.
 
-With a trusted Traefik peer and count 1, an SSR call is attributed to the web server's address/NAT egress, so all visitors rendered by that web process share the same IP bucket. If Traefik is not trusted, calls instead share Traefik's peer bucket, which can aggregate even more traffic. Compose explicitly sets the hop count to 1 and loads a private production env file; that file's CIDRs and any Uvicorn proxy env overrides are not available in this local worktree. No live deployment assertion is made. Either path is unsafe for a new low per-IP quota on SSR reads; forwarding arbitrary visitor headers is not part of this fix. The 11 client-IP helper tests verify trust, spoof resistance and hop selection.
+This fallback applies to **rate counters**. Separate Redis session/key data,
+registration persistence, newsletter locks and the atomic paid-HLR cost guard
+retain their availability requirements. In particular paid HLR lookup remains
+fail-closed with 503 when its dedicated multi-key guard is unavailable; a local
+counter must not authorize paid provider work. A complete Redis data outage is
+not a promise that Redis-dependent features remain available.
 
-The audit grepped `apps/web/src` for `fetch`, axios/API calls, server components, `generateMetadata`, `use server`, and route handlers, then followed imports and client boundaries. The only API reads in server components are the following two helpers. Metadata is static; there are no API-fetching `generateMetadata`, server actions or route handlers in this tree. Client components invoke writes from effects or user actions, not during server rendering.
+Limiter logs contain only a fixed event name and count, with no IP, bucket,
+endpoint target, client identifier or exception text. Daily HMAC identifiers
+remain in counters, not logs. Existing handler/provider logs are outside this
+limiter logging contract.
 
-| Caller | Endpoint / request pattern | Calculation and corrected policy |
-| --- | --- | --- |
-| Web bills server page → `getInitialBills` | GET `/api/v1/bills?limit=11&offset=0&include_institutional=true[&status=…]` | V views/minute = V requests/minute from one server IP. No new limit; same as main. |
-| Web results server page → `getInitialResults` | GET `/api/v1/export/results.json?min_votes=1` | V views/minute = V requests/minute from one server IP. The staged 10/min would reject view 11. No new limit. Client fallback uses the same endpoint. |
-| Web bill/results/trending/analytics/MP/municipal clients | Public results, bills, analytics, MP and consensus aggregates | Shared public data; class (c), no new per-IP limit. The staged latest/result 120/min decorators were new, not established exceptions. |
-| Web `QRCodeVoteStub` and SSO QR page | GET `/api/v1/polis/qr-session/{session_id}` every 2500 ms | 24 polls/minute/session plus one initial poll fits 30/minute/session. Six concurrent sessions use at most 6 × 25 = 150, below 600/minute/IP. The IP ceiling supports up to 24 such views including initial polls; arbitrary session rotation cannot reset it. |
-| QR session creation | GET `/api/v1/polis/qr-session` once per user attempt | 10/minute; polling never creates another session. Normal 5-minute QR sessions do not approach this quota. |
-| Mobile `VoteScreen` | GET `/api/v1/zk/scopes/{scope}/status` immediately, then every 5000 ms while a root is pending | 12 polls/minute plus initial/status-load requests already exceeds staged 10/minute. Public scope state is class (c); limit removed. |
-| Mobile `UpdateBanner` | GET `/api/v1/app/version` initially, then every 30 minutes | One initial request + 1/30 request/minute; existing no-limit policy retained. |
-| Mobile QR scanner | POST `/api/v1/polis/qr-auth` after scan | One authentication per scan; no mobile QR-status polling loop exists in current source. Existing new 10/minute write guard retained. |
-| Web `submitSignedVote` | POST `/api/v1/vote/{bill_id}/status` before every vote or correction | 120/minute/IP, matching the vote allowance across signed identities and bill IDs sharing a network. Legacy unsigned status GET remains 10/minute/IP. |
-| Other personal vote/identity/key/evaluation reads | User action or screen load; no periodic loop found | Tight 10/minute (existing signed key-check 30/minute); the 5-second mobile loop reads public ZK scope status. |
-| Web `LiveNotifications` | One browser EventSource GET `/api/v1/notifications/stream` per mount | 30/minute counts connections, not messages/30-second heartbeats. One browser's default 3-second reconnect is at most 20 attempts/minute. No SSR call. |
-| Static community page provider tiles | Mirrors every 30s; Arweave and DeepL every 60s | At most 3, 2 and 2 requests respectively in a minute including the initial load, each below its separate 30/minute handler quota. Public scraper health is loaded once. HLR/newsletter/finance/budget public state has no new quota. |
+## 429 response contract
 
-QR polling first checks the 600/minute HMAC-IP ceiling, then loads the session from Redis. Only an existing server-issued session creates a 30/minute Redis counter, keyed by a daily HMAC of its ID and shared across client IPs. Unknown/expired IDs return the existing expired response and cannot allocate session counters. Counters use atomic INCR/EXPIRE with a 60-second lifetime; polling does not extend the session lifetime. Both quotas honor `RATE_LIMIT_ENABLED`. Six concurrent sessions are covered by the HTTP regression at the real 2500-ms interval using a simulated clock.
+Every raised quota HTTP exception and SlowAPI rejection uses:
 
-No remaining new limiter is on an SSR API path or on the mobile 5-second poll. CSV/representative/live-scraper GETs have no web SSR or mobile periodic caller. No newly limited POST/PUT/PATCH/DELETE is called server-side by the web app. Web identity migration, vote/status/correction/relevance/consensus, VAA match, QR and SSO writes run in client effects or event handlers.
+```json
+{"error":"Rate limit exceeded","detail":"Rate limit exceeded","retry_after":60}
+```
 
-## Policy and privacy
+`detail` preserves existing route-specific messages or the public API quota
+object for compatibility. Header names are handled case-insensitively, with
+exactly one `Retry-After` emitted. `retry_after` and `Retry-After` agree and are positive
+seconds. Dedicated fixed-window counters give a conservative full window;
+SlowAPI uses the remaining expiry, with a full-window bound if expiry lookup
+fails. Translated handler errors retain their underlying counter's window.
+Legacy/provider 429 errors without retry guidance use 60 seconds; an explicit
+provider `Retry-After` (such as Brevo's 600 seconds) is preserved.
 
-- The configured SlowAPI default remains **60/minute**. FastAPI 0.142.2 lazy included routers and SlowAPI 0.1.10 do not apply it to these router endpoints; no row claims default protection. Direct app routes such as `/health` retain their established behavior.
-- Parameterized limited routes use fixed-scope `shared_limit`; changing target IDs cannot mint fresh IP budgets. The shared limiter, daily HMAC-IP keys, trusted-proxy logic, Redis storage and memory fallback policy are unchanged.
-- Representative results/divergence (30/minute), enable-evaluation (20/minute) and my-scores (10/minute) execute `enforce_route_limit` as the first route dependency, before `verify_rep_token` and its DB lookup. Rejected, missing and malformed credentials consume the same IP bucket; rejected requests beyond quota perform no DB query. The SlowAPI completion flag prevents double counting successful authentication in the endpoint wrapper. The public bill-list exception is unchanged.
-- Mandatory signed vote-status preflight allows 120/minute/IP, independently of the vote-write bucket. Eleven correctly signed identities sharing an IP succeed, and the regression exercises all 120 allowed preflights before rejecting request 121 without further DB work.
-- Ordinary new writes retain 20–30/minute; personal/auth/proof writes retain 10/minute. Established revocation/rotation (10), signed key-check (30), agent (5) and voting/POLIS/bill-flag (120) decorators are unchanged.
-- Atomic HLR, mail, API-key and push Redis guards remain single-counted. Verified Stripe/PayPal/Brevo webhooks retain provider retries and bursts without a new shared-source-IP quota.
+All five configured browser origins receive CORS allow-origin and exposed
+`Retry-After`, including limiter early returns. Disallowed origins receive no
+allow-origin. Preflight bypasses the counter. CSP, `X-Content-Type-Options:
+nosniff`, and the existing noindex policy wrap responses as before. Other HTTP
+exception statuses retain FastAPI's existing response shape.
 
-## Complete inventory
+## Registered HTTP policy table
 
-`Explicit` means a decorator (`limit` or fixed-scope `shared_limit`). `None; Redis` means an independent handler/dependency quota, without SlowAPI coverage. Existing limits are shown as main behavior. All **74 exceptions** (65 GET + 9 write) have checked reasons in `tests/test_rate_limit_coverage.py`. Removed public GET decorators use the reason **"public cacheable read; SSR shares one IP"**.
+200 method/path entries: admin-exempt 61, dedicated-redis 6, direct-default 6, explicit 58, provider-exempt 3, public-read-exempt 59, public-shared-redis 7.
 
-### Public POST / PUT / PATCH / DELETE (41)
-
-| Router | Method and endpoint | Before | Current limit / exception reason |
+<!-- route-policy:start -->
+| Method | Registered path | Class | Limit or exemption reason |
 | --- | --- | --- | --- |
-| `agent.py` | POST `/api/v1/agent/ask` | Explicit: 5 per 1 minute | Explicit: 5 per 1 minute |
-| `contact.py` | POST `/api/v1/contact/ngo` | None; Redis | None; Redis — Existing Redis guard: 3/IP/hour before sending mail. |
-| `evaluation.py` | POST `/api/v1/politicians/{ada_number}/evaluate` | None | Explicit: 20 per 1 minute |
-| `identity.py` | PATCH `/api/v1/identity/profile/location` | None | Explicit: 20 per 1 minute |
-| `identity.py` | POST `/api/v1/identity/revoke` | Explicit: 10 per 1 minute | Explicit: 10 per 1 minute |
-| `identity.py` | POST `/api/v1/identity/status` | None | Explicit: 10 per 1 minute |
-| `identity.py` | POST `/api/v1/identity/verify` | None; Redis | None; Redis — Atomic HLR Redis guard: 5/IP/min, 20/IP/day, 3/number/day and 300s cooldown. |
-| `identity.py` | POST `/api/v2/identity/key-check` | Explicit: 30 per 1 minute | Explicit: 30 per 1 minute |
-| `identity.py` | POST `/api/v2/identity/rotate-key` | Explicit: 10 per 1 minute | Explicit: 10 per 1 minute |
-| `identity.py` | POST `/api/v2/identity/verify` | None; Redis | None; Redis — Uses the same atomic HLR Redis guard as v1 registration. |
-| `municipal.py` | POST `/api/v1/municipal/vote` | None | Explicit: 20 per 1 minute |
-| `newsletter.py` | POST `/api/v1/newsletter/subscribe` | None; Redis | None; Redis — Redis: 10/IP/hour and 3/email/day; confirmed subscriptions return without consuming quota. |
-| `newsletter.py` | POST `/api/v1/newsletter/webhook/brevo` | None | None — Authenticated Brevo event batches; preserve provider retries and bursts. |
-| `notify.py` | POST `/api/v1/notify/register` | None; Redis | None; Redis — Redis: 600/IP/hour before auth, 20/identity/day for changed device registrations. |
-| `parliament.py` | POST `/api/v1/bills/{bill_id}/flag` | Explicit: 120 per 1 minute | Explicit: 120 per 1 minute |
-| `payments.py` | POST `/api/v1/payments/webhook` | None | None — Stripe signature verification and event deduplication; preserve provider retries and bursts. |
-| `payments.py` | POST `/api/v1/payments/webhook/paypal` | None | None — PayPal IPN verification and transaction deduplication; preserve provider retries and bursts. |
-| `polis_qr.py` | POST `/api/v1/polis/qr-auth` | None | Explicit: 10 per 1 minute |
-| `polis_qr.py` | POST `/api/v1/polis/qr-consensus` | None | Explicit: 20 per 1 minute |
-| `polis_qr.py` | POST `/api/v1/polis/qr-vote` | None | Explicit: 20 per 1 minute |
-| `polis_tickets.py` | POST `/api/v1/polis/register-key` | Explicit: 120 per 1 minute | Explicit: 120 per 1 minute |
-| `polis_tickets.py` | POST `/api/v1/polis/tickets` | Explicit: 120 per 1 minute | Explicit: 120 per 1 minute |
-| `polis_tickets.py` | POST `/api/v1/polis/tickets/{ticket_id}/votes` | Explicit: 120 per 1 minute | Explicit: 120 per 1 minute |
-| `public_api.py` | POST `/api/v1/public/keys/generate` | None; Redis | None; Redis — Existing Redis guard: 5/IP/hour before generating a key. |
-| `public_api.py` | POST `/api/v1/public/share` | None | Explicit: 30 per 1 minute |
-| `representative.py` | POST `/api/v1/rep/auth` | None | Explicit: 10 per 1 minute |
-| `representative.py` | POST `/api/v1/rep/enable-evaluation` | None | Explicit: 20 per 1 minute, before token authentication |
-| `representative.py` | POST `/api/v1/rep/verify` | None | Explicit: 10 per 1 minute |
-| `sso.py` | POST `/api/v1/sso/discourse/callback` | None | Explicit: 10 per 1 minute |
-| `sso.py` | POST `/api/v1/sso/discourse/qr-complete` | None | Explicit: 10 per 1 minute |
-| `vaa.py` | POST `/api/v1/vaa/match` | None | Explicit: 20 per 1 minute |
-| `voting.py` | POST `/api/v1/vote` | Explicit: 120 per 1 minute | Explicit: 120 per 1 minute |
-| `voting.py` | POST `/api/v1/vote/compass/personal` | None | Explicit: 10 per 1 minute |
-| `voting.py` | POST `/api/v1/vote/{bill_id}/consensus` | None | Explicit: 20 per 1 minute |
-| `voting.py` | PUT `/api/v1/vote/{bill_id}/correct` | None | Explicit: 20 per 1 minute |
-| `voting.py` | POST `/api/v1/vote/{bill_id}/receipt` | None | Explicit: 10 per 1 minute |
-| `voting.py` | POST `/api/v1/vote/{bill_id}/relevance` | None | Explicit: 30 per 1 minute |
-| `voting.py` | POST `/api/v1/vote/{bill_id}/status` | None | Explicit: 120 per 1 minute — mandatory signed vote/correction preflight |
-| `zk.py` | POST `/api/v1/zk/opt-in` | None | Explicit: 10 per 1 minute |
-| `zk.py` | POST `/api/v1/zk/verify` | None | Explicit: 10 per 1 minute |
-| `zk.py` | POST `/api/v1/zk/vote` | None | Explicit: 20 per 1 minute |
+| GET | `/` | direct-default | 60/minute/IP per endpoint via SlowAPI middleware (including health). |
+| GET | `/api/v1/admin/bills` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/bills` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| PATCH | `/api/v1/admin/bills/{bill_id}` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/bills/{bill_id}/fetch-text` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/bills/{bill_id}/party-votes` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/bills/{bill_id}/review` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/bills/{bill_id}/set-text` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| DELETE | `/api/v1/admin/bills/{bill_id}/votes` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/compass/approve/{question_id}` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/compass/generate-questions` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| GET | `/api/v1/admin/compass/pending-review` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/compass/reject/{question_id}` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| GET | `/api/v1/admin/dashboard` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/diavgeia/convert-to-bills` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| GET | `/api/v1/admin/diavgeia/decision/{ada}` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/diavgeia/refresh-orgs-cache` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| GET | `/api/v1/admin/diavgeia/refresh-orgs-cache/{job_id}` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/diavgeia/resolve-orgs` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/diavgeia/scrape` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/forum/resync-all` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/forum/sync-new` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| GET | `/api/v1/admin/hlr/credits` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| GET | `/api/v1/admin/logs/containers` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/logs/explain` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| GET | `/api/v1/admin/logs/ollama` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| GET | `/api/v1/admin/logs/stream` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/maintenance/resolve-org-labels` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/newsletter/audience` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/newsletter/backfill` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| GET | `/api/v1/admin/newsletter/dispatch-status` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/newsletter/draft` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| PUT | `/api/v1/admin/newsletter/preferences` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/newsletter/preview` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| GET | `/api/v1/admin/newsletter/readiness` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/newsletter/reconfirm` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/newsletter/reconfirm/expire` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/newsletter/send` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| GET | `/api/v1/admin/newsletter/stats` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/scraper/catch-up` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/scraper/enrich-all` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/scraper/heal-status` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| GET | `/api/v1/admin/sentry/status` | direct-default | 60/minute/IP per endpoint via SlowAPI middleware (including health). |
+| GET | `/api/v1/admin/stats` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/admin/test-account` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/agent/ask` | explicit | 5 per 1 minute |
+| GET | `/api/v1/analytics/bill/{bill_id}` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/analytics/divergence-trends` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/analytics/info` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/analytics/overview` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/analytics/representation` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/analytics/top-divergence` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/analytics/votes-timeline` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/app/version` | public-read-exempt | Static client update metadata; retain existing polling access policy. |
+| GET | `/api/v1/arweave/bill/{bill_id}` | public-read-exempt | Single stored archive pointer; no gateway/provider request. |
+| GET | `/api/v1/arweave/status` | explicit | 30 per 1 minute |
+| GET | `/api/v1/auth/govgr/callback` | explicit | 10 per 1 minute |
+| GET | `/api/v1/auth/govgr/family/verify` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/auth/govgr/info` | public-read-exempt | Static integration metadata. |
+| GET | `/api/v1/auth/govgr/login` | explicit | 10 per 1 minute |
+| GET | `/api/v1/auth/govgr/status` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/bills` | public-read-exempt | Paginated public feed; retain existing SSR access policy. |
+| POST | `/api/v1/bills/admin/create` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| GET | `/api/v1/bills/sources/freshness` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/bills/trending` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/bills/{bill_id}` | public-read-exempt | Single public bill lookup. |
+| POST | `/api/v1/bills/{bill_id}/flag` | explicit | 120 per 1 minute |
+| GET | `/api/v1/bills/{bill_id}/summary` | public-read-exempt | public cacheable read; SSR shares one IP |
+| POST | `/api/v1/bills/{bill_id}/transition` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| GET | `/api/v1/claude/budget` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/consensus/representation` | public-read-exempt | public cacheable read; SSR shares one IP |
+| POST | `/api/v1/contact/ngo` | dedicated-redis | Existing Redis guard: 3/IP/hour before sending mail. |
+| GET | `/api/v1/cplm/aggregate` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/cplm/history` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/decisions` | public-read-exempt | Paginated public decision feed. |
+| GET | `/api/v1/export/bills.csv` | explicit | 30 per 1 minute |
+| GET | `/api/v1/export/divergence.csv` | explicit | 30 per 1 minute |
+| GET | `/api/v1/export/info` | public-read-exempt | Static format metadata; CSV downloads have explicit limits. |
+| GET | `/api/v1/export/parties.json` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/export/results.json` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/health/modules` | direct-default | 60/minute/IP per endpoint via SlowAPI middleware (including health). |
+| GET | `/api/v1/identity/hlr/credits` | public-read-exempt | public cacheable read; SSR shares one IP |
+| PATCH | `/api/v1/identity/profile/location` | explicit | 20 per 1 minute |
+| POST | `/api/v1/identity/revoke` | explicit | 10 per 1 minute |
+| POST | `/api/v1/identity/status` | explicit | 10 per 1 minute |
+| POST | `/api/v1/identity/verify` | dedicated-redis | Atomic HLR Redis guard: 5/IP/min, 20/IP/day, 3/number/day and 300s cooldown. |
+| GET | `/api/v1/mp/bill/{bill_id}` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/mp/compare/{party_abbr}` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/mp/info` | public-read-exempt | Static module metadata. |
+| GET | `/api/v1/mp/parties` | public-read-exempt | Small public party catalogue. |
+| GET | `/api/v1/mp/ranking` | public-read-exempt | public cacheable read; SSR shares one IP |
+| POST | `/api/v1/municipal/vote` | explicit | 20 per 1 minute |
+| GET | `/api/v1/municipal/{dimos_id}/decisions` | public-read-exempt | Paginated public municipal decision feed. |
+| GET | `/api/v1/municipal/{dimos_id}/voteable` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/newsletter/confirm/{token}` | explicit | 10 per 1 minute |
+| GET | `/api/v1/newsletter/lists` | public-read-exempt | Static subscription options. |
+| GET | `/api/v1/newsletter/stats` | public-read-exempt | public cacheable read; SSR shares one IP |
+| POST | `/api/v1/newsletter/subscribe` | dedicated-redis | Redis: 10/IP/hour and 3/email/day; confirmed subscriptions return without consuming quota. |
+| POST | `/api/v1/newsletter/unsubscribe` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/newsletter/webhook/brevo` | provider-exempt | Authenticated Brevo event batches; preserve provider retries and bursts. |
+| GET | `/api/v1/notifications/status` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/notifications/stream` | explicit | 30 per 1 minute |
+| POST | `/api/v1/notifications/test/publish` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/notify/register` | dedicated-redis | Redis: 600/IP/hour before auth, 20/identity/day for changed device registrations. |
+| POST | `/api/v1/notify/send` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| GET | `/api/v1/payments/admin/finance/btc` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| GET | `/api/v1/payments/admin/finance/events` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| GET | `/api/v1/payments/admin/finance/ltc` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| GET | `/api/v1/payments/admin/finance/overview` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| GET | `/api/v1/payments/admin/finance/server` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| GET | `/api/v1/payments/admin/logs` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| GET | `/api/v1/payments/public/finance` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/payments/status` | public-read-exempt | public cacheable read; SSR shares one IP |
+| POST | `/api/v1/payments/webhook` | provider-exempt | Stripe signature verification and event deduplication; preserve provider retries and bursts. |
+| POST | `/api/v1/payments/webhook/paypal` | provider-exempt | PayPal IPN verification and transaction deduplication; preserve provider retries and bursts. |
+| GET | `/api/v1/periferia` | public-read-exempt | Small public region catalogue. |
+| GET | `/api/v1/periferia/{periferia_id}/dimos` | public-read-exempt | Bounded public municipality catalogue for one region. |
+| POST | `/api/v1/polis/qr-auth` | explicit | 10 per 1 minute |
+| POST | `/api/v1/polis/qr-consensus` | explicit | 20 per 1 minute |
+| GET | `/api/v1/polis/qr-session` | explicit | 10 per 1 minute |
+| GET | `/api/v1/polis/qr-session/{session_id}` | explicit | 600 per 1 minute |
+| POST | `/api/v1/polis/qr-vote` | explicit | 20 per 1 minute |
+| POST | `/api/v1/polis/register-key` | explicit | 120 per 1 minute |
+| GET | `/api/v1/polis/tickets` | public-read-exempt | Public ticket list capped at 100 records. |
+| POST | `/api/v1/polis/tickets` | explicit | 120 per 1 minute |
+| POST | `/api/v1/polis/tickets/{ticket_id}/votes` | explicit | 120 per 1 minute |
+| GET | `/api/v1/politicians/` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/politicians/my-evaluations/bulk` | explicit | 10 per 1 minute |
+| POST | `/api/v1/politicians/{ada_number}/evaluate` | explicit | 20 per 1 minute |
+| GET | `/api/v1/politicians/{ada_number}/my-evaluation` | explicit | 10 per 1 minute |
+| GET | `/api/v1/politicians/{ada_number}/questions` | public-read-exempt | Small public evaluation question catalogue; no personal scores. |
+| GET | `/api/v1/politicians/{ada_number}/scores` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/public/bills` | public-shared-redis | Existing shared Redis public-data quota: 100/min/IP or 1000/min/valid key. |
+| GET | `/api/v1/public/bills/{bill_id}/results` | public-shared-redis | Existing shared Redis public-data quota: 100/min/IP or 1000/min/valid key. |
+| GET | `/api/v1/public/cplm` | public-shared-redis | Existing shared Redis public-data quota: 100/min/IP or 1000/min/valid key. |
+| GET | `/api/v1/public/cplm/history` | public-shared-redis | Existing shared Redis public-data quota: 100/min/IP or 1000/min/valid key. |
+| GET | `/api/v1/public/deepl/usage` | explicit | 30 per 1 minute |
+| GET | `/api/v1/public/info` | public-read-exempt | Static API metadata. |
+| POST | `/api/v1/public/keys/generate` | dedicated-redis | Existing Redis guard: 5/IP/hour before generating a key. |
+| GET | `/api/v1/public/keys/status` | explicit | 10 per 1 minute |
+| GET | `/api/v1/public/mirrors/status` | explicit | 30 per 1 minute |
+| GET | `/api/v1/public/representation` | public-shared-redis | Existing shared Redis public-data quota: 100/min/IP or 1000/min/valid key. |
+| GET | `/api/v1/public/scraper/status` | explicit | 30 per 1 minute |
+| POST | `/api/v1/public/share` | explicit | 30 per 1 minute |
+| GET | `/api/v1/public/stats` | public-shared-redis | Existing shared Redis public-data quota: 100/min/IP or 1000/min/valid key. |
+| GET | `/api/v1/public/vaa/parties` | public-shared-redis | Existing shared Redis public-data quota: 100/min/IP or 1000/min/valid key. |
+| GET | `/api/v1/regions/{periferia_id}/decisions` | public-read-exempt | Paginated public regional decision feed. |
+| POST | `/api/v1/rep/admin/invite` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| GET | `/api/v1/rep/admin/invites` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/rep/auth` | explicit | 10 per 1 minute |
+| GET | `/api/v1/rep/bills` | public-read-exempt | Representative-authenticated public bill list capped at 100 records. |
+| GET | `/api/v1/rep/divergence/{bill_id}` | explicit | 30 per 1 minute |
+| POST | `/api/v1/rep/enable-evaluation` | explicit | 20 per 1 minute |
+| GET | `/api/v1/rep/my-scores` | explicit | 10 per 1 minute |
+| GET | `/api/v1/rep/results/{bill_id}` | explicit | 30 per 1 minute |
+| POST | `/api/v1/rep/verify` | explicit | 10 per 1 minute |
+| POST | `/api/v1/scraper/fetch` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/scraper/import` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| GET | `/api/v1/scraper/jobs` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/scraper/parliament/freshness` | explicit | 30 per 1 minute |
+| GET | `/api/v1/scraper/parliament/latest` | explicit | 30 per 1 minute |
+| GET | `/api/v1/scraper/status` | explicit | 30 per 1 minute |
+| GET | `/api/v1/scraper/test` | explicit | 30 per 1 minute |
+| POST | `/api/v1/sso/discourse/callback` | explicit | 10 per 1 minute |
+| GET | `/api/v1/sso/discourse/initiate` | explicit | 10 per 1 minute |
+| POST | `/api/v1/sso/discourse/qr-complete` | explicit | 10 per 1 minute |
+| POST | `/api/v1/vaa/match` | explicit | 20 per 1 minute |
+| GET | `/api/v1/vaa/parties` | public-read-exempt | Small public party catalogue. |
+| GET | `/api/v1/vaa/questions` | public-read-exempt | Bounded public question lookup. |
+| GET | `/api/v1/vaa/statements` | public-read-exempt | Bounded public statement lookup. |
+| GET | `/api/v1/version` | direct-default | 60/minute/IP per endpoint via SlowAPI middleware (including health). |
+| POST | `/api/v1/vote` | explicit | 120 per 1 minute |
+| GET | `/api/v1/vote/compass/personal` | explicit | 10 per 1 minute |
+| POST | `/api/v1/vote/compass/personal` | explicit | 10 per 1 minute |
+| GET | `/api/v1/vote/results/in-progress` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/vote/results/latest` | public-read-exempt | public cacheable read; SSR shares one IP |
+| POST | `/api/v1/vote/{bill_id}/consensus` | explicit | 20 per 1 minute |
+| PUT | `/api/v1/vote/{bill_id}/correct` | explicit | 20 per 1 minute |
+| GET | `/api/v1/vote/{bill_id}/receipt` | explicit | 10 per 1 minute |
+| POST | `/api/v1/vote/{bill_id}/receipt` | explicit | 10 per 1 minute |
+| POST | `/api/v1/vote/{bill_id}/relevance` | explicit | 30 per 1 minute |
+| GET | `/api/v1/vote/{bill_id}/results` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/vote/{bill_id}/status` | explicit | 10 per 1 minute |
+| POST | `/api/v1/vote/{bill_id}/status` | explicit | 120 per 1 minute |
+| GET | `/api/v1/zk/canary/preflight/{vote_scope_id}` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| POST | `/api/v1/zk/opt-in` | explicit | 10 per 1 minute |
+| GET | `/api/v1/zk/receipts/{vote_scope_id}` | public-read-exempt | public cacheable read; SSR shares one IP |
+| POST | `/api/v1/zk/receipts/{vote_scope_id}/publish-pending` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| GET | `/api/v1/zk/roots/{vote_scope_id}` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/zk/roots/{vote_scope_id}/members` | public-read-exempt | public cacheable read; SSR shares one IP |
+| POST | `/api/v1/zk/roots/{vote_scope_id}/publish` | admin-exempt | Admin-key authentication required; operator batch/maintenance traffic has no citizen-IP quota. |
+| GET | `/api/v1/zk/scopes/{vote_scope_id}/status` | public-read-exempt | public cacheable read; SSR shares one IP |
+| GET | `/api/v1/zk/status` | public-read-exempt | public cacheable read; SSR shares one IP |
+| POST | `/api/v1/zk/verify` | explicit | 10 per 1 minute |
+| POST | `/api/v1/zk/vote` | explicit | 20 per 1 minute |
+| POST | `/api/v2/identity/key-check` | explicit | 30 per 1 minute |
+| POST | `/api/v2/identity/rotate-key` | explicit | 10 per 1 minute |
+| POST | `/api/v2/identity/verify` | dedicated-redis | Uses the same atomic HLR Redis guard as v1 registration. |
+| GET | `/health` | direct-default | 60/minute/IP per endpoint via SlowAPI middleware (including health). |
+| GET | `/robots.txt` | direct-default | 60/minute/IP per endpoint via SlowAPI middleware (including health). |
+<!-- route-policy:end -->
 
-### Public GET (91)
+## Local acceptance evidence (2026-10-30)
 
-| Router | Endpoint | Class | Main | Original staged | Corrected policy / reason |
-| --- | --- | --- | --- | --- | --- |
-| `analytics.py` | GET `/api/v1/analytics/bill/{bill_id}` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
-| `analytics.py` | GET `/api/v1/analytics/divergence-trends` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
-| `analytics.py` | GET `/api/v1/analytics/info` | (c) | None | None | None — public cacheable read; SSR shares one IP |
-| `analytics.py` | GET `/api/v1/analytics/overview` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
-| `analytics.py` | GET `/api/v1/analytics/representation` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
-| `analytics.py` | GET `/api/v1/analytics/top-divergence` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
-| `analytics.py` | GET `/api/v1/analytics/votes-timeline` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
-| `app_version.py` | GET `/api/v1/app/version` | (c) | None | None | None — Static client update metadata; retain existing polling access policy. |
-| `arweave.py` | GET `/api/v1/arweave/bill/{bill_id}` | (c) | None | None | None — Single stored archive pointer; no gateway/provider request. |
-| `arweave.py` | GET `/api/v1/arweave/status` | (b) | None | 10/minute | Explicit: 30 per 1 minute — Live wallet/gateway balance lookup. |
-| `claude_agent.py` | GET `/api/v1/claude/budget` | (c) | None | 10/minute | None — public cacheable read; SSR shares one IP |
-| `consensus_results.py` | GET `/api/v1/consensus/representation` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
-| `cplm.py` | GET `/api/v1/cplm/aggregate` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
-| `cplm.py` | GET `/api/v1/cplm/history` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
-| `diavgeia.py` | GET `/api/v1/municipal/{dimos_id}/decisions` | (c) | None | None | None — Paginated public municipal decision feed. |
-| `diavgeia.py` | GET `/api/v1/regions/{periferia_id}/decisions` | (c) | None | None | None — Paginated public regional decision feed. |
-| `evaluation.py` | GET `/api/v1/politicians/` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
-| `evaluation.py` | GET `/api/v1/politicians/my-evaluations/bulk` | (a) | None | 10/minute | Explicit: 10 per 1 minute — personal/token/auth operation. |
-| `evaluation.py` | GET `/api/v1/politicians/{ada_number}/my-evaluation` | (a) | None | 10/minute | Explicit: 10 per 1 minute — personal/token/auth operation. |
-| `evaluation.py` | GET `/api/v1/politicians/{ada_number}/questions` | (c) | None | None | None — Small public evaluation question catalogue; no personal scores. |
-| `evaluation.py` | GET `/api/v1/politicians/{ada_number}/scores` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
-| `export.py` | GET `/api/v1/export/bills.csv` | (b) | None | 10/minute | Explicit: 30 per 1 minute — Full result materialization and CSV serialization; download only. |
-| `export.py` | GET `/api/v1/export/divergence.csv` | (b) | None | 10/minute | Explicit: 30 per 1 minute — Full result materialization, ranking and CSV serialization; download only. |
-| `export.py` | GET `/api/v1/export/info` | (c) | None | None | None — Static format metadata; CSV downloads have explicit limits. |
-| `export.py` | GET `/api/v1/export/parties.json` | (c) | None | 10/minute | None — public cacheable read; SSR shares one IP |
-| `export.py` | GET `/api/v1/export/results.json` | (c) | None | 10/minute | None — public cacheable read; SSR shares one IP |
-| `govgr.py` | GET `/api/v1/auth/govgr/callback` | (a) | None | 10/minute | Explicit: 10 per 1 minute — personal/token/auth operation. |
-| `govgr.py` | GET `/api/v1/auth/govgr/family/verify` | (c) | None | 10/minute | None — public cacheable read; SSR shares one IP |
-| `govgr.py` | GET `/api/v1/auth/govgr/info` | (c) | None | None | None — Static integration metadata. |
-| `govgr.py` | GET `/api/v1/auth/govgr/login` | (a) | None | 10/minute | Explicit: 10 per 1 minute — personal/token/auth operation. |
-| `govgr.py` | GET `/api/v1/auth/govgr/status` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
-| `identity.py` | GET `/api/v1/identity/hlr/credits` | (c) | None | 10/minute | None — public cacheable read; SSR shares one IP |
-| `mp.py` | GET `/api/v1/mp/bill/{bill_id}` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
-| `mp.py` | GET `/api/v1/mp/compare/{party_abbr}` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
-| `mp.py` | GET `/api/v1/mp/info` | (c) | None | None | None — Static module metadata. |
-| `mp.py` | GET `/api/v1/mp/parties` | (c) | None | None | None — Small public party catalogue. |
-| `mp.py` | GET `/api/v1/mp/ranking` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
-| `municipal.py` | GET `/api/v1/decisions` | (c) | None | None | None — Paginated public decision feed. |
-| `municipal.py` | GET `/api/v1/municipal/{dimos_id}/voteable` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
-| `municipal.py` | GET `/api/v1/periferia` | (c) | None | None | None — Small public region catalogue. |
-| `municipal.py` | GET `/api/v1/periferia/{periferia_id}/dimos` | (c) | None | None | None — Bounded public municipality catalogue for one region. |
-| `newsletter.py` | GET `/api/v1/newsletter/confirm/{token}` | (a) | None | 10/minute | Explicit: 10 per 1 minute — personal/token/auth operation. |
-| `newsletter.py` | GET `/api/v1/newsletter/lists` | (c) | None | None | None — Static subscription options. |
-| `newsletter.py` | GET `/api/v1/newsletter/stats` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
-| `notifications.py` | GET `/api/v1/notifications/status` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
-| `notifications.py` | GET `/api/v1/notifications/stream` | (b) | None | 10/minute | Explicit: 30 per 1 minute — Long-lived SSE subscription; heartbeats do not consume new requests. |
-| `parliament.py` | GET `/api/v1/bills` | (c) | None | None | None — Paginated public feed; retain existing SSR access policy. |
-| `parliament.py` | GET `/api/v1/bills/trending` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
-| `parliament.py` | GET `/api/v1/bills/{bill_id}` | (c) | None | None | None — Single public bill lookup. |
-| `parliament.py` | GET `/api/v1/bills/{bill_id}/summary` | (c) | None | 10/minute | None — public cacheable read; SSR shares one IP |
-| `payments.py` | GET `/api/v1/payments/public/finance` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
-| `payments.py` | GET `/api/v1/payments/status` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
-| `polis_qr.py` | GET `/api/v1/polis/qr-session` | (a) | None | 10/minute | Explicit: 10 per 1 minute — auth-session creation (state-changing GET). |
-| `polis_qr.py` | GET `/api/v1/polis/qr-session/{session_id}` | (a) | None | 30/minute | Explicit: 600/minute/IP plus Redis 30/minute/validated session — 24/min/flow with initial/retry room. |
-| `polis_tickets.py` | GET `/api/v1/polis/tickets` | (c) | None | None | None — Public ticket list capped at 100 records. |
-| `public_api.py` | GET `/api/v1/public/bills` | (c) | None; Redis | None; Redis | None; Redis — existing combined 100/min/IP or 1000/min/valid key. |
-| `public_api.py` | GET `/api/v1/public/bills/{bill_id}/results` | (c) | None; Redis | None; Redis | None; Redis — existing combined 100/min/IP or 1000/min/valid key. |
-| `public_api.py` | GET `/api/v1/public/cplm` | (c) | None; Redis | None; Redis | None; Redis — existing combined 100/min/IP or 1000/min/valid key. |
-| `public_api.py` | GET `/api/v1/public/cplm/history` | (c) | None; Redis | None; Redis | None; Redis — existing combined 100/min/IP or 1000/min/valid key. |
-| `public_api.py` | GET `/api/v1/public/deepl/usage` | (b) | None | 10/minute | Explicit: 30 per 1 minute — Live authenticated DeepL provider request. |
-| `public_api.py` | GET `/api/v1/public/info` | (c) | None | None | None — Static API metadata. |
-| `public_api.py` | GET `/api/v1/public/keys/status` | (a) | None | 10/minute | Explicit: 10 per 1 minute — personal/token/auth operation. |
-| `public_api.py` | GET `/api/v1/public/mirrors/status` | (b) | None | 10/minute | Explicit: 30 per 1 minute — Live fan-out HTTP mirror probes. |
-| `public_api.py` | GET `/api/v1/public/representation` | (c) | None; Redis | None; Redis | None; Redis — existing combined 100/min/IP or 1000/min/valid key. |
-| `public_api.py` | GET `/api/v1/public/scraper/status` | (b) | None | 10/minute | Explicit: 30 per 1 minute — Health aggregation including a live Arweave wallet lookup when configured. |
-| `public_api.py` | GET `/api/v1/public/stats` | (c) | None; Redis | None; Redis | None; Redis — existing combined 100/min/IP or 1000/min/valid key. |
-| `public_api.py` | GET `/api/v1/public/vaa/parties` | (c) | None; Redis | None; Redis | None; Redis — existing combined 100/min/IP or 1000/min/valid key. |
-| `representative.py` | GET `/api/v1/rep/bills` | (c) | None | None | None — Representative-authenticated public bill list capped at 100 records. |
-| `representative.py` | GET `/api/v1/rep/divergence/{bill_id}` | (b) | None | 30/minute | Explicit: 30 per 1 minute before token auth — detailed divergence analysis. |
-| `representative.py` | GET `/api/v1/rep/my-scores` | (a) | None | 10/minute | Explicit: 10 per 1 minute before token auth — personal scores. |
-| `representative.py` | GET `/api/v1/rep/results/{bill_id}` | (b) | None | 30/minute | Explicit: 30 per 1 minute before token auth — detailed results and hourly timeline. |
-| `scraper.py` | GET `/api/v1/scraper/jobs` | (c) | None | 10/minute | None — public cacheable read; SSR shares one IP |
-| `scraper.py` | GET `/api/v1/scraper/parliament/freshness` | (b) | None | 5/minute | Explicit: 30 per 1 minute — Live external Parliament freshness scrape. |
-| `scraper.py` | GET `/api/v1/scraper/parliament/latest` | (b) | None | 5/minute | Explicit: 30 per 1 minute — Live external Parliament scrape. |
-| `scraper.py` | GET `/api/v1/scraper/status` | (b) | None | 10/minute | Explicit: 30 per 1 minute — Live Ollama availability probe. |
-| `scraper.py` | GET `/api/v1/scraper/test` | (b) | None | 5/minute | Explicit: 30 per 1 minute — Live Parliament scraping and Ollama probe. |
-| `sso.py` | GET `/api/v1/sso/discourse/initiate` | (a) | None | 10/minute | Explicit: 10 per 1 minute — personal/token/auth operation. |
-| `vaa.py` | GET `/api/v1/vaa/parties` | (c) | None | None | None — Small public party catalogue. |
-| `vaa.py` | GET `/api/v1/vaa/questions` | (c) | None | None | None — Bounded public question lookup. |
-| `vaa.py` | GET `/api/v1/vaa/statements` | (c) | None | None | None — Bounded public statement lookup. |
-| `voting.py` | GET `/api/v1/vote/compass/personal` | (a) | None | 10/minute | Explicit: 10 per 1 minute — personal/token/auth operation. |
-| `voting.py` | GET `/api/v1/vote/results/in-progress` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
-| `voting.py` | GET `/api/v1/vote/results/latest` | (c) | None | 120/minute | None — public cacheable read; SSR shares one IP |
-| `voting.py` | GET `/api/v1/vote/{bill_id}/receipt` | (a) | None | 10/minute | Explicit: 10 per 1 minute — personal/token/auth operation. |
-| `voting.py` | GET `/api/v1/vote/{bill_id}/results` | (c) | None | 120/minute | None — public cacheable read; SSR shares one IP |
-| `voting.py` | GET `/api/v1/vote/{bill_id}/status` | (a) | None | 10/minute | Explicit: 10 per 1 minute — personal/token/auth operation. |
-| `zk.py` | GET `/api/v1/zk/receipts/{vote_scope_id}` | (c) | None | 10/minute | None — public cacheable read; SSR shares one IP |
-| `zk.py` | GET `/api/v1/zk/roots/{vote_scope_id}` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
-| `zk.py` | GET `/api/v1/zk/roots/{vote_scope_id}/members` | (c) | None | 10/minute | None — public cacheable read; SSR shares one IP |
-| `zk.py` | GET `/api/v1/zk/scopes/{vote_scope_id}/status` | (c) | None | 10/minute | None — public cacheable read; SSR shares one IP |
-| `zk.py` | GET `/api/v1/zk/status` | (c) | None | 30/minute | None — public cacheable read; SSR shares one IP |
-
-## Verification
-
-The audit walks the registered FastAPI app and nested effective route contexts. It checks both limiter registration and the wrapper actually bound to each route, catches reversed decorators, and identifies admin routes by dependencies. For representative authentication, it checks dependency execution order: endpoint-only throttling and a guard after auth both fail coverage. Unreviewed GETs and unprotected writes fail; stale, redundant or reasonless allowlist entries fail too.
-
-HTTP regressions use the original limiter with isolated memory storage on the real app. They exercise write/oracle limit+1 enforcement, independent client IPs, target/key rotation, representative rejection before authentication DB work, single-counted successful authentication, eleven signed voting identities behind one IP, and HMAC-only storage. QR coverage includes six real server-created sessions, session limits across IPs, counter expiry, unknown-ID allocation prevention, and the IP ceiling for both existing and unknown session rotation. The public-read and CSV regressions are retained.
-
-Current correction validation: `cd apps/api && /private/tmp/t9097venv/bin/python -m pytest -q tests -k "rate or limit or vote or qr or representative"` (existing environment, no installation or external services).
-
-- Requested API slice: **623 passed, 61 skipped, 2277 deselected, 3 xfailed**, 11 warnings in 178.80s.
-- Focused coverage/enforcement tests: **40 passed**.
-- Documentation: sitemap drift check passed; public SEO **29 passed**; wiki preservation/facts **62 passed**.
-- Working-tree and staged whitespace checks passed.
-
-### Previous round validation (before this correction)
-
-Adding `public` to the selected API tests exposed two existing incomplete Redis mocks in the invalid-key and key-roundtrip tests. A local in-memory Redis hash stub now supplies those tests' reads/writes, alongside the already-staged key-generation stub. Their first run failed on sandbox-blocked `localhost:6379` access; production key storage and quotas are unchanged.
-
-Commands use the existing cached Python environment; no installation, network, commit or push:
+Commands run from `apps/api` with `TZ=UTC`:
 
 ```sh
-cd apps/api && python -m pytest -q tests -k "rate or limit or vote or identity or public"
-cd apps/api && python -m pytest -q tests/test_ip_utils.py
-cd scripts/redesign && python -m unittest discover -p 'test_*.py' -v
-node scripts/public-seo.mjs --update && node scripts/public-seo.mjs --check
-node --test scripts/public-seo.check.mjs scripts/static-docs-remote-sinks.check.mjs scripts/redesign/community_payment_status.check.mjs
+python -m pytest tests/test_rate_limit_coverage.py tests/test_ip_utils.py tests/test_rate_limit_middleware.py tests/test_rate_limit_acceptance.py tests/test_rate_limit_privacy.py tests/test_rate_limit_route_enforcement.py tests/test_newsletter_subscribe_rate_limit.py tests/test_wiki_api_reference.py tests/test_agent_eka62_robustness.py tests/test_identity_hlr_cost_guard.py tests/test_notify_register.py tests/test_security_headers.py tests/test_native_telemetry_disabled.py -q --tb=short -rs
+ENVIRONMENT=development python -m pytest tests/test_rate_limit_coverage.py -q --tb=short -rs
+python -m pytest tests/ -q --tb=short -rs
 ```
 
-The SEO updater initially rejected the modified uncommitted page, as designed. Its exported hash/render helpers refreshed only the API page fingerprint while preserving the already-staged `2026-10-16` lastmod. The requested `--update && --check` then passed. The generator and history assertion are unchanged: the separate Node history check cannot pass while that date is newer than the page's last source commit (`2026-10-15`). This task explicitly prohibits creating a commit. The exact API-page redesign approval hash was refreshed for the authorized EL/EN policy correction.
+Focused result: **287 passed, 3 skipped** in 42.67 seconds. Development policy
+coverage: **13 passed** in 2.48 seconds, including the optional documentation
+routes and their HEAD methods. The focused run includes the existing valid
+signed-vote preflight and concurrent QR polling compatibility tests.
+
+The full UTC suite completed once after correcting the test environment:
+**4293 passed, 95 skipped, 25 xfailed, 32 warnings, 4 subtests passed** in
+907.05 seconds. No failures or errors remain in that run. The skips include
+the three real-Redis rate-limit gates and optional PostgreSQL/Redis tests.
+
+Recorded summary tails:
 
 ```text
-API: 970 passed, 61 skipped, 1907 deselected, 6 xfailed, 31 warnings in 298.66s (0:04:58)
-Client IP: 11 passed in 0.25s
-Redesign: Ran 358 tests in 16.596s; OK (skipped=2)
-SEO --update: wrote scripts/sitemap.sources.json and docs/sitemap.xml
-SEO --check: sitemap ok
-Node documentation gates: 116 passed, 1 failed
-  docs/wiki/api.html: lastmod 2026-10-16 > last commit 2026-10-15
+287 passed, 3 skipped, 1 warning in 42.67s
+13 passed in 2.48s
+4293 passed, 95 skipped, 25 xfailed, 32 warnings, 4 subtests passed in 907.05s (0:15:07)
 ```
 
-The original staged changes remain in the index; corrections are unstaged on top. No commit, push or external network operation was performed. All 75 router write definitions match the original staging exactly, and all production handler bodies plus the nine established decorators match `HEAD`. `git diff --check` and the staged whitespace check pass.
+The cached interpreter is Python 3.13.0 with Starlette 1.6.0, SlowAPI 0.1.10,
+limits 5.8.0, Redis client 8.1.0 and pytest 9.1.1. The initial cached FastAPI
+0.141.1 passed the limiter tests but stopped full-suite collection because it
+lacks `fastapi.telemetry`. The subsequent runs use cached FastAPI 0.143.0 and its
+OpenTelemetry API 1.45.1 dependency from a temporary `PYTHONPATH` directory.
+No project dependencies were added. FastAPI 0.143.3 is declared by the project;
+the complete exact-requirements matrix remains a CI release check. Pydantic
+2.13.5 and SQLAlchemy 2.0.52 also differ from the declared versions. No production
+deployment or paid-provider lookup was performed.
+
+The three real-Redis gates cover independent limiter instances, separate worker
+processes, and concurrent asynchronous Lua counters with expiry. They are gated
+on `REDIS_URL` and must run against a disposable Redis service in CI/runtime
+acceptance; the local sandbox has no accessible Redis server. They are not
+claimed as passing local Redis integration. Fault injection and an unreachable
+Redis connection exercise the production limiter, actual included routes and
+asynchronous counter helper, including stricter limits, recovery, scope, expiry,
+bounded local storage, counts-only logs and 429 browser headers.
+
+All 33 `include_router` registrations in `main.py` are unchanged from
+`30e20e6c` (#690), checked by comparing their parsed syntax trees.
