@@ -1,4 +1,4 @@
-"""Privacy regressions for the public list query's literal marker optimization."""
+"""Privacy regressions for the public visibility query on both dialects."""
 import itertools
 from collections.abc import Iterator
 
@@ -79,12 +79,14 @@ def test_literal_marker_optimization_preserves_all_visibility_decisions(
     assert "long" not in optimized
 
 
-def test_postgresql_checks_each_field_once_and_binds_literal_pattern() -> None:
+def test_postgresql_uses_the_costed_function_with_index_predicate_arguments() -> None:
     query = select(Bill.id).where(public_bill_with_demo_filter())
     compiled = query.compile(dialect=postgresql.dialect())
     sql = str(compiled)
-    assert sql.count("lower(") == 3
-    assert sql.count(" ~ ") == 3
-    assert any(r"α\.μ\.κ\.α" in value for value in compiled.params.values() if isinstance(value, str))
+    assert (
+        "NOT public_bill_sensitive(parliament_bills.source, parliament_bills.title_el, "
+        "parliament_bills.summary_short_el, parliament_bills.summary_long_el)"
+    ) in sql
+    assert "lower(" not in sql and " ~ " not in sql
     assert "ασθεν" not in sql
     assert "admin_hidden" in sql and "DEMO-%" in compiled.params.values()

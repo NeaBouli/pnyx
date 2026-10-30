@@ -31,6 +31,7 @@ from sqlalchemy.pool import NullPool
 
 from database import Base
 import models  # noqa: F401
+from tests.pg_public_bill_schema import install_public_bill_function
 from tests.pg_vote_schema import disposable_postgres_url, requires_postgres
 
 pytestmark = requires_postgres
@@ -83,6 +84,7 @@ async def db():
     try:
         await reset()
         async with engine.begin() as conn:
+            await install_public_bill_function(conn)
             await conn.run_sync(Base.metadata.create_all)
             for table in EXTRA_PRIVATE:
                 await conn.exec_driver_sql(f"CREATE TABLE IF NOT EXISTS public.{table} (id serial PRIMARY KEY, private_value text)")

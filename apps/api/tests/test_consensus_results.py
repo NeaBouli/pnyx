@@ -10,7 +10,6 @@ from routers.consensus_results import (
     _view_payload,
     get_consensus_representation,
 )
-from services.bill_visibility import DIAVGEIA_SENSITIVE_PUBLIC_TERMS
 
 
 class _Result:
@@ -135,9 +134,8 @@ def test_public_visibility_guard_matches_sensitive_diavgeia_policy():
     assert "admin_hidden" in predicate
     assert "summary_short_el" in predicate
     assert "summary_long_el" in predicate
-    assert "NOT (" in predicate
-    assert not params  # Fixed policy literals must match the partial index under generic plans.
-    assert all(term in predicate for term in ("αμκα", "amka", "ασθεν", "εοπυυ", "eopyy"))
+    assert "NOT public_bill_sensitive(pb.source, pb.title_el, pb.summary_short_el, pb.summary_long_el)" in predicate
+    assert not params  # The fixed predicate must match the partial index under generic plans.
 
 
 @pytest.mark.asyncio

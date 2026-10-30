@@ -19,6 +19,7 @@ from models import (
     ParliamentBill,
     Periferia,
 )
+from tests.pg_public_bill_schema import install_public_bill_function
 
 POSTGRES_URL_ENV = "PNYX_TEST_POSTGRES_URL"
 VOTE_TABLES = [
@@ -51,6 +52,7 @@ async def reset_vote_schema(conn: AsyncConnection, *, with_nullifier_index: bool
     """Recreate the vote tables; optionally without the T-410 index (pre-migration state)."""
     await conn.exec_driver_sql("DROP TABLE IF EXISTS alembic_version")
     await conn.run_sync(lambda c: CitizenVote.metadata.drop_all(c, tables=VOTE_TABLES))
+    await install_public_bill_function(conn)
     await conn.run_sync(lambda c: CitizenVote.metadata.create_all(c, tables=VOTE_TABLES))
     if not with_nullifier_index:
         await conn.exec_driver_sql(f"DROP INDEX {CITIZEN_VOTE_NULLIFIER_UNIQUE_INDEX}")
