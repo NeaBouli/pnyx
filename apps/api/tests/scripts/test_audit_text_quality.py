@@ -4,6 +4,7 @@ import csv
 import importlib.util
 import json
 import stat
+import tempfile
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, AsyncIterator
@@ -19,6 +20,20 @@ spec = importlib.util.spec_from_file_location("audit_text_quality", SCRIPT)
 assert spec and spec.loader
 audit_script = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(audit_script)
+_raw_audit = audit_script.audit
+
+
+async def _audit_with_plan(conn: Any, **kwargs: Any) -> int:
+    """Legacy apply tests: approve exactly what a preceding dry run planned."""
+    if kwargs.get("apply") and kwargs.get("backup_path") is not None and "expect_from" not in kwargs:
+        plan = Path(tempfile.mkdtemp()) / "plan.csv"
+        dry_run = {key: value for key, value in kwargs.items() if key not in {"apply", "backup_path"}}
+        await _raw_audit(conn, plan_path=plan, **dry_run)
+        kwargs.update(expect_from=plan, max_rows=1_000_000)
+    return await _raw_audit(conn, **kwargs)
+
+
+audit_script.audit = _audit_with_plan
 BAD = "Απάντηση: Δεν παρέχεται σύνοψη του δοκιμαστικού εγγράφου."
 GOOD = "Η ρύθμιση ορίζει τη διαδικασία των δημόσιων υπηρεσιών."
 
@@ -292,7 +307,11 @@ async def test_cursor_spools_complete_backup_before_batched_updates(tmp_path: Pa
 
     backup = tmp_path / "streamed.csv"
     conn = StreamingConnection()
-    assert await audit_script.audit(conn, fields=("summary_long_el",), apply=True, backup_path=backup) == 251
+    plan = tmp_path / "plan.csv"
+    assert await _raw_audit(conn, fields=("summary_long_el",), plan_path=plan) == 0
+    conn.scanned = 0
+    assert await _raw_audit(conn, fields=("summary_long_el",), apply=True, backup_path=backup,
+                            expect_from=plan, max_rows=251) == 251
     assert conn.transaction_sizes == [100, 100, 51]
     assert conn.writes == 251
 
@@ -450,3 +469,75 @@ async def test_clearing_other_fields_cannot_expose_sensitive_bill(tmp_path: Path
                                     backup_path=conn.backup, legacy_sources=frozenset({"DIAVGEIA"})) == 1
     assert row["summary_short_el"] is None and "ΑΜΚΑ" in row["summary_long_el"]
     assert not is_public_bill(SimpleNamespace(**row))
+
+
+
+class PlanConnection:
+    """Minimal streaming connection for the approval rails."""
+
+    def __init__(self, rows: list[dict[str, Any]]) -> None:
+        self.rows = rows
+        self.writes: list[tuple[str, tuple[Any, ...]]] = []
+
+    @asynccontextmanager
+    async def transaction(self, *, readonly: bool = False) -> AsyncIterator[None]:
+        yield
+
+    async def cursor(self, query: str, *, prefetch: int) -> AsyncIterator[dict[str, Any]]:
+        for row in self.rows:
+            yield row
+
+    async def execute(self, query: str, *values: Any) -> str:
+        self.writes.append((query, values))
+        return "UPDATE 1"
+
+
+def _owned(bill_id: str, value: str = BAD) -> dict[str, Any]:
+    return {"id": bill_id, "source": "SYNTHETIC", "ai_summary_reviewed": False,
+            "generated_content_provenance": {"summary_long_el": content_sha256(value)}, "summary_long_el": value}
+
+
+@pytest.mark.asyncio
+async def test_apply_requires_an_approved_plan_and_a_row_limit(tmp_path: Path) -> None:
+    conn = PlanConnection([_owned("P-1")])
+    for extra in ({}, {"expect_from": tmp_path / "missing.csv"}, {"max_rows": 5}):
+        with pytest.raises(ValueError, match="--expect-from and --max-rows"):
+            await _raw_audit(conn, fields=("summary_long_el",), apply=True, backup_path=tmp_path / "b.csv", **extra)
+    assert conn.writes == []
+
+
+@pytest.mark.asyncio
+async def test_plan_lists_digests_without_text_and_is_private(tmp_path: Path) -> None:
+    plan = tmp_path / "plan.csv"
+    await _raw_audit(PlanConnection([_owned("P-1"), _owned("P-good", GOOD)]), fields=("summary_long_el",), plan_path=plan)
+    assert stat.S_IMODE(plan.stat().st_mode) == 0o600
+    text = plan.read_text(encoding="utf-8")
+    assert BAD not in text
+    rows = list(csv.DictReader(text.splitlines()))
+    assert [(r["id"], r["field"], r["sha256"]) for r in rows] == [("P-1", "summary_long_el", content_sha256(BAD))]
+    with pytest.raises(FileExistsError):
+        await _raw_audit(PlanConnection([_owned("P-1")]), fields=("summary_long_el",), plan_path=plan)
+
+
+@pytest.mark.asyncio
+async def test_apply_clears_only_planned_unchanged_fields(tmp_path: Path, invalidate: AsyncMock) -> None:
+    plan = tmp_path / "plan.csv"
+    await _raw_audit(PlanConnection([_owned("P-1"), _owned("P-2")]), fields=("summary_long_el",), plan_path=plan)
+    changed = "Απάντηση: άλλο κείμενο μετά την έγκριση του σχεδίου."
+    conn = PlanConnection([_owned("P-1"), _owned("P-2", changed), _owned("P-new")])
+    cleared = await _raw_audit(conn, fields=("summary_long_el",), apply=True, backup_path=tmp_path / "b.csv",
+                               expect_from=plan, max_rows=10)
+    assert cleared == 1
+    assert [values[0] for _, values in conn.writes] == ["P-1"]
+
+
+@pytest.mark.asyncio
+async def test_more_matches_than_max_rows_abort_without_backup_or_writes(tmp_path: Path) -> None:
+    plan = tmp_path / "plan.csv"
+    rows = [_owned(f"P-{i}") for i in range(3)]
+    await _raw_audit(PlanConnection(rows), fields=("summary_long_el",), plan_path=plan)
+    conn = PlanConnection(rows)
+    backup = tmp_path / "b.csv"
+    assert await _raw_audit(conn, fields=("summary_long_el",), apply=True, backup_path=backup,
+                            expect_from=plan, max_rows=2) == 0
+    assert conn.writes == [] and not backup.exists()

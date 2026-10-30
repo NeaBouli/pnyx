@@ -32,7 +32,15 @@ An explicit override such as `--legacy-reasons non_greek mixed_script` permits
 those two reasons for the named legacy sources. It does not limit reasons for
 provenance-owned fields. Review the dry run with the same options before apply.
 
-To apply, add `--apply --backup-csv /path/to/new-private-backup.csv`. The backup
+Approval is tied to an exact plan. Run the dry run with `--plan-csv /path/to/new-plan.csv`:
+the plan lists every field the run would clear as `id,field,reasons,sha256` (no text,
+mode 0600, new file only). The approver signs off on that file.
+
+To apply, add `--apply --backup-csv /path/to/new-private-backup.csv
+--expect-from /path/to/approved-plan.csv --max-rows N`. Apply clears only fields whose
+id, field and current value digest are in the approved plan; new hits and changed values
+are skipped and counted. If more than N fields match, the run aborts before writing the
+backup or any update. The backup
 must be a new file; it is written with mode 0600 and flushed to disk before any
 updates. Reviewed fields, edited fields whose provenance no longer matches, and
 sensitive fields remain protected. Applying invalidates the representation cache

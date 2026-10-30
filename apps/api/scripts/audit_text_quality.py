@@ -61,6 +61,7 @@ async def audit(
     sample_limit: int = 5, apply: bool = False, backup_path: Path | None = None,
     legacy_sources: frozenset[str] = frozenset(),
     legacy_reasons: frozenset[str] = DEFAULT_LEGACY_REASONS,
+    plan_path: Path | None = None, expect_from: Path | None = None, max_rows: int | None = None,
 ) -> int:
     """Print aggregate counts and IDs; return number of fields cleared."""
     if not fields or any(field not in GENERATED_TEXT_FIELDS for field in fields):
@@ -71,6 +72,17 @@ async def audit(
         raise ValueError("Unsupported legacy reasons")
     if apply and backup_path is None:
         raise ValueError("--apply requires --backup-csv")
+    if apply and (expect_from is None or max_rows is None):
+        # An approval covers exactly the reviewed dry-run plan, never whatever a later scan finds.
+        raise ValueError("--apply requires --expect-from and --max-rows")
+    if max_rows is not None and max_rows < 0:
+        raise ValueError("max_rows must be non-negative")
+    expected = read_plan(expect_from) if expect_from is not None else None
+    plan_file = _open_private(plan_path) if plan_path is not None else None
+    plan_writer = csv.writer(plan_file) if plan_file is not None else None
+    if plan_writer is not None:
+        plan_writer.writerow(PLAN_HEADER)
+    kept = unexpected = 0
     fields = tuple(dict.fromkeys(fields))
     counts: Counter[tuple[str, str, str]] = Counter()
     would_clear: Counter[tuple[str, str, str]] = Counter()
@@ -107,7 +119,16 @@ async def audit(
                             would_clear[key] += 1
                         if len(samples[key]) < sample_limit:
                             samples[key].append(row["id"])
-                    if apply and permitted_reasons:
+                    if not permitted_reasons:
+                        continue
+                    digest = content_sha256(value)
+                    if plan_writer is not None:
+                        plan_writer.writerow((row["id"], field, "|".join(permitted_reasons), digest))
+                    if apply:
+                        if expected is not None and (row["id"], field, digest) not in expected:
+                            unexpected += 1
+                            continue
+                        kept += 1
                         candidates.write(json.dumps((row["id"], field, value, source)) + "\n")
         # Counts describe permission per reason. A field with several permitted
         # reasons is still backed up and cleared only once.
@@ -117,7 +138,20 @@ async def audit(
         print(f"{'APPLY' if apply else 'DRY-RUN'}: {row_count} rows; {generated_count} failing fields with generation ownership; "
               f"{legacy_count} eligible failing legacy fields without provenance in {sorted(legacy_sources) or 'no named source'}; "
               f"legacy reasons: {', '.join(sorted(legacy_reasons)) or 'none'}")
-        if not apply or not (generated_count or legacy_count):
+        if plan_file is not None:
+            plan_file.flush()
+            os.fsync(plan_file.fileno())
+            plan_file.close()
+            print(f"Plan: {plan_path}")
+        if not apply:
+            return 0
+        assert expected is not None and max_rows is not None
+        print(f"Approved plan: {len(expected)} entries; matching now: {kept}; "
+              f"not in plan (skipped): {unexpected}; plan entries not matched: {len(expected) - kept}")
+        if kept > max_rows:
+            print(f"ABORT: {kept} matching fields exceed --max-rows {max_rows}; nothing written")
+            return 0
+        if not kept:
             return 0
         assert backup_path is not None
         write_backup(backup_path, (entry[:3] for entry in _candidates(candidates)))
@@ -160,6 +194,26 @@ async def audit(
         return updated
 
 
+PLAN_HEADER = ("id", "field", "reasons", "sha256")
+
+
+def _open_private(path: Path) -> TextIO:
+    """Exclusive 0600 file: never overwrite an earlier plan or backup."""
+    fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    stream = os.fdopen(fd, "w", newline="", encoding="utf-8")
+    os.fchmod(stream.fileno(), 0o600)
+    return stream
+
+
+def read_plan(path: Path) -> frozenset[tuple[str, str, str]]:
+    """Approved dry-run entries keyed by id, field and the exact value digest."""
+    with path.open(newline="", encoding="utf-8") as stream:
+        reader = csv.DictReader(stream)
+        if tuple(reader.fieldnames or ()) != PLAN_HEADER:
+            raise ValueError("Unexpected plan header")
+        return frozenset((row["id"], row["field"], row["sha256"]) for row in reader)
+
+
 def _candidates(stream: TextIO) -> Iterator[tuple[str, str, str, str | None]]:
     stream.seek(0)
     for line in stream:
@@ -175,6 +229,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--backup-csv", type=Path, help="New private CSV file, required with --apply")
     parser.add_argument("--include-legacy", metavar="SOURCE", action="append", default=[],
                         help="Also clear high-precision failures in unreviewed fields without provenance for this bill source")
+    parser.add_argument("--plan-csv", type=Path, help="New private CSV listing every field this run would clear (no text)")
+    parser.add_argument("--expect-from", type=Path, help="Approved dry-run plan; --apply clears only matching fields")
+    parser.add_argument("--max-rows", type=int, help="Abort --apply without writing if more fields match")
     parser.add_argument("--legacy-reasons", nargs="+", choices=sorted(LEGACY_REASON_CHOICES),
                         default=sorted(DEFAULT_LEGACY_REASONS),
                         help="Replace the legacy clearing reasons; defaults to all except non_greek (report-only)")
@@ -183,6 +240,8 @@ def parse_args() -> argparse.Namespace:
         parser.error("--samples must be non-negative")
     if args.apply and args.backup_csv is None:
         parser.error("--apply requires --backup-csv")
+    if args.apply and (args.expect_from is None or args.max_rows is None):
+        parser.error("--apply requires --expect-from and --max-rows")
     return args
 
 
@@ -196,7 +255,8 @@ async def main() -> None:
         await audit(conn, fields=tuple(args.fields), sample_limit=args.samples,
                     apply=args.apply, backup_path=args.backup_csv,
                     legacy_sources=frozenset(args.include_legacy),
-                    legacy_reasons=frozenset(args.legacy_reasons))
+                    legacy_reasons=frozenset(args.legacy_reasons),
+                    plan_path=args.plan_csv, expect_from=args.expect_from, max_rows=args.max_rows)
     finally:
         await conn.close()
 
