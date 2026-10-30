@@ -55,18 +55,26 @@ async def postgres():
             spec = importlib.util.spec_from_file_location("metadata_index_migration", path)
             revision = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(revision)
-            await connection.commit()
             def migrate(sync):
                 context = MigrationContext.configure(sync)
                 with context.begin_transaction(), patch.object(revision, "op", Operations(context)):
                     revision.upgrade()
-            await connection.run_sync(migrate)
+            # autocommit_block() restores the server default isolation afterwards, so the
+            # migration gets its own connection and this one stays AUTOCOMMIT for VACUUM.
+            async with engine.connect() as migration:
+                await migration.exec_driver_sql(f"SET search_path TO {schema}")
+                await migration.commit()
+                await migration.run_sync(migrate)
             for table in ("parliament_bills", "citizen_votes", "zk_vote_receipts"):
                 await connection.exec_driver_sql(f"VACUUM (ANALYZE) {table}")
             yield connection, revision
         finally:
-            await connection.exec_driver_sql("SET search_path TO public")
-            await connection.exec_driver_sql(f"DROP SCHEMA {schema} CASCADE")
+            # A failed statement or a migration test may leave a transaction open; end it
+            # and drop the schema on a fresh connection so neither masks the real error.
+            await connection.rollback()
+    async with engine.connect() as cleanup:
+        cleanup = await cleanup.execution_options(isolation_level="AUTOCOMMIT")
+        await cleanup.exec_driver_sql(f"DROP SCHEMA IF EXISTS {schema} CASCADE")
     await engine.dispose()
 
 
