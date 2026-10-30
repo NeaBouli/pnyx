@@ -17,6 +17,7 @@ import os
 from models import CitizenVote, VoteChoice, ParliamentBill, BillStatus
 from services.bill_visibility import public_bill_filter, results_visible_filter
 from services.small_cell import small_cell_k
+from services import result_cache_policy as result_policy
 from services.public_bill_snapshot import snapshot_bill_filter, record_result_contributors
 from services.request_work import SingleFlight, cache_fill_quota
 from services.public_bill_response import (
@@ -213,18 +214,21 @@ _cplm_flights = SingleFlight()
 
 
 async def _get_cplm_cached(db: AsyncSession, *, force=False) -> dict:
-    return await _cplm_flights.run((small_cell_k(), force), lambda: _load_cplm(db, force=force))
+    async def under_policy(policy):
+        return await _cplm_flights.run((policy, force), lambda: _load_cplm(db, force=force, policy=policy))
+    return await result_policy.with_result_cache_policy(under_policy)
 
 
-async def _load_cplm(db, *, force=False):
+async def _load_cplm(db, *, force=False, policy):
     """Get CPLM aggregate, using Redis cache if available."""
     r = aioredis.from_url(REDIS_URL, decode_responses=True, socket_connect_timeout=0.05, socket_timeout=0.05)
     try:
-        # Never reuse unchecked trend deltas after enabling suppression or changing k.
-        # The private envelope also fences snapshots written before this rollout.
-        k = small_cell_k()
-        suffix = f":publishable-v1:k{k}" if k else ""
-        cache_key, history_key = CACHE_KEY + suffix, HISTORY_KEY + suffix
+        await result_policy.result_cache_policy.prepare_redis(r, CACHE_KEY, HISTORY_KEY)
+        if policy[0] > 0:
+            return await capture_public_bill_body(lambda: compute_cplm(db), db=db)
+        k = 0
+        cache_key = result_policy.result_cache_policy.key(CACHE_KEY, policy)
+        history_key = result_policy.result_cache_policy.key(HISTORY_KEY, policy)
         try:
             cached = await r.get(cache_key)
         except (RedisError, OSError):
@@ -262,9 +266,14 @@ async def _load_cplm(db, *, force=False):
 
         # Push to history (keep last 365 entries)
         try:
-            await r.setex(cache_key, CACHE_TTL, _store_snapshot(snapshot, k))
-            await r.lpush(history_key, _store_snapshot(snapshot, k))
-            await r.ltrim(history_key, 0, 364)
+            if policy == result_policy.result_cache_policy.current():
+                await r.setex(cache_key, CACHE_TTL, _store_snapshot(snapshot, k))
+                if policy == result_policy.result_cache_policy.current():
+                    await r.lpush(history_key, _store_snapshot(snapshot, k))
+                    await r.ltrim(history_key, 0, 364)
+                if policy != result_policy.result_cache_policy.current():
+                    await r.delete(cache_key)
+                    await r.delete(history_key)
         except (RedisError, OSError):
             logger.warning("CPLM cache write unavailable")
 
@@ -278,22 +287,27 @@ async def _load_cplm(db, *, force=False):
 async def get_cplm_history(days: int = 30, *, db: AsyncSession) -> list[dict]:
     """Get historical CPLM snapshots from Redis."""
     r = aioredis.from_url(REDIS_URL, decode_responses=True, socket_connect_timeout=0.05, socket_timeout=0.05)
-    k = small_cell_k()
-    suffix = f":publishable-v1:k{k}" if k else ""
     try:
-        entries = await r.lrange(HISTORY_KEY + suffix, 0, min(days * 4, 364))
-    except (RedisError, OSError):
-        entries = []
+        async def under_policy(policy):
+            await result_policy.result_cache_policy.prepare_redis(r, CACHE_KEY, HISTORY_KEY)
+            # Historical suppression inputs cannot be reconstructed safely.
+            if policy[0] > 0:
+                return []
+            key = result_policy.result_cache_policy.key(HISTORY_KEY, policy)
+            try:
+                entries = await r.lrange(key, 0, min(days * 4, 364))
+            except (RedisError, OSError):
+                entries = []
+            return [_read_snapshot(e, 0) for e in entries]
+        return await result_policy.with_result_cache_policy(under_policy)
     finally:
         await r.aclose()
-    return [_read_snapshot(e, k) for e in entries]
 
 
 async def refresh_cplm_cache(db: AsyncSession) -> dict:
     """Force refresh the CPLM cache (called by scheduler)."""
     r = aioredis.from_url(REDIS_URL, decode_responses=True, socket_connect_timeout=0.05, socket_timeout=0.05)
-    k = small_cell_k()
-    suffix = f":publishable-v1:k{k}" if k else ""
-    await r.delete(CACHE_KEY + suffix)
+    policy = await result_policy.result_cache_policy.prepare_redis(r, CACHE_KEY, HISTORY_KEY)
+    await r.delete(result_policy.result_cache_policy.key(CACHE_KEY, policy))
     await r.aclose()
     return await get_cplm_cached(db)

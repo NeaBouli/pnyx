@@ -226,10 +226,10 @@ async def test_point_results_revalidate_window_correction_without_invalidation(
         path = f"/api/v1/vote/{bill.id}/results"
         before = (await client.get(path)).json()
         assert [before[f"{choice}_count"] for choice in ("yes", "no", "abstain", "unknown")] == [initial_count] * 4
-        cached = next(iter(results_cache.entries.values()))[1]
         if k:
-            inputs = cached[response.RESULTS_INPUTS_KEY][bill.id]
-            assert (inputs.k, inputs.status, inputs.results_visibility) == (10, "WINDOW_24H", "WINDOW")
+            assert not results_cache.entries
+        else:
+            cached = next(iter(results_cache.entries.values()))[1]
         await db.execute(text("UPDATE citizen_votes SET vote = 'NO', is_correction = TRUE "
                               "WHERE nullifier_hash = 'YES-0'"))
         await db.commit()  # Worker B receives no deletion or generation bump.
@@ -256,7 +256,7 @@ async def test_point_results_revalidate_window_correction_without_invalidation(
             assert "suppressed" not in after and "suppression_k" not in after
         assert visibility_redis.generation == 0
         if k:
-            assert cached[response.BODY_KEY].yes == initial_count  # Never mutate the old entry.
+            assert not results_cache.entries
         await asyncio.gather(*results_cache.flights._tasks, return_exceptions=True)
         results_cache.clear()
         fresh = (await client.get(path)).json()

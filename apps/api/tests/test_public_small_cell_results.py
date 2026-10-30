@@ -696,11 +696,13 @@ async def test_cplm_safe_economic_plus_one_social_vote_never_enters_compute_cach
         async def aclose(self):
             pass
     monkeypatch.setattr(cplm.aioredis, 'from_url', lambda *_, **__: Redis())
+    calculate = AsyncMock(return_value=computed)
+    monkeypatch.setattr(cplm, 'compute_cplm', calculate)
     assert await cplm.get_cplm_cached(Db()) == computed
-    history = await cplm.get_cplm_history(db=Db())
-    assert history[0] == computed
-    assert len(history) == 1  # Legacy history without bill provenance is withheld.
-    assert all(':publishable-v1:k10' in key for key in keys)
+    assert await cplm.get_cplm_cached(Db()) == computed
+    assert calculate.await_count == 2
+    assert await cplm.get_cplm_history(db=Db()) == []
+    assert keys == []  # No shared body or historical snapshot reads with k > 0.
 
 
 @pytest.mark.asyncio

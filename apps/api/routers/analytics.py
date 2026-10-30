@@ -41,6 +41,7 @@ from services.bill_visibility import (
     results_visible_filter,
 )
 from services.public_bill_response import BODY_KEY, capture_public_bill_body, public_bill_response
+from services import result_cache_policy as result_policy
 from services.public_bill_snapshot import snapshot_bill_filter, snapshot_raw_filter, record_result_contributors
 from services.zk_vote_aggregation import (
     VoteTotals,
@@ -610,22 +611,28 @@ async def get_cached_representation(db: AsyncSession) -> dict:
 
 
 async def _load_representation(db, *, force=False):
-    async def current(generation):
-        return await _representation_flights.run(
-            (small_cell_k(), generation, force), lambda: _get_cached_representation(db, generation, force=force),
-        )
-    return await with_public_visibility_generation(current)
+    async def under_policy(policy):
+        async def current(generation):
+            return await _representation_flights.run(
+                (policy, generation, force),
+                lambda: _get_cached_representation(db, generation, force=force, policy=policy),
+            )
+        return await with_public_visibility_generation(current)
+    return await result_policy.with_result_cache_policy(under_policy)
 
 
-async def _get_cached_representation(db: AsyncSession, generation, *, force=False) -> dict:
+async def _get_cached_representation(db: AsyncSession, generation, *, force=False, policy) -> dict:
     # Policy changes never reuse a less restrictive aggregate. Expiry bounds
     # vote/metadata staleness to 30s from query start, including empty results;
     # hits don't renew it and slow fills don't get a fresh TTL.
-    key = f"{REPRESENTATION_CACHE_PREFIX}{small_cell_k()}"
+    key = result_policy.result_cache_policy.key(f"{REPRESENTATION_CACHE_PREFIX}0", policy)
     async with aioredis.from_url(
         settings.redis_url, decode_responses=True,
         socket_connect_timeout=0.05, socket_timeout=0.05,
     ) as cache:
+        await result_policy.result_cache_policy.prepare_redis(cache, REPRESENTATION_CACHE_PREFIX)
+        if policy[0] > 0:
+            return await capture_public_bill_body(lambda: compute_cumulative_representation(db), db=db)
         available = True
         try:
             async with asyncio.timeout(0.1):
@@ -649,10 +656,13 @@ async def _get_cached_representation(db: AsyncSession, generation, *, force=Fals
         result = await capture_public_bill_body(lambda: compute_cumulative_representation(db), db=db)
         # Round down: a fractional remainder must not extend the visibility bound.
         ttl = int(expires_at - monotonic())
-        if available and generation is not None and ttl > 0:
+        if (available and generation is not None and ttl > 0
+                and policy == result_policy.result_cache_policy.current()):
             try:
                 async with asyncio.timeout(0.1):
                     await cache.setex(key, ttl, json.dumps(dict(result, _public_visibility_generation=generation)))
+                    if policy != result_policy.result_cache_policy.current():
+                        await cache.delete(key)
             except (RedisError, OSError):
                 available = False
                 logger.warning("Representation cache write unavailable")

@@ -11,6 +11,7 @@ from sqlalchemy import select
 from models import ParliamentBill
 from services.bill_visibility import filter_public_bill_rows, public_bill_filter, results_hidden
 from services.public_bill_snapshot import building_snapshot, read_visibility_snapshot
+from services.result_cache_policy import with_result_cache_policy
 
 
 BILL_SCHEMAS = frozenset({"independent", "rows", "aggregate", "representation", "point", "history"})
@@ -106,7 +107,7 @@ async def serve_public_bill_body(body, *, db, schema, refresh=None, bill_ids=(),
         raise HTTPException(504, "Fresh public data is temporarily unavailable") from exc
 
 
-def public_bill_response(schema, *, refresh=None, bill_ids=None):
+def public_bill_response(schema, *, refresh=None, bill_ids=None, suppression_dependent=False):
     """Register inline/Redis caches at their shared public serving boundary."""
     if schema not in BILL_SCHEMAS:
         raise ValueError(f"Unknown public bill schema: {schema}")
@@ -117,17 +118,22 @@ def public_bill_response(schema, *, refresh=None, bill_ids=None):
         async def wrapped(*args, **kwargs):
             bound = parameters.bind(*args, **kwargs)
             bound.apply_defaults()
-            body = await function(*args, **kwargs)
-            ids = bill_ids(bound.arguments) if bill_ids else (
-                (bound.arguments["bill_id"],) if schema == "point" else ()
-            )
-            return await serve_public_bill_body(
-                body, db=bound.arguments["db"], schema=schema,
-                refresh=(lambda: refresh(**bound.arguments)) if refresh else None,
-                bill_ids=ids,
-            )
+            async def respond(_policy):
+                body = await function(*args, **kwargs)
+                ids = bill_ids(bound.arguments) if bill_ids else (
+                    (bound.arguments["bill_id"],) if schema == "point" else ()
+                )
+                return await serve_public_bill_body(
+                    body, db=bound.arguments["db"], schema=schema,
+                    refresh=(lambda: refresh(**bound.arguments)) if refresh else None,
+                    bill_ids=ids,
+                )
+            if suppression_dependent or schema in {"aggregate", "representation", "history"}:
+                return await with_result_cache_policy(respond)
+            return await respond(None)
         wrapped.public_bill_contributor_keys = CONTRIBUTOR_KEYS if schema in {"aggregate", "representation", "history"} else frozenset()
         wrapped.public_bill_schema = schema
         wrapped.public_visibility_filter = serve_public_bill_body
+        wrapped.public_suppression_dependent = suppression_dependent or schema in {"aggregate", "representation", "history"}
         return wrapped
     return decorate

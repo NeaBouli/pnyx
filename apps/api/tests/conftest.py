@@ -208,7 +208,11 @@ def campaign_support(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def isolate_client_flow_caches():
+def isolate_client_flow_caches(monkeypatch):
+    from services.result_cache_policy import result_cache_policy
+    monkeypatch.setattr(result_cache_policy, "k", 0)
+    monkeypatch.setattr(result_cache_policy, "epoch", "")
+    monkeypatch.setattr(result_cache_policy, "purged", {})
     from services.client_flow_cache import invalidate_client_flow_caches
     invalidate_client_flow_caches()
     yield

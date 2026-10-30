@@ -1232,7 +1232,7 @@ async def get_votes_in_progress(db: AsyncSession = Depends(get_db), request: Req
 
 @router.get("/{bill_id}/results", response_model=BillResults, dependencies=[Depends(enforce_route_limit)])
 @client_flow
-@public_bill_response("point")
+@public_bill_response("point", suppression_dependent=True)
 async def get_results(bill_id: str, db: AsyncSession = Depends(get_db), request: Request = None):
     """
     Abstimmungsergebnisse + Divergence Score.
@@ -1250,7 +1250,8 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db), request:
 
     bill = await results_cache.check_eligibility(eligible_bill)
     include_zk = (bill.source or "PARLIAMENT") == "PARLIAMENT"
-    totals_key = (bill_id, include_zk, small_cell_k())
+    k = small_cell_k()
+    totals_key = (bill_id, include_zk, k)
 
     # Visibility check (shared with every public results surface)
     if results_hidden(bill):
@@ -1281,7 +1282,7 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db), request:
     async def load_totals(session):
         async def calculate():
             return await aggregate_bill_vote_totals(session, bill_id, include_zk=include_zk)
-        if small_cell_k():
+        if k:
             return await capture_public_bill_body(calculate, db=session, point_results=bill_id)
         return await calculate()
 
@@ -1300,7 +1301,7 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db), request:
         )
 
     totals = await cached_totals()
-    if small_cell_k():
+    if k:
         async def rebuild_totals():
             nonlocal totals
             entry = results_cache.entries.get(totals_key)

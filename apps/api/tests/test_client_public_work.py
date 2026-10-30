@@ -106,17 +106,20 @@ async def test_public_cache_keys_query_defaults_privacy_and_visibility_rules(rel
         monkeypatch.setattr(bill_visibility, 'DIAVGEIA_SENSITIVE_PUBLIC_TERMS', ('new-marker',))
         assert (await client.get(paths[0])).status_code == 200
         assert db.execute.await_count == len(paths) + 2
+        assert not parliament.get_bills.public_cache.entries
+        monkeypatch.setenv('PUBLIC_RESULTS_MIN_COUNT', '0')
         # Unknown fields have no effect on public handlers and must not retain
         # signed/identity material in a shared key or create arbitrary variants.
         assert (await client.get(paths[0] + '&nullifier_hash=private-marker')).status_code == 200
+        assert db.execute.await_count == len(paths) + 3
         assert 'private-marker' not in repr(parliament.get_bills.public_cache.entries)
         clock.now += 4
         await client.get(paths[0])
-        assert db.execute.await_count == len(paths) + 2
+        assert db.execute.await_count == len(paths) + 3
         clock.now += 1
         await client.get(paths[0])
         await asyncio.gather(*parliament.get_bills.public_cache.flights._tasks)
-        assert db.execute.await_count == len(paths) + 3
+        assert db.execute.await_count == len(paths) + 4
 
 
 @pytest.mark.asyncio

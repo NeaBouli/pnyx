@@ -48,11 +48,14 @@ def assert_bill_cache_inventory():
             assert endpoint.public_cache.public_bill_contributor_keys == CONTRIBUTOR_KEYS, name
         assert endpoint.public_visibility_filter is serve_public_bill_body, name
         assert endpoint.public_cache is client_flow_cache.public_caches[name], name
+        assert endpoint.public_cache.suppression_sensitive == (schema != "independent"), name
     for name, cache in client_flow_cache.public_caches.items():
         assert cache.public_visibility_filter is serve_public_bill_body, name
         assert cache.public_bill_schema in {"rows", "aggregate", "representation", "independent"}, name
     for function, schema in INLINE_CACHES:
         assert function.public_bill_schema == schema, function.__name__
+        if function in {analytics.get_cached_representation, cplm.get_cplm_cached, cplm.get_cplm_history, voting.get_results}:
+            assert function.public_suppression_dependent, function.__name__
         if schema in {"aggregate", "representation", "history"}:
             assert function.public_bill_contributor_keys == CONTRIBUTOR_KEYS, function.__name__
         assert function.public_visibility_filter is serve_public_bill_body, function.__name__
@@ -100,4 +103,23 @@ def test_inline_client_cache_calls_cannot_bypass_inventory_review():
 def test_guard_rejects_missing_contributor_sets(monkeypatch):
     monkeypatch.setattr(analytics.analytics_overview, "public_bill_contributor_keys", frozenset())
     with pytest.raises(AssertionError, match="analytics_overview"):
+        assert_bill_cache_inventory()
+
+
+@pytest.mark.parametrize("name", [name for name, schema in PUBLIC_CACHES.items() if schema != "independent"])
+def test_guard_rejects_suppression_dependent_shared_cache(monkeypatch, name):
+    monkeypatch.setattr(client_flow_cache.public_caches[name], "suppression_sensitive", False)
+    with pytest.raises(AssertionError, match=name):
+        assert_bill_cache_inventory()
+
+
+def test_bill_totals_cache_bypasses_storage_with_small_cell_suppression():
+    assert client_flow_cache.results_cache.suppression_sensitive
+
+
+@pytest.mark.parametrize("function", [analytics.get_cached_representation, cplm.get_cplm_cached,
+                                      cplm.get_cplm_history, voting.get_results], ids=lambda f: f.__name__)
+def test_guard_rejects_inline_result_cache_without_runtime_suppression_policy(monkeypatch, function):
+    monkeypatch.setattr(function, "public_suppression_dependent", False)
+    with pytest.raises(AssertionError, match=function.__name__):
         assert_bill_cache_inventory()

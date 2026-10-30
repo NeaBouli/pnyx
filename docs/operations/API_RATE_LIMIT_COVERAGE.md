@@ -198,7 +198,35 @@ member caches retain their per-request visibility or stale-root checks.
 New public caches cover overview, MP ranking, politician list/questions/scores,
 bills/trending, consensus representation, region/municipality lists and tickets.
 Results also cache regional population aggregates.
-Each is bounded to 128 entries/process with five-second freshness anchored before
+Caches for suppression-dependent result bodies operate only while
+`PUBLIC_RESULTS_MIN_COUNT=0`, the current production setting.
+Small-cell suppression is OFF in production; enabling it
+requires the separate owner decision in #661.
+
+With `PUBLIC_RESULTS_MIN_COUNT > 0`, suppression-dependent response bodies bypass
+shared result cache reads and writes. Overview/window totals, analytics timelines
+and divergence, per-bill results, consensus/representation, CPLM and MP/party vote
+aggregates calculate fresh on every request. Identical concurrent calculations
+may share in-flight work; the result/error is removed on completion. Rate limits
+remain the protection. CPLM history returns no cached snapshots while suppression
+is enabled because historical suppression inputs cannot be reconstructed safely.
+
+The threshold is read at request time. A change purges affected process caches
+and immediately retires Redis namespaces; each Redis cache family deletes its
+old variants on its next access, retrying deletion after outages. A new namespace
+also prevents an older in-flight write or failed deletion from restoring a stale
+body when suppression is disabled again. Responses recheck the policy after work
+and rebuild if it changed. Visibility/contributor revalidation remains mandatory
+with suppression disabled. The cache freshness and stale-serving rules below
+describe the `k=0` path; they never authorize cached suppressed bodies.
+
+Follow-up before enabling #661: design and review proper suppression-aware
+caching, including daily/window partitions and all source/derived suppression
+inputs, runtime policy changes and racing fills. Until then, retain the fresh
+calculation rule for every suppression-dependent body.
+
+With suppression disabled, each public client cache is bounded to 128
+entries/process with five-second freshness anchored before
 work; hits do not renew it. Expired entries retain the last good value and serve
 immediately while one background refresh runs with its own database session,
 only until a hard stale deadline. Vote/status, eligibility-sensitive politician
@@ -664,3 +692,41 @@ b01-r5-full-failures-recheck.log: 5 passed in 1.60s
 The 95 skips cover unconfigured external PostgreSQL/Redis and optional service
 checks. Complete output is in `/private/tmp/b01-r5-full-api.log`; per-item tails
 are in `/private/tmp/b01-r5-final-stdout.txt`. No commit was created.
+
+### Round 10 validation
+
+Suppression-dependent bodies now bypass shared result cache reads and writes
+when `PUBLIC_RESULTS_MIN_COUNT > 0`, retaining only concurrent in-flight
+coalescing. Request-time policy changes purge local entries, retire Redis
+namespaces, delete old variants on access and fence racing fills/writes.
+The existing visibility/contributor guards and `k=0` caching remain in place.
+
+The reproduced two-day 10/10/10/10 scenario corrects yesterday's YES to NO
+and today's NO to YES without invalidation. All-time inputs stay unchanged;
+the next `k=10` overview correctly withholds `today` and marks it suppressed.
+Regressions also cover per-bill corrections, runtime toggles in both directions,
+failed purges, late writes, shared-cache inventory guards, concurrent coalescing
+and absence of completed-result reuse. Production suppression remains OFF;
+proper suppression-aware caching is a follow-up before enabling #661.
+
+API checks used `TZ=UTC` and the interpreter/framework overlay documented above.
+The broader focused run had 475 passes and one old expectation requiring bill-list
+cache hits with `k=10`. That test now checks the bypass and resumes cache-key/expiry
+checks with `k=0`; the correction and final policy checks passed:
+
+```text
+b01-r10-focused-corrections.log: 79 passed in 18.52s
+b01-r10-final-policy.log: 37 passed in 11.12s
+b01-r10-docs.log: Ran 391 tests in 15.075s; OK (skipped=2)
+```
+
+The full API suite ran once after focused checks. No implementation changed
+after that run started:
+
+```text
+4552 passed, 95 skipped, 25 xfailed, 21 warnings, 4 subtests passed in 1078.48s (0:17:58)
+```
+
+Full output and skip reasons are in `/private/tmp/b01-r10-api-full.log`;
+final log tails are in `/private/tmp/b01-r10-final-stdout.txt`.
+No commit was created.

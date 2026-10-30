@@ -12,6 +12,7 @@ from limits import parse
 from services.request_work import SingleFlight, WaitingWorkSlots
 from services.public_visibility_cache import with_public_visibility_generation
 from services.public_bill_response import CONTRIBUTOR_KEYS, BILL_SCHEMAS, capture_public_bill_body, serve_public_bill_body
+from services import result_cache_policy as result_policy
 
 
 logger = logging.getLogger(__name__)
@@ -50,7 +51,7 @@ class ClientFlowCache:
     """Bound memory and stale age, and coalesce queued refreshes."""
 
     def __init__(self, capacity=128, ttl=5, *, max_stale=PUBLIC_MAX_STALE,
-                 workers=None, wait_timeout=10, visibility_sensitive=False):
+                 workers=None, wait_timeout=10, visibility_sensitive=False, suppression_sensitive=False):
         self.capacity = capacity
         self.ttl = ttl
         self.max_stale = max_stale
@@ -61,6 +62,9 @@ class ClientFlowCache:
         self.generation = 0
         self.visibility_sensitive = visibility_sensitive
         self.public_generation = None
+        self.suppression_sensitive = suppression_sensitive
+        if suppression_sensitive:
+            result_policy.result_cache_policy.caches.add(self)
 
     def clear(self):
         self.generation += 1
@@ -85,6 +89,19 @@ class ClientFlowCache:
     async def get_or_fill(self, key, factory, *, background_factory=None, validate=None):
         if validate is not None:
             await self.check_eligibility(validate, key=key)
+        if self.suppression_sensitive:
+            async def under_policy(policy):
+                if policy[0] > 0:
+                    # Only concurrent requests share work; completed results
+                    # never enter entries or stale/background refresh paths.
+                    return await self.flights.run(
+                        ("uncached", policy, self.generation, key), lambda: self.workers.run(factory),
+                    )
+                return await self._get_visible_or_fill(key, factory, background_factory=background_factory)
+            return await result_policy.with_result_cache_policy(under_policy)
+        return await self._get_visible_or_fill(key, factory, background_factory=background_factory)
+
+    async def _get_visible_or_fill(self, key, factory, *, background_factory=None):
         if self.visibility_sensitive:
             async def current(public_generation):
                 if public_generation != self.public_generation:
@@ -99,6 +116,7 @@ class ClientFlowCache:
 
     async def _get_or_fill(self, key, factory, *, background_factory=None, public_generation=None):
         generation = self.generation
+        policy = result_policy.result_cache_policy.current() if self.suppression_sensitive else None
 
         def lookup():
             entry = self.entries.get(key)
@@ -129,7 +147,10 @@ class ClientFlowCache:
                 entry = (started + self.ttl, value)
                 if self.visibility_sensitive:
                     entry += (public_generation,)
-                if generation == self.generation and (not self.visibility_sensitive or public_generation is not None):
+                policy_current = (not self.suppression_sensitive or (
+                    policy == result_policy.result_cache_policy.current() and policy[0] == 0
+                ))
+                if policy_current and generation == self.generation and (not self.visibility_sensitive or public_generation is not None):
                     self.entries[key] = entry
                     self.entries.move_to_end(key)
                     while len(self.entries) > self.capacity:
@@ -163,7 +184,8 @@ class ClientFlowCache:
 
 
 scope_status_cache = ClientFlowCache(max_stale=SENSITIVE_MAX_STALE, visibility_sensitive=True)
-results_cache = ClientFlowCache(max_stale=SENSITIVE_MAX_STALE, workers=_aggregate_slots, visibility_sensitive=True)
+results_cache = ClientFlowCache(max_stale=SENSITIVE_MAX_STALE, workers=_aggregate_slots, visibility_sensitive=True,
+                                suppression_sensitive=True)
 public_caches = {}
 
 
@@ -190,6 +212,7 @@ def public_client_cache(*, bill_schema, quota="600/minute", aggregate=False, val
             workers=_aggregate_slots if aggregate else _read_slots,
             max_stale=SENSITIVE_MAX_STALE if sensitive else PUBLIC_MAX_STALE,
             visibility_sensitive=True,
+            suppression_sensitive=bill_schema != "independent",
         ))
         budget = SoftFillBudget(name, quota)
         cache.public_bill_contributor_keys = CONTRIBUTOR_KEYS if bill_schema in {"aggregate", "representation"} else frozenset()
@@ -237,20 +260,25 @@ def public_client_cache(*, bill_schema, quota="600/minute", aggregate=False, val
                     return await calculate()
                 return await with_cache_db(using_db)
 
-            # Callers may modify Pydantic models/lists without changing a hit.
-            body = await cache.get_or_fill(key, fill, background_factory=refresh)
-
-            async def refresh_visible():
-                nonlocal body
-                entry = cache.entries.get(key)
-                if entry is not None and entry[1] is body:
-                    cache.invalidate(key)
+            async def respond(_policy):
+                # Callers may modify Pydantic models/lists without changing a hit.
                 body = await cache.get_or_fill(key, fill, background_factory=refresh)
-                return body
 
-            return await serve_public_bill_body(
-                body, db=bound.arguments.get("db"), schema=bill_schema, refresh=refresh_visible,
-            )
+                async def refresh_visible():
+                    nonlocal body
+                    entry = cache.entries.get(key)
+                    if entry is not None and entry[1] is body:
+                        cache.invalidate(key)
+                    body = await cache.get_or_fill(key, fill, background_factory=refresh)
+                    return body
+
+                return await serve_public_bill_body(
+                    body, db=bound.arguments.get("db"), schema=bill_schema, refresh=refresh_visible,
+                )
+
+            if cache.suppression_sensitive:
+                return await result_policy.with_result_cache_policy(respond)
+            return await respond(None)
 
         wrapped.public_cache = cache
         wrapped.public_fill_budget = budget

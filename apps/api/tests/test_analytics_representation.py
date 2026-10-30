@@ -224,7 +224,8 @@ async def test_source_suppression_and_policy_invalidation(
     assert [b["bill_id"] for b in after["bills"]] == ["SAFE"]
     monkeypatch.setenv("PUBLIC_RESULTS_MIN_COUNT", "11")
     assert (await client.get("/api/v1/analytics/representation")).json()["bills"] == []
-    assert len({key for key, _, _ in cache.writes}) == 3
+    assert len(cache.writes) == 1  # Only the k=0 request may store a result.
+    assert cache.values == {}  # Policy changes purge all representation variants.
 
 
 async def test_hit_skips_db_and_expiry_refreshes_votes_and_visibility(
