@@ -144,7 +144,7 @@ def _has_mixed_words(prose: str) -> bool:
     return mixed >= 2 or (mixed == 1 and words <= 200)
 
 
-def _without_quotes(text: str, *, only_latin: bool) -> str:
+def _without_quotes(text: str, *, only_latin: bool, placeholder: str = " ") -> str:
     """Scan once, retaining incomplete quotes and, optionally, non-Latin quotes."""
     if (not (text.count('"') >= 2 or ('“' in text and '”' in text) or ('«' in text and '»' in text))
             or (only_latin and not any(_is_greek_letter(c) for c in text))):
@@ -164,7 +164,7 @@ def _without_quotes(text: str, *, only_latin: bool) -> str:
         elif char == end_quote:
             if not only_latin or (latin_only and has_latin):
                 chunks.append(text[start:opener])
-                chunks.append(" ")
+                chunks.append(placeholder)
                 start = index + 1
             opener = None
         elif char in "\r\n" and only_latin:
@@ -179,9 +179,13 @@ def _without_quotes(text: str, *, only_latin: bool) -> str:
     return "".join(chunks)
 
 
-def without_quotes(text: str) -> str:
-    """Drop complete quoted passages in one linear pass (shared by detectors)."""
-    return _without_quotes(text, only_latin=False)
+def without_quotes(text: str, *, placeholder: str = " ") -> str:
+    """Replace complete quoted passages in one linear pass (shared by detectors).
+
+    A non-space placeholder keeps the quote's position, so prose after a leading
+    quotation is never promoted to the start of a line.
+    """
+    return _without_quotes(text, only_latin=False, placeholder=placeholder)
 
 
 def _meta_lines(text: str) -> list[str]:

@@ -167,3 +167,18 @@ def test_quoted_error_headings_in_official_prose_are_not_error_pages() -> None:
     assert not looks_like_error_page(multiline)
     # An unquoted block page with the same heading is still detected.
     assert looks_like_error_page("<title>Error</title><h1>Access Denied</h1><p>Reference #18.abc</p>")
+
+
+def test_leading_quotation_does_not_promote_prose_to_a_heading() -> None:
+    from services.error_pages import looks_like_error_page
+
+    prose = ("«Σφάλμα» Access denied σημαίνει ότι ο διακομιστής δεν επιτρέπει την πρόσβαση στο δημόσιο "
+             "αρχείο, όπως εξήγησε η αρμόδια διεύθυνση στην απάντησή της προς την επιτροπή.")
+    assert not looks_like_error_page(prose)
+
+
+def test_attribute_quotes_cannot_hide_an_unquoted_block_page() -> None:
+    from services.error_pages import looks_like_error_page
+
+    page = "<div data-prefix='\"'><h1>Access Denied</h1></div><span data-suffix='\"'>Reference #18.abc</span>"
+    assert looks_like_error_page(page)

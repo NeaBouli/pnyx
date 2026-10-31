@@ -42,12 +42,15 @@ def looks_like_error_page(text: str | None) -> bool:
         return False
     from services.text_quality import without_quotes
 
-    # Generic headings quoted in official prose («<h2>Access denied</h2>») are
-    # discussion, not a block page: only unquoted text can supply heading lines.
     # Keep heading boundaries before stripping tags, even for minified HTML.
+    # Then mask complete quotations (after tags, so attribute quotes cannot pair
+    # up across elements): generic headings quoted in official prose
+    # («<h2>Access denied</h2>») are discussion, not a block page, and the
+    # placeholder keeps later prose from becoming a line-leading "heading".
+    flattened = _TAG.sub(" ", _HEADING_TAG.sub("\n", lowered))
     lines = [
         _HORIZONTAL_SPACE.sub(" ", line).lstrip(" #*>_`-")
-        for line in _TAG.sub(" ", _HEADING_TAG.sub("\n", without_quotes(lowered))).splitlines()
+        for line in without_quotes(flattened, placeholder=" \u00a7q\u00a7 ").splitlines()
     ]
     if any(_PREFIXED_REFERENCE.match(line) for line in lines):
         return True
