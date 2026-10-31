@@ -12,6 +12,12 @@
 - **Decision: NO-GO to claiming complete unattended alert coverage. This is not a deploy
   decision** and not an operational launch certification.
 
+2026-10-31 container runtime follow-up (EKA-13/B13): **source fixed; rollout pending per-service dry run**.
+Dashboard and monitor now declare fixed non-root image users; Ollama is pinned
+to the supplied running 0.21.2 digest. See [container runtime and per-service
+rollout/rollback](CONTAINER_RUNTIME.md) for cache permissions, unchanged host
+cron, proxy isolation, local gates and the remaining runtime acceptance.
+
 ## Current-source status (snapshot `9a6d96787e75b12ef2729afe0dc394d2c6ff3809`, 2026-10-10)
 
 Source-only comparison of known symbols against owner-merged follow-ups. No live delivery,
