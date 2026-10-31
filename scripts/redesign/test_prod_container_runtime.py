@@ -103,3 +103,10 @@ class ProductionContainerRuntimeTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DashboardBuildContextTest(unittest.TestCase):
+    def test_dashboard_context_excludes_local_env_files(self):
+        ignore = (Path(__file__).resolve().parents[2] / "apps/dashboard/.dockerignore").read_text(encoding="utf-8")
+        lines = {line.strip() for line in ignore.splitlines()}
+        self.assertTrue({".env", ".env.*"} <= lines)

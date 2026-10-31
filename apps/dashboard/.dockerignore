@@ -1,0 +1,13 @@
+# Build context is apps/dashboard (the repository-root .dockerignore does not apply).
+# Never send local secrets or build output into the image; Next.js copies loaded
+# .env files into the standalone output.
+.env
+.env.*
+!.env.example
+node_modules
+.next
+.git
+*.log
+*.apk
+*.aab
+coverage
