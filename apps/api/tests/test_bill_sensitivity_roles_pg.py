@@ -115,3 +115,21 @@ async def test_definer_validates_audits_and_grants_only_runtime(sensitivity_role
     for assignment in ("sensitive_override = NULL", "sensitive_override_reason = NULL"):
         with pytest.raises(asyncpg.InsufficientPrivilegeError):
             await runtime.execute(f"UPDATE parliament_bills SET {assignment} WHERE id = 'S'")
+
+
+@pytest.mark.asyncio
+async def test_runtime_cannot_delete_or_rekey_protected_bills(sensitivity_roles):
+    _owner, runtime = sensitivity_roles
+    assert await runtime.fetchval("SELECT sensitive_public_block FROM parliament_bills WHERE id = 'S'") is True
+    # DELETE + re-INSERT under the same id would start unflagged without the audited function.
+    for sql in ("DELETE FROM parliament_bills WHERE id = 'S'",
+                "UPDATE parliament_bills SET id = 'S-renamed' WHERE id = 'S'"):
+        with pytest.raises(asyncpg.InsufficientPrivilegeError, match="delete or re-key"):
+            await runtime.execute(sql)
+    assert await runtime.fetchval("SELECT count(*) FROM parliament_bills WHERE id = 'S'") == 1
+    # Unprotected rows keep ordinary runtime DML.
+    await runtime.execute("""INSERT INTO parliament_bills (id, source, title_el, status, governance_level)
+        VALUES ('PLAIN', 'DIAVGEIA', 'Ordinary procurement', 'OPEN_END', 'NATIONAL')""")
+    await runtime.execute("UPDATE parliament_bills SET id = 'PLAIN-2' WHERE id = 'PLAIN'")
+    await runtime.execute("DELETE FROM parliament_bills WHERE id = 'PLAIN-2'")
+    assert await runtime.fetchval("SELECT count(*) FROM parliament_bills WHERE id LIKE 'PLAIN%'") == 0

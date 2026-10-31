@@ -170,3 +170,16 @@ queries, check forum/lifecycle/ZK guards, exercise authenticated admin validatio
 and delegation to the DB function, and verify concurrent-index failure cleanup,
 refusal and ordering.
 SQLite fixture schemas include the same flags; PostgreSQL owns trigger behavior.
+
+## Identity guard
+
+A protected row (flag set or override present) can be deleted or have its `id` changed only by the table owner (`trg_bill_sensitivity_delete`, `trg_bill_sensitivity_rekey`). Otherwise a DELETE followed by a fresh INSERT under the same id would start unflagged and drop a hide override without the audited function. The application never deletes or re-keys bills; unprotected rows keep ordinary runtime DML.
+
+## Rollback
+
+- App-only rollback to code older than #715 is safe only while no sensitivity override has been set and no DIAVGEIA prose has been regenerated or cleaned: older code ignores the flags and decides visibility from prose again. After the first override or regeneration, roll forward (fix the flag-aware code) instead of rolling back.
+- `alembic downgrade` below z904 drops the flags, overrides and their history from the bill rows (the audit_log rows remain). Roll back the application first.
+
+## Plan choice
+
+Visibility reads two boolean columns. On the production copy the planner uses a heap scan over those flags for full counts (about 6–7 ms for ~11k bills); the partial index `idx_bills_public_metadata_v3` remains available for selective queries. Tests therefore assert that visibility plans never evaluate prose or `public_bill_sensitive()` and stay within a time bound, instead of forcing a particular access path.

@@ -203,13 +203,8 @@ async def test_in_progress_zk_join_is_limited_to_parliament_sources(monkeypatch)
 
     assert "COALESCE(b.source, 'PARLIAMENT') = 'PARLIAMENT'" in db.statement
     assert "unknown_count" in db.statement
-    assert "summary_short_el" in db.statement
-    assert "in_progress_sensitive_0" in db.statement
-    sensitive_params = {
-        name: value
-        for name, value in db.params.items()
-        if name.startswith("in_progress_sensitive_")
-    }
-    assert sensitive_params
-    assert all(term not in db.statement for term in sensitive_params.values())
+    # Visibility comes from the persisted flags (#715), never from prose.
+    assert "coalesce(b.sensitive_override, b.sensitive_public_block) IS NOT TRUE" in db.statement
+    assert "b.admin_hidden IS NOT TRUE" in db.statement
+    assert "summary_short_el" not in db.statement
     assert result["count"] == 0

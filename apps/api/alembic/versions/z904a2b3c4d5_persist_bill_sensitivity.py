@@ -80,6 +80,38 @@ BACKFILL_TRIGGER_FUNCTION_DDL = TRIGGER_FUNCTION_DDL.replace(
             OR (public_bill_sensitive(OLD.source, OLD.title_el,
                 OLD.summary_short_el, OLD.summary_long_el) IS NOT FALSE)""",
 )
+# Deleting or re-keying a protected row would let a fresh INSERT under the same
+# id start unflagged (and drop a hide override) without the audited function.
+IDENTITY_GUARD_FUNCTION_DDL = """DO $install$ BEGIN
+EXECUTE format($ddl$CREATE OR REPLACE FUNCTION guard_bill_sensitivity_identity()
+RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog, %1$I AS $$
+DECLARE
+    table_owner name;
+BEGIN
+    IF OLD.sensitive_public_block OR OLD.sensitive_override IS NOT NULL THEN
+        SELECT pg_catalog.pg_get_userbyid(relowner) INTO table_owner
+            FROM pg_catalog.pg_class WHERE oid = TG_RELID;
+        IF current_user <> table_owner THEN
+            RAISE EXCEPTION 'Only the table owner may delete or re-key a sensitivity-protected bill'
+                USING ERRCODE = '42501';
+        END IF;
+    END IF;
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    END IF;
+    RETURN NEW;
+END;
+$$ $ddl$, current_schema());
+END $install$"""
+IDENTITY_GUARD_TRIGGERS_DDL = (
+    """CREATE OR REPLACE TRIGGER trg_bill_sensitivity_delete
+BEFORE DELETE ON parliament_bills
+FOR EACH ROW EXECUTE FUNCTION guard_bill_sensitivity_identity()""",
+    """CREATE OR REPLACE TRIGGER trg_bill_sensitivity_rekey
+BEFORE UPDATE OF id ON parliament_bills
+FOR EACH ROW WHEN (OLD.id IS DISTINCT FROM NEW.id)
+EXECUTE FUNCTION guard_bill_sensitivity_identity()""",
+)
 TRIGGER_DDL = """CREATE OR REPLACE TRIGGER trg_bill_sensitivity
 BEFORE INSERT OR UPDATE OF source, title_el, summary_short_el, summary_long_el,
     sensitive_public_block, sensitive_override, sensitive_override_reason ON parliament_bills
@@ -194,6 +226,9 @@ def upgrade() -> None:
         ADD COLUMN IF NOT EXISTS sensitive_override_reason text NULL""")
     op.execute(BACKFILL_TRIGGER_FUNCTION_DDL)
     op.execute(TRIGGER_DDL)
+    op.execute(IDENTITY_GUARD_FUNCTION_DDL)
+    for ddl in IDENTITY_GUARD_TRIGGERS_DDL:
+        op.execute(ddl)
     op.execute(ADMIN_FUNCTION_DDL)
     op.execute(f"REVOKE ALL ON FUNCTION {ADMIN_FUNCTION_SIGNATURE} FROM PUBLIC")
     op.execute(ADMIN_FUNCTION_GRANT_DDL)
@@ -214,6 +249,9 @@ def downgrade() -> None:
     with op.get_context().autocommit_block():
         _create_index(bind, LEGACY_INDEX_NAME, LEGACY_PREDICATE)
         op.execute(f"DROP INDEX CONCURRENTLY IF EXISTS {INDEX_NAME}")
+    op.execute("DROP TRIGGER IF EXISTS trg_bill_sensitivity_rekey ON parliament_bills")
+    op.execute("DROP TRIGGER IF EXISTS trg_bill_sensitivity_delete ON parliament_bills")
+    op.execute("DROP FUNCTION IF EXISTS guard_bill_sensitivity_identity()")
     op.execute("DROP TRIGGER trg_bill_sensitivity ON parliament_bills")
     op.execute("DROP FUNCTION maintain_bill_sensitivity()")
     op.execute(f"DROP FUNCTION {ADMIN_FUNCTION_SIGNATURE}")
