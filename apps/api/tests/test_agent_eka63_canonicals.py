@@ -67,10 +67,13 @@ REQUIRED_FACTS: dict[str, dict[str, tuple[str, ...]]] = {
     "results_visibility": {
         "el": ("ACTIVE", "μηδενικές", "κατάσταση με ορατά αποτελέσματα",
                "WINDOW_24H", "PARLIAMENT_VOTED",
-               "OPEN_END", "δεν είναι δημόσια"),
+               "OPEN_END", "δεν είναι δημόσια", "10 ψήφους",
+               "αποθηκευμένη σήμανση ευαισθησίας", "παραγόμενο κείμενο",
+               "μη διαθέσιμες, όχι μηδενικές ψήφοι"),
         "en": ("ACTIVE", "zero", "results-visible lifecycle state",
                "WINDOW_24H", "PARLIAMENT_VOTED",
-               "OPEN_END", "not public"),
+               "OPEN_END", "not public", "10 votes", "persisted sensitivity",
+               "generated text", "unavailable, not zero votes"),
     },
 }
 

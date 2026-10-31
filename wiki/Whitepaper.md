@@ -8,7 +8,7 @@
 ## Λευκό Βιβλίο / Technical Whitepaper
 ### Version 1.0 — 2026
 
-**© 2026 Vendetta Labs — MIT License**
+**© 2026 V-Labs IT Solutions & Development (Vendetta Labs) — MIT License**
 
 </div>
 
@@ -235,9 +235,9 @@ Change only in WINDOW_24H  → 409 if ACTIVE
 
 ### 6.2 Αρχή k-Ανωνυμίας
 
-Το όριο `k ≥ 10` εφαρμόζεται σε συγκεκριμένα συγκεντρωτικά αποτελέσματα,
-όπου υλοποιείται ο σχετικός έλεγχος· δεν αποτελεί καθολική εγγύηση για κάθε
-δημοσίευση. Μειώνει, αλλά δεν εξαλείφει, τον κίνδυνο επαναναγνώρισης.
+Αποτελέσματα με λιγότερες από 10 ψήφους δεν εμφανίζονται δημόσια· αποκρύπτονται
+επίσης μικρές επιμέρους ομάδες. Το όριο μειώνει, αλλά δεν εξαλείφει, τον κίνδυνο
+επαναναγνώρισης.
 
 ### 6.3 Servers & Δικαιοδοσία
 
@@ -310,7 +310,7 @@ TrueRepublic (Blockchain Layer)
 - Κόστος hosting: ~15-25€/μήνα (Hetzner CX21)
 - Κόστος domain: ~10€/χρόνο
 - Σύνολο: ~200-300€/χρόνο
-- Χρηματοδότηση: Vendetta Labs + NGO donations
+- Χρηματοδότηση: V-Labs IT Solutions & Development (Vendetta Labs) + NGO donations
 
 ### 9.2 Βιωσιμότητα / Sustainability
 - Κανένα paywall, κανένα freemium
@@ -331,7 +331,7 @@ TrueRepublic (Blockchain Layer)
 **does not** replace official electoral processes. It is a tool for
 **expressing** political opinion and **measuring** democratic representation.
 
-- MIT License © 2026 Vendetta Labs
+- MIT License © 2026 V-Labs IT Solutions & Development (Vendetta Labs)
 - GDPR Compliant
 - Δεν συλλέγει δεδομένα εκστρατείας / No campaign data collection
 - Πολιτικά ουδέτερο σύστημα / Politically neutral system
@@ -363,7 +363,7 @@ Native Android Semaphore/Mopro proving, hidden S10 canary, and the first public 
 
 <div align="center">
 
-**© 2026 Vendetta Labs — MIT License**
+**© 2026 V-Labs IT Solutions & Development (Vendetta Labs) — MIT License**
 
 [GitHub](https://github.com/NeaBouli/pnyx) · [Wiki](https://github.com/NeaBouli/pnyx/wiki) · [ekklesia.gr](https://ekklesia.gr)
 

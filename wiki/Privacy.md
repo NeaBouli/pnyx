@@ -5,7 +5,7 @@
 -->
 
 # Πολιτική Απορρήτου / Privacy Policy
-# Copyright (c) 2026 Vendetta Labs — MIT License
+# Copyright (c) 2026 V-Labs IT Solutions & Development (Vendetta Labs) — MIT License
 
 ## Τι ΔΕΝ αποθηκεύουμε / What we do NOT store
 
@@ -33,7 +33,7 @@
 - Servers αποκλειστικά στην Ευρώπη / Exclusively in Europe
 - Δεν πωλούνται δεδομένα σε τρίτους / No data sold to third parties
 - Ανοιχτός κώδικας — πλήρης έλεγχος / Open source — full auditability
-- MIT License © 2026 Vendetta Labs
+- MIT License © 2026 V-Labs IT Solutions & Development (Vendetta Labs)
 
 ## Επικοινωνία / Contact
 GitHub Issues: https://github.com/NeaBouli/pnyx/issues

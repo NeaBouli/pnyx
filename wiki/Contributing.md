@@ -45,4 +45,4 @@ test: tests
 
 ## License
 
-MIT License © 2026 Vendetta Labs
+MIT License © 2026 V-Labs IT Solutions & Development (Vendetta Labs)

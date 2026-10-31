@@ -86,7 +86,7 @@ Only inert JSON-LD remains. No executable inline items, empty placeholders, stri
 | `docs/wiki/contributing.html:172` | JSON-LD data | Retain inline for SEO; inert under script-src. |
 | `docs/wiki/database.html:172` | JSON-LD data | Retain inline for SEO; inert under script-src. |
 | `docs/wiki/delete-account.html:139` | JSON-LD data | Retain inline for SEO; inert under script-src. |
-| `docs/wiki/faq.html:543` | JSON-LD data | Retain inline for SEO; inert under script-src. |
+| `docs/wiki/faq.html:544` | JSON-LD data | Retain inline for SEO; inert under script-src. |
 | `docs/wiki/index.html:34` | JSON-LD data | Retain inline for SEO; inert under script-src. |
 | `docs/wiki/modules.html:181` | JSON-LD data | Retain inline for SEO; inert under script-src. |
 | `docs/wiki/privacy.html:184` | JSON-LD data | Retain inline for SEO; inert under script-src. |

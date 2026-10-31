@@ -90,8 +90,8 @@
    "track*",
    "link*"
   ],
-  "el": "Οι ψήφοι δεν αποθηκεύονται μαζί με όνομα ή αριθμό τηλεφώνου. Ο server μπορεί όμως να συνδέσει τις ψήφους της ίδιας ταυτότητας (μέσω του nullifier hash), άρα οι ψήφοι δεν είναι κρυπτογραφικά ανώνυμες απέναντι στον διαχειριστή. Δημόσια εμφανίζονται μόνο συγκεντρωτικά αποτελέσματα. Η ψηφοφορία με αποδείξεις μηδενικής γνώσης (ZK) είναι σε παύση για έλεγχο ασφαλείας από 03/10/2026.",
-  "en": "Votes are not stored together with a name or phone number. The server can, however, link votes of the same identity (through the nullifier hash), so votes are not cryptographically anonymous towards the operator. Only aggregate results are shown publicly. Zero-knowledge (ZK) voting has been paused for a security review since 2026-10-03."
+  "el": "Οι ψήφοι αποθηκεύονται ψευδώνυμα· συνδέονται με ψευδώνυμο nullifier, όχι με όνομα ή αριθμό τηλεφώνου. Ο αριθμός τηλεφώνου δεν αποθηκεύεται. Δείτε την πολιτική ιδιωτικότητας: https://ekklesia.gr/wiki/privacy.html. Δημόσια μπορεί να εμφανίζονται μόνο συγκεντρωτικά αποτελέσματα. Η ψηφοφορία με αποδείξεις μηδενικής γνώσης (ZK) είναι σε παύση για έλεγχο ασφαλείας από 03/10/2026. Αποτελέσματα με λιγότερες από 10 ψήφους δεν εμφανίζονται δημόσια· αποκρύπτονται επίσης μικρές επιμέρους ομάδες.",
+  "en": "Votes are stored pseudonymously; linked to a pseudonymous nullifier, not to a name or phone number. The phone number is not stored. See the privacy page: https://ekklesia.gr/wiki/privacy.html. Only aggregate results may be shown publicly. Zero-knowledge (ZK) voting has been paused for a security review since 2026-10-03. Results with fewer than 10 votes are not shown publicly; small subgroups are also withheld."
  },
  "lifecycle": {
   "kw": [
@@ -118,8 +118,8 @@
    "zero",
    "lifecycle"
   ],
-  "el": "Κύκλος νομοσχεδίου (με βάση την ημερομηνία ψηφοφορίας της Βουλής): ANNOUNCED → ACTIVE 14 ημέρες πριν, → WINDOW_24H 24 ώρες πριν, → PARLIAMENT_VOTED τη στιγμή της ψηφοφορίας της Βουλής, → OPEN_END 7 ημέρες μετά. Ψηφίζετε όσο το νομοσχέδιο είναι ACTIVE ή WINDOW_24H· η ψηφοφορία των πολιτών κλείνει τη στιγμή που ψηφίζει η Βουλή (PARLIAMENT_VOTED). Σε ACTIVE τα αποτελέσματα συνήθως είναι κρυφά και φαίνονται μηδενικά· σε WINDOW_24H, PARLIAMENT_VOTED και OPEN_END τα συγκεντρωτικά αποτελέσματα είναι ορατά. Χωρίς γνωστή ημερομηνία Βουλής οι αλλαγές γίνονται χειροκίνητα. Τρέχοντα νομοσχέδια: https://ekklesia.gr/el/bills",
-  "en": "Bill lifecycle (based on the Parliament vote date): ANNOUNCED → ACTIVE 14 days before, → WINDOW_24H 24 hours before, → PARLIAMENT_VOTED at the time of the Parliament vote, → OPEN_END 7 days after. You can vote while a bill is ACTIVE or WINDOW_24H; citizen voting closes when Parliament votes (PARLIAMENT_VOTED). In ACTIVE, results are usually hidden and shown as zero; in WINDOW_24H, PARLIAMENT_VOTED and OPEN_END the aggregate results are visible. Without a known Parliament date, transitions are manual. Current bills: https://ekklesia.gr/en/bills"
+  "el": "Κύκλος νομοσχεδίου (με βάση την ημερομηνία ψηφοφορίας της Βουλής): ANNOUNCED → ACTIVE 14 ημέρες πριν, → WINDOW_24H 24 ώρες πριν, → PARLIAMENT_VOTED τη στιγμή της ψηφοφορίας της Βουλής, → OPEN_END 7 ημέρες μετά. Ψηφίζετε όσο το νομοσχέδιο είναι ACTIVE ή WINDOW_24H· η ψηφοφορία των πολιτών κλείνει τη στιγμή που ψηφίζει η Βουλή (PARLIAMENT_VOTED). Σε ACTIVE τα αποτελέσματα συνήθως είναι κρυφά και φαίνονται μηδενικά· σε WINDOW_24H, PARLIAMENT_VOTED και OPEN_END τα συγκεντρωτικά αποτελέσματα μπορεί να εμφανίζονται σύμφωνα με τους κανόνες ορατότητας και απόκρυψης μικρών ομάδων. Αποτελέσματα με λιγότερες από 10 ψήφους δεν εμφανίζονται δημόσια· αποκρύπτονται επίσης μικρές επιμέρους ομάδες. Οι αποκρυμμένες αυτές τιμές είναι μη διαθέσιμες, όχι μηδενικές ψήφοι. Η δημόσια ορατότητα ελέγχεται και από αποθηκευμένη σήμανση ευαισθησίας, ανεξάρτητα από το παραγόμενο κείμενο. Χωρίς γνωστή ημερομηνία Βουλής οι αλλαγές γίνονται χειροκίνητα. Τρέχοντα νομοσχέδια: https://ekklesia.gr/el/bills",
+  "en": "Bill lifecycle (based on the Parliament vote date): ANNOUNCED → ACTIVE 14 days before, → WINDOW_24H 24 hours before, → PARLIAMENT_VOTED at the time of the Parliament vote, → OPEN_END 7 days after. You can vote while a bill is ACTIVE or WINDOW_24H; citizen voting closes when Parliament votes (PARLIAMENT_VOTED). In ACTIVE, results are usually hidden and shown as zero; in WINDOW_24H, PARLIAMENT_VOTED and OPEN_END aggregate results may be shown subject to visibility and small-cell suppression rules. Results with fewer than 10 votes are not shown publicly; small subgroups are also withheld. These withheld values are unavailable, not zero votes. Public visibility also checks a persisted sensitivity flag, independently of generated text. Without a known Parliament date, transitions are manual. Current bills: https://ekklesia.gr/en/bills"
  },
  "private_key": {
   "kw": [
@@ -177,8 +177,8 @@
    "score",
    "δείκτ*"
   ],
-  "el": "Το CPLM (Citizens Political Liquid Mirror) είναι δημόσιο συγκεντρωτικό σήμα της πολιτικής θέσης των συμμετεχόντων με βάση τις ψήφους τους· δεν δείχνει μεμονωμένες ψήφους. Για το Divergence Score δείτε https://ekklesia.gr/wiki/faq.html",
-  "en": "CPLM (Citizens Political Liquid Mirror) is a public aggregate signal of participants' political position based on their votes; it shows no individual votes. For the Divergence Score see https://ekklesia.gr/wiki/faq.html"
+  "el": "Το CPLM (Citizens Political Liquid Mirror) είναι δημόσιο συγκεντρωτικό σήμα της πολιτικής θέσης των συμμετεχόντων με βάση τις ψήφους τους· δεν δείχνει μεμονωμένες ψήφους. Για το Divergence Score δείτε https://ekklesia.gr/wiki/faq.html Αποτελέσματα με λιγότερες από 10 ψήφους δεν εμφανίζονται δημόσια· αποκρύπτονται επίσης μικρές επιμέρους ομάδες.",
+  "en": "CPLM (Citizens Political Liquid Mirror) is a public aggregate signal of participants' political position based on their votes; it shows no individual votes. For the Divergence Score see https://ekklesia.gr/wiki/faq.html Results with fewer than 10 votes are not shown publicly; small subgroups are also withheld."
  },
  "apps": {
   "kw": [
@@ -234,5 +234,31 @@
   ],
   "el": "Η σύνδεση gov.gr είναι σχεδιασμένη αλλά δεν είναι ενεργή. Εκπρόσωποι επαληθεύονται μόνο με πρόσκληση διαχειριστή και αριθμό ΑΔΑ στη Διαύγεια. Οι δωρεές/πληρωμές είναι σε παύση.",
   "en": "The gov.gr login is planned but not active. Representatives are verified only with an admin invitation plus an ADA number on Diavgeia. Donations/payments are paused."
+ },
+ "compass": {
+  "kw": [
+   "compass",
+   "political compass",
+   "liquid compass",
+   "compass data",
+   "πυξίδα",
+   "πυξίδας",
+   "πυξίδ*",
+   "vaa"
+  ],
+  "el": "Στον browser το προφίλ Compass αποθηκεύεται τοπικά με κρυπτογράφηση AES-256-GCM και κλειδί στη συσκευή. Χωριστά, ο server αποθηκεύει ψευδώνυμες ψήφους και ιστορικό συναίνεσης και επιστρέφει προσωπική θέση από το ιστορικό μετά από έλεγχο υπογραφής· η τοπική κρυπτογράφηση δεν καλύπτει αυτά τα δεδομένα. Για νέες αποθηκεύσεις χρησιμοποιείται το ξεχωριστό μη εξαγώγιμο κλειδί AES του IndexedDB όταν υπάρχει· αλλιώς παράγεται κλειδί από το παλαιό ιδιωτικό κλειδί ταυτότητας. Μια ατελής μεταφορά μπορεί να διατηρεί και τα δύο. Στην παλαιότερη ροή ο server δημιουργεί το κλειδί ταυτότητας μία φορά και δεν το αποθηκεύει. Κώδικας της ίδιας σελίδας μπορεί να χρησιμοποιήσει το κλειδί όσο η σελίδα είναι ανοιχτή.",
+  "en": "Browser Compass profiles are stored locally with AES-256-GCM encryption and a key held on the device. Separately, the server stores pseudonymous votes and consensus history and returns a personal position derived from that history after signature verification; local encryption does not cover those records. New writes use the separate non-extractable AES key in IndexedDB when available; otherwise they derive a key from the legacy identity private key. An incomplete migration can retain both. In the legacy flow, the server creates the identity key once and does not store it. Code on the same page can use the key while the page is open."
+ },
+ "arweave": {
+  "kw": [
+   "arweave",
+   "arweave results",
+   "arweave publication",
+   "stored on arweave",
+   "αποτελέσματα στο arweave",
+   "αρχειοθέτηση στο arweave"
+  ],
+  "el": "Η βάση δεδομένων της πλατφόρμας είναι το κύριο αρχείο. Συγκεντρωτικά στιγμιότυπα μπορεί να δημοσιευθούν στο Arweave για επιλέξιμα νομοσχέδια της Βουλής μετά την κοινοβουλευτική ψηφοφορία. Η δημοσίευση και η μόνιμη διαθεσιμότητα δεν είναι εγγυημένες. Η δημοσίευση ZK είναι σε παύση. Αποτελέσματα με λιγότερες από 10 ψήφους δεν εμφανίζονται δημόσια· αποκρύπτονται επίσης μικρές επιμέρους ομάδες. Η προσπάθεια γίνεται κατά το PARLIAMENT_VOTED, με επανέλεγχο σε PARLIAMENT_VOTED ή OPEN_END για εγγραφές χωρίς αναγνωριστικό δημοσίευσης. Αφορά δημόσια νομοσχέδια της Βουλής με διαθέσιμες κοινοβουλευτικές ψήφους, σύμφωνα με τους κανόνες ορατότητας και απόκρυψης μικρών ομάδων. Η δημόσια ορατότητα ελέγχεται και από αποθηκευμένη σήμανση ευαισθησίας, ανεξάρτητα από το παραγόμενο κείμενο. Αποτυχίες καταγράφονται και μπορεί να επανελεγχθούν. Χωρίς ρυθμισμένο πορτοφόλι παράγεται μόνο ένδειξη δοκιμής (DRY_RUN), όχι δημοσίευση στο δίκτυο. Το στιγμιότυπο περιλαμβάνει στοιχεία νομοσχεδίου, ιστορικό καταστάσεων, κοινοβουλευτικές ψήφους και συγκεντρωτικά αποτελέσματα πολιτών· όχι ατομικές κανονικές ψήφους, δημόσια κλειδιά ή nullifiers ταυτότητας. Το πεδίο δείκτη απόκλισης μπορεί να είναι κενό. Η χωριστή διαδρομή ZK, που παραμένει σε παύση, προβλέπει δημοσίευση ατομικής επιλογής με δημόσια απόδειξη ZK, χωρίς ταυτότητα.",
+  "en": "The platform database is the primary record. Aggregate snapshots may be published to Arweave for eligible Parliament bills after the parliamentary vote. Publication and permanent availability are not guaranteed. ZK publication is paused. Results with fewer than 10 votes are not shown publicly; small subgroups are also withheld. Publication is attempted at PARLIAMENT_VOTED, with catch-up in PARLIAMENT_VOTED or OPEN_END for records without a publication ID. Eligibility requires public Parliament bills with parliamentary party votes, subject to visibility and small-cell rules. Public visibility also checks a persisted sensitivity flag, independently of generated text. Failures are logged and may be retried. Without a configured wallet, only a test marker (DRY_RUN) is produced, not a network publication. A snapshot contains bill metadata, lifecycle history, parliamentary party votes and aggregate citizen results; it excludes individual ordinary votes, public keys and identity nullifiers. The divergence-score field may be empty. The separate ZK path, which remains paused, supports publication of an individual choice with a public ZK proof, without identity."
  }
 }

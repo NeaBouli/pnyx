@@ -439,7 +439,7 @@ export default function BillsClient({ initial }: { initial: InitialBills | null 
             : "Non-governmental application — informational purposes only"}
         </p>
         <p className="mt-1">
-          © 2026 V-Labs Development — MIT License —{" "}
+          © 2026 V-Labs IT Solutions & Development — MIT License —{" "}
           <a href="https://github.com/NeaBouli/pnyx" className="hover:text-gray-600" target="_blank">
             Open Source
           </a>

@@ -503,13 +503,15 @@ def _canonical_response(question: str, lang: str) -> dict | None:
             "Διαύγεια. Ο ΑΔΑ μόνος του δεν αρκεί. Μετά την επιτυχή επαλήθευση "
             "εκδίδεται token πρόσβασης με ισχύ 24 ωρών και ο κωδικός πρόσκλησης "
             "θεωρείται χρησιμοποιημένος. Εξαίρεση αποτελεί μόνο μια περιορισμένη "
-            "ροή επίδειξης, που δεν ελέγχει τη Διαύγεια.",
+            "ροή επίδειξης, που δεν ελέγχει τη Διαύγεια. "
+            "Ο ΑΔΑ αποθηκεύεται στην εγγραφή της χρησιμοποιημένης πρόσκλησης, με ένδειξη και χρόνο χρήσης. Αποθηκεύεται επίσης στην εγγραφή πρόσβασης εκπροσώπου μαζί με το token πρόσβασης, τον χρόνο λήξης, τον ρόλο, την Περιφέρεια και τον Δήμο (ονόματα και αναγνωριστικά) και την ονομασία φορέα.",
             "Representative verification is not open registration. It requires a "
             "valid admin-issued invite code that is unused and not expired, plus an "
             "ADA number that is verified on Diavgeia. An ADA number alone is not "
             "enough. After successful verification, a 24-hour access token is "
             "issued and the invite code is marked as used. The only exception is a "
-            "restricted demonstration flow, which does not check Diavgeia.",
+            "restricted demonstration flow, which does not check Diavgeia. "
+            "The ADA is stored in the redeemed invitation record with its usage status and time. It is also stored in the representative access record with the access token, expiry time, role, region and municipality (names and identifiers), and organisation label.",
             "representative_verification",
         )
 
@@ -517,18 +519,27 @@ def _canonical_response(question: str, lang: str) -> dict | None:
         return resp(
             "Στη σελίδα του νομοσχεδίου, η ορατότητα των αποτελεσμάτων ακολουθεί "
             "την κατάσταση του νομοσχεδίου. Σε νομοσχέδιο ACTIVE με την προεπιλεγμένη ρύθμιση "
-            "κρυφών αποτελεσμάτων, οι μετρήσεις εμφανίζονται μηδενικές και "
+            "κρυφών αποτελεσμάτων, οι μετρήσεις μπορεί να εμφανίζονται μηδενικές και "
             "σημειώνονται ως κρυφές μέχρι το νομοσχέδιο να περάσει σε κατάσταση "
             "με ορατά αποτελέσματα. Στις "
             "καταστάσεις WINDOW_24H, PARLIAMENT_VOTED και OPEN_END τα "
-            "συγκεντρωτικά αποτελέσματα είναι ορατά. Νομοσχέδια που δεν είναι "
+            "συγκεντρωτικά αποτελέσματα μπορεί να εμφανίζονται σύμφωνα με τους "
+            "κανόνες ιδιωτικότητας. Αποτελέσματα με λιγότερες από 10 ψήφους δεν "
+            "εμφανίζονται δημόσια· αποκρύπτονται επίσης μικρές επιμέρους ομάδες. "
+            "Οι αποκρυμμένες αυτές τιμές είναι μη διαθέσιμες, όχι μηδενικές ψήφοι. "
+            "Η δημόσια ορατότητα ελέγχεται και από αποθηκευμένη σήμανση ευαισθησίας, "
+            "ανεξάρτητα από το παραγόμενο κείμενο. Νομοσχέδια που δεν είναι "
             "δημόσια δεν εμφανίζουν αποτελέσματα. Για τους τρέχοντες αριθμούς "
             "δείτε τη σελίδα του νομοσχεδίου.",
             "On the bill page, result visibility follows the bill status. For an ACTIVE bill with "
-            "the default hidden-results setting, the counts are shown as zero and "
+            "the default hidden-results setting, the counts may be shown as zero and "
             "marked as hidden until the bill enters a results-visible lifecycle "
             "state. In WINDOW_24H, PARLIAMENT_VOTED "
-            "and OPEN_END status, the aggregate results are visible. Bills that "
+            "and OPEN_END status, aggregate results may be shown subject to privacy "
+            "rules. Results with fewer than 10 votes are not shown publicly; small "
+            "subgroups are also withheld. These withheld values are unavailable, "
+            "not zero votes. Public visibility also checks a persisted sensitivity "
+            "flag, independently of generated text. Bills that "
             "are not public do not show results. For current numbers, see the "
             "bill page.",
             "results_visibility",
@@ -547,24 +558,31 @@ def _canonical_response(question: str, lang: str) -> dict | None:
             "χωρίς να αποθηκεύει τον αριθμό τηλεφώνου. Στη Beta παράγεται ως "
             "server-salted hash, επομένως το server salt είναι κρίσιμο μυστικό. "
             "Το Ed25519 χρησιμοποιείται για ψηφιακές υπογραφές ψήφων, όχι ως "
-            "γεννήτρια του nullifier.",
+            "γεννήτρια του nullifier. "
+            "Οι ψήφοι αποθηκεύονται ψευδώνυμα· συνδέονται με ψευδώνυμο nullifier, όχι με όνομα ή αριθμό τηλεφώνου. Ο αριθμός τηλεφώνου δεν αποθηκεύεται. Δείτε την πολιτική ιδιωτικότητας: https://ekklesia.gr/wiki/privacy.html.",
             "A nullifier hash lets the system enforce uniqueness without storing "
             "the phone number. In Beta it is generated as a server-salted hash, "
             "so the server salt is a critical secret. Ed25519 is used for vote "
-            "signatures; it is not the mechanism that generates the nullifier hash.",
+            "signatures; it is not the mechanism that generates the nullifier hash. "
+            "Votes are stored pseudonymously; linked to a pseudonymous nullifier, not to a name or phone number. The phone number is not stored. See the privacy page: https://ekklesia.gr/wiki/privacy.html.",
             "nullifier_hash",
         )
 
     if "cplm" in q or "liquid mirror" in q or "πολιτικό καθρέφ" in q:
         return resp(
-            "Το CPLM (Citizens Political Liquid Mirror) είναι δημόσιο, ανώνυμο "
+            "Το CPLM (Citizens Political Liquid Mirror) είναι δημόσιο "
             "συγκεντρωτικό σήμα που δείχνει τη συνολική πολιτική θέση των "
             "συμμετεχόντων πολιτών με βάση τις ψήφους τους. Δεν αποκαλύπτει "
-            "μεμονωμένες ψήφους ή ταυτότητες.",
-            "CPLM (Citizens Political Liquid Mirror) is a public, anonymous "
+            "μεμονωμένες ψήφους ή ταυτότητες. Αποτελέσματα με λιγότερες από "
+            "10 ψήφους δεν εμφανίζονται δημόσια· αποκρύπτονται επίσης μικρές "
+            "επιμέρους ομάδες. "
+            "Οι ψήφοι αποθηκεύονται ψευδώνυμα· συνδέονται με ψευδώνυμο nullifier, όχι με όνομα ή αριθμό τηλεφώνου. Ο αριθμός τηλεφώνου δεν αποθηκεύεται. Δείτε την πολιτική ιδιωτικότητας: https://ekklesia.gr/wiki/privacy.html.",
+            "CPLM (Citizens Political Liquid Mirror) is a public "
             "aggregate signal showing the overall political position of "
             "participating citizens based on their votes. It does not reveal "
-            "individual votes or identities.",
+            "individual votes or identities. Results with fewer than 10 votes "
+            "are not shown publicly; small subgroups are also withheld. "
+            "Votes are stored pseudonymously; linked to a pseudonymous nullifier, not to a name or phone number. The phone number is not stored. See the privacy page: https://ekklesia.gr/wiki/privacy.html.",
             "cplm",
         )
 

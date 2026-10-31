@@ -7,7 +7,7 @@
   <title>Διαγραφή Λογαριασμού | εκκλησία Wiki</title>
   <meta name="description" content="Πώς να διαγράψετε τον λογαριασμό σας στο ekklesia.gr — Account Deletion Instructions"/>
   <meta name="keywords" content="delete account, διαγραφή, GDPR, nullifier, ekklesia"/>
-  <meta name="author" content="V-Labs Development — Community"/>
+  <meta name="author" content="V-Labs IT Solutions &amp; Development — Community"/>
   <meta name="robots" content="index, follow"/>
   <link rel="canonical" href="https://ekklesia.gr/wiki/delete-account.html"/>
 
@@ -142,7 +142,7 @@
   "@type": "TechArticle",
   "headline": "Account Deletion",
   "description": "How to delete your account on ekklesia.gr.",
-  "author": {"@type": "Organization", "name": "V-Labs Development"},
+  "author": {"@type": "Organization", "name": "V-Labs IT Solutions & Development"},
   "publisher": {"@type": "Organization", "name": "ekklesia.gr", "url": "https://ekklesia.gr"},
   "inLanguage": "el",
   "isPartOf": {"@type": "WebSite", "name": "ekklesia.gr", "url": "https://ekklesia.gr"},
@@ -252,13 +252,11 @@
 
   <h2 class="fade-in" data-el="Τι διατηρείται μετά την απεγκατάσταση ή ανάκληση" data-en="What is retained after uninstalling or revocation">Τι διατηρείται μετά την απεγκατάσταση ή ανάκληση</h2>
   <div class="warn-box fade-in">
-    <p data-el="Τα συγκεντρωτικά αποτελέσματα των κανονικών ψήφων αρχειοθετούνται μόνιμα στο Arweave. Περιλαμβάνουν:" data-en="Aggregate results of ordinary votes are permanently archived on Arweave. They include:">
-      Τα συγκεντρωτικά αποτελέσματα των κανονικών ψήφων αρχειοθετούνται μόνιμα στο Arweave. Περιλαμβάνουν:
-    </p>
+    <p data-el="Η βάση δεδομένων της πλατφόρμας είναι το κύριο αρχείο. Συγκεντρωτικά στιγμιότυπα μπορεί να δημοσιευθούν στο Arweave για επιλέξιμα νομοσχέδια της Βουλής μετά την κοινοβουλευτική ψηφοφορία. Η δημοσίευση και η μόνιμη διαθεσιμότητα δεν είναι εγγυημένες. Η δημοσίευση ZK είναι σε παύση. Αποτελέσματα με λιγότερες από 10 ψήφους δεν εμφανίζονται δημόσια· αποκρύπτονται επίσης μικρές επιμέρους ομάδες. Όταν δημοσιευθεί ένα στιγμιότυπο, περιλαμβάνει:" data-en="The platform database is the primary record. Aggregate snapshots may be published to Arweave for eligible Parliament bills after the parliamentary vote. Publication and permanent availability are not guaranteed. ZK publication is paused. Results with fewer than 10 votes are not shown publicly; small subgroups are also withheld. When a snapshot is published, it contains:">Η βάση δεδομένων της πλατφόρμας είναι το κύριο αρχείο. Συγκεντρωτικά στιγμιότυπα μπορεί να δημοσιευθούν στο Arweave για επιλέξιμα νομοσχέδια της Βουλής μετά την κοινοβουλευτική ψηφοφορία. Η δημοσίευση και η μόνιμη διαθεσιμότητα δεν είναι εγγυημένες. Η δημοσίευση ZK είναι σε παύση. Αποτελέσματα με λιγότερες από 10 ψήφους δεν εμφανίζονται δημόσια· αποκρύπτονται επίσης μικρές επιμέρους ομάδες. Όταν δημοσιευθεί ένα στιγμιότυπο, περιλαμβάνει:</p>
   </div>
   <ul class="fade-in">
     <li data-el="Σύνολα ψήφων ανά επιλογή (YES / NO / ABSTAIN)" data-en="Vote totals per option (YES / NO / ABSTAIN)">Σύνολα ψήφων ανά επιλογή (YES / NO / ABSTAIN)</li>
-    <li data-el="Divergence Score (Βουλή vs Πολίτες)" data-en="Divergence Score (Parliament vs Citizens)">Divergence Score (Βουλή vs Πολίτες)</li>
+    <li data-el="Δείκτης απόκλισης, όταν είναι διαθέσιμος" data-en="Divergence score, when available">Δείκτης απόκλισης, όταν είναι διαθέσιμος</li>
   </ul>
   <div class="info-box fade-in">
     <p data-el="Για τις κανονικές ψήφους αρχειοθετούνται μόνο σύνολα, χωρίς ατομικές ψήφους, nullifiers ταυτότητας ή δημόσια κλειδιά. Η χωριστή διαδρομή ZK (σε παύση) προβλέπει ατομικές επιλογές με ZK απόδειξη, χωρίς ταυτότητα. Η απεγκατάσταση ή ανάκληση κλειδιού δεν αφαιρεί ήδη δημοσιευμένα αρχεία." data-en="For ordinary votes, only totals are archived, without individual votes, identity nullifiers or public keys. The separate ZK path (currently paused) supports individual choices with a ZK proof, without identity. Uninstalling or revoking a key does not remove already published records.">
@@ -289,7 +287,7 @@
     <li>Re-installing and re-verifying with the same phone number replaces the old key for the same nullifier. This does not erase past votes.</li>
   </ol>
   <p class="fade-in">
-    <strong>Retained data:</strong> The server keeps the pseudonymous code, public key and votes. Arweave keeps ordinary-vote aggregates (totals per option, divergence scores). The separate ZK path (currently paused) supports individual choices with a ZK proof, without identity. Published records remain after uninstalling or revoking a key.
+    <strong>Retained data:</strong> The server keeps the pseudonymous code, public key and votes. The platform database is the primary record. Aggregate snapshots may be published to Arweave for eligible Parliament bills after the parliamentary vote. Publication and permanent availability are not guaranteed. ZK publication is paused. Results with fewer than 10 votes are not shown publicly; small subgroups are also withheld. A snapshot contains bill metadata, lifecycle history, parliamentary party votes and aggregate citizen results; it excludes individual ordinary votes, public keys and identity nullifiers. The divergence-score field may be empty. The separate ZK path, which remains paused, supports publication of an individual choice with a public ZK proof, without identity. Published records remain after uninstalling or revoking a key.
   </p>
   <p class="fade-in">
     ekklesia.gr is an open-source community project. The steps above remove local data or revoke the old key; they do not delete all server-side data.
@@ -313,7 +311,7 @@
     <a href="#" data-csp-click="open-legal-modal-privacy-link" data-el="Πολιτική Απορρήτου" data-en="Privacy Policy">Πολιτική Απορρήτου</a>
     <a href="#" data-csp-click="open-legal-modal-delete-link" data-el="Διαγραφή Λογαριασμού" data-en="Delete Account">Διαγραφή Λογαριασμού</a>
   </div>
-  <p>εκκλησία &middot; &copy; 2026 V-Labs Development &middot; MIT License</p>
+  <p>εκκλησία &middot; &copy; 2026 V-Labs IT Solutions &amp; Development &middot; MIT License</p>
 </footer>
 
 <div id="legalModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:center;justify-content:center" data-csp-click="legal-backdrop">
