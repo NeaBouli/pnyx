@@ -441,7 +441,7 @@
     "Pseudonymous voting with Ed25519 signatures",
     "Real parliamentary bill voting",
     "Divergence Score — Parliament vs Citizens",
-    "Arweave permanent archive",
+    "Conditional Arweave publication for eligible aggregate snapshots",
     "No cookies, no tracking, data minimization"
   ],
   "sameAs": [
@@ -813,8 +813,8 @@
     </li>
     <li class="demo-box pnx2-demo-archive" id="dBoxArchive">
       <div class="demo-label" data-el="Αρχείο" data-en="Archive">Αρχείο</div>
-      <div class="demo-pct"><span lang="en">Open End</span> · <span lang="en">Arweave</span></div>
-      <div class="pnx2-cycle-hint" data-el="Μόνιμη, δημόσια αρχειοθέτηση του αποτελέσματος." data-en="Permanent, public archiving of the result.">Μόνιμη, δημόσια αρχειοθέτηση του αποτελέσματος.</div>
+      <div class="demo-pct"><span lang="en">Open End</span></div>
+      <div class="pnx2-cycle-hint" data-el="Αρχείο στη βάση δεδομένων· δημοσίευση στο Arweave μόνο εφόσον είναι επιλέξιμο και η δημοσίευση επιτύχει." data-en="Database record; Arweave publication only if eligible and publication succeeds.">Αρχείο στη βάση δεδομένων· δημοσίευση στο Arweave μόνο εφόσον είναι επιλέξιμο και η δημοσίευση επιτύχει.</div>
     </li>
   </ol>
   <!-- Result tile: real latest result only; empty and error states stay honest. -->
@@ -1031,7 +1031,7 @@
       <div class="feature-card fade-in">
         <div class="feature-icon">🧭</div>
         <h3 data-el="Liquid Compass" data-en="Liquid Compass">Liquid Compass</h3>
-        <p data-el="Εξελισσόμενη πολιτική πυξίδα. 4 μοντέλα. Κρυπτογραφημένη τοπικά, ποτέ στον server." data-en="Evolving political compass. 4 models. Encrypted locally, never on server.">Εξελισσόμενη πολιτική πυξίδα. 4 μοντέλα. Κρυπτογραφημένη τοπικά, ποτέ στον server.</p>
+        <p data-el="Στον browser το προφίλ Compass αποθηκεύεται τοπικά με κρυπτογράφηση AES-256-GCM και κλειδί στη συσκευή. Χωριστά, ο server αποθηκεύει ψευδώνυμες ψήφους και ιστορικό συναίνεσης και επιστρέφει προσωπική θέση από το ιστορικό μετά από έλεγχο υπογραφής· η τοπική κρυπτογράφηση δεν καλύπτει αυτά τα δεδομένα." data-en="Browser Compass profiles are stored locally with AES-256-GCM encryption and a key held on the device. Separately, the server stores pseudonymous votes and consensus history and returns a personal position derived from that history after signature verification; local encryption does not cover those records.">Στον browser το προφίλ Compass αποθηκεύεται τοπικά με κρυπτογράφηση AES-256-GCM και κλειδί στη συσκευή. Χωριστά, ο server αποθηκεύει ψευδώνυμες ψήφους και ιστορικό συναίνεσης και επιστρέφει προσωπική θέση από το ιστορικό μετά από έλεγχο υπογραφής· η τοπική κρυπτογράφηση δεν καλύπτει αυτά τα δεδομένα.</p>
       </div>
       <div class="feature-card fade-in">
         <div class="feature-icon">🏛️</div>
@@ -1056,7 +1056,7 @@
       <div class="feature-card fade-in">
         <div class="feature-icon">🗄️</div>
         <h3 data-el="Arweave Αρχείο" data-en="Arweave Archive">Arweave Αρχείο</h3>
-        <p data-el="Κάθε αποτέλεσμα αρχειοθετείται μόνιμα στο Arweave. Αδύνατο να διαγραφεί." data-en="Every result is permanently archived on Arweave. Impossible to delete.">Κάθε αποτέλεσμα αρχειοθετείται μόνιμα στο Arweave. Αδύνατο να διαγραφεί.</p>
+        <p data-el="Η βάση δεδομένων της πλατφόρμας είναι το κύριο αρχείο. Συγκεντρωτικά στιγμιότυπα μπορεί να δημοσιευθούν στο Arweave για επιλέξιμα νομοσχέδια της Βουλής μετά την κοινοβουλευτική ψηφοφορία. Η δημοσίευση και η μόνιμη διαθεσιμότητα δεν είναι εγγυημένες. Η δημοσίευση ZK είναι σε παύση." data-en="The platform database is the primary record. Aggregate snapshots may be published to Arweave for eligible Parliament bills after the parliamentary vote. Publication and permanent availability are not guaranteed. ZK publication is paused.">Η βάση δεδομένων της πλατφόρμας είναι το κύριο αρχείο. Συγκεντρωτικά στιγμιότυπα μπορεί να δημοσιευθούν στο Arweave για επιλέξιμα νομοσχέδια της Βουλής μετά την κοινοβουλευτική ψηφοφορία. Η δημοσίευση και η μόνιμη διαθεσιμότητα δεν είναι εγγυημένες. Η δημοσίευση ZK είναι σε παύση.</p>
       </div>
       <div class="feature-card fade-in">
         <div class="feature-icon">🤖</div>
@@ -1079,7 +1079,7 @@
           <ul style="list-style:none;padding:0;margin:0;font-size:0.82rem;color:#374151;line-height:1.8">
             <li>✅ <span data-el="Ed25519 Κρυπτογραφία — κάθε ψήφος υπογράφεται" data-en="Ed25519 Cryptography — every vote is signed">Ed25519 — κάθε ψήφος υπογράφεται</span></li>
             <li>✅ <span data-el="HMAC Nullifier-Chain — αδύνατη η διπλή ψήφος" data-en="HMAC Nullifier-Chain — double voting impossible">HMAC Nullifier-Chain — αδύνατη η διπλή ψήφος</span></li>
-            <li>✅ <span data-el="Arweave Blockchain — μόνιμη αρχειοθέτηση" data-en="Arweave Blockchain — permanent archive">Arweave Blockchain — μόνιμη αρχειοθέτηση</span></li>
+            <li>✅ <span data-el="Arweave — δυνατότητα δημοσίευσης επιλέξιμων συγκεντρωτικών στιγμιότυπων" data-en="Arweave — optional publication of eligible aggregate snapshots">Arweave — δυνατότητα δημοσίευσης επιλέξιμων συγκεντρωτικών στιγμιότυπων</span></li>
             <li>🗺️ <span data-el="Semaphore ZK Proofs — σε παύση από 03/10/2026 (έλεγχος ασφαλείας)" data-en="Semaphore ZK Proofs — paused since 2026-10-03 (security review)">Semaphore ZK Proofs — σε παύση από 03/10/2026 (έλεγχος ασφαλείας)</span></li>
             <li>🗺️ <span data-el="ZK Arweave — αυτόματη δημοσίευση για Βουλή από ομάδα 5+ (σε παύση μαζί με τις ZK ψηφοφορίες)" data-en="ZK Arweave — auto-publication for Parliament groups of 5+ (paused together with ZK voting)">ZK Arweave — αυτόματη δημοσίευση για Βουλή από ομάδα 5+ (σε παύση μαζί με τις ZK ψηφοφορίες)</span></li>
           </ul>
@@ -1390,7 +1390,7 @@
         <span style="font-size:1.2rem;flex-shrink:0">📊</span>
         <div>
           <div style="font-size:0.78rem;font-weight:700;color:#0f172a;margin-bottom:0.15rem" data-el="Δεδομένα Πολιτών" data-en="Citizen Data">Δεδομένα Πολιτών</div>
-          <div style="font-size:0.72rem;color:#64748b;line-height:1.5" data-el="Τα αποτελέσματα βασίζονται αποκλειστικά σε ψήφους πολιτών. Αρχειοθέτηση στο Arweave blockchain." data-en="Results based exclusively on citizen votes. Archived on Arweave blockchain.">Τα αποτελέσματα βασίζονται αποκλειστικά σε ψήφους πολιτών. Αρχειοθέτηση στο Arweave blockchain.</div>
+          <div style="font-size:0.72rem;color:#64748b;line-height:1.5" data-el="Τα αποτελέσματα βασίζονται αποκλειστικά σε ψήφους πολιτών. Η βάση δεδομένων της πλατφόρμας είναι το κύριο αρχείο. Συγκεντρωτικά στιγμιότυπα μπορεί να δημοσιευθούν στο Arweave για επιλέξιμα νομοσχέδια της Βουλής μετά την κοινοβουλευτική ψηφοφορία. Η δημοσίευση και η μόνιμη διαθεσιμότητα δεν είναι εγγυημένες. Η δημοσίευση ZK είναι σε παύση." data-en="Results are based exclusively on citizen votes. The platform database is the primary record. Aggregate snapshots may be published to Arweave for eligible Parliament bills after the parliamentary vote. Publication and permanent availability are not guaranteed. ZK publication is paused.">Τα αποτελέσματα βασίζονται αποκλειστικά σε ψήφους πολιτών. Η βάση δεδομένων της πλατφόρμας είναι το κύριο αρχείο. Συγκεντρωτικά στιγμιότυπα μπορεί να δημοσιευθούν στο Arweave για επιλέξιμα νομοσχέδια της Βουλής μετά την κοινοβουλευτική ψηφοφορία. Η δημοσίευση και η μόνιμη διαθεσιμότητα δεν είναι εγγυημένες. Η δημοσίευση ZK είναι σε παύση.</div>
         </div>
       </div>
       <div style="display:flex;gap:0.6rem;align-items:flex-start">

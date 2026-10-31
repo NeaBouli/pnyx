@@ -239,7 +239,7 @@ ALLOWED_T9106_CLAIMS_BILINGUAL_REMOVALS.update({
 # drop "Ανώνυμο"/"Anonymous" and "GDPR compliant"; exact category hashes.
 ALLOWED_T9106_CLAIMS_HASH = {
     "meta": "eb846fa69692692139d693340e54f627ed00bcb29061e6e2e2b0ad4d1bc22c98",
-    "json_ld": "50d218729cc05d97bd7444bb5570a28a22d6df4cf214e687586b07729d52b8fa",
+    "json_ld": "1993c92ba1d33cb012e4cda04885e2582642a1a738343502a592ba1696db3755",  # B08: conditional Arweave featureList claim
 }
 ALLOWED_APK_HREF_REPLACEMENT = {
     # T-9172: reviewed Direct download refresh to v1.0.37/vC66. Play stays vC62.

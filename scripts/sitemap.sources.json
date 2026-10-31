@@ -8,7 +8,7 @@
       "changefreq": "weekly",
       "priority": "1.0",
       "lastmod": "2026-10-23",
-      "sha256": "893650e10bb5b0f1d9d4ae098fa5051e13e65fc0f9d83ecb0cfa820796b7c6ae"
+      "sha256": "0bf3632fd2a325d5b24853caee347060605b549f11d9bbef72d1e927c7f74f26"
     },
     {
       "loc": "/el/bills",
@@ -33,8 +33,8 @@
       "source": "docs/community.html",
       "changefreq": "monthly",
       "priority": "0.8",
-      "lastmod": "2026-10-19",
-      "sha256": "dc2e9062b097dc28aff651ca322e0b8350ed8da7118c19a958fcb973b8474d72"
+      "lastmod": "2026-10-23",
+      "sha256": "f36969444d3f985312eb475f1c52b4cffc46f01e602d8b7990516d29b52c79d5"
     },
     {
       "loc": "/legal.html",
@@ -57,16 +57,16 @@
       "source": "docs/govgr-dimos.html",
       "changefreq": "monthly",
       "priority": "0.8",
-      "lastmod": "2026-10-19",
-      "sha256": "01b0565a81c035df4ae426fce7184828d025aed826d186b4a8b121e110c928a9"
+      "lastmod": "2026-10-23",
+      "sha256": "10423a824179f83ba820bb2f254966fcc8d091e34f77caabd2ccb3e4cb297b96"
     },
     {
       "loc": "/representative.html",
       "source": "docs/representative.html",
       "changefreq": "monthly",
       "priority": "0.7",
-      "lastmod": "2026-10-19",
-      "sha256": "6b8ace56c865f4e8b09630c567dd61e62940d625fe0acfee7560518165f6d485"
+      "lastmod": "2026-10-23",
+      "sha256": "4ba98491894123f3ba50ea953055e46628e2c5a3fe2a74fb02b5adcd302419c8"
     },
     {
       "loc": "/wiki/index.html",
@@ -82,7 +82,7 @@
       "changefreq": "monthly",
       "priority": "0.9",
       "lastmod": "2026-10-23",
-      "sha256": "bfa12a56c828158668c3f65c77e50f556ff748b2c24076e5a398c47b047d5eda"
+      "sha256": "987656c0107f62d75a84df1da66b5e5848b4cbca70a3b6c910870d0297c8b06c"
     },
     {
       "loc": "/wiki/whitepaper.html",
@@ -97,8 +97,8 @@
       "source": "docs/wiki/privacy.html",
       "changefreq": "monthly",
       "priority": "0.8",
-      "lastmod": "2026-10-19",
-      "sha256": "45f494fa8e5fb9819606d0b8c6d75de64a48615d0e61f621b04c27775bf122f4"
+      "lastmod": "2026-10-23",
+      "sha256": "031a0c670f168795d5743177c995b08216a9ef1962f5a283bf7125eccd3d6368"
     },
     {
       "loc": "/wiki/security.html",
@@ -129,8 +129,8 @@
       "source": "docs/wiki/modules.html",
       "changefreq": "monthly",
       "priority": "0.7",
-      "lastmod": "2026-10-19",
-      "sha256": "766fa4af183efd7980e49567bea53e22e49dbead4a0c8f4598ddd02b799df531"
+      "lastmod": "2026-10-23",
+      "sha256": "229f22d8523f6409af464a235d70994df89b7340ed17a1cbf48cf993ce03bf32"
     },
     {
       "loc": "/wiki/roadmap.html",
@@ -138,7 +138,7 @@
       "changefreq": "monthly",
       "priority": "0.7",
       "lastmod": "2026-10-23",
-      "sha256": "b8965dd0417aa5e26e3021e09cc2c3b729fc5c035ebf8be1c8164b680e52c8bd"
+      "sha256": "44d601d176bfdb9a10b46cfa845bf27d66f8d1d30696f5422a1a62aa198e1aa1"
     },
     {
       "loc": "/wiki/database.html",
@@ -169,16 +169,16 @@
       "source": "docs/wiki/delete-account.html",
       "changefreq": "monthly",
       "priority": "0.5",
-      "lastmod": "2026-10-19",
-      "sha256": "9ed9e4622259d400697be5d0a059cb2f2fa0e5bcfd0d3ef15d63c4c50217cfab"
+      "lastmod": "2026-10-23",
+      "sha256": "7128d55792fe6e295beec9a9c4f04feec5f0bd7b2f5ef9a177d96330b42a24a1"
     },
     {
       "loc": "/wiki/zk-voting.html",
       "source": "docs/wiki/zk-voting.html",
       "changefreq": "monthly",
       "priority": "0.7",
-      "lastmod": "2026-10-19",
-      "sha256": "b2172d37ad2250de237050c1f5acc4cf03681f0472fa998bbf30d542ba923a8c"
+      "lastmod": "2026-10-23",
+      "sha256": "619830eeff7dc29ee1607fd61422901341a66f4674de4ccf35fb54fa46ae9c78"
     },
     {
       "loc": "/wiki/audit.html",
@@ -201,8 +201,8 @@
       "source": "docs/municipality/index.html",
       "changefreq": "monthly",
       "priority": "0.8",
-      "lastmod": "2026-10-19",
-      "sha256": "4c4bed7281ac29db322dbe338f8b9bb46d9e76880f27d5d019618b33c006679d"
+      "lastmod": "2026-10-23",
+      "sha256": "0cbce3f835b1b1427f1ed519db14407ba635d33314dd113c12677922a4732d71"
     },
     {
       "loc": "/municipality/article.html",

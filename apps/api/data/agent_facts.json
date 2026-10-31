@@ -234,5 +234,31 @@
   ],
   "el": "Η σύνδεση gov.gr είναι σχεδιασμένη αλλά δεν είναι ενεργή. Εκπρόσωποι επαληθεύονται μόνο με πρόσκληση διαχειριστή και αριθμό ΑΔΑ στη Διαύγεια. Οι δωρεές/πληρωμές είναι σε παύση.",
   "en": "The gov.gr login is planned but not active. Representatives are verified only with an admin invitation plus an ADA number on Diavgeia. Donations/payments are paused."
+ },
+ "compass": {
+  "kw": [
+   "compass",
+   "political compass",
+   "liquid compass",
+   "compass data",
+   "πυξίδα",
+   "πυξίδας",
+   "πυξίδ*",
+   "vaa"
+  ],
+  "el": "Στον browser το προφίλ Compass αποθηκεύεται τοπικά με κρυπτογράφηση AES-256-GCM και κλειδί στη συσκευή. Χωριστά, ο server αποθηκεύει ψευδώνυμες ψήφους και ιστορικό συναίνεσης και επιστρέφει προσωπική θέση από το ιστορικό μετά από έλεγχο υπογραφής· η τοπική κρυπτογράφηση δεν καλύπτει αυτά τα δεδομένα. Μετά την επιτυχή μεταφορά φύλαξης χρησιμοποιείται ξεχωριστό, μη εξαγώγιμο κλειδί AES στο IndexedDB· πριν από αυτήν, το κλειδί κρυπτογράφησης παράγεται από το ιδιωτικό κλειδί ταυτότητας. Στην παλαιότερη ροή ο server δημιουργεί το κλειδί ταυτότητας μία φορά και δεν το αποθηκεύει. Κώδικας της ίδιας σελίδας μπορεί να χρησιμοποιήσει το κλειδί όσο η σελίδα είναι ανοιχτή.",
+  "en": "Browser Compass profiles are stored locally with AES-256-GCM encryption and a key held on the device. Separately, the server stores pseudonymous votes and consensus history and returns a personal position derived from that history after signature verification; local encryption does not cover those records. After successful custody migration, a separate non-extractable AES key is held in IndexedDB; before migration, the encryption key is derived from the identity private key. In the legacy flow, the server creates the identity key once and does not store it. Code on the same page can use the key while the page is open."
+ },
+ "arweave": {
+  "kw": [
+   "arweave",
+   "arweave results",
+   "arweave publication",
+   "stored on arweave",
+   "αποτελέσματα στο arweave",
+   "αρχειοθέτηση στο arweave"
+  ],
+  "el": "Η βάση δεδομένων της πλατφόρμας είναι το κύριο αρχείο. Συγκεντρωτικά στιγμιότυπα μπορεί να δημοσιευθούν στο Arweave για επιλέξιμα νομοσχέδια της Βουλής μετά την κοινοβουλευτική ψηφοφορία. Η δημοσίευση και η μόνιμη διαθεσιμότητα δεν είναι εγγυημένες. Η δημοσίευση ZK είναι σε παύση. Η προσπάθεια γίνεται κατά το PARLIAMENT_VOTED, με επανέλεγχο σε PARLIAMENT_VOTED ή OPEN_END για εγγραφές χωρίς αναγνωριστικό δημοσίευσης. Αφορά δημόσια νομοσχέδια της Βουλής με διαθέσιμες κοινοβουλευτικές ψήφους, σύμφωνα με τους κανόνες ορατότητας και απόκρυψης μικρών ομάδων όπου είναι ενεργοί. Αποτυχίες καταγράφονται και μπορεί να επανελεγχθούν. Χωρίς ρυθμισμένο πορτοφόλι παράγεται μόνο ένδειξη δοκιμής (DRY_RUN), όχι δημοσίευση στο δίκτυο. Το στιγμιότυπο περιλαμβάνει στοιχεία νομοσχεδίου, ιστορικό καταστάσεων, κοινοβουλευτικές ψήφους και συγκεντρωτικά αποτελέσματα πολιτών· όχι ατομικές κανονικές ψήφους, δημόσια κλειδιά ή nullifiers ταυτότητας. Το πεδίο δείκτη απόκλισης μπορεί να είναι κενό. Η χωριστή διαδρομή ZK, που παραμένει σε παύση, προβλέπει δημοσίευση ατομικής επιλογής με δημόσια απόδειξη ZK, χωρίς ταυτότητα.",
+  "en": "The platform database is the primary record. Aggregate snapshots may be published to Arweave for eligible Parliament bills after the parliamentary vote. Publication and permanent availability are not guaranteed. ZK publication is paused. Publication is attempted at PARLIAMENT_VOTED, with catch-up in PARLIAMENT_VOTED or OPEN_END for records without a publication ID. Eligibility requires public Parliament bills with parliamentary party votes, subject to visibility and small-cell rules where enabled. Failures are logged and may be retried. Without a configured wallet, only a test marker (DRY_RUN) is produced, not a network publication. A snapshot contains bill metadata, lifecycle history, parliamentary party votes and aggregate citizen results; it excludes individual ordinary votes, public keys and identity nullifiers. The divergence-score field may be empty. The separate ZK path, which remains paused, supports publication of an individual choice with a public ZK proof, without identity."
  }
 }

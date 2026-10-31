@@ -18,7 +18,8 @@ ekklesia.gr (εκκλησία του έθνους) is an independent civic initi
 - εκπρόσωπος App: role-based representative access (Βουλευτής, Δήμαρχος, Περιφερειάρχης)
 - Public Forum at pnyx.ekklesia.gr (Discourse)
 - Public API (CC BY 4.0) for researchers
-- Arweave blockchain archiving for transparency
+- The platform database is the primary record. Aggregate snapshots may be published to Arweave for eligible Parliament bills after the parliamentary vote. Publication and permanent availability are not guaranteed. ZK publication is paused.
+- Η βάση δεδομένων της πλατφόρμας είναι το κύριο αρχείο. Συγκεντρωτικά στιγμιότυπα μπορεί να δημοσιευθούν στο Arweave για επιλέξιμα νομοσχέδια της Βουλής μετά την κοινοβουλευτική ψηφοφορία. Η δημοσίευση και η μόνιμη διαθεσιμότητα δεν είναι εγγυημένες. Η δημοσίευση ZK είναι σε παύση.
 - Mobile App (Android) + Progressive Web App
 - FAQ assistant: deterministic answers by default; the legacy hybrid path is used only when explicitly configured for rollback.
 
@@ -30,6 +31,15 @@ ekklesia.gr (εκκλησία του έθνους) is an independent civic initi
 - Legacy v1 verification creates the Ed25519 key on the server and returns it once without storing it. Browser: after successful custody migration, a non-extractable WebCrypto CryptoKey in IndexedDB; the legacy localStorage key remains until migration succeeds. Mobile: Expo SecureStore. Fresh device-key rotation and v2 registration are feature-gated, not a blanket deployment claim
 - Ordinary votes are linked to a pseudonymous nullifier; the operator can associate choices under that code. They are not cryptographically anonymous towards the operator. Public results and ordinary Arweave snapshots contain aggregates, not individual votes, identity nullifiers, or public keys
 - Small-cell suppression is configurable via PUBLIC_RESULTS_MIN_COUNT (default 0/off); a universal k>=10 guarantee is not active by default. IP rate counters use expiring daily HMAC identifiers; access logs may contain IP addresses and rotate by size
+
+- Browser Compass profiles are stored locally with AES-256-GCM encryption and a key held on the device. Separately, the server stores pseudonymous votes and consensus history and returns a personal position derived from that history after signature verification; local encryption does not cover those records.
+- Στον browser το προφίλ Compass αποθηκεύεται τοπικά με κρυπτογράφηση AES-256-GCM και κλειδί στη συσκευή. Χωριστά, ο server αποθηκεύει ψευδώνυμες ψήφους και ιστορικό συναίνεσης και επιστρέφει προσωπική θέση από το ιστορικό μετά από έλεγχο υπογραφής· η τοπική κρυπτογράφηση δεν καλύπτει αυτά τα δεδομένα.
+- After successful custody migration, a separate non-extractable AES key is held in IndexedDB; before migration, the encryption key is derived from the identity private key. In the legacy flow, the server creates the identity key once and does not store it. Code on the same page can use the key while the page is open.
+- Μετά την επιτυχή μεταφορά φύλαξης χρησιμοποιείται ξεχωριστό, μη εξαγώγιμο κλειδί AES στο IndexedDB· πριν από αυτήν, το κλειδί κρυπτογράφησης παράγεται από το ιδιωτικό κλειδί ταυτότητας. Στην παλαιότερη ροή ο server δημιουργεί το κλειδί ταυτότητας μία φορά και δεν το αποθηκεύει. Κώδικας της ίδιας σελίδας μπορεί να χρησιμοποιήσει το κλειδί όσο η σελίδα είναι ανοιχτή.
+- Publication is attempted at PARLIAMENT_VOTED, with catch-up in PARLIAMENT_VOTED or OPEN_END for records without a publication ID. Eligibility requires public Parliament bills with parliamentary party votes, subject to visibility and small-cell rules where enabled. Failures are logged and may be retried. Without a configured wallet, only a test marker (DRY_RUN) is produced, not a network publication.
+- Η προσπάθεια γίνεται κατά το PARLIAMENT_VOTED, με επανέλεγχο σε PARLIAMENT_VOTED ή OPEN_END για εγγραφές χωρίς αναγνωριστικό δημοσίευσης. Αφορά δημόσια νομοσχέδια της Βουλής με διαθέσιμες κοινοβουλευτικές ψήφους, σύμφωνα με τους κανόνες ορατότητας και απόκρυψης μικρών ομάδων όπου είναι ενεργοί. Αποτυχίες καταγράφονται και μπορεί να επανελεγχθούν. Χωρίς ρυθμισμένο πορτοφόλι παράγεται μόνο ένδειξη δοκιμής (DRY_RUN), όχι δημοσίευση στο δίκτυο.
+- A snapshot contains bill metadata, lifecycle history, parliamentary party votes and aggregate citizen results; it excludes individual ordinary votes, public keys and identity nullifiers. The divergence-score field may be empty. The separate ZK path, which remains paused, supports publication of an individual choice with a public ZK proof, without identity.
+- Το στιγμιότυπο περιλαμβάνει στοιχεία νομοσχεδίου, ιστορικό καταστάσεων, κοινοβουλευτικές ψήφους και συγκεντρωτικά αποτελέσματα πολιτών· όχι ατομικές κανονικές ψήφους, δημόσια κλειδιά ή nullifiers ταυτότητας. Το πεδίο δείκτη απόκλισης μπορεί να είναι κενό. Η χωριστή διαδρομή ZK, που παραμένει σε παύση, προβλέπει δημοσίευση ατομικής επιλογής με δημόσια απόδειξη ZK, χωρίς ταυτότητα.
 
 ## Rate limits
 
@@ -50,7 +60,7 @@ ekklesia.gr (εκκλησία του έθνους) is an independent civic initi
 - Assistant: deterministic FAQ answers by default (AGENT_MODE=hybrid explicitly restores the legacy hybrid path); summaries and translations have separate processing paths.
 - Forum: Discourse (pnyx.ekklesia.gr)
 - Generated-content ownership: system summaries/forum bodies refresh only while their SHA-256 ownership digest still matches; admin/moderator edits are preserved
-- Archiving: Arweave permanent storage
+- Archiving: conditional Arweave publication; the platform database is the primary record
 - Hosting: Hetzner (Helsinki, EU)
 - ZK Voting V2: Semaphore-based; guarded Parliament voting and ZK Arweave publication paused since 2026-10-03 for a security review. No new ZK votes are accepted during the pause; ordinary Tier-1 voting continues
 
@@ -81,7 +91,8 @@ ekklesia.gr offers specialized tools for elected representatives (MPs, Mayors, M
 - Representative app (εκπρόσωπος): exclusive mobile app for viewing bills, citizen evaluations, and divergence scores for their region.
 - Commitment Declaration (Δήλωση Αυτοδέσμευσης): public document candidates sign before elections with measurable obligations: transparency, citizen will, accountability. PDF: https://ekklesia.gr/download/Autodesmefsi_Ekklesia_v6.pdf
 - Future Alpha 0.1 design for official gov.gr OAuth or holder-authenticated fresh challenge-bound QR/eSeal verification. It requires an official integration, DPIA, credential-migration design, independent security/privacy review and sandbox canary; it is not active in Beta.
-- Arweave immutable archiving of aggregate ordinary-vote snapshots; ZK publication is paused with ZK voting since 2026-10-03.
+- The platform database is the primary record. Aggregate snapshots may be published to Arweave for eligible Parliament bills after the parliamentary vote. Publication and permanent availability are not guaranteed. ZK publication is paused.
+- Η βάση δεδομένων της πλατφόρμας είναι το κύριο αρχείο. Συγκεντρωτικά στιγμιότυπα μπορεί να δημοσιευθούν στο Arweave για επιλέξιμα νομοσχέδια της Βουλής μετά την κοινοβουλευτική ψηφοφορία. Η δημοσίευση και η μόνιμη διαθεσιμότητα δεν είναι εγγυημένες. Η δημοσίευση ZK είναι σε παύση.
 - Full page: https://ekklesia.gr/municipality/
 - Article: https://ekklesia.gr/municipality/article.html
 
