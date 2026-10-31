@@ -79,19 +79,25 @@
  "anonymity": {
   "kw": [
    "ανώνυμ*",
+   "προσωπικά δεδομένα",
+   "προσωπικών δεδομένων",
    "ποιος ψήφισε",
+   "ποιος βλέπει την ψήφο μου",
    "βλέπ*",
    "ιδιωτικ*",
    "παρακολ*",
    "anonym*",
+   "personal data",
+   "personal information",
    "who voted",
+   "who can see my vote",
    "see how",
    "privacy",
    "track*",
    "link*"
   ],
-  "el": "Οι ψήφοι αποθηκεύονται ψευδώνυμα· συνδέονται με ψευδώνυμο nullifier, όχι με όνομα ή αριθμό τηλεφώνου. Ο αριθμός τηλεφώνου δεν αποθηκεύεται. Δείτε την πολιτική ιδιωτικότητας: https://ekklesia.gr/wiki/privacy.html. Δημόσια μπορεί να εμφανίζονται μόνο συγκεντρωτικά αποτελέσματα. Η ψηφοφορία με αποδείξεις μηδενικής γνώσης (ZK) είναι σε παύση για έλεγχο ασφαλείας από 03/10/2026. Αποτελέσματα με λιγότερες από 10 ψήφους δεν εμφανίζονται δημόσια· αποκρύπτονται επίσης μικρές επιμέρους ομάδες.",
-  "en": "Votes are stored pseudonymously; linked to a pseudonymous nullifier, not to a name or phone number. The phone number is not stored. See the privacy page: https://ekklesia.gr/wiki/privacy.html. Only aggregate results may be shown publicly. Zero-knowledge (ZK) voting has been paused for a security review since 2026-10-03. Results with fewer than 10 votes are not shown publicly; small subgroups are also withheld."
+  "el": "Οι ψήφοι αποθηκεύονται ψευδώνυμα· συνδέονται με ψευδώνυμο nullifier, όχι με όνομα ή αριθμό τηλεφώνου. Ο αριθμός τηλεφώνου δεν αποθηκεύεται. Δείτε την πολιτική ιδιωτικότητας: https://ekklesia.gr/wiki/privacy.html. Αποτελέσματα με λιγότερες από 10 ψήφους δεν εμφανίζονται δημόσια· αποκρύπτονται επίσης μικρές επιμέρους ομάδες.",
+  "en": "Votes are stored pseudonymously; linked to a pseudonymous nullifier, not to a name or phone number. The phone number is not stored. See the privacy page: https://ekklesia.gr/wiki/privacy.html. Results with fewer than 10 votes are not shown publicly; small subgroups are also withheld."
  },
  "lifecycle": {
   "kw": [

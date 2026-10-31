@@ -110,6 +110,42 @@ async def test_privacy_answers_use_published_pseudonymous_wording(question: str,
         assert claim not in response["answer"].lower()
 
 
+@pytest.mark.parametrize("mode", ["deterministic", "hybrid"])
+@pytest.mark.parametrize("question,lang", [
+    ("Είναι οι ψήφοι μου ανώνυμες; Αποθηκεύετε προσωπικά δεδομένα;", "el"),
+    ("Are my votes anonymous? Do you store personal data?", "en"),
+    ("Αποθηκεύετε προσωπικά δεδομένα;", "el"),
+    ("Do you store personal data?", "en"),
+])
+async def test_anonymity_precedes_verification_in_both_modes(
+    monkeypatch: pytest.MonkeyPatch, mode: str, question: str, lang: str,
+) -> None:
+    monkeypatch.setenv("AGENT_MODE", mode)
+    response = await _ask(question, lang)
+    disclaimer = agent._DISCLAIMER_EL if lang == "el" else agent._DISCLAIMER_EN
+    assert response["model"] == "knowledge-base"
+    assert response["sources"] == [{"type": "knowledge_base", "topic": "anonymity"}]
+    assert response["answer"] == FACTS["anonymity"][lang] + disclaimer
+
+
+@pytest.mark.parametrize("question,lang", [
+    ("Πώς γίνεται η επαλήθευση HLR χωρίς SMS;", "el"),
+    ("Κρατάτε τον αριθμό του κινητού μου;", "el"),
+    ("Αποθηκεύετε δεδομένα;", "el"),
+    ("How does HLR verification work without SMS?", "en"),
+    ("Do you store phone numbers?", "en"),
+])
+async def test_verification_only_answers_stay_unchanged(question: str, lang: str) -> None:
+    response = await _ask(question, lang)
+    disclaimer = agent._DISCLAIMER_EL if lang == "el" else agent._DISCLAIMER_EN
+    faq_label = "Συχνές Ερωτήσεις" if lang == "el" else "FAQ"
+    assert response["model"] == "faq-deterministic"
+    assert response["sources"] == [{"type": "knowledge_base", "topic": "verification"}]
+    assert response["answer"] == "\n\n".join([
+        LEAD_IN[lang], FACTS["verification"][lang], f"{faq_label}: {FAQ_URL}",
+    ]) + disclaimer
+
+
 @pytest.mark.parametrize("question,lang", [
     ("When does voting close?", "en"),
     ("Πότε κλείνει η ψηφοφορία;", "el"),
@@ -178,7 +214,7 @@ async def test_default_answers_all_32_questions_with_only_reviewed_text(record: 
     ("EN-014", "apps"),
     ("EN-015", "forum"),
     ("EL-001", "platform"),
-    ("EL-004", "verification"),
+    ("EL-004", "anonymity"),
     ("EL-005", "voting"),
     ("EL-008", "analytics"),
     ("EN-012", "contact"),
@@ -312,3 +348,30 @@ def test_post_ask_defaults_to_deterministic(monkeypatch: pytest.MonkeyPatch) -> 
     assert response.status_code == 200
     _assert_reviewed_response(response.json(), "Is there an iPhone app?", "en")
     assert response.json()["model"] == "faq-deterministic"
+
+
+@pytest.mark.parametrize("question,lang", [
+    ("Είναι οι ψήφοι μου ανώνυμες; Αποθηκεύετε προσωπικά δεδομένα;", "el"),
+    ("Are my votes anonymous? Do you store personal data?", "en"),
+])
+def test_post_ask_production_anonymity_questions(
+    monkeypatch: pytest.MonkeyPatch, question: str, lang: str,
+) -> None:
+    app = FastAPI()
+    app.include_router(agent.router)
+    monkeypatch.setattr(limiter, "enabled", False)
+
+    async def no_db():
+        yield _NoDb()
+
+    app.dependency_overrides[get_db] = no_db
+    with TestClient(app) as client:
+        response = client.post("/api/v1/agent/ask", json={"question": question, "lang": lang})
+    assert response.status_code == 200
+    body = response.json()
+    _assert_reviewed_response(body, question, lang)
+    assert body["sources"] == [{"type": "knowledge_base", "topic": "anonymity"}]
+    for fact in PRIVACY_FACTS[lang]:
+        assert fact in body["answer"]
+    for claim in REMOVED_PRIVACY_CLAIMS:
+        assert claim not in body["answer"].lower()
