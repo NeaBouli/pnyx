@@ -13,7 +13,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, text
 
@@ -21,7 +21,7 @@ from database import get_db
 from models import (
     ParliamentBill, CitizenVote, BillStatus,
     BillStatusLog, VoteChoice, Party, Statement, GovernanceLevel,
-    IdentityRecord, KeyStatus,
+    IdentityRecord, KeyStatus, AuditLog,
 )
 from services.content_provenance import clear_generated_content
 from services.text_quality import GENERATED_TEXT_FIELDS
@@ -101,6 +101,66 @@ class BillCreateRequest(BaseModel):
 
 class BillTextRequest(BaseModel):
     text: str
+
+
+class BillSensitivityRequest(BaseModel):
+    sensitive_override: bool | None = Field(...)
+    reason: str = Field(min_length=1, max_length=2000)
+    clear_sensitive_public_block: bool = False
+
+    @field_validator("reason")
+    @classmethod
+    def nonblank_reason(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("A reason is required")
+        return value
+
+
+@router.patch("/bills/{bill_id}/sensitivity", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def admin_set_bill_sensitivity(
+    bill_id: str, req: BillSensitivityRequest,
+    _key=Depends(verify_admin), db: AsyncSession = Depends(get_db),
+    request: Request = None,
+) -> dict[str, object]:
+    """Record a reasoned admin decision; NULL restores the persisted flag policy."""
+    bill = (await db.execute(
+        select(ParliamentBill).where(ParliamentBill.id == bill_id)
+        .with_for_update().execution_options(populate_existing=True)
+    )).scalar_one_or_none()
+    if bill is None:
+        raise HTTPException(404, "Bill not found")
+    before = {
+        "sensitive_public_block": bill.sensitive_public_block,
+        "sensitive_override": bill.sensitive_override,
+        "sensitive_override_reason": bill.sensitive_override_reason,
+    }
+    bill.sensitive_override = req.sensitive_override
+    bill.sensitive_override_reason = req.reason
+    await db.flush()
+    if req.clear_sensitive_public_block:
+        postgres = db.get_bind().dialect.name == "postgresql"
+        if postgres:
+            await db.execute(text("SET LOCAL pnyx.allow_sensitive_public_block_clear = 'on'"))
+        try:
+            bill.sensitive_public_block = False
+            await db.flush()
+        finally:
+            if postgres:
+                await db.execute(text("SET LOCAL pnyx.allow_sensitive_public_block_clear = 'off'"))
+    after = {
+        "sensitive_public_block": bill.sensitive_public_block,
+        "sensitive_override": bill.sensitive_override,
+        "sensitive_override_reason": bill.sensitive_override_reason,
+    }
+    db.add(AuditLog(
+        action="bill.sensitivity_override", actor="admin_api_key",
+        target_type="parliament_bill", target_id=bill_id,
+        details={"reason": req.reason, "before": before, "after": after},
+    ))
+    await commit_and_invalidate_representation(db)
+    return {"success": True, "bill_id": bill_id, **after}
 
 
 @router.get("/dashboard", dependencies=[Depends(enforce_route_limit)])

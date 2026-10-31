@@ -65,9 +65,8 @@ REPRESENTATION_CACHE_TTL = 30
 def representation_query(db=None) -> tuple[str, dict]:
     """Group each vote source once; join only bills with votes, using existing PKs.
 
-    The raw visibility helper also checks admin_hidden. Restrict its sensitive
-    text checks to DIAVGEIA, matching public_bill_filter(). No identity columns
-    or full bill objects are selected.
+    The raw visibility helper uses the persisted sensitivity decision, matching
+    public_bill_filter(). No identity columns or full bill objects are selected.
     """
     public_guard, params = public_bill_metadata_sql("b", db=db)
     snapshot_guard, snapshot_params = snapshot_raw_filter("b", results=True, db=db)

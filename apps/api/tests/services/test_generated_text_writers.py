@@ -249,6 +249,7 @@ def test_sensitive_generated_summary_survives_rejected_replacement() -> None:
 
     value = BAD + " ΑΜΚΑ συνθετικό στοιχείο"
     bill = SimpleNamespace(id="SYNTH-1", source="DIAVGEIA", title_el="Συνθετικός τίτλος",
+                           sensitive_public_block=True,
                            summary_short_el=value, summary_long_el=None, ai_summary_reviewed=False,
                            generated_content_provenance={"summary_short_el": content_sha256(value)})
     assert not is_public_bill(bill)

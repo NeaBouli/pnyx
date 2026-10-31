@@ -17,7 +17,7 @@ from services.public_bill_snapshot import (
 )
 from services.request_work import SingleFlight
 from services.public_bill_index import PUBLIC_BILL_INDEX, SENSITIVE_PATTERN
-from tests.pg_public_bill_schema import public_metadata_revision
+from tests.pg_public_bill_schema import public_metadata_revision, sensitivity_revision
 from tests.test_public_bill_snapshot import snapshot_db, seventeen_votes
 
 
@@ -41,15 +41,15 @@ def test_metadata_index_and_prepared_queries_share_the_frozen_visibility_policy(
     assert revision.SENSITIVE_PATTERN == SENSITIVE_PATTERN
     assert revision.FUNCTION_DDL.count(f"$rx${SENSITIVE_PATTERN}$rx$") == 3
     assert f"'{SENSITIVE_PATTERN}'" not in revision.FUNCTION_DDL
-    assert normalize(revision.PREDICATE) == normalize(predicate)
+    current = sensitivity_revision()
+    assert normalize(current.PREDICATE) == normalize(predicate)
+    assert current.LEGACY_PREDICATE == revision.PREDICATE
     legacy = public_metadata_revision(legacy=True)
     assert normalize(revision.LEGACY_PREDICATE) == normalize(legacy.PREDICATE)
     assert legacy.PREDICATE.count(f"'{SENSITIVE_PATTERN}'") == 3
     query = compile_asyncpg(visibility_snapshot_query(candidates=["B1"]))
-    assert (
-        "public_bill_sensitive(parliament_bills.source, parliament_bills.title_el, "
-        "parliament_bills.summary_short_el, parliament_bills.summary_long_el)"
-    ) in str(query)
+    assert "coalesce(parliament_bills.sensitive_override, parliament_bills.sensitive_public_block) IS NOT true" in str(query)
+    assert "public_bill_sensitive" not in str(query) and "summary_long_el" not in str(query)
     assert not any(value == SENSITIVE_PATTERN for value in query.params.values())
 
 

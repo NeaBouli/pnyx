@@ -284,23 +284,21 @@ serve their last good policy-keyed value only within the route's hard stale wind
 
 ### PostgreSQL snapshot plans (#707)
 
-Apply Alembic `z902a2b3c4d5` before measuring these paths. The existing primary
-key, `idx_bills_status`, `idx_votes_bill` and `idx_zk_receipts_scope` cannot
-answer public visibility across overview/coverage populations without reading
-the imported text. The one new index, `idx_bills_public_metadata`, stores public
-membership in its partial predicate and covers ID, source, status, results
-visibility and geographic metadata. PostgreSQL maintains membership on writes,
-including changes to sensitive text and `admin_hidden`; Redis invalidation is
-not required for correctness. The migration builds/drops it concurrently in an
-Alembic autocommit block and removes an invalid index left by its own failed
-build. It adds no columns or vote indexes. Keep the fixed policy predicate in
-queries and the index identical; future marker-policy changes need a new index
-migration. Request values remain bound. Fixed policy literals let PostgreSQL
-match the partial predicate even in a generic prepared plan.
+Apply through Alembic `z904a2b3c4d5` before measuring these paths. The current
+`idx_bills_public_metadata_v3` partial covering index stores public membership
+using `admin_hidden IS NOT TRUE AND coalesce(sensitive_override,
+sensitive_public_block) IS NOT TRUE`, and covers ID, source, status, results
+visibility and geographic metadata. Sensitivity is latched by a PostgreSQL
+trigger; public queries never scan imported/generated prose for visibility.
+The migration backfills the flag in committed batches and replaces v2
+concurrently, preserving the working index on build failure. See
+[bill sensitivity](bill-sensitivity.md) for admin overrides, rollout/rollback
+instructions, NULL semantics and the public call-site audit. Keep the fixed
+predicate in queries and the index identical, including generic prepared plans.
 
 | Path | Capture population and expected access |
 | --- | --- |
-| Analytics overview | All public non-DEMO IDs, including unvoted bills used by counts and the average denominator. Ordered metadata read from `idx_bills_public_metadata`; vote totals join on the existing bill/scope indexes. |
+| Analytics overview | All public non-DEMO IDs, including unvoted bills used by counts and the average denominator. Ordered metadata read from `idx_bills_public_metadata_v3`; vote totals join on the existing bill/scope indexes. |
 | MP ranking | Vote-bearing completed/open-ended bills with party data; status selection can use `idx_bills_status`, with public metadata/ID lookups and vote counts on `idx_votes_bill` / `idx_zk_receipts_scope`. Unvoted party data does not affect ranking. |
 | Analytics representation and public alias | Completed/open-ended vote-bearing IDs; vote bill/scope indexes identify candidates, then public metadata/primary-key lookups. Provenance retains every contributing bill beyond the 200 details. |
 | Consensus representation | Public DIAVGEIA IDs, including unvoted and unmapped bills required for coverage. Metadata index scan; consensus grouping is unchanged. Municipal/regional view filters do not narrow national coverage. |
@@ -318,7 +316,7 @@ JSON array parameter through `json_each`, exercising the same membership rule.
 Use `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)` on the statements from
 `visibility_snapshot_query(candidates=..., k=...)`, first for three IDs, then
 for the full overview/DIAVGEIA populations. Expect an `Index Only Scan` on
-`idx_bills_public_metadata` for broad metadata reads (some heap fetches are
+`idx_bills_public_metadata_v3` for broad metadata reads (some heap fetches are
 normal before vacuum advances the visibility map), and indexed lookups for
 small ID arrays. A sequential scan evaluating `summary_long_el` in a filter on
 these metadata paths is a regression. At `k>0`, `visible_candidates` is
@@ -431,6 +429,7 @@ exception statuses retain FastAPI's existing response shape.
 | GET | `/api/v1/admin/bills` | public-heavy | 20 per 1 minute (public-heavy) |
 | POST | `/api/v1/admin/bills` | public-heavy | 20 per 1 minute (public-heavy) |
 | PATCH | `/api/v1/admin/bills/{bill_id}` | public-heavy | 20 per 1 minute (public-heavy) |
+| PATCH | `/api/v1/admin/bills/{bill_id}/sensitivity` | public-heavy | 20 per 1 minute (public-heavy) |
 | POST | `/api/v1/admin/bills/{bill_id}/fetch-text` | public-heavy | 20 per 1 minute (public-heavy) |
 | POST | `/api/v1/admin/bills/{bill_id}/party-votes` | public-heavy | 20 per 1 minute (public-heavy) |
 | POST | `/api/v1/admin/bills/{bill_id}/review` | public-heavy | 20 per 1 minute (public-heavy) |

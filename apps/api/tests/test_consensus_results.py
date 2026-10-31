@@ -132,9 +132,8 @@ def test_public_visibility_guard_matches_sensitive_diavgeia_policy():
     predicate, params = _public_visibility_sql()
 
     assert "admin_hidden" in predicate
-    assert "summary_short_el" in predicate
-    assert "summary_long_el" in predicate
-    assert "NOT public_bill_sensitive(pb.source, pb.title_el, pb.summary_short_el, pb.summary_long_el)" in predicate
+    assert "coalesce(pb.sensitive_override, pb.sensitive_public_block) IS NOT true" in predicate
+    assert "summary_" not in predicate and "public_bill_sensitive" not in predicate
     assert not params  # The fixed predicate must match the partial index under generic plans.
 
 

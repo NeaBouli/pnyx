@@ -25,7 +25,7 @@ from services.public_bill_response import BODY_KEY, IDS_KEY, RESULTS_IDS_KEY
 
 CHOICES = ("YES", "NO", "ABSTAIN", "UNKNOWN")
 SCHEMA_SQL = (
-    "CREATE TABLE parliament_bills (id TEXT PRIMARY KEY, title_el TEXT, parliament_url TEXT, created_at TEXT, source TEXT, status TEXT, results_visibility TEXT, admin_hidden BOOLEAN, summary_short_el TEXT, summary_long_el TEXT, party_votes_parliament TEXT)",
+    "CREATE TABLE parliament_bills (id TEXT PRIMARY KEY, title_el TEXT, parliament_url TEXT, created_at TEXT, source TEXT, status TEXT, results_visibility TEXT, admin_hidden BOOLEAN, sensitive_public_block BOOLEAN NOT NULL DEFAULT false, sensitive_override BOOLEAN, summary_short_el TEXT, summary_long_el TEXT, party_votes_parliament TEXT)",
     "CREATE TABLE citizen_votes (bill_id TEXT, vote TEXT)",
     "CREATE INDEX idx_votes_bill ON citizen_votes (bill_id)",
     "CREATE TABLE zk_vote_receipts (vote_scope_id TEXT, vote_commitment TEXT)",
@@ -107,14 +107,14 @@ async def db() -> AsyncIterator[AsyncSession]:
 async def bill(
     db: AsyncSession, bill_id: str, *, source: str = "PARLIAMENT",
     status: str = "OPEN_END", hidden: bool = False, title: str = "Δοκιμή",
-    party: dict[str, str] | None = None, summary: str = "",
+    party: dict[str, str] | None = None, summary: str = "", sensitive: bool = False,
 ) -> None:
     await db.execute(text("""
         INSERT INTO parliament_bills
-        (id, title_el, source, status, admin_hidden, summary_long_el, party_votes_parliament)
-        VALUES (:id, :title, :source, :status, :hidden, :summary, :party)
+        (id, title_el, source, status, admin_hidden, summary_long_el, party_votes_parliament, sensitive_public_block)
+        VALUES (:id, :title, :source, :status, :hidden, :summary, :party, :sensitive)
     """), dict(id=bill_id, title=title, source=source, status=status,
-               hidden=hidden, summary=summary, party=json.dumps(party) if party is not None else None))
+               hidden=hidden, summary=summary, party=json.dumps(party) if party is not None else None, sensitive=sensitive))
 
 
 async def votes(
@@ -322,8 +322,8 @@ async def test_visibility_sources_and_invalid_receipts(db: AsyncSession, client:
     for bill_id, options in (
         ("VISIBLE", {}), ("HIDDEN", {"hidden": True}),
         ("ACTIVE", {"status": "ACTIVE"}), ("ANNOUNCED", {"status": "ANNOUNCED"}),
-        ("SENSITIVE_TITLE", {"source": "DIAVGEIA", "title": "AMKA"}),
-        ("SENSITIVE_SUMMARY", {"source": "DIAVGEIA", "summary": "eopyy"}),
+        ("SENSITIVE_TITLE", {"source": "DIAVGEIA", "title": "AMKA", "sensitive": True}),
+        ("SENSITIVE_SUMMARY", {"source": "DIAVGEIA", "summary": "eopyy", "sensitive": True}),
         ("DIAVGEIA", {"source": "DIAVGEIA"}),
         ("PARLIAMENT", {"title": "AMKA"}),
     ):
@@ -439,7 +439,8 @@ async def test_admin_visibility_edit_invalidates_all_policies_after_commit(
     async def commit() -> None:
         assert keys <= cache.values.keys()  # Invalidation must follow commit.
         if field != "results_visibility":
-            await db.execute(text(f"UPDATE parliament_bills SET {field} = :value"), {"value": value})
+            # SQLite fixture models the PostgreSQL trigger's persisted decision.
+            await db.execute(text(f"UPDATE parliament_bills SET {field} = :value, sensitive_public_block = true"), {"value": value})
         await db.commit()
 
     writer.commit.side_effect = commit
@@ -576,8 +577,10 @@ async def test_admin_text_and_party_vote_routes_remove_cached_rows(
     async def commit() -> None:
         assert keys <= cache.values.keys()  # Cache deletion follows the DB commit.
         await db.execute(text("""UPDATE parliament_bills
-            SET summary_long_el = :summary, party_votes_parliament = :party WHERE id = 'A'
-        """), dict(summary=record.summary_long_el, party=json.dumps(record.party_votes_parliament)))
+            SET summary_long_el = :summary, party_votes_parliament = :party,
+                sensitive_public_block = :blocked WHERE id = 'A'
+        """), dict(summary=record.summary_long_el, party=json.dumps(record.party_votes_parliament),
+                   blocked="AMKA" in record.summary_long_el))
         await db.commit()
 
     writer.commit.side_effect = commit
@@ -736,7 +739,7 @@ async def test_representation_generation_outage_never_reuses_a_body(
 
 
 @pytest.mark.parametrize("path", ["/api/v1/public/representation", "/api/v1/analytics/representation"])
-@pytest.mark.parametrize("hide", ["admin_hidden = TRUE", "source = 'DIAVGEIA', summary_long_el = 'AMKA'"])
+@pytest.mark.parametrize("hide", ["admin_hidden = TRUE", "sensitive_public_block = TRUE"])
 async def test_one_second_old_representation_after_committed_hide_and_redis_recovery(
     db, cache, visibility_redis, monkeypatch, path, hide,
 ):

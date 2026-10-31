@@ -32,21 +32,10 @@ def public_bill_raw_sql(
     if not alias.replace("_", "").isalnum():
         raise ValueError("SQL alias must be an identifier")
 
-    checks: list[str] = []
-    params: dict[str, str] = {}
-    for index, term in enumerate(DIAVGEIA_SENSITIVE_PUBLIC_TERMS):
-        name = f"{param_prefix}_{index}"
-        params[name] = f"%{term}%"
-        checks.extend((
-            f"LOWER(COALESCE({alias}.title_el, '')) LIKE :{name}",
-            f"LOWER(COALESCE({alias}.summary_short_el, '')) LIKE :{name}",
-            f"LOWER(COALESCE({alias}.summary_long_el, '')) LIKE :{name}",
-        ))
     return (
-        f"COALESCE({alias}.admin_hidden, FALSE) = FALSE AND NOT ("
-        + " OR ".join(checks)
-        + ")",
-        params,
+        f"{alias}.admin_hidden IS NOT TRUE AND "
+        f"coalesce({alias}.sensitive_override, {alias}.sensitive_public_block) IS NOT TRUE",
+        {},
     )
 
 
@@ -93,7 +82,7 @@ def _sensitive_function(element: _SensitiveDiavgeia, compiler: SQLCompiler, **kw
 
 
 def sensitive_diavgeia_filter() -> ColumnElement[bool]:
-    """SQL predicate for DIAVGEIA rows that must not be shown publicly.
+    """Text scanner for operator redaction tooling, never a visibility predicate.
 
     The guard is intentionally narrow: it targets patient/AMKA/insurance-fund
     markers seen in live public rows, without blocking every hospital purchase.
@@ -127,7 +116,7 @@ def public_bill_filter() -> ColumnElement[bool]:
     """SQLAlchemy predicate for bills that may appear in public surfaces."""
     return and_(
         ParliamentBill.admin_hidden.is_not(True),
-        not_(sensitive_diavgeia_filter()),
+        func.coalesce(ParliamentBill.sensitive_override, ParliamentBill.sensitive_public_block).is_not(True),
     )
 
 
@@ -160,12 +149,9 @@ def is_public_bill(bill: Any) -> bool:
         return False
     if bool(getattr(bill, "admin_hidden", False)):
         return False
-    if (getattr(bill, "source", None) or "PARLIAMENT") == "DIAVGEIA":
-        return not any(
-            _text_contains_sensitive_diavgeia_marker(getattr(bill, field, None))
-            for field in ("title_el", "summary_short_el", "summary_long_el")
-        )
-    return True
+    override = getattr(bill, "sensitive_override", None)
+    blocked = override if override is not None else getattr(bill, "sensitive_public_block", False)
+    return not bool(blocked)
 
 
 # ── Result visibility ─────────────────────────────────────────────────────────

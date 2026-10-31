@@ -235,7 +235,8 @@ async def test_sensitive_failure_is_skipped_and_bill_stays_hidden(
 
     value = BAD + " " + marker
     row = _row("SYNTH-SENSITIVE", owned=owned, value=value)
-    row.update(source="DIAVGEIA", title_el="Συνθετικός τίτλος", summary_short_el=None)
+    row.update(source="DIAVGEIA", title_el="Συνθετικός τίτλος", summary_short_el=None,
+               sensitive_public_block=True)
     assert not is_public_bill(SimpleNamespace(**row))
     conn = LegacyConnection([row], tmp_path / "sensitive.csv")
     assert await audit_script.audit(conn, fields=("summary_long_el",), apply=True, backup_path=conn.backup,
@@ -453,7 +454,7 @@ async def test_clearing_other_fields_cannot_expose_sensitive_bill(tmp_path: Path
     from services.bill_visibility import is_public_bill
 
     row = _legacy("SYNTH-HIDDEN", value=BAD + " ΑΜΚΑ")
-    row.update(title_el="Συνθετικός τίτλος", summary_short_el=BAD)
+    row.update(title_el="Συνθετικός τίτλος", summary_short_el=BAD, sensitive_public_block=True)
     assert not is_public_bill(SimpleNamespace(**row))
 
     class VisibilityConnection(LegacyConnection):

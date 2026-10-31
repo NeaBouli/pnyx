@@ -94,6 +94,9 @@ async def test_notifications_publish_requires_admin():
 async def test_notifications_publish_valid(monkeypatch):
     monkeypatch.setenv("ENVIRONMENT", "development")
     monkeypatch.setenv("ADMIN_KEY", "dev-admin-key")
+    from database import get_db
+    monkeypatch.setitem(app.dependency_overrides, get_db,
+                        lambda: SimpleNamespace(scalar=AsyncMock(return_value="T")))
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         r = await c.post(
             "/api/v1/notifications/test/publish?event_type=test&bill_id=T",

@@ -16,6 +16,12 @@ from typing import AsyncGenerator, Optional
 from rate_limit import client_flow, enforce_route_limit, limiter, public_heavy, public_read
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from dependencies import verify_admin_key
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from database import get_db
+from models import ParliamentBill
+from services.bill_visibility import public_bill_filter
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/notifications", tags=["MOD-07 Notifications"])
@@ -53,17 +59,24 @@ class EventBus:
 event_bus = EventBus()
 
 
-async def publish_bill_event(event_type: str, bill_id: str, data: dict = {}):
-    """Öffentlich — von parliament.py aufgerufen."""
+async def publish_bill_event(
+    event_type: str, bill_id: str, data: dict, *, db: AsyncSession | None = None,
+) -> bool:
+    """Authorize current scalar membership before broadcasting to public streams."""
+    if db is None or await db.scalar(select(ParliamentBill.id).where(
+        ParliamentBill.id == bill_id, public_bill_filter(),
+    )) is None:
+        return False
     await event_bus.publish({"type": event_type, "bill_id": bill_id, **data})
+    return True
 
 
 async def publish_vote_milestone(bill_id: str, total_votes: int, *, db=None):
     """Milestone bei 100/500/1000/5000 Stimmen."""
+    if db is None:
+        return
     from services.small_cell import small_cell_k
     if small_cell_k():
-        if db is None:
-            return
         from services.public_result_windows import load_publishable_bill_ids
         if bill_id not in await load_publishable_bill_ids(db):
             return
@@ -71,7 +84,7 @@ async def publish_vote_milestone(bill_id: str, total_votes: int, *, db=None):
         await publish_bill_event("bill.vote_milestone", bill_id, {
             "milestone": total_votes,
             "message_el": f"{total_votes} ψήφοι για το νομοσχέδιο!",
-        })
+        }, db=db)
 
 
 from fastapi.responses import StreamingResponse
@@ -139,12 +152,15 @@ async def test_publish(
     event_type: str = Query("bill.status_changed"),
     bill_id: str = Query("GR-2025-0001"),
     _auth: bool = Depends(verify_admin_key),
+    db: AsyncSession = Depends(get_db),
     request: Request = None,
 ):
     """DEV: Test Event publishen."""
 
-    await publish_bill_event(event_type, bill_id, {"message_el": f"Test: {event_type}", "source": "admin_test"})
-    return {"published": True, "event_type": event_type, "subscribers": event_bus.subscriber_count}
+    published = await publish_bill_event(
+        event_type, bill_id, {"message_el": f"Test: {event_type}", "source": "admin_test"}, db=db,
+    )
+    return {"published": published, "event_type": event_type, "subscribers": event_bus.subscriber_count}
 
 
 @router.get("/status", dependencies=[Depends(enforce_route_limit)])
