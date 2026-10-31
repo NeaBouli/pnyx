@@ -2,6 +2,23 @@ from routers.agent import _canonical_response
 from scripts.seed_knowledge_base import ENTRIES
 
 
+def test_seed_privacy_claims_use_only_published_pseudonymous_facts() -> None:
+    for title in ("What is ekklesia?", "How is my anonymity protected?", "Is the app safe?", "What is CPLM?"):
+        entry = _entry(title)
+        for lang, content in (("el", entry[3]), ("en", entry[4])):
+            assert ("ψευδώνυμα" if lang == "el" else "pseudonymously") in content
+            assert ("συνδέονται με ψευδώνυμο nullifier, όχι με όνομα ή αριθμό τηλεφώνου" if lang == "el"
+                    else "linked to a pseudonymous nullifier, not to a name or phone number") in content
+            assert ("Ο αριθμός τηλεφώνου δεν αποθηκεύεται" if lang == "el"
+                    else "The phone number is not stored") in content
+            assert "https://ekklesia.gr/wiki/privacy.html" in content
+    all_content = " ".join(str(value) for entry in ENTRIES for value in entry[3:5]).lower()
+    for claim in ("vote anonymously", "ψηφίζουν ανώνυμα", "no personal data", "δεν αποθηκεύουμε προσωπικά δεδομένα",
+                  "gdpr compliant", "only a cryptographic nullifier hash is stored",
+                  "can be linked by the operator", "μπορούν να συνδεθούν από τον διαχειριστή"):
+        assert claim not in all_content
+
+
 def _entry(title_en: str) -> tuple:
     return next(entry for entry in ENTRIES if entry[2] == title_en)
 

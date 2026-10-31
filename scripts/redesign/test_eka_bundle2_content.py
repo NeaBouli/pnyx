@@ -29,6 +29,20 @@ def initial_mismatches(source):
 
 
 class Bundle2ContentTests(unittest.TestCase):
+    def test_compass_key_selection_covers_incomplete_migrations_in_both_languages(self):
+        wording = (
+            "Για νέες αποθηκεύσεις χρησιμοποιείται το ξεχωριστό μη εξαγώγιμο κλειδί AES του IndexedDB όταν υπάρχει· αλλιώς παράγεται κλειδί από το παλαιό ιδιωτικό κλειδί ταυτότητας. Μια ατελής μεταφορά μπορεί να διατηρεί και τα δύο.",
+            "New writes use the separate non-extractable AES key in IndexedDB when available; otherwise they derive a key from the legacy identity private key. An incomplete migration can retain both.",
+        )
+        for name in ("docs/wiki/privacy.html", "docs/wiki/faq.html", "docs/wiki/roadmap.html",
+                     "docs/llms.txt", "apps/api/data/agent_facts.json", "apps/api/scripts/seed_knowledge_base.py"):
+            with self.subTest(source=name):
+                source = (ROOT / name).read_text(encoding="utf-8")
+                for sentence in wording:
+                    self.assertIn(sentence, source)
+                self.assertNotIn("before migration, the encryption key is derived", source)
+                self.assertNotIn("πριν από αυτήν, το κλειδί κρυπτογράφησης παράγεται", source)
+
     def test_initial_greek_equals_el_toggle_on_corrected_pages(self):
         for name in INITIAL_PAGES:
             with self.subTest(page=name):

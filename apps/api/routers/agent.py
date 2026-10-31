@@ -503,13 +503,15 @@ def _canonical_response(question: str, lang: str) -> dict | None:
             "Διαύγεια. Ο ΑΔΑ μόνος του δεν αρκεί. Μετά την επιτυχή επαλήθευση "
             "εκδίδεται token πρόσβασης με ισχύ 24 ωρών και ο κωδικός πρόσκλησης "
             "θεωρείται χρησιμοποιημένος. Εξαίρεση αποτελεί μόνο μια περιορισμένη "
-            "ροή επίδειξης, που δεν ελέγχει τη Διαύγεια.",
+            "ροή επίδειξης, που δεν ελέγχει τη Διαύγεια. "
+            "Ο ΑΔΑ αποθηκεύεται στην εγγραφή της χρησιμοποιημένης πρόσκλησης, με ένδειξη και χρόνο χρήσης. Αποθηκεύεται επίσης στην εγγραφή πρόσβασης εκπροσώπου μαζί με το token πρόσβασης, τον χρόνο λήξης, τον ρόλο, την Περιφέρεια και τον Δήμο (ονόματα και αναγνωριστικά) και την ονομασία φορέα.",
             "Representative verification is not open registration. It requires a "
             "valid admin-issued invite code that is unused and not expired, plus an "
             "ADA number that is verified on Diavgeia. An ADA number alone is not "
             "enough. After successful verification, a 24-hour access token is "
             "issued and the invite code is marked as used. The only exception is a "
-            "restricted demonstration flow, which does not check Diavgeia.",
+            "restricted demonstration flow, which does not check Diavgeia. "
+            "The ADA is stored in the redeemed invitation record with its usage status and time. It is also stored in the representative access record with the access token, expiry time, role, region and municipality (names and identifiers), and organisation label.",
             "representative_verification",
         )
 
@@ -556,27 +558,31 @@ def _canonical_response(question: str, lang: str) -> dict | None:
             "χωρίς να αποθηκεύει τον αριθμό τηλεφώνου. Στη Beta παράγεται ως "
             "server-salted hash, επομένως το server salt είναι κρίσιμο μυστικό. "
             "Το Ed25519 χρησιμοποιείται για ψηφιακές υπογραφές ψήφων, όχι ως "
-            "γεννήτρια του nullifier.",
+            "γεννήτρια του nullifier. "
+            "Οι ψήφοι αποθηκεύονται ψευδώνυμα· συνδέονται με ψευδώνυμο nullifier, όχι με όνομα ή αριθμό τηλεφώνου. Ο αριθμός τηλεφώνου δεν αποθηκεύεται. Δείτε την πολιτική ιδιωτικότητας: https://ekklesia.gr/wiki/privacy.html.",
             "A nullifier hash lets the system enforce uniqueness without storing "
             "the phone number. In Beta it is generated as a server-salted hash, "
             "so the server salt is a critical secret. Ed25519 is used for vote "
-            "signatures; it is not the mechanism that generates the nullifier hash.",
+            "signatures; it is not the mechanism that generates the nullifier hash. "
+            "Votes are stored pseudonymously; linked to a pseudonymous nullifier, not to a name or phone number. The phone number is not stored. See the privacy page: https://ekklesia.gr/wiki/privacy.html.",
             "nullifier_hash",
         )
 
     if "cplm" in q or "liquid mirror" in q or "πολιτικό καθρέφ" in q:
         return resp(
-            "Το CPLM (Citizens Political Liquid Mirror) είναι δημόσιο, ανώνυμο "
+            "Το CPLM (Citizens Political Liquid Mirror) είναι δημόσιο "
             "συγκεντρωτικό σήμα που δείχνει τη συνολική πολιτική θέση των "
             "συμμετεχόντων πολιτών με βάση τις ψήφους τους. Δεν αποκαλύπτει "
             "μεμονωμένες ψήφους ή ταυτότητες. Αποτελέσματα με λιγότερες από "
             "10 ψήφους δεν εμφανίζονται δημόσια· αποκρύπτονται επίσης μικρές "
-            "επιμέρους ομάδες.",
-            "CPLM (Citizens Political Liquid Mirror) is a public, anonymous "
+            "επιμέρους ομάδες. "
+            "Οι ψήφοι αποθηκεύονται ψευδώνυμα· συνδέονται με ψευδώνυμο nullifier, όχι με όνομα ή αριθμό τηλεφώνου. Ο αριθμός τηλεφώνου δεν αποθηκεύεται. Δείτε την πολιτική ιδιωτικότητας: https://ekklesia.gr/wiki/privacy.html.",
+            "CPLM (Citizens Political Liquid Mirror) is a public "
             "aggregate signal showing the overall political position of "
             "participating citizens based on their votes. It does not reveal "
             "individual votes or identities. Results with fewer than 10 votes "
-            "are not shown publicly; small subgroups are also withheld.",
+            "are not shown publicly; small subgroups are also withheld. "
+            "Votes are stored pseudonymously; linked to a pseudonymous nullifier, not to a name or phone number. The phone number is not stored. See the privacy page: https://ekklesia.gr/wiki/privacy.html.",
             "cplm",
         )
 

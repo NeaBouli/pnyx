@@ -76,6 +76,61 @@ async def _ask(question: str, lang: str = "en") -> dict:
     )
 
 
+PRIVACY_FACTS = {
+    "el": ("ψευδώνυμα", "συνδέονται με ψευδώνυμο nullifier, όχι με όνομα ή αριθμό τηλεφώνου",
+           "Ο αριθμός τηλεφώνου δεν αποθηκεύεται", "https://ekklesia.gr/wiki/privacy.html"),
+    "en": ("pseudonymously", "linked to a pseudonymous nullifier, not to a name or phone number",
+           "The phone number is not stored", "https://ekklesia.gr/wiki/privacy.html"),
+}
+REMOVED_PRIVACY_CLAIMS = (
+    "vote anonymously", "votes are anonymous", "ψηφίζουν ανώνυμα", "ψήφοι είναι ανώνυμες",
+    "no personal data", "δεν αποθηκεύουμε προσωπικά δεδομένα", "κανένα προσωπικό στοιχείο",
+    "gdpr compliant", "can be linked by the operator", "μπορούν να συνδεθούν από τον διαχειριστή",
+    "server can, however, link", "ο server μπορεί όμως να συνδέσει",
+)
+
+
+@pytest.mark.parametrize("question,lang", [
+    ("How is my privacy protected?", "en"),
+    ("How is my anonymity protected?", "en"),
+    ("Are votes anonymous?", "en"),
+    ("What is a nullifier hash?", "en"),
+    ("What is CPLM?", "en"),
+    ("Πώς προστατεύεται η ιδιωτικότητά μου;", "el"),
+    ("Πώς προστατεύεται η ανωνυμία μου;", "el"),
+    ("Είναι ανώνυμες οι ψήφοι;", "el"),
+    ("Τι είναι το nullifier hash;", "el"),
+    ("Τι είναι το CPLM;", "el"),
+])
+async def test_privacy_answers_use_published_pseudonymous_wording(question: str, lang: str) -> None:
+    response = await _ask(question, lang)
+    for fact in PRIVACY_FACTS[lang]:
+        assert fact in response["answer"]
+    for claim in REMOVED_PRIVACY_CLAIMS:
+        assert claim not in response["answer"].lower()
+
+
+@pytest.mark.parametrize("question,lang", [
+    ("When does voting close?", "en"),
+    ("Πότε κλείνει η ψηφοφορία;", "el"),
+])
+async def test_voting_close_route_qualifies_results_visibility(question: str, lang: str) -> None:
+    response = await _ask(question, lang)
+    assert {"type": "knowledge_base", "topic": "lifecycle"} in response["sources"]
+    assert response["model"] == "faq-deterministic"
+    required = {
+        "el": ("κλείνει τη στιγμή που ψηφίζει η Βουλή", "μπορεί να εμφανίζονται",
+               "10 ψήφους", "μικρές επιμέρους ομάδες", "μη διαθέσιμες, όχι μηδενικές ψήφοι",
+               "αποθηκευμένη σήμανση ευαισθησίας"),
+        "en": ("closes when Parliament votes", "may be shown subject to visibility",
+               "10 votes", "small subgroups", "unavailable, not zero votes", "persisted sensitivity flag"),
+    }
+    for fact in required[lang]:
+        assert fact in response["answer"]
+    for claim in ("the aggregate results are visible", "τα συγκεντρωτικά αποτελέσματα είναι ορατά"):
+        assert claim not in response["answer"]
+
+
 def _assert_reviewed_response(response: dict, question: str, lang: str) -> None:
     assert set(response) == {"question", "answer", "model", "sources", "lang"}
     assert response["question"] == question

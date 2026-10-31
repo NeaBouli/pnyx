@@ -8,7 +8,7 @@
       "changefreq": "weekly",
       "priority": "1.0",
       "lastmod": "2026-10-31",
-      "sha256": "b31a23cd1aea0678f64a395e4c1d9e8ec150d3e7a24a3bea1a4ca6524e2dbb4f"
+      "sha256": "42118173edd8ba6710006cb51807bb8167444a8badda7f2cab6548f8b58cb0fe"
     },
     {
       "loc": "/el/bills",
@@ -66,7 +66,7 @@
       "changefreq": "monthly",
       "priority": "0.7",
       "lastmod": "2026-10-31",
-      "sha256": "1579bf57e09a70bbb40bcc700969c129c7afe833aa008e958c9ffc0a64fc55c6"
+      "sha256": "28265094253faa53179c87eab8c2aaccd54ff9acf6b33efdf9c6f5cd017421fd"
     },
     {
       "loc": "/wiki/index.html",
@@ -82,7 +82,7 @@
       "changefreq": "monthly",
       "priority": "0.9",
       "lastmod": "2026-10-31",
-      "sha256": "26f2303cf9f5038b2a3693760cc940cadb3e49f28db271410d576700d8fdd245"
+      "sha256": "f12e2ca1d3333afb223919ae197eb588f4426cf6467c3d9448b15bafa4e4827f"
     },
     {
       "loc": "/wiki/whitepaper.html",
@@ -98,7 +98,7 @@
       "changefreq": "monthly",
       "priority": "0.8",
       "lastmod": "2026-10-31",
-      "sha256": "de740d8573e34e13ccc4e895d7eff5d3fda7a5ef6e1c57b0e7d3a458efa2c5da"
+      "sha256": "9b7b84d0d2e7dcfef794e70934d268f1e1d842a112198926d5fb17d5f692b950"
     },
     {
       "loc": "/wiki/security.html",
@@ -138,7 +138,7 @@
       "changefreq": "monthly",
       "priority": "0.7",
       "lastmod": "2026-10-31",
-      "sha256": "5f28a5ca3d91a988fdcd1ccda525009a3cd2327a6b29445ad6eb90b63a4a8bda"
+      "sha256": "c007fec658ac7a7b00ff22d06d66f45ff88b465e86fc960e15894737a7737ca6"
     },
     {
       "loc": "/wiki/database.html",

@@ -78,6 +78,7 @@ import r0_inventory
 # B08/B12/B17 (user-requested): Compass/server-history and conditional Arweave
 # disclosures; production small-cell/sensitivity facts; FAQ grouping/counts/schema;
 # initial Greek copy; established legal-name attribution and operator responsibility.
+# PR #722 fix round: AES key availability and incomplete migrations (EL/EN/FAQ schema).
 # T-9149: deferred script/listener migration; public copy and JSON-LD are unchanged.
 # T-9172: Direct APK copy is v1.0.37/vC66 in EL/EN/FAQ JSON-LD; Play stays vC62.
 APPROVED_WIKI_INVENTORY_HASH = {
@@ -88,11 +89,11 @@ APPROVED_WIKI_INVENTORY_HASH = {
     "docs/wiki/contributing.html": "ce5f0381727ea54d45929c4d919150dc90a2d8c772505d5d17241c90165c257f",
     "docs/wiki/database.html": "ff940bb48b858808eaf0205348c164dc3578b6411acab6a31d8da1919584907c",
     "docs/wiki/delete-account.html": "a62e22bd83f648660cb5b53d3beaf25f0c0270e50b722459278f87391e14cacd",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
-    "docs/wiki/faq.html": "b9dc0119e1e559b93c1763958c2e92e1cf557fc709869ef71bbdafa9ecc92130",  # T-9153: paused donations; HLR information and FAQ EL/EN/JSON-LD
+    "docs/wiki/faq.html": "244038fd06dbd35afe139986b63800a65a800c3db09d0eb3b7ec5c7c1254ede5",  # T-9153: paused donations; HLR information and FAQ EL/EN/JSON-LD
     "docs/wiki/index.html": "ce6fc4609b273cd42529b0c2b7bd7a4f5ab750b0c3d60d6396beb5946cff7eb2",  # T-9047/T-9048: named code region, contrast, headings and document language; T-9106: legal-modal claims text
     "docs/wiki/modules.html": "34162f6c9aef8312098670c16ca47a379721ed460bec6b4837e6b33b3925c0fe",  # T-9148: reviewed EL/EN AI wording
-    "docs/wiki/privacy.html": "2f50cd8606c1ab3a96f0b1a096a5b150eefbd7b49efdd88e2a5a6bf55d82394a",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
-    "docs/wiki/roadmap.html": "200321ec99b47a32cba7aad3d30cc67558e3902e99dd519021a9af51c27627fe",
+    "docs/wiki/privacy.html": "6aa3ee5d54142d0e995e814552ff5e7df5e532fa247e55374b5719111ff06a16",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
+    "docs/wiki/roadmap.html": "c81071d697e2a626945d2274fb417195b77330194d49d8f9b532711a47d5850c",
     "docs/wiki/security.html": "db0a3e2046d2f6569731127d3a898aa67c24471ecfe92f8fd662c1489c443cfe",  # T-9127: OPEN_END voting closed
     "docs/wiki/whitepaper.html": "009c4c386deb53afe0dd176dedf0eb9e16f60708b7ca8dd18e516cdf8e5140af",  # T-9127: OPEN_END voting closed
     "docs/wiki/zk-voting.html": "650a3e85f98db88751c2702229eb016cc722206758da1a03fa7af73e5914af9c",
