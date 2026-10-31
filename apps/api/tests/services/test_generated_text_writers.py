@@ -177,14 +177,16 @@ async def test_diavgeia_conversion_keeps_official_fields(monkeypatch: pytest.Mon
 
     added: list[object] = []
     row = ("SYNTH-1", subject, "Α.2", label,
-           "https://example.test/bill", "OTHER", None, None, None)
+           "https://example.test/bill", "OTHER", None, None, None, "123")
     db = SimpleNamespace(execute=AsyncMock(return_value=SimpleNamespace(fetchall=lambda: [row])),
                          add=added.append, flush=AsyncMock())
     monkeypatch.setattr(diavgeia_scraper, "_sync_existing_decision_bill_scopes", AsyncMock(return_value=0))
     monkeypatch.setattr(diavgeia_scraper, "commit_and_invalidate_representation", AsyncMock())
+    clean_label = diavgeia_scraper._clean_org_label(label)
+    monkeypatch.setattr(diavgeia_scraper, "resolve_org_label", AsyncMock(return_value=clean_label))
     result = await diavgeia_scraper.convert_decisions_to_bills(db)
     assert result["created"] == 1
-    assert added[0].pill_el == f"Διαύγεια: {label}"
+    assert added[0].pill_el == (f"Διαύγεια: {clean_label}" if clean_label else "Διαύγεια")
     assert added[0].summary_short_el == added[0].title_el == subject
     assert added[0].generated_content_provenance is None
 
@@ -193,8 +195,11 @@ async def test_automatic_org_resolution_keeps_official_latin_label(monkeypatch: 
     from routers import admin
     from services import diavgeia_org_lookup
 
-    db = SimpleNamespace(execute=AsyncMock(return_value=SimpleNamespace(fetchall=lambda: [("SYNTH-1", "Διαύγεια: [unknown:123]")])))
-    monkeypatch.setattr(diavgeia_org_lookup, "resolve_unknown_label", AsyncMock(return_value="SYNTHETIC TIMING SYSTEMS AE"))
+    db = SimpleNamespace(execute=AsyncMock(side_effect=[
+        SimpleNamespace(fetchall=lambda: [("SYNTH-1", "Διαύγεια: [unknown:123]", None, None)]),
+        SimpleNamespace(rowcount=1),
+    ]))
+    monkeypatch.setattr(diavgeia_org_lookup, "resolve_org_label", AsyncMock(return_value="SYNTHETIC TIMING SYSTEMS AE"))
     monkeypatch.setattr(admin, "commit_and_invalidate_representation", AsyncMock())
     result = await inspect.unwrap(admin.admin_resolve_orgs)(_key=True, db=db, request=None)
     assert result["resolved"] == 1

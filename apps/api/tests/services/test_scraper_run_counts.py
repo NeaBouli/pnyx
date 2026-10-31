@@ -27,7 +27,7 @@ async def test_diavgeia_run_counts_are_logged_on_success_and_failure(monkeypatch
 
     monkeypatch.setattr(scraper, "DiavgeiaClient", Client)
     monkeypatch.setattr(scraper, "_resolve_org", AsyncMock(return_value=(None, None, "OTHER")))
-    monkeypatch.setattr(scraper, "get_org_label", lambda uid: "Organization")
+    monkeypatch.setattr(scraper, "resolve_org_label", AsyncMock(return_value="Organization"))
     db = SimpleNamespace(execute=AsyncMock(return_value=SimpleNamespace(scalar_one_or_none=lambda: None)))
     if fail:
         with pytest.raises(RuntimeError):

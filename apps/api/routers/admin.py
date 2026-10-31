@@ -376,6 +376,55 @@ async def admin_scraper_catchup(
     return {"accepted": True, "jobs_triggered": triggered, "skipped": skipped, "force": force}
 
 
+async def _repair_diavgeia_org_pills(db: AsyncSession) -> dict:
+    from services.diavgeia_org_lookup import (
+        UID_RE, UNKNOWN_PILL_RE, UNKNOWN_PILL_SQL_PATTERN,
+        clean_org_label, org_pill, resolve_org_label,
+    )
+
+    result = await db.execute(text("""
+        SELECT pb.id, pb.pill_el, pb.org_label, d.organization_uid
+        FROM parliament_bills pb
+        LEFT JOIN diavgeia_decisions d ON d.ada = pb.diavgeia_ada
+        WHERE pb.source = 'DIAVGEIA' AND (pb.pill_el ~ :pattern
+            OR (pb.pill_el = 'Διαύγεια' AND d.organization_uid ~ '^[0-9]{1,16}$'))
+    """), {"pattern": UNKNOWN_PILL_SQL_PATTERN})
+    rows = result.fetchall()
+    resolved = 0
+    failed = 0
+    concurrent_skipped = 0
+    labels = {}
+
+    for bill_id, pill_el, old_label, decision_uid in rows:
+        match = UNKNOWN_PILL_RE.fullmatch(pill_el)
+        if match:
+            uid = match.group(1)
+        elif pill_el == "Διαύγεια" and UID_RE.fullmatch(decision_uid or ""):
+            uid = decision_uid
+        else:
+            continue
+        if uid not in labels:
+            labels[uid] = await resolve_org_label(uid)
+        label = clean_org_label(labels[uid]) or clean_org_label(old_label)
+        update = await db.execute(text("""
+            UPDATE parliament_bills SET pill_el = :pill, org_label = :label
+            WHERE id = :id AND source = 'DIAVGEIA' AND pill_el = :old_pill
+              AND org_label IS NOT DISTINCT FROM :old_label
+              AND (pill_el <> 'Διαύγεια' OR EXISTS (
+                  SELECT 1 FROM diavgeia_decisions d
+                  WHERE d.ada = parliament_bills.diavgeia_ada AND d.organization_uid = :uid))
+        """), {"pill": org_pill(label), "label": clean_org_label(old_label) or label, "id": bill_id,
+                 "old_pill": pill_el, "old_label": old_label, "uid": uid})
+        if update.rowcount == 0:
+            concurrent_skipped += 1
+            continue
+        resolved += update.rowcount if label is not None else 0
+        failed += update.rowcount if label is None else 0
+
+    return {"success": True, "resolved": resolved, "failed": failed,
+            "concurrent_skipped": concurrent_skipped, "total": len(rows)}
+
+
 @router.post("/diavgeia/resolve-orgs", dependencies=[Depends(enforce_route_limit)])
 @public_heavy
 async def admin_resolve_orgs(
@@ -383,37 +432,10 @@ async def admin_resolve_orgs(
     db: AsyncSession = Depends(get_db),
     request: Request = None,
 ):
-    """Resolve all [unknown:XXX] org names via Diavgeia API."""
-    import re
-    import asyncio
-    from services.diavgeia_org_lookup import resolve_unknown_label
-
-    result = await db.execute(
-        text("SELECT id, pill_el FROM parliament_bills WHERE pill_el LIKE '%[unknown:%'")
-    )
-    rows = result.fetchall()
-    resolved = 0
-    failed = 0
-
-    for bill_id, pill_el in rows:
-        match = re.search(r"\[unknown:(\d+)\]", pill_el)
-        if not match:
-            continue
-        uid = match.group(1)
-        label = await resolve_unknown_label(uid)
-        if label:
-            new_pill = pill_el.replace(f"[unknown:{uid}]", label)
-            await db.execute(
-                text("UPDATE parliament_bills SET pill_el = :pill WHERE id = :id"),
-                {"pill": new_pill, "id": bill_id},
-            )
-            resolved += 1
-        else:
-            failed += 1
-        await asyncio.sleep(0.3)  # Rate limit
-
+    """Repair exact DIAVGEIA unknown/neutral pills and organization labels."""
+    stats = await _repair_diavgeia_org_pills(db)
     await commit_and_invalidate_representation(db)
-    return {"success": True, "resolved": resolved, "failed": failed, "total": len(rows)}
+    return stats
 
 
 @router.post("/scraper/enrich-all", dependencies=[Depends(enforce_route_limit)])
@@ -707,17 +729,17 @@ async def admin_resolve_org_labels(
     """
     NEA-272: Resolve [unknown:UID] organization labels in diavgeia_decisions
     via live Diavgeia API, then backfill parliament_bills.org_label.
-    Rate-limited: 1 req/sec to Diavgeia API.
+    Also repairs unknown pills; the shared resolver owns HTTP pacing/caching.
     """
-    import asyncio
-    from services.diavgeia_org_lookup import resolve_unknown_label
-    from services.diavgeia_scraper import _clean_org_label
+    from services.diavgeia_org_lookup import (
+        DECISION_LABEL_MISSING_SQL, ORG_LABEL_MISSING_SQL, clean_org_label, resolve_org_label,
+    )
 
     # Step 1: Find unknown org labels in diavgeia_decisions
-    result = await db.execute(text("""
+    result = await db.execute(text(f"""
         SELECT DISTINCT organization_uid, organization_label
         FROM diavgeia_decisions
-        WHERE organization_label LIKE '[unknown:%'
+        WHERE {DECISION_LABEL_MISSING_SQL}
     """))
     unknowns = result.fetchall()
 
@@ -725,6 +747,7 @@ async def admin_resolve_org_labels(
     resolved = 0
     failed = 0
     unresolved = 0
+    concurrent_skipped = 0
 
     for row in unknowns:
         uid, old_label = row
@@ -732,37 +755,48 @@ async def admin_resolve_org_labels(
             failed += 1
             continue
 
-        label = await resolve_unknown_label(str(uid))
-        clean = _clean_org_label(label)
+        label = await resolve_org_label(str(uid))
+        clean = clean_org_label(label)
 
         if clean:
-            await db.execute(text("""
+            update = await db.execute(text(f"""
                 UPDATE diavgeia_decisions
                 SET organization_label = :label
                 WHERE organization_uid = :uid
-                AND organization_label LIKE '[unknown:%'
-            """), {"label": clean, "uid": uid})
-            resolved += 1
+                AND {DECISION_LABEL_MISSING_SQL}
+                AND organization_label IS NOT DISTINCT FROM :old_label
+            """), {"label": clean, "uid": uid, "old_label": old_label})
+            resolved += update.rowcount
+            concurrent_skipped += int(update.rowcount == 0)
         else:
             unresolved += 1
 
-        # Rate-limit: 1 req/sec to Diavgeia API
-        await asyncio.sleep(1)
-
     # Step 2: Backfill parliament_bills.org_label from resolved decisions
-    backfill_result = await db.execute(text("""
-        UPDATE parliament_bills pb
-        SET org_label = TRIM(dd.organization_label)
-        FROM diavgeia_decisions dd
+    candidates = await db.execute(text(f"""
+        SELECT pb.id, pb.org_label, dd.organization_label
+        FROM parliament_bills pb
+        JOIN diavgeia_decisions dd ON pb.diavgeia_ada = dd.ada
         WHERE pb.diavgeia_ada = dd.ada
-          AND pb.governance_level = 'INSTITUTIONAL'
-          AND pb.org_label IS NULL
-          AND dd.organization_label IS NOT NULL
-          AND TRIM(dd.organization_label) != ''
-          AND dd.organization_label NOT LIKE '[unknown:%'
-          AND LOWER(TRIM(dd.organization_label)) != 'unknown'
+          AND pb.source = 'DIAVGEIA'
+          AND {ORG_LABEL_MISSING_SQL}
     """))
-    backfilled = backfill_result.rowcount
+    backfilled = backfill_skipped = 0
+    for bill_id, old_label, decision_label in candidates.fetchall():
+        label = clean_org_label(decision_label)
+        if label is None:
+            continue
+        update = await db.execute(text("""
+            UPDATE parliament_bills pb SET org_label = :label
+            FROM diavgeia_decisions dd
+            WHERE pb.id = :id AND pb.source = 'DIAVGEIA'
+              AND pb.diavgeia_ada = dd.ada
+              AND pb.org_label IS NOT DISTINCT FROM :old_label
+              AND dd.organization_label IS NOT DISTINCT FROM :decision_label
+        """), {"label": label, "id": bill_id, "old_label": old_label,
+                 "decision_label": decision_label})
+        backfilled += update.rowcount
+        backfill_skipped += int(update.rowcount == 0)
+    pills = await _repair_diavgeia_org_pills(db)
 
     await commit_and_invalidate_representation(db)
 
@@ -772,10 +806,13 @@ async def admin_resolve_org_labels(
             "resolved": resolved,
             "failed": failed,
             "unresolved": unresolved,
+            "concurrent_skipped": concurrent_skipped,
         },
         "step2_backfill": {
             "bills_updated": backfilled,
+            "concurrent_skipped": backfill_skipped,
         },
+        "step3_pills": pills,
     }
 
 
