@@ -175,14 +175,10 @@ sprintf-js items (#109/#110).
 ## Refresh 2026-10-31 (EKA-29 / B15, B16)
 
 - **node-forge GHSA-86w9-cpqp-85rv:** fixed. `apps/mobile` and `apps/representative` lock `node-forge@1.4.1` since #717 (affected `<= 1.4.0`); the allowlist entry is removed.
-- **braces GHSA-vfj7-8cjw-p6xm:** still no fixed release (latest 3.0.3 = affected). Per-workspace evidence that it is not shipped:
+- **braces GHSA-vfj7-8cjw-p6xm:** **withdrawn** by GitHub on 2026-10-23 (`withdrawn_at: 2026-10-23T12:53:02Z`); `npm audit` no longer reports it. The allowlist entry is removed instead of renewed.
+- **sprintf-js GHSA-hp3w-g68c-fv3c:** **withdrawn** by GitHub on 2026-10-22 (`withdrawn_at: 2026-10-22T19:21:04Z`).
+- The allowlist is now empty; any new high/critical advisory fails the gate without an exception.
 
-| Workspace | `npm ls --package-lock-only --omit=dev` | Lockfile owners | Shipped artifact check |
-| --- | --- | --- | --- |
-| apps/web | present (`braces@3.0.3`, `micromatch@4.0.8`) | `@ducanh2912/next-pwa` build plugin, `fast-glob` | Production image: no `node_modules/{braces,micromatch,fast-glob,@ducanh2912}`; 0 references in `.next` / `server.js` |
-| apps/dashboard | absent (dev-only) | `tailwindcss`/`chokidar`, `@next/eslint-plugin-next`/`fast-glob` | Production image: absent |
-| apps/mobile | present (via `expo` → `@expo/metro`) | Metro bundler | Published APK v1.0.37 Hermes bundle: 0 matches for braces/micromatch/fast-glob/metro-file-map signatures (sanity strings found) |
-| apps/representative | present (via `expo` → `@expo/metro`) | Metro bundler | Unpublished candidate bundle: 0 matches (sanity strings found) |
+Supporting observation gathered before the withdrawals were noticed (kept for the record, not a basis for any exception): on 2026-10-31 braces/micromatch were absent from the web and dashboard production images and from the Hermes bundles of the published mobile APK v1.0.37 and the unpublished representative candidate (string search, sanity-checked with known strings). Other distributions (Play, F-Droid builds, iOS) were not inspected.
 
-  The allowlist entry is renewed to `review_by: 2026-12-01` (continuation of the 2026-10-03 exception, approved 2026-10-31). If any workspace ever ships braces at runtime, its waiver must be dropped instead.
-- **sprintf-js GHSA-hp3w-g68c-fv3c (medium):** still no fixed release (latest 1.1.3 = affected); not gated (the gate blocks high/critical only); unchanged.
+`npm audit` in `apps/web` still lists moderate/low advisories below the gate threshold (2026-10-31): GHSA-333x-w4r6-6crp, GHSA-g3hv-75wg-m249, GHSA-gcqx-w48m-w2h4, GHSA-m5mm-p8h7-m29v, GHSA-w74x-v6f9-j3xg, GHSA-wjr9-j795-jxcr, GHSA-xhq7-xmqj-769h. They are not blocked and not waived; track them with the next dependency batch.

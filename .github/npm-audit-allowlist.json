@@ -1,20 +1,4 @@
 {
   "comment": "Scoped npm audit exceptions, matched on the exact (id, package, workspace) tuple. Every entry needs approved_by (not PENDING), approved_on, approval_source, a reason and review_by (YYYY-MM-DD, at most 60 days after approval). Invalid, unapproved or expired entries fail the gate.",
-  "entries": [
-    {
-      "id": "GHSA-vfj7-8cjw-p6xm",
-      "package": "braces",
-      "workspaces": [
-        "apps/dashboard",
-        "apps/mobile",
-        "apps/representative",
-        "apps/web"
-      ],
-      "reason": "No fixed braces release (affected <= 3.0.3, latest 3.0.3; re-checked 2026-10-31). Stack-exhaustion DoS needs attacker-controlled, deeply nested glob patterns. Evidence 2026-10-31: braces/micromatch absent from every shipped artifact — web production image (no node_modules/braces|micromatch|fast-glob|@ducanh2912, 0 references in .next/server.js), dashboard image (absent; dev-only per npm ls --omit=dev), mobile APK v1.0.37 and representative candidate Hermes bundles (0 matches for braces/micromatch/fast-glob signatures; method sanity-checked). Lockfile owners are build/dev tooling only: @ducanh2912/next-pwa + fast-glob (web), tailwindcss/chokidar/eslint (dashboard), expo -> @expo/metro (mobile, representative).",
-      "approved_by": "Gio (continuation of 2026-10-03 exception; renewed by gio-1c on his behalf)",
-      "approved_on": "2026-10-31",
-      "approval_source": "gio-1c to gio-dd 2026-10-31: renewal of Gio's 2026-10-03 risk exception to 2026-12-01, conditional on per-workspace evidence that braces is not in shipped artifacts; Gio informed",
-      "review_by": "2026-12-01"
-    }
-  ]
+  "entries": []
 }
