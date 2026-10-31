@@ -151,7 +151,8 @@ services:
       traefik.http.middlewares.ekklesia-embed-csp.headers.contentSecurityPolicy: "default-src 'self' https://api.ekklesia.gr; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api.qrserver.com https://avatars.githubusercontent.com; connect-src 'self' https://api.ekklesia.gr https://api.coingecko.com https://arweave.net https://api.github.com https://polis-oauth-proxy.bergamolia.workers.dev; frame-ancestors *; font-src 'self'; object-src 'none'; base-uri 'self'"
 
   ollama:
-    image: ollama/ollama:latest
+    # ollama/ollama:0.21.2 — digest verified on production 2026-10-31.
+    image: ollama/ollama@sha256:2038a264392af4d21f7f14e1568e8dd9aa0f2bd0f31d7d9a59a8cca1e9829663
     container_name: ekklesia-ollama
     profiles: ["ollama"]
     restart: unless-stopped
