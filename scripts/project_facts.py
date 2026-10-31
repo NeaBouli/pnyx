@@ -16,6 +16,8 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+from html import unescape
+from html.parser import HTMLParser
 import re
 import sys
 from pathlib import Path
@@ -114,25 +116,63 @@ def render(facts: dict[str, object]) -> str:
     return json.dumps(facts, indent=2, ensure_ascii=False, sort_keys=True) + "\n"
 
 
-# Published count claims in EL/EN: "<n> <noun>", "<noun>: <n>" or a "| <noun> | <n> |" table row. HTML tags are
-# stripped first so "<strong>22</strong> Modules" is seen as "22 Modules".
-NOUN = (r"(modules?|module|ενότητες|ενοτήτων|endpoints?|tables?|πίνακες|πινάκων|"
-        r"containers?|κοντέινερ)")
-CLAIM_RES = [
-    re.compile(r"(\d+)(\+?)\s*" + NOUN, re.IGNORECASE),
-    # "Containers: 9", "Containers = 9" and Markdown table cells "| Containers | 11 |"
-    re.compile(NOUN + r"\s*(?:[:=]|\|)\s*(\d+)(\+?)", re.IGNORECASE),
-]
-CLAIM_KIND = {
-    "module": "modules", "modules": "modules", "ενότητες": "modules", "ενοτήτων": "modules",
-    "endpoint": "api_endpoints", "endpoints": "api_endpoints",
-    "table": "db_tables_orm", "tables": "db_tables_orm", "πίνακες": "db_tables_orm", "πινάκων": "db_tables_orm",
-    "container": "prod_containers", "containers": "prod_containers", "κοντέινερ": "prod_containers",
+# Qualified public EL/EN count phrases, including the llms snapshot vocabulary.
+CLAIM_NOUNS = {
+    "modules": r"(?:(?:listed|inactive|disabled|deferred)\s+)?modules?|(?:(?:καταχωρισμένες|ανενεργές)\s+)?ενότητες|ενοτήτων",
+    "api_endpoints": r"(?:API\s+)?route\s+decorators?|endpoints?|δηλώσεις\s+διαδρομών(?:\s+API)?",
+    "api_routers": r"routers?",
+    "db_tables_orm": r"(?:ORM\s+)?tables?|πίνακες(?:\s+ORM)?|πινάκων",
+    "prod_containers": r"(?:production\s+)?Compose\s+services|υπηρεσίες\s+(?:production\s+)?Compose|containers?|κοντέινερ",
 }
+NOUN = "(?:" + "|".join(CLAIM_NOUNS.values()) + ")"
+CLAIM_RES = [
+    re.compile(r"(?P<num>\d+)(?P<plus>\+?)\s*(?P<noun>" + NOUN + r")\b", re.IGNORECASE),
+    re.compile(r"\b(?P<noun>" + NOUN + r")\s*(?:[:=]|\|)\s*(?P<num>\d+)(?P<plus>\+?)", re.IGNORECASE),
+]
 TAG_RE = re.compile(r"<[^>]+>")
-# Pages that quote dated audit figures; reported, but not counted as current claims.
-# A dated label must be visible on the claim's own line, not inferred from its filename.
-HISTORICAL_RE = re.compile(r"(?:historical|ιστορικ\w*)[^\n]*?\b20\d{2}-\d{2}-\d{2}\b", re.IGNORECASE)
+HISTORICAL_RE = re.compile(r"(?:historical|ιστορικ\w*)[^;·.!?\n]*?\b20\d{2}-\d{2}-\d{2}\b", re.IGNORECASE)
+INACTIVE_RE = re.compile(r"\b(?:inactive|disabled|deferred|ανενεργές)\b", re.IGNORECASE)
+CLAUSE_BOUNDARY_RE = re.compile(r"[;·.!?\n]|\b(?:current(?:ly)?|today|now|τρέχ\w*|σημεριν\w*|σήμερα|τώρα)\b", re.IGNORECASE)
+
+
+class ClaimTextParser(HTMLParser):
+    """Keep translated attributes, metadata and visible prose in separate runs.
+
+    Inline tags may split a number from its noun; block tags end a run. Dates
+    in an attribute can never exempt the visible text or another translation.
+    """
+    BLOCKS = {"p", "div", "li", "tr", "td", "th", "section", "article", "meta",
+              "h1", "h2", "h3", "h4", "h5", "h6", "br", "script", "style"}
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.runs = []
+        self.parts = []
+        self.line = 1
+
+    def flush(self):
+        if self.parts:
+            self.runs.append((self.line, " ".join(self.parts), True))
+            self.parts = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag in self.BLOCKS:
+            self.flush()
+        for key, value in attrs:
+            if value:
+                self.runs.append((self.getpos()[0], TAG_RE.sub(" ", unescape(value)), key in {"data-el", "data-en"}))
+
+    def handle_endtag(self, tag):
+        if tag in self.BLOCKS:
+            self.flush()
+
+    def handle_data(self, data):
+        for offset, text in enumerate(data.split("\n")):
+            line = self.getpos()[0] + offset
+            if line != self.line:
+                self.flush()
+                self.line = line
+            self.parts.append(text)
 
 
 def claim_paths() -> list[Path]:
@@ -143,40 +183,51 @@ def claim_paths() -> list[Path]:
 
 
 def claims(facts: dict[str, object], paths: list[Path] | None = None) -> list[tuple[str, int, str, str, str]]:
-    """Return (path, line, kind, text, class) for published counts that differ from the facts.
+    """Return differing claims, exempting only a dated claim in its own locale.
 
-    class: "mismatch" (exact number that differs), "lower-bound" (e.g. "70+", true but
-    imprecise when the fact is larger) or "historical" (dated audit quotes). One entry per
-    distinct claim per line. Heuristic: a count is only detected next to one of the listed
-    nouns ("<n> <noun>", "<noun>: <n>", "| <noun> | <n> |"); other phrasings (e.g. "32 routers",
-    "two dozen tables", a number in a different table column) are not detected.
+    A historical label applies to the next count in the same clause/locale,
+    even when that count already agrees with the facts. Subset module counts
+    use their own bound (or exact inactive count), never the global total.
     """
     counts = facts["counts"]
-    accepted = {
-        "modules": {counts["modules_listed"]},
-        "api_endpoints": {counts["api_endpoints"]},
-        "db_tables_orm": {counts["db_tables_orm"]},
-        "prod_containers": {counts["prod_containers"]},
-    }
+    accepted = {**{k: {counts[k]} for k in
+                   ("api_endpoints", "db_tables_orm", "prod_containers")},
+                "modules": {counts["modules_listed"]},
+                "api_routers": {counts["api_routers"]}}
     out: list[tuple[str, int, str, str, str]] = []
     for path in (claim_paths() if paths is None else paths):
-        for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-            seen: set[tuple[str, int, str]] = set()
-            # Raw line catches attribute text (meta content, data-el/data-en); the
-            # tag-stripped line catches numbers split from their noun by markup.
-            for pattern, text in ((p, t) for t in (line, TAG_RE.sub(" ", line)) for p in CLAIM_RES):
-                for m in pattern.finditer(text):
-                    groups = m.groups()
-                    num, plus, noun = (groups[0], groups[1], groups[2]) if groups[0].isdigit() else (groups[1], groups[2], groups[0])
-                    kind = CLAIM_KIND.get(noun.lower())
-                    value = int(num)
-                    if not kind or (value in accepted[kind] and not plus) or (kind, value, plus) in seen:
-                        continue
-                    seen.add((kind, value, plus))
-                    lower_ok = plus == "+" and value <= max(accepted[kind])
-                    rel = str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path)
-                    cls = "historical" if HISTORICAL_RE.search(TAG_RE.sub(" ", line)) else ("lower-bound" if lower_ok else "mismatch")
-                    out.append((rel, lineno, kind, " ".join(m.group(0).split()), cls))
+        parser = ClaimTextParser()
+        parser.feed(path.read_text(encoding="utf-8"))
+        parser.flush()
+        seen = set()
+        for lineno, text, visible in parser.runs:
+            matches = sorted((m for p in CLAIM_RES for m in p.finditer(text)), key=lambda m: m.start())
+            previous_end = 0
+            for m in matches:
+                noun, num, plus = m["noun"], m["num"], m["plus"]
+                kind = next(k for k, pattern in CLAIM_NOUNS.items() if re.fullmatch(pattern, noun, re.IGNORECASE))
+                prefix = text[previous_end:m.start()]
+                previous_end = m.end()
+                label = HISTORICAL_RE.search(prefix) if visible else None
+                historical = label and not CLAUSE_BOUNDARY_RE.search(prefix[label.end():])
+                values = accepted[kind]
+                if kind == "modules":
+                    suffix = text[m.end():]
+                    if INACTIVE_RE.search(noun) or re.match(r"\s+(?:disabled|inactive|deferred|ανενεργές)\b", suffix, re.IGNORECASE):
+                        values = {counts["modules_inactive"]}
+                    elif re.search(r"(?:including|of which|περιλαμβάνονται|από τις οποίες)\s*$", prefix, re.IGNORECASE):
+                        values = range(counts["modules_listed"] + 1)
+                value = int(num)
+                if value in values and not plus:
+                    continue
+                lower_ok = plus == "+" and value <= max(values)
+                cls = "historical" if historical else ("lower-bound" if lower_ok else "mismatch")
+                identity = (lineno, kind, value, plus, cls)
+                if identity in seen:
+                    continue
+                seen.add(identity)
+                rel = str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path)
+                out.append((rel, lineno, kind, " ".join(m.group(0).split()), cls))
     return out
 
 

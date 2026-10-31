@@ -9,10 +9,11 @@ Shared identity/newsletter paragraphs are maintained in privacy.html alone.
 from __future__ import annotations
 
 import argparse
+from html import escape
 from html.parser import HTMLParser
 from pathlib import Path
 import re
-from urllib.parse import urljoin
+from urllib.parse import quote, urljoin, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 PAGES = {"security": "Security", "privacy": "Privacy", "whitepaper": "Whitepaper", "database": "Database"}
@@ -67,9 +68,66 @@ def clean(text):
     return re.sub(r"\s+", " ", text).strip()
 
 
-def markdown(node, lang, base):
+def escape_text(text):
+    text = escape(text, quote=False)
+    text = re.sub(r"([\\`*{}\[\]])", r"\\\1", text)
+    # CommonMark treats underscores within words (e.g. SQL identifiers) as
+    # literal text; underscores at word edges can introduce emphasis.
+    text = re.sub(r"(?<!\w)_|_(?!\w)", r"\\_", text)
+    return re.sub(r"(?m)^(\s*)([#>+\-]|\d+[.)])(?=\s)", r"\1\\\2", text)
+
+
+def link_url(href, base):
+    # Check before urlsplit, which silently removes some control characters.
+    if re.search(r"[\x00-\x1f\x7f]", href):
+        return None
+    try:
+        if urlsplit(href.strip()).scheme.lower() not in {"", "http", "https", "mailto"}:
+            return None
+        url = urljoin(base, href.strip())
+        if urlsplit(url).scheme.lower() not in {"http", "https", "mailto"}:
+            return None
+    except ValueError:
+        return None
+    # Parentheses, brackets, angle brackets, quotes and whitespace cannot break
+    # out of the Markdown destination, even for otherwise permitted URLs.
+    return quote(url, safe="/:#?&=@%+;,~!$*'-._")
+
+
+def inline_children(node):
+    for child in node.children:
+        if isinstance(child, Node):
+            if child.tag in {"a", "strong", "b", "em", "i", "code", "img"}:
+                yield child
+            yield from inline_children(child)
+
+
+def source_links(node, lang):
+    """Include navigation/footer anchors and anchors inside translated HTML."""
+    if node.tag == "a" and node.attrs.get("href"):
+        yield node
+    if f"data-{lang}" in node.attrs:
+        fragment = Parser()
+        fragment.feed(node.attrs[f"data-{lang}"])
+        yield from source_links(fragment.root, lang)
+    for child in node.children:
+        if isinstance(child, Node):
+            yield from source_links(child, lang)
+
+
+def literal(node, lang):
     if isinstance(node, str):
         return node
+    if f"data-{lang}" in node.attrs:
+        fragment = Parser()
+        fragment.feed(node.attrs[f"data-{lang}"])
+        return literal(fragment.root, lang)
+    return "".join(literal(c, lang) for c in node.children)
+
+
+def markdown(node, lang, base):
+    if isinstance(node, str):
+        return escape_text(node)
     attrs, tag = node.attrs, node.tag
     if tag in {"script", "style", "button"}:
         return ""
@@ -78,20 +136,49 @@ def markdown(node, lang, base):
         fragment = Parser()
         fragment.feed(attrs[f"data-{lang}"])
         content = markdown(fragment.root, lang, base)
+        # Older source translations contain only the surrounding prose. Keep
+        # child links absent from that prose, and retain inline formatting when
+        # its localized label occurs in the translation. Never borrow EL copy
+        # to fill a missing EN label.
+        for child in inline_children(node):
+            rendered = markdown(child, lang, base)
+            if not rendered or rendered in content:
+                continue
+            label = escape_text(clean(literal(child, lang)))
+            if child.tag == "a":
+                url = link_url(child.attrs.get("href", ""), base)
+                if url and f"]({url})" in content:
+                    continue
+            replaced = False
+            if label and label in content:
+                # Match prose/labels only; a source word may also occur in a
+                # link destination, where inserting emphasis would break it.
+                parts = re.split(r"(\]\([^)]*\))", content)
+                for i in range(0, len(parts), 2):
+                    if label in parts[i]:
+                        parts[i] = parts[i].replace(label, rendered, 1)
+                        replaced = True
+                        break
+                content = "".join(parts)
+            if not replaced and child.tag == "a":
+                content = content.rstrip() + " " + rendered
     else:
         content = "".join(markdown(c, lang, base) for c in node.children)
     if tag == "a":
-        return f'[{clean(content)}]({urljoin(base, attrs["href"])})' if attrs.get("href") else content
+        url = link_url(attrs["href"], base) if attrs.get("href") else None
+        return f'[{clean(content)}]({url})' if url else content
     if tag in {"strong", "b"}:
         return f"**{clean(content)}**"
     if tag in {"em", "i"}:
         return f"*{clean(content)}*"
     if tag == "code":
-        return f"`{clean(content)}`"
+        code = escape(clean(literal(node, lang)), quote=False)
+        fence = "`" * (max((len(m[0]) for m in re.finditer(r"`+", code)), default=0) + 1)
+        return f"{fence} {code} {fence}" if "`" in code else f"{fence}{code}{fence}"
     if tag == "br":
         return " "
     if tag == "img":
-        return attrs.get("alt", "")
+        return escape_text(attrs.get("alt", ""))
     if re.fullmatch(r"h[1-6]", tag):
         return f'\n\n{"#" * min(int(tag[1]) + 1, 6)} {clean(content)}\n\n'
     if tag == "li":
@@ -109,7 +196,9 @@ def markdown(node, lang, base):
         return "\n\n" + "\n".join(row.strip() for row in rows) + "\n\n"
     classes = attrs.get("class", "").split()
     if tag == "pre" or "code-block" in classes:
-        return f"\n\n```text\n{content.strip()}\n```\n\n"
+        code = escape(literal(node, lang).strip(), quote=False)
+        fence = "`" * max(3, max((len(m[0]) + 1 for m in re.finditer(r"`+", code)), default=0))
+        return f"\n\n{fence}text\n{code}\n{fence}\n\n"
     if "flow" in classes:
         return "\n\n" + clean(content) + "\n\n"
     if "fnode" in classes or "farr" in classes:
@@ -134,7 +223,19 @@ def render(source, slug):
               f"[Δημοσιευμένη σελίδα / Published page]({base})\n")
     for lang, label in (("el", "Ελληνικά"), ("en", "English")):
         output += f"\n## {label}\n\n"
-        output += markdown(layout, lang, base)
+        article = markdown(layout, lang, base)
+        output += article
+        remaining = {}
+        for link in source_links(parser.root, lang):
+            url = link_url(link.attrs["href"], base)
+            if url and f"]({url})" not in article:
+                # Prefer a localized navigation label over an earlier logo
+                # anchor that happens to point to the same page.
+                if url not in remaining or f"data-{lang}" in link.attrs:
+                    remaining[url] = link
+        if remaining:
+            label = "Σύνδεσμοι σελίδας" if lang == "el" else "Page links"
+            output += f"\n\n### {label}\n\n" + "\n".join("- " + clean(markdown(link, lang, base)) for link in remaining.values()) + "\n"
     output = "\n".join(line.rstrip() for line in output.splitlines())
     return re.sub(r"\n{3,}", "\n\n", output).strip() + "\n"
 

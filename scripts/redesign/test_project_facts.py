@@ -33,7 +33,8 @@ class ProjectFactsTest(unittest.TestCase):
 class ClaimMatcherTest(unittest.TestCase):
     """Exercise the production claims() on synthetic pages (markup, attributes, tables)."""
 
-    FACTS = {"counts": {"modules_spec": 25, "modules_listed": 23, "api_endpoints": 189,
+    FACTS = {"counts": {"modules_spec": 25, "modules_listed": 23, "modules_inactive": 2,
+                        "api_endpoints": 189, "api_routers": 32,
                         "db_tables_orm": 24, "prod_containers": 8}}
 
     def _run(self, text: str) -> list[tuple[str, str, str]]:

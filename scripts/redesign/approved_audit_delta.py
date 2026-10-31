@@ -11,6 +11,12 @@ import r0_inventory
 # security, whitepaper and database; security's server-generated one-time key
 # handoff and Argon2id v2 + compatibility anchor; planned/inactive future bridge
 # with no runtime module ID. Privacy/whitepaper hosting wording stays generic.
+# PR #728 fix (operator-approved 2026-10-31): production Argon2id v2 is
+# dated 2026-10-31, conditional on the v2 setting/column; code defaults to v1.
+# Apply that scope in the shared paragraph and every security/whitepaper label.
+# Move the audit date immediately before its 188-endpoint claim (EL/EN), so
+# historical exemptions cannot cover a neighbouring router/current claim.
+# The approved planned bridge remains unchanged.
 # Exact fingerprints below protect all of these visible deltas and existing
 # interactions. The immutable R0 inventory is not regenerated.
 APPROVED_LANDING_FACT_REPLACEMENTS = {
@@ -101,20 +107,20 @@ APPROVED_WIKI_INVENTORY_HASH = {
     "docs/wiki/architecture.html": "4afb91b2dcee4ce3ce136746205cd9669916ae7aea7f4b2dd46f531cf153b920",
     "docs/wiki/broadcasting.html": "13f44b28b80bd7eda2f354db950597103a36d567aa4dfa967d6137f4b78fd23c",
     "docs/wiki/contributing.html": "ce5f0381727ea54d45929c4d919150dc90a2d8c772505d5d17241c90165c257f",
-    "docs/wiki/database.html": "007a591a75d2461588841a013f04a10aa86c224ea9b7001e1086a47380264305",
+    "docs/wiki/database.html": "221900a3a53767262512e6f23b7c124df006c9287d81f56f86840150ed9b4900",
     "docs/wiki/delete-account.html": "a62e22bd83f648660cb5b53d3beaf25f0c0270e50b722459278f87391e14cacd",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
     "docs/wiki/faq.html": "61556df675fd43a764de2fff92d0893ba69a369505d9508d7a5ad1532718b703",  # T-9153: paused donations; HLR information and FAQ EL/EN/JSON-LD
     "docs/wiki/index.html": "ad0c2211c3787564029b42214b5c979adfc643ebd07f339585117d0e3bcd3ee1",  # T-9047/T-9048: named code region, contrast, headings and document language; T-9106: legal-modal claims text
     "docs/wiki/modules.html": "dee125fdcee6c374909982e6559fe913a08e9a286c9422f189631254af4321a5",  # T-9148: reviewed EL/EN AI wording
-    "docs/wiki/privacy.html": "e0d8f9f616eaedbd6f9ffeb507ac5a3386687b003a0c05557365686ac9e26e6e",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
+    "docs/wiki/privacy.html": "8f41fb87b6a8c53a52721b8c386134b14f3225bce6cae747fca539ea71034412",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
     "docs/wiki/roadmap.html": "c81071d697e2a626945d2274fb417195b77330194d49d8f9b532711a47d5850c",
-    "docs/wiki/security.html": "c8d54b9efcd80254b0f24b07096340e190b7980f1b0887910778e8ca209aab18",  # T-9127: OPEN_END voting closed
-    "docs/wiki/whitepaper.html": "8ca3e9b8a0e12fd2ec0378ec538e16c58447f5e67349e130440f256d38cb4228",  # T-9127: OPEN_END voting closed
+    "docs/wiki/security.html": "bae405a791e025495cccf82f34c35fe11f33c613190d98af6308645843a4349c",  # T-9127: OPEN_END voting closed
+    "docs/wiki/whitepaper.html": "01903972f484ef5627d94290e353af5dfdbe5d5ffc6a343a442bf0ae80c66802",  # T-9127: OPEN_END voting closed
     "docs/wiki/zk-voting.html": "650a3e85f98db88751c2702229eb016cc722206758da1a03fa7af73e5914af9c",
 }
 # T-420/T-421: footer target and hreflang; B17: canonical legal-name attribution.
 # Published finding counts and finding text are unchanged.
-APPROVED_AUDIT_PAGE_SHA256 = "c45499964588ce0d774a602f574a98d3208542ac1a37786268f27c1948fa4cb4"
+APPROVED_AUDIT_PAGE_SHA256 = "a8a0d507ada4ba294efa387e81eef5e6656d694cd2ae2e0c1a4a4e0bfb43c93d"
 
 
 def matches_approved_content(path: str, current: dict) -> bool:

@@ -7,7 +7,7 @@
 
 ## Ελληνικά
 
-Για νέες και επανεπαληθευμένες ταυτότητες αποθηκεύεται Argon2id v2 identity hash μαζί με SHA256 compatibility anchor. Τα nullifiers είναι εκδοσιοποιημένα· το SHA256 anchor διατηρεί συμβατότητα με παλαιότερες ταυτότητες. Το server salt παραμένει κρίσιμο μυστικό.
+Στην παραγωγή (έλεγχος 2026-10-31) χρησιμοποιείται Argon2id v2 με άγκυρα συμβατότητας SHA-256· η προεπιλογή του κώδικα είναι v1. Το v2 απαιτεί IDENTITY_NULLIFIER_KDF_VERSION=v2 και τη στήλη nullifier_hash_v2. Τα nullifiers είναι εκδοσιοποιημένα· η άγκυρα SHA-256 διατηρεί συμβατότητα με παλαιότερες ταυτότητες. Το server salt παραμένει κρίσιμο μυστικό.
 
 Η συνηθισμένη συμμετοχή δεν απαιτεί email. Το προαιρετικό newsletter επεξεργάζεται email και προαιρετικό όνομα, με διπλή επιβεβαίωση εγγραφής, προτιμήσεις και στοιχεία συγκατάθεσης. Η διαγραφή ταυτότητας ψηφοφορίας δεν καταργεί την εγγραφή στο newsletter· χρησιμοποιήστε τη χωριστή κατάργηση εγγραφής.
 
@@ -41,11 +41,11 @@ Servers στην Ευρώπη. Ελαχιστοποίηση δεδομένων: 
 
 ### Έλεγχος HLR — Τρίτος Πάροχος
 
-Η Beta χρησιμοποιεί HLR (Home Location Register) lookup μέσω εμπορικού παρόχου τηλεπικοινωνιών για να ελέγξει την κατάσταση δικτύου και τη συμβατότητα ενός ελληνικού αριθμού. Ο HLR δεν αποδεικνύει κατοχή SIM, ταυτότητα, διαμονή, υπηκοότητα ή εκλογικό δικαίωμα.
+Η Beta χρησιμοποιεί **HLR (Home Location Register) lookup** μέσω εμπορικού παρόχου τηλεπικοινωνιών για να ελέγξει την κατάσταση δικτύου και τη συμβατότητα ενός ελληνικού αριθμού. Ο HLR δεν αποδεικνύει κατοχή SIM, ταυτότητα, διαμονή, υπηκοότητα ή εκλογικό δικαίωμα.
 
-- Ο αριθμός τηλεφώνου δεν αποθηκεύεται από τον πάροχο πέραν του ελέγχου
+- Ο αριθμός τηλεφώνου **δεν αποθηκεύεται** από τον πάροχο πέραν του ελέγχου
 
-- Η ekklesia.gr διαγράφει αμέσως τον αριθμό μετά τον έλεγχο
+- Η ekklesia.gr **διαγράφει αμέσως** τον αριθμό μετά τον έλεγχο
 
 - Ο πάροχος δεσμεύεται από σύμβαση επεξεργασίας δεδομένων (DPA/AVV)
 
@@ -68,17 +68,17 @@ Servers στην Ευρώπη. Ελαχιστοποίηση δεδομένων: 
 
 ### Διαγραφή Λογαριασμού
 
-Μπορείτε να διαγράψετε τον λογαριασμό σας ανά πάσα στιγμή. Δείτε τις αναλυτικές οδηγίες:
+Μπορείτε να διαγράψετε τον λογαριασμό σας ανά πάσα στιγμή. Δείτε τις αναλυτικές οδηγίες: [Οδηγίες Διαγραφής Λογαριασμού](https://ekklesia.gr/wiki/delete-account.html)
 
 ### Όροι Χρήσης
 
 Η πλατφόρμα ekklesia.gr είναι ένα ανοιχτού κώδικα, κοινοτικό έργο (MIT License). Χρησιμοποιώντας την εφαρμογή, αποδέχεστε τους παρόντες όρους. Η πλατφόρμα δεν αποτελεί κρατική υπηρεσία και οι ψηφοφορίες δεν έχουν νομική δεσμευτικότητα.
 
-- Πηγαίος κώδικας:
+- Πηγαίος κώδικας: [github.com/NeaBouli/pnyx](https://github.com/NeaBouli/pnyx)
 
 - Άδεια: MIT License
 
-- Υπεύθυνος επεξεργασίας: V-Labs IT Solutions & Development
+- Υπεύθυνος επεξεργασίας: V-Labs IT Solutions &amp; Development
 
 - [Πλήρη στοιχεία φορέα](https://ekklesia.gr/legal.html)
 
@@ -86,9 +86,31 @@ Servers στην Ευρώπη. Ελαχιστοποίηση δεδομένων: 
 
 - Φόρμα αιτημάτων: [ekklesia.gr/tickets](https://ekklesia.gr/tickets/index.html)
 
+### Σύνδεσμοι σελίδας
+
+- [Μετάβαση στο κύριο περιεχόμενο](https://ekklesia.gr/wiki/privacy.html#main)
+- [← Αρχική](https://ekklesia.gr/)
+- [Τρέχουσες](https://ekklesia.gr/el/bills)
+- [Wiki](https://ekklesia.gr/wiki/index.html)
+- [Community](https://ekklesia.gr/community.html)
+- [Αρχιτεκτονική](https://ekklesia.gr/wiki/architecture.html)
+- [Ασφάλεια](https://ekklesia.gr/wiki/security.html)
+- [API](https://ekklesia.gr/wiki/api.html)
+- [Modules](https://ekklesia.gr/wiki/modules.html)
+- [Roadmap](https://ekklesia.gr/wiki/roadmap.html)
+- [Διαγραφή Λογαριασμού](https://ekklesia.gr/wiki/privacy.html)
+- [Database](https://ekklesia.gr/wiki/database.html)
+- [Contributing](https://ekklesia.gr/wiki/contributing.html)
+- [Whitepaper](https://ekklesia.gr/wiki/whitepaper.html)
+- [FAQ](https://ekklesia.gr/wiki/faq.html)
+- [Broadcasting](https://ekklesia.gr/wiki/broadcasting.html)
+- [Wiki](https://ekklesia.gr/wiki/)
+- [24 Ώρες](https://ekklesia.gr/el/bills?status=WINDOW_24H)
+- [Αποτελέσματα](https://ekklesia.gr/el/results)
+
 ## English
 
-For new and reverified identities, an Argon2id v2 identity hash is stored together with a SHA256 compatibility anchor. Nullifiers are versioned; the SHA256 anchor preserves compatibility with older identities. The server salt remains a critical secret.
+Production uses Argon2id v2 with a SHA-256 compatibility anchor (checked 2026-10-31); the code default is v1. The v2 path requires IDENTITY_NULLIFIER_KDF_VERSION=v2 and the nullifier_hash_v2 column. Nullifiers are versioned; the SHA-256 anchor preserves compatibility with older identities. The server salt remains a critical secret.
 
 Ordinary participation requires no email. The optional newsletter processes an email and optional name, with double opt-in, preferences and consent records. Deleting a voting identity does not unsubscribe from the newsletter; use the separate unsubscribe process.
 
@@ -122,7 +144,7 @@ Servers in Europe. Data minimization: the phone number is not stored and the ide
 
 ### HLR Check — Third-Party Provider
 
-Beta uses an HLR (Home Location Register) lookup through a commercial telecom provider to check network status and Greek-number compatibility. HLR does not prove SIM possession, identity, residence, citizenship, or electoral eligibility.
+Beta uses an **HLR (Home Location Register) lookup** through a commercial telecom provider to check network status and Greek-number compatibility. HLR does not prove SIM possession, identity, residence, citizenship, or electoral eligibility.
 
 - The phone number is not stored by the provider beyond the check
 
@@ -149,20 +171,42 @@ Aggregate results reduce exposure of individual votes, without guaranteeing zero
 
 ### Account Deletion
 
-You can delete your account at any time. See detailed instructions:
+You can delete your account at any time. See detailed instructions: [Account Deletion Instructions](https://ekklesia.gr/wiki/delete-account.html)
 
 ### Terms of Use
 
 ekklesia.gr is a community-run, open-source project (MIT License). By using the app, you accept these terms. The platform is not a government service and votes have no legal binding force.
 
-- Source code:
+- Source code: [github.com/NeaBouli/pnyx](https://github.com/NeaBouli/pnyx)
 
 - License: MIT License
 
-- Data controller: V-Labs IT Solutions & Development
+- Data controller: V-Labs IT Solutions &amp; Development
 
 - [Full operator information](https://ekklesia.gr/legal.html)
 
 - Contact: [kaspartisan@proton.me](mailto:kaspartisan@proton.me)
 
 - Request form: [ekklesia.gr/tickets](https://ekklesia.gr/tickets/index.html)
+
+### Page links
+
+- [Skip to main content](https://ekklesia.gr/wiki/privacy.html#main)
+- [← Home](https://ekklesia.gr/)
+- [Active](https://ekklesia.gr/el/bills)
+- [Wiki](https://ekklesia.gr/wiki/index.html)
+- [Community](https://ekklesia.gr/community.html)
+- [Architecture](https://ekklesia.gr/wiki/architecture.html)
+- [Security](https://ekklesia.gr/wiki/security.html)
+- [API](https://ekklesia.gr/wiki/api.html)
+- [Modules](https://ekklesia.gr/wiki/modules.html)
+- [Roadmap](https://ekklesia.gr/wiki/roadmap.html)
+- [Delete Account](https://ekklesia.gr/wiki/privacy.html)
+- [Database](https://ekklesia.gr/wiki/database.html)
+- [Contributing](https://ekklesia.gr/wiki/contributing.html)
+- [Whitepaper](https://ekklesia.gr/wiki/whitepaper.html)
+- [FAQ](https://ekklesia.gr/wiki/faq.html)
+- [Broadcasting](https://ekklesia.gr/wiki/broadcasting.html)
+- [Wiki](https://ekklesia.gr/wiki/)
+- [24 Hours](https://ekklesia.gr/el/bills?status=WINDOW_24H)
+- [Results](https://ekklesia.gr/el/results)

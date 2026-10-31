@@ -7,7 +7,7 @@
 
 ## Ελληνικά
 
-Για νέες και επανεπαληθευμένες ταυτότητες αποθηκεύεται Argon2id v2 identity hash μαζί με SHA256 compatibility anchor. Τα nullifiers είναι εκδοσιοποιημένα· το SHA256 anchor διατηρεί συμβατότητα με παλαιότερες ταυτότητες. Το server salt παραμένει κρίσιμο μυστικό.
+Στην παραγωγή (έλεγχος 2026-10-31) χρησιμοποιείται Argon2id v2 με άγκυρα συμβατότητας SHA-256· η προεπιλογή του κώδικα είναι v1. Το v2 απαιτεί IDENTITY_NULLIFIER_KDF_VERSION=v2 και τη στήλη nullifier_hash_v2. Τα nullifiers είναι εκδοσιοποιημένα· η άγκυρα SHA-256 διατηρεί συμβατότητα με παλαιότερες ταυτότητες. Το server salt παραμένει κρίσιμο μυστικό.
 
 ### Πίνακες
 
@@ -66,9 +66,32 @@ ALTER TABLE citizen_votes
 
 NATIONAL ↓ REGIONAL ↓ MUNICIPAL ↓ COMMUNITY
 
+### Σύνδεσμοι σελίδας
+
+- [Μετάβαση στο κύριο περιεχόμενο](https://ekklesia.gr/wiki/database.html#main)
+- [← Αρχική](https://ekklesia.gr/)
+- [Τρέχουσες](https://ekklesia.gr/el/bills)
+- [Wiki](https://ekklesia.gr/wiki/index.html)
+- [Community](https://ekklesia.gr/community.html)
+- [Αρχιτεκτονική](https://ekklesia.gr/wiki/architecture.html)
+- [Ασφάλεια](https://ekklesia.gr/wiki/security.html)
+- [API](https://ekklesia.gr/wiki/api.html)
+- [Modules](https://ekklesia.gr/wiki/modules.html)
+- [Roadmap](https://ekklesia.gr/wiki/roadmap.html)
+- [Ιδιωτικότητα](https://ekklesia.gr/wiki/privacy.html)
+- [Διαγραφή Λογαριασμού](https://ekklesia.gr/wiki/database.html)
+- [Contributing](https://ekklesia.gr/wiki/contributing.html)
+- [Whitepaper](https://ekklesia.gr/wiki/whitepaper.html)
+- [FAQ](https://ekklesia.gr/wiki/faq.html)
+- [Broadcasting](https://ekklesia.gr/wiki/broadcasting.html)
+- [Wiki](https://ekklesia.gr/wiki/)
+- [24 Ώρες](https://ekklesia.gr/el/bills?status=WINDOW_24H)
+- [Αποτελέσματα](https://ekklesia.gr/el/results)
+- [GitHub](https://github.com/NeaBouli/pnyx)
+
 ## English
 
-For new and reverified identities, an Argon2id v2 identity hash is stored together with a SHA256 compatibility anchor. Nullifiers are versioned; the SHA256 anchor preserves compatibility with older identities. The server salt remains a critical secret.
+Production uses Argon2id v2 with a SHA-256 compatibility anchor (checked 2026-10-31); the code default is v1. The v2 path requires IDENTITY_NULLIFIER_KDF_VERSION=v2 and the nullifier_hash_v2 column. Nullifiers are versioned; the SHA-256 anchor preserves compatibility with older identities. The server salt remains a critical secret.
 
 ### Tables
 
@@ -126,3 +149,26 @@ ALTER TABLE citizen_votes
 ### Governance Levels
 
 NATIONAL ↓ REGIONAL ↓ MUNICIPAL ↓ COMMUNITY
+
+### Page links
+
+- [Skip to main content](https://ekklesia.gr/wiki/database.html#main)
+- [← Home](https://ekklesia.gr/)
+- [Active](https://ekklesia.gr/el/bills)
+- [Wiki](https://ekklesia.gr/wiki/index.html)
+- [Community](https://ekklesia.gr/community.html)
+- [Architecture](https://ekklesia.gr/wiki/architecture.html)
+- [Security](https://ekklesia.gr/wiki/security.html)
+- [API](https://ekklesia.gr/wiki/api.html)
+- [Modules](https://ekklesia.gr/wiki/modules.html)
+- [Roadmap](https://ekklesia.gr/wiki/roadmap.html)
+- [Privacy](https://ekklesia.gr/wiki/privacy.html)
+- [Delete Account](https://ekklesia.gr/wiki/database.html)
+- [Contributing](https://ekklesia.gr/wiki/contributing.html)
+- [Whitepaper](https://ekklesia.gr/wiki/whitepaper.html)
+- [FAQ](https://ekklesia.gr/wiki/faq.html)
+- [Broadcasting](https://ekklesia.gr/wiki/broadcasting.html)
+- [Wiki](https://ekklesia.gr/wiki/)
+- [24 Hours](https://ekklesia.gr/el/bills?status=WINDOW_24H)
+- [Results](https://ekklesia.gr/el/results)
+- [GitHub](https://github.com/NeaBouli/pnyx)

@@ -7,7 +7,7 @@
 
 ## Ελληνικά
 
-Για νέες και επανεπαληθευμένες ταυτότητες αποθηκεύεται Argon2id v2 identity hash μαζί με SHA256 compatibility anchor. Τα nullifiers είναι εκδοσιοποιημένα· το SHA256 anchor διατηρεί συμβατότητα με παλαιότερες ταυτότητες. Το server salt παραμένει κρίσιμο μυστικό.
+Στην παραγωγή (έλεγχος 2026-10-31) χρησιμοποιείται Argon2id v2 με άγκυρα συμβατότητας SHA-256· η προεπιλογή του κώδικα είναι v1. Το v2 απαιτεί IDENTITY_NULLIFIER_KDF_VERSION=v2 και τη στήλη nullifier_hash_v2. Τα nullifiers είναι εκδοσιοποιημένα· η άγκυρα SHA-256 διατηρεί συμβατότητα με παλαιότερες ταυτότητες. Το server salt παραμένει κρίσιμο μυστικό.
 
 Η συνηθισμένη συμμετοχή δεν απαιτεί email. Το προαιρετικό newsletter επεξεργάζεται email και προαιρετικό όνομα, με διπλή επιβεβαίωση εγγραφής, προτιμήσεις και στοιχεία συγκατάθεσης. Η διαγραφή ταυτότητας ψηφοφορίας δεν καταργεί την εγγραφή στο newsletter· χρησιμοποιήστε τη χωριστή κατάργηση εγγραφής.
 
@@ -29,7 +29,7 @@
 
 ##### Server-Salted Hashing
 
-Argon2id v2 + SHA256 compatibility anchor
+Παραγωγή (έλεγχος 2026-10-31): Argon2id v2 + άγκυρα συμβατότητας SHA-256· προεπιλογή κώδικα: v1
 
 ### Ασφάλεια Auto-Recovery
 
@@ -44,7 +44,7 @@ Argon2id v2 + SHA256 compatibility anchor
 
 ### Ροή Επαλήθευσης
 
-+306xxx → HLR → Argon2id v2 + SHA256 compatibility anchor → Διαγράφεται → Ed25519
++306xxx → HLR → Παραγωγή (έλεγχος 2026-10-31): Argon2id v2 + άγκυρα συμβατότητας SHA-256· προεπιλογή κώδικα: v1 → Διαγράφεται → Ed25519
 
 ### Σειρά Ασφαλείας Ψήφου
 
@@ -63,13 +63,13 @@ Argon2id v2 + SHA256 compatibility anchor
 | --- | --- | --- |
 | Αριθμός κινητού | ❌ | Διαγράφεται αμέσως |
 | Private Key | ❌ | Μόνο client |
-| Identity Nullifiers | ✅ | Argon2id v2 + SHA256 compatibility anchor |
+| Identity Nullifiers | ✅ | Παραγωγή (έλεγχος 2026-10-31): Argon2id v2 + άγκυρα συμβατότητας SHA-256· προεπιλογή κώδικα: v1 |
 | Public Key | ✅ | Ed25519 Hex |
 | Ψήφοι | ✅ | YES/NO/ABSTAIN |
 
 ### Alpha: gov.gr OAuth2.0
 
-⚠️ **ΣΧΕΔΙΑΣΜΟΣ ALPHA 0.1 — ΟΧΙ ΕΝΕΡΓΟ ΣΤΗ BETA:** εξετάζονται επίσημο gov.gr OAuth και νέο challenge-bound QR/PDF με έλεγχο κατόχου και ηλεκτρονική σφραγίδα. Απαιτούνται επίσημη διασύνδεση, πλήρης eSeal validation, DPIA, σχέδιο credential migration, ανεξάρτητος security/privacy review και sandbox canary. Δεν έχει ενεργοποιηθεί αποθήκευση ή επεξεργασία AMKA/AFM.
+⚠️ **ΣΧΕΔΙΑΣΜΟΣ ALPHA 0.1 — ΟΧΙ ΕΝΕΡΓΟ ΣΤΗ BETA:** εξετάζονται επίσημο gov.gr OAuth και νέο challenge-bound QR/PDF με έλεγχο κατόχου και ηλεκτρονική σφραγίδα. Απαιτούνται επίσημη διασύνδεση, πλήρης eSeal validation, DPIA, σχέδιο credential migration, ανεξάρτητος security/privacy review και sandbox canary. Δεν έχει ενεργοποιηθεί αποθήκευση ή επεξεργασία AMKA/AFM. [Κανονικό σχέδιο ασφαλείας →](https://github.com/NeaBouli/pnyx/blob/main/docs/GOVGR_DOCUMENT_VERIFICATION_ALPHA.md)
 
 #### Beta vs Alpha — Σύγκριση
 
@@ -87,13 +87,13 @@ Challenge μιας χρήσης → Επίσημο OAuth ή QR/eSeal → Επα�
 
 #### Liquid Democracy (Alpha)
 
-Ξεχωριστή μελλοντική έρευνα. Δεν υπάρχει AMKA register, έλεγχος συγγένειας ή ανάθεση ψήφου στο Alpha design. Οποιαδήποτε τέτοια δυνατότητα απαιτεί δική της επίσημη νομική βάση, threat model και ανεξάρτητο έλεγχο.
+Ξεχωριστή μελλοντική έρευνα. **Δεν υπάρχει AMKA register, έλεγχος συγγένειας ή ανάθεση ψήφου** στο Alpha design. Οποιαδήποτε τέτοια δυνατότητα απαιτεί δική της επίσημη νομική βάση, threat model και ανεξάρτητο έλεγχο.
 
-Στόχος ελαχιστοποίησης: το έγγραφο και τα ακατέργαστα αναγνωριστικά δεν διατηρούνται. Μόνο ένας server-keyed ψευδωνυμικός credential handle και τα απολύτως αναγκαία audit metadata μπορούν να παραμείνουν, μετά από DPIA και νομικό έλεγχο.
+Στόχος ελαχιστοποίησης: **το έγγραφο και τα ακατέργαστα αναγνωριστικά δεν διατηρούνται.** Μόνο ένας server-keyed ψευδωνυμικός credential handle και τα απολύτως αναγκαία audit metadata μπορούν να παραμείνουν, μετά από DPIA και νομικό έλεγχο.
 
     Ροή ιδιωτικότητας / Privacy flow: versioned nullifiers + Ed25519; no phone storage
 
-### Server Logging & Ιδιωτικότητα
+### Server Logging &amp; Ιδιωτικότητα
 
 | Υπηρεσία | IP Διεύθυνση | User-Agent | Cookies | Αποθήκευση |
 | --- | --- | --- | --- | --- |
@@ -103,7 +103,7 @@ Challenge μιας χρήσης → Επίσημο OAuth ή QR/eSeal → Επα�
 
 Η πλατφόρμα δεν χρησιμοποιεί cookies, tracking, analytics ή διαφημίσεις. Το forum (Discourse) χρησιμοποιεί session cookies για τη σύνδεση. Η IP δεν αποθηκεύεται μαζί με την ψήφο. Οι μετρητές ορίων αιτημάτων χρησιμοποιούν ημερήσια HMAC αναγνωριστικά IP και λήγουν. Τα access logs μπορεί να περιέχουν την IP και εναλλάσσονται βάσει μεγέθους, χωρίς σταθερό όριο χρόνου διατήρησης.
 
-### Σύστημα Επαλήθευσης & Ίσο Βάρος Ψήφου
+### Σύστημα Επαλήθευσης &amp; Ίσο Βάρος Ψήφου
 
 #### Φάση Beta — HLR Επαλήθευση
 
@@ -142,9 +142,32 @@ Challenge μιας χρήσης → Επίσημο OAuth ή QR/eSeal → Επα�
 
 [Πλήρης Αναφορά Ελέγχου →](https://ekklesia.gr/wiki/audit.html)
 
+### Σύνδεσμοι σελίδας
+
+- [Μετάβαση στο κύριο περιεχόμενο](https://ekklesia.gr/wiki/security.html#main)
+- [← Αρχική](https://ekklesia.gr/)
+- [Τρέχουσες](https://ekklesia.gr/el/bills)
+- [Wiki](https://ekklesia.gr/wiki/index.html)
+- [Community](https://ekklesia.gr/community.html)
+- [Αρχιτεκτονική](https://ekklesia.gr/wiki/architecture.html)
+- [Διαγραφή Λογαριασμού](https://ekklesia.gr/wiki/security.html)
+- [API](https://ekklesia.gr/wiki/api.html)
+- [Modules](https://ekklesia.gr/wiki/modules.html)
+- [Roadmap](https://ekklesia.gr/wiki/roadmap.html)
+- [Ιδιωτικότητα](https://ekklesia.gr/wiki/privacy.html)
+- [Database](https://ekklesia.gr/wiki/database.html)
+- [Contributing](https://ekklesia.gr/wiki/contributing.html)
+- [Whitepaper](https://ekklesia.gr/wiki/whitepaper.html)
+- [FAQ](https://ekklesia.gr/wiki/faq.html)
+- [Broadcasting](https://ekklesia.gr/wiki/broadcasting.html)
+- [Wiki](https://ekklesia.gr/wiki/)
+- [24 Ώρες](https://ekklesia.gr/el/bills?status=WINDOW_24H)
+- [Αποτελέσματα](https://ekklesia.gr/el/results)
+- [GitHub](https://github.com/NeaBouli/pnyx)
+
 ## English
 
-For new and reverified identities, an Argon2id v2 identity hash is stored together with a SHA256 compatibility anchor. Nullifiers are versioned; the SHA256 anchor preserves compatibility with older identities. The server salt remains a critical secret.
+Production uses Argon2id v2 with a SHA-256 compatibility anchor (checked 2026-10-31); the code default is v1. The v2 path requires IDENTITY_NULLIFIER_KDF_VERSION=v2 and the nullifier_hash_v2 column. Nullifiers are versioned; the SHA-256 anchor preserves compatibility with older identities. The server salt remains a critical secret.
 
 Ordinary participation requires no email. The optional newsletter processes an email and optional name, with double opt-in, preferences and consent records. Deleting a voting identity does not unsubscribe from the newsletter; use the separate unsubscribe process.
 
@@ -166,7 +189,7 @@ The Ed25519 pair is created on the server and handed to the device once. The pri
 
 ##### Server-Salted Hashing
 
-Argon2id v2 + SHA256 compatibility anchor
+Production (checked 2026-10-31): Argon2id v2 + SHA-256 compatibility anchor; code default: v1
 
 ### Auto-Recovery Safety
 
@@ -181,7 +204,7 @@ The watcher/monitor may run autonomous recovery only for explicitly allowlisted 
 
 ### Verification Flow
 
-+306xxx → HLR → Argon2id v2 + SHA256 compatibility anchor → Deleted → Ed25519
++306xxx → HLR → Production (checked 2026-10-31): Argon2id v2 + SHA-256 compatibility anchor; code default: v1 → Deleted → Ed25519
 
 ### Vote Security Chain
 
@@ -200,13 +223,13 @@ The watcher/monitor may run autonomous recovery only for explicitly allowlisted 
 | --- | --- | --- |
 | Phone number | ❌ | Deleted immediately |
 | Private Key | ❌ | Client only |
-| Identity Nullifiers | ✅ | Argon2id v2 + SHA256 compatibility anchor |
+| Identity Nullifiers | ✅ | Production (checked 2026-10-31): Argon2id v2 + SHA-256 compatibility anchor; code default: v1 |
 | Public Key | ✅ | Ed25519 Hex |
 | Votes | ✅ | YES/NO/ABSTAIN |
 
 ### Alpha: gov.gr OAuth2.0
 
-⚠️ **ALPHA 0.1 DESIGN — NOT ACTIVE IN BETA:** official gov.gr OAuth and a fresh challenge-bound QR/PDF with holder authentication and electronic seal are under evaluation. An official integration, full eSeal validation, DPIA, credential-migration design, independent security/privacy review and sandbox canary are required. No AMKA/TIN processing or storage has been activated.
+⚠️ **ALPHA 0.1 DESIGN — NOT ACTIVE IN BETA:** official gov.gr OAuth and a fresh challenge-bound QR/PDF with holder authentication and electronic seal are under evaluation. An official integration, full eSeal validation, DPIA, credential-migration design, independent security/privacy review and sandbox canary are required. No AMKA/TIN processing or storage has been activated. [Κανονικό σχέδιο ασφαλείας →](https://github.com/NeaBouli/pnyx/blob/main/docs/GOVGR_DOCUMENT_VERIFICATION_ALPHA.md)
 
 #### Beta vs Alpha — Comparison
 
@@ -230,7 +253,7 @@ Data-minimization goal: the document and raw identifiers are not retained. Only 
 
     Ροή ιδιωτικότητας / Privacy flow: versioned nullifiers + Ed25519; no phone storage
 
-### Server Logging & Privacy
+### Server Logging &amp; Privacy
 
 | Service | IP Address | User-Agent | Cookies | Storage |
 | --- | --- | --- | --- | --- |
@@ -240,7 +263,7 @@ Data-minimization goal: the document and raw identifiers are not retained. Only 
 
 The platform does not use cookies, tracking, analytics, or advertising. The forum (Discourse) uses session cookies for login. The IP is not stored with the vote. Rate-limit counters use daily HMAC IP identifiers and expire. Access logs may contain the IP and are rotated by size, without a fixed retention period.
 
-### Verification System & Equal Vote Weight
+### Verification System &amp; Equal Vote Weight
 
 #### Phase Beta — HLR Verification
 
@@ -278,3 +301,26 @@ Citizen votes are counted equally: **one valid person = one vote per scope**. Ve
 In September 2026 the platform underwent an independent security audit by Collateral Web3 Open Audits. The audit identified 64 findings; 3 have been verified closed and remediation of the rest is ongoing. This is not a claim of total security.
 
 [Full Audit Report →](https://ekklesia.gr/wiki/audit.html)
+
+### Page links
+
+- [Skip to main content](https://ekklesia.gr/wiki/security.html#main)
+- [← Home](https://ekklesia.gr/)
+- [Active](https://ekklesia.gr/el/bills)
+- [Wiki](https://ekklesia.gr/wiki/index.html)
+- [Community](https://ekklesia.gr/community.html)
+- [Architecture](https://ekklesia.gr/wiki/architecture.html)
+- [Delete Account](https://ekklesia.gr/wiki/security.html)
+- [API](https://ekklesia.gr/wiki/api.html)
+- [Modules](https://ekklesia.gr/wiki/modules.html)
+- [Roadmap](https://ekklesia.gr/wiki/roadmap.html)
+- [Privacy](https://ekklesia.gr/wiki/privacy.html)
+- [Database](https://ekklesia.gr/wiki/database.html)
+- [Contributing](https://ekklesia.gr/wiki/contributing.html)
+- [Whitepaper](https://ekklesia.gr/wiki/whitepaper.html)
+- [FAQ](https://ekklesia.gr/wiki/faq.html)
+- [Broadcasting](https://ekklesia.gr/wiki/broadcasting.html)
+- [Wiki](https://ekklesia.gr/wiki/)
+- [24 Hours](https://ekklesia.gr/el/bills?status=WINDOW_24H)
+- [Results](https://ekklesia.gr/el/results)
+- [GitHub](https://github.com/NeaBouli/pnyx)

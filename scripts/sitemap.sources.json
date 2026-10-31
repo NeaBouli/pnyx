@@ -90,7 +90,7 @@
       "changefreq": "monthly",
       "priority": "0.8",
       "lastmod": "2026-10-31",
-      "sha256": "3fd5b96b36fce4047f945cc7a8c70597a60e623eb2e9892c93aa38fdf95195ed"
+      "sha256": "aaa49f1a5a8aabac392edf6b4a790f6b987df2f66626ecd1d3a832d7f7cc6898"
     },
     {
       "loc": "/wiki/privacy.html",
@@ -98,7 +98,7 @@
       "changefreq": "monthly",
       "priority": "0.8",
       "lastmod": "2026-10-31",
-      "sha256": "6e2afac0f64a0857d664025f4bcb20c3a2a553a2803ecc33a3d690a4e4419b3a"
+      "sha256": "02961d8d4fbf5abcae290868b1b9929c997d35484b2a6f2db17a9907d131d15c"
     },
     {
       "loc": "/wiki/security.html",
@@ -106,7 +106,7 @@
       "changefreq": "monthly",
       "priority": "0.7",
       "lastmod": "2026-10-31",
-      "sha256": "3f64df0b21520a1e9247c3740260856cd52b1dd6022e7a369576a37d19d8a38a"
+      "sha256": "98a222ec56c23c033afce27dbaaa7f984f1b55b9aec46660f706300dfb889946"
     },
     {
       "loc": "/wiki/api.html",
@@ -146,7 +146,7 @@
       "changefreq": "monthly",
       "priority": "0.6",
       "lastmod": "2026-10-31",
-      "sha256": "28b1064d4acb8fc0af2749ca0a1732f5cee29932dd3d2eb95cbfc1ed29911e5e"
+      "sha256": "300186c79fba1f0b87c5bf06af023bca0c387b1fb2ce0dbae1e38b4a2421ac10"
     },
     {
       "loc": "/wiki/broadcasting.html",
@@ -186,7 +186,7 @@
       "changefreq": "monthly",
       "priority": "0.6",
       "lastmod": "2026-10-31",
-      "sha256": "c45499964588ce0d774a602f574a98d3208542ac1a37786268f27c1948fa4cb4"
+      "sha256": "a8a0d507ada4ba294efa387e81eef5e6656d694cd2ae2e0c1a4a4e0bfb43c93d"
     },
     {
       "loc": "/tickets/index.html",

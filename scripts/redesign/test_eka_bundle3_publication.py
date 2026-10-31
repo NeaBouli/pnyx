@@ -76,7 +76,7 @@ class WikiPublicationTest(unittest.TestCase):
             self.assertEqual(wiki_publish.check(root=root, write=True), [])
             target = root / "docs/wiki/security.html"
             source = target.read_text()
-            target.write_text(source.replace("For new and reverified identities", "For all identities"))
+            target.write_text(source.replace("Production uses Argon2id v2", "All deployments use Argon2id v2"))
             self.assertTrue(any("shared fact drift" in e for e in wiki_publish.check(root=root)))
             self.assertEqual(wiki_publish.check(root=root, write=True), [])
             target.write_text(source.replace('data-wiki-fact="identity-hashing"', 'data-wiki-fact="removed"'))
@@ -103,7 +103,7 @@ class WikiPublicationTest(unittest.TestCase):
                 for lang in ("el", "en"):
                     self.assertTrue(node.attrs.get(f"data-{lang}"))
             text = (ROOT / f"wiki/{wiki_publish.PAGES[slug]}.md").read_text()
-            for wording in ("Argon2id v2 identity hash", "SHA256 compatibility anchor", "Nullifiers are versioned"):
+            for wording in ("Production uses Argon2id v2", "SHA-256 compatibility anchor", "Nullifiers are versioned"):
                 self.assertIn(wording, text)
 
     def test_bridge_stays_planned_and_inactive_without_module_id(self):
