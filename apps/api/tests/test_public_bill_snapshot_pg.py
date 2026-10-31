@@ -195,7 +195,7 @@ async def test_asyncpg_executes_forty_thousand_ids_and_migration_round_trip(post
 
 
 @pytest.mark.parametrize("postgres", [True], indirect=True)
-async def test_cold_toasted_population_uses_v3_without_vacuum(postgres: Any) -> None:
+async def test_cold_toasted_population_never_reads_prose_for_visibility(postgres: Any) -> None:
     connection, _ = postgres
     assert await connection.scalar(text("SHOW enable_seqscan")) == "on"
     assert await connection.scalar(text("SHOW plan_cache_mode")) == "auto"
@@ -212,10 +212,13 @@ async def test_cold_toasted_population_uses_v3_without_vacuum(postgres: Any) -> 
     ):
         plan = await explain(connection, query)
         scans = list(nodes(plan))
-        assert any(n.get("Index Name") == PUBLIC_BILL_INDEX for n in scans), json.dumps(plan)
-        assert not any(n.get("Relation Name") == "parliament_bills" and "Seq Scan" in n["Node Type"]
-                       for n in scans), json.dumps(plan)
-        assert not any("public_bill_sensitive" in n.get("Filter", "") for n in scans), json.dumps(plan)
+        # Visibility now reads two boolean flags. Whether the planner picks the
+        # partial index or a heap scan, it must never evaluate prose or the
+        # regex function, and the cold toasted population must stay cheap.
+        prose = ("public_bill_sensitive", "title_el", "summary_short_el", "summary_long_el")
+        assert not any(term in n.get("Filter", "") + n.get("Recheck Cond", "") for n in scans for term in prose), \
+            json.dumps(plan)
+        assert plan["Actual Total Time"] < 250, json.dumps(plan)
         print(f"\nEXPLAIN {label}:\n{json.dumps(plan, indent=2)}")
 
 

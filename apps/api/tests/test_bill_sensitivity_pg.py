@@ -77,6 +77,8 @@ async def test_backfill_preserves_all_visible_ids_and_hides_null_predicates(old_
         (None, "DIAVGEIA", "PARLIAMENT", "OTHER", "diavgeia"), (None, True, False),
         ("title_el", "summary_short_el", "summary_long_el"), samples,
     ):
+        if field == "title_el" and sample is None:
+            continue  # title_el is NOT NULL in the schema (and in production)
         rows.append(bill_row(f"EDGE-{len(rows):05}", source=source, admin_hidden=hidden,
                              **{field: sample}))
     rows.extend([
