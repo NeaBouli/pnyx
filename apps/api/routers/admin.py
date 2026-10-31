@@ -376,6 +376,42 @@ async def admin_scraper_catchup(
     return {"accepted": True, "jobs_triggered": triggered, "skipped": skipped, "force": force}
 
 
+async def _repair_diavgeia_org_pills(db: AsyncSession) -> dict:
+    from services.diavgeia_org_lookup import (
+        ORG_LABEL_MISSING_SQL, UNKNOWN_PILL_RE, UNKNOWN_PILL_SQL_PATTERN,
+        clean_org_label, org_pill, resolve_org_label,
+    )
+
+    result = await db.execute(text("""
+        SELECT id, pill_el, org_label FROM parliament_bills
+        WHERE source = 'DIAVGEIA' AND pill_el ~ :pattern
+    """), {"pattern": UNKNOWN_PILL_SQL_PATTERN})
+    rows = result.fetchall()
+    resolved = 0
+    failed = 0
+    labels = {}
+
+    for bill_id, pill_el, old_label in rows:
+        match = UNKNOWN_PILL_RE.fullmatch(pill_el)
+        if not match:
+            continue
+        uid = match.group(1)
+        if uid not in labels:
+            labels[uid] = await resolve_org_label(uid)
+        label = labels[uid] or clean_org_label(old_label)
+        await db.execute(text(f"""
+            UPDATE parliament_bills SET pill_el = :pill,
+                org_label = CASE WHEN {ORG_LABEL_MISSING_SQL} THEN :label ELSE org_label END
+            WHERE id = :id AND source = 'DIAVGEIA' AND pill_el = :old_pill
+              AND org_label IS NOT DISTINCT FROM :old_label
+        """), {"pill": org_pill(label), "label": label, "id": bill_id,
+                 "old_pill": pill_el, "old_label": old_label})
+        resolved += int(label is not None)
+        failed += int(label is None)
+
+    return {"success": True, "resolved": resolved, "failed": failed, "total": len(rows)}
+
+
 @router.post("/diavgeia/resolve-orgs", dependencies=[Depends(enforce_route_limit)])
 @public_heavy
 async def admin_resolve_orgs(
@@ -383,37 +419,10 @@ async def admin_resolve_orgs(
     db: AsyncSession = Depends(get_db),
     request: Request = None,
 ):
-    """Resolve all [unknown:XXX] org names via Diavgeia API."""
-    import re
-    import asyncio
-    from services.diavgeia_org_lookup import resolve_unknown_label
-
-    result = await db.execute(
-        text("SELECT id, pill_el FROM parliament_bills WHERE pill_el LIKE '%[unknown:%'")
-    )
-    rows = result.fetchall()
-    resolved = 0
-    failed = 0
-
-    for bill_id, pill_el in rows:
-        match = re.search(r"\[unknown:(\d+)\]", pill_el)
-        if not match:
-            continue
-        uid = match.group(1)
-        label = await resolve_unknown_label(uid)
-        if label:
-            new_pill = pill_el.replace(f"[unknown:{uid}]", label)
-            await db.execute(
-                text("UPDATE parliament_bills SET pill_el = :pill WHERE id = :id"),
-                {"pill": new_pill, "id": bill_id},
-            )
-            resolved += 1
-        else:
-            failed += 1
-        await asyncio.sleep(0.3)  # Rate limit
-
+    """Repair exact DIAVGEIA unknown pills and missing organization labels."""
+    stats = await _repair_diavgeia_org_pills(db)
     await commit_and_invalidate_representation(db)
-    return {"success": True, "resolved": resolved, "failed": failed, "total": len(rows)}
+    return stats
 
 
 @router.post("/scraper/enrich-all", dependencies=[Depends(enforce_route_limit)])
@@ -707,17 +716,18 @@ async def admin_resolve_org_labels(
     """
     NEA-272: Resolve [unknown:UID] organization labels in diavgeia_decisions
     via live Diavgeia API, then backfill parliament_bills.org_label.
-    Rate-limited: 1 req/sec to Diavgeia API.
+    Also repairs unknown pills; the shared resolver owns HTTP pacing/caching.
     """
-    import asyncio
-    from services.diavgeia_org_lookup import resolve_unknown_label
+    from services.diavgeia_org_lookup import (
+        DECISION_LABEL_MISSING_SQL, ORG_LABEL_MISSING_SQL, resolve_org_label,
+    )
     from services.diavgeia_scraper import _clean_org_label
 
     # Step 1: Find unknown org labels in diavgeia_decisions
-    result = await db.execute(text("""
+    result = await db.execute(text(f"""
         SELECT DISTINCT organization_uid, organization_label
         FROM diavgeia_decisions
-        WHERE organization_label LIKE '[unknown:%'
+        WHERE {DECISION_LABEL_MISSING_SQL}
     """))
     unknowns = result.fetchall()
 
@@ -732,37 +742,36 @@ async def admin_resolve_org_labels(
             failed += 1
             continue
 
-        label = await resolve_unknown_label(str(uid))
+        label = await resolve_org_label(str(uid))
         clean = _clean_org_label(label)
 
         if clean:
-            await db.execute(text("""
+            await db.execute(text(f"""
                 UPDATE diavgeia_decisions
                 SET organization_label = :label
                 WHERE organization_uid = :uid
-                AND organization_label LIKE '[unknown:%'
+                AND {DECISION_LABEL_MISSING_SQL}
             """), {"label": clean, "uid": uid})
             resolved += 1
         else:
             unresolved += 1
 
-        # Rate-limit: 1 req/sec to Diavgeia API
-        await asyncio.sleep(1)
-
     # Step 2: Backfill parliament_bills.org_label from resolved decisions
-    backfill_result = await db.execute(text("""
+    backfill_result = await db.execute(text(f"""
         UPDATE parliament_bills pb
         SET org_label = TRIM(dd.organization_label)
         FROM diavgeia_decisions dd
         WHERE pb.diavgeia_ada = dd.ada
-          AND pb.governance_level = 'INSTITUTIONAL'
-          AND pb.org_label IS NULL
+          AND pb.source = 'DIAVGEIA'
+          AND {ORG_LABEL_MISSING_SQL}
           AND dd.organization_label IS NOT NULL
           AND TRIM(dd.organization_label) != ''
           AND dd.organization_label NOT LIKE '[unknown:%'
+          AND dd.organization_label NOT LIKE '[no-label:%'
           AND LOWER(TRIM(dd.organization_label)) != 'unknown'
     """))
     backfilled = backfill_result.rowcount
+    pills = await _repair_diavgeia_org_pills(db)
 
     await commit_and_invalidate_representation(db)
 
@@ -776,6 +785,7 @@ async def admin_resolve_org_labels(
         "step2_backfill": {
             "bills_updated": backfilled,
         },
+        "step3_pills": pills,
     }
 
 

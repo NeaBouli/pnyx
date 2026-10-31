@@ -108,8 +108,8 @@ async def main() -> None:
             logger.info("No cursor found — starting from %s", since.isoformat())
 
     from services.diavgeia_client import DiavgeiaClient, parse_timestamp
-    from services.diavgeia_scraper import _resolve_dimos
-    from services.diavgeia_org_lookup import get_label as get_org_label
+    from services.diavgeia_scraper import _resolve_org
+    from services.diavgeia_org_lookup import resolve_org_label
     from models import DiavgeiaDecision
     from database import AsyncSessionLocal
     from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -118,6 +118,7 @@ async def main() -> None:
     total_committed = 0
     total_skipped = 0
     batch: list[dict] = []
+    labels: dict[str, str | None] = {}
     last_publish_ts = since
     start_time = time.monotonic()
 
@@ -166,6 +167,8 @@ async def main() -> None:
                 if not args.dry_run:
                     org_uid = str(raw.get("organizationId", ""))
                     submission_ts = parse_timestamp(raw.get("submissionTimestamp"))
+                    if org_uid not in labels:
+                        labels[org_uid] = await resolve_org_label(org_uid)
 
                     batch.append({
                         "ada": ada,
@@ -173,7 +176,7 @@ async def main() -> None:
                         "decision_type_uid": raw.get("decisionTypeId", args.decision_type_uid),
                         "decision_type_label": raw.get("decisionTypeId", ""),
                         "organization_uid": org_uid,
-                        "organization_label": get_org_label(org_uid),
+                        "organization_label": labels[org_uid] or "",  # existing NOT NULL column
                         "document_url": raw.get("documentUrl", ""),
                         "submission_timestamp": submission_ts,
                         "publish_timestamp": publish_ts,
@@ -185,9 +188,10 @@ async def main() -> None:
                 async with AsyncSessionLocal() as session:
                     # Resolve dimos for each row
                     for row in batch:
-                        dimos_id, periferia_id = await _resolve_dimos(session, row["organization_uid"])
+                        dimos_id, periferia_id, level = await _resolve_org(session, row["organization_uid"])
                         row["dimos_id"] = dimos_id
                         row["periferia_id"] = periferia_id
+                        row["governance_level"] = level
 
                     stmt = pg_insert(DiavgeiaDecision).values(batch)
                     stmt = stmt.on_conflict_do_update(
@@ -200,6 +204,7 @@ async def main() -> None:
                             "raw_payload": stmt.excluded.raw_payload,
                             "dimos_id": stmt.excluded.dimos_id,
                             "periferia_id": stmt.excluded.periferia_id,
+                            "governance_level": stmt.excluded.governance_level,
                             "fetched_at": stmt.excluded.fetched_at,
                         },
                     )
@@ -222,9 +227,10 @@ async def main() -> None:
     if batch and not args.dry_run:
         async with AsyncSessionLocal() as session:
             for row in batch:
-                dimos_id, periferia_id = await _resolve_dimos(session, row["organization_uid"])
+                dimos_id, periferia_id, level = await _resolve_org(session, row["organization_uid"])
                 row["dimos_id"] = dimos_id
                 row["periferia_id"] = periferia_id
+                row["governance_level"] = level
 
             stmt = pg_insert(DiavgeiaDecision).values(batch)
             stmt = stmt.on_conflict_do_update(
@@ -237,6 +243,7 @@ async def main() -> None:
                     "raw_payload": stmt.excluded.raw_payload,
                     "dimos_id": stmt.excluded.dimos_id,
                     "periferia_id": stmt.excluded.periferia_id,
+                    "governance_level": stmt.excluded.governance_level,
                     "fetched_at": stmt.excluded.fetched_at,
                 },
             )
