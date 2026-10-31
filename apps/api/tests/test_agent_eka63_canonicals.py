@@ -5,6 +5,8 @@ These facts must return from `_canonical_response` before database retrieval
 or Ollama/Claude generation (docs/architecture/MAP.md, EKA-63 hop A4→A5).
 """
 
+import unicodedata
+
 import pytest
 
 from routers import agent
@@ -13,6 +15,28 @@ from services.agent_prompt import is_unsafe_model_output
 
 # (topic, lang, question) — at least two natural questions per topic/language.
 POSITIVE_CASES: list[tuple[str, str, str]] = [
+    ("anonymity", "el", "Είναι οι ψήφοι μου ανώνυμες; Αποθηκεύετε προσωπικά δεδομένα;"),
+    ("anonymity", "en", "Are my votes anonymous? Do you store personal data?"),
+    ("anonymity", "el", "ειναι οι ψηφοι μου ανωνυμες; αποθηκευετε προσωπικα δεδομενα;"),
+    ("anonymity", "el", "ΑΝΩΝΥΜΙΑ: ΚΡΑΤΑΤΕ ΤΟΝ ΑΡΙΘΜΟ ΤΟΥ ΚΙΝΗΤΟΥ ΜΟΥ;"),
+    ("anonymity", "el", "Πώς προστατεύεται η ανωνυμία μου;"),
+    ("anonymity", "el", "Αποθηκεύετε προσωπικά δεδομένα;"),
+    ("anonymity", "el", "Τι ισχύει για την αποθήκευση προσωπικών δεδομένων;"),
+    ("anonymity", "el", "Ποιος βλέπει την ψήφο μου;"),
+    ("anonymity", "el", "ποιος μπορει να δει την ψηφο μου μετα την επαληθευση HLR;"),
+    ("anonymity", "el", "Μπορεί ο διαχειριστής να δει τι ψήφισα;"),
+    ("anonymity", "el", "Μπορείτε να με παρακολουθείτε από τον αριθμό τηλεφώνου;"),
+    ("anonymity", "el", unicodedata.normalize("NFD", "Ποιος βλέπει την ψήφο μου;")),
+    ("anonymity", "en", "Are my votes anonymous after phone verification with HLR or SMS?"),
+    ("anonymity", "en", "How is my anonymity protected?"),
+    ("anonymity", "en", "Do you store personal data?"),
+    ("anonymity", "en", "Do you keep personal information?"),
+    ("anonymity", "en", "Who can see my vote?"),
+    ("anonymity", "en", "Can anyone see my vote after phone verification?"),
+    ("anonymity", "en", "Can the operators see how I voted?"),
+    ("anonymity", "en", "What about the privacy of my vote?"),
+    ("anonymity", "en", "Can you track me using my phone number?"),
+    ("anonymity", "en", "Are you tracking my votes?"),
     ("data_deletion", "en", "How can I delete my data?"),
     ("data_deletion", "en", "How do I delete my account?"),
     ("data_deletion", "en", "Can I revoke my identity?"),
@@ -45,6 +69,18 @@ POSITIVE_CASES: list[tuple[str, str, str]] = [
 
 # Facts each answer must carry (EL, EN), grounded in the mapped source symbols.
 REQUIRED_FACTS: dict[str, dict[str, tuple[str, ...]]] = {
+    "anonymity": {
+        "el": ("Οι ψήφοι αποθηκεύονται ψευδώνυμα",
+               "συνδέονται με ψευδώνυμο nullifier, όχι με όνομα ή αριθμό τηλεφώνου",
+               "Ο αριθμός τηλεφώνου δεν αποθηκεύεται",
+               "https://ekklesia.gr/wiki/privacy.html",
+               "Αποτελέσματα με λιγότερες από 10 ψήφους δεν εμφανίζονται δημόσια"),
+        "en": ("Votes are stored pseudonymously",
+               "linked to a pseudonymous nullifier, not to a name or phone number",
+               "The phone number is not stored",
+               "https://ekklesia.gr/wiki/privacy.html",
+               "Results with fewer than 10 votes are not shown publicly"),
+    },
     "data_deletion": {
         "el": ("REVOKED", "nullifier hash", "δεν είναι γενική διαγραφή",
                "δεν προσφέρουν κουμπί", "μόνο στη συσκευή"),
@@ -122,6 +158,26 @@ def test_eka63_answers_carry_grounded_facts_only(topic: str, lang: str) -> None:
     lowered = answer.lower()
     for claim in FORBIDDEN_CLAIMS:
         assert claim not in lowered, (topic, lang, claim)
+
+
+@pytest.mark.parametrize(("topic", "lang", "question"), [
+    case for case in POSITIVE_CASES if case[0] == "anonymity"
+])
+def test_anonymity_variants_return_only_shared_published_facts(
+    topic: str, lang: str, question: str,
+) -> None:
+    response = _canonical_response(question, lang)
+    assert response is not None
+    disclaimer = _DISCLAIMER_EL if lang == "el" else _DISCLAIMER_EN
+    assert response["answer"] == agent._FACTS[topic][lang] + disclaimer
+    for fact in REQUIRED_FACTS[topic][lang]:
+        assert fact in response["answer"]
+    for claim in (
+        "ανώνυμα", "ανώνυμες", "anonymous", "gdpr compliant", "no personal data",
+        "δεν αποθηκεύουμε προσωπικά δεδομένα", "cannot be linked by anyone",
+        "can be linked by the operator", "ollama", "claude", "anthropic", "openai",
+    ):
+        assert claim not in response["answer"].lower()
 
 
 @pytest.mark.parametrize("topic", TOPICS)

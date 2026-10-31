@@ -18,6 +18,7 @@ import json
 import os
 import sys
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Iterable, Sequence
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -28,6 +29,11 @@ from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 from database import engine
 from models import KnowledgeBase
 
+# Share the reviewed privacy answer with deterministic canonical routing.
+_ANONYMITY = json.loads(
+    (Path(__file__).resolve().parent.parent / "data" / "agent_facts.json").read_text(encoding="utf-8")
+)["anonymity"]
+
 ENTRIES = [
     ("mission", "Τι είναι η εκκλησία;", "What is ekklesia?",
      "Η εκκλησία του έθνους είναι μια ανεξάρτητη πρωτοβουλία πολιτών για άμεση δημοκρατία στην Ελλάδα. Επιτρέπει στους πολίτες να ψηφίζουν σε πραγματικά νομοσχέδια της Βουλής. Οι ψήφοι αποθηκεύονται ψευδώνυμα· συνδέονται με ψευδώνυμο nullifier, όχι με όνομα ή αριθμό τηλεφώνου. Ο αριθμός τηλεφώνου δεν αποθηκεύεται. Δείτε την πολιτική ιδιωτικότητας: https://ekklesia.gr/wiki/privacy.html. ΔΕΝ είναι κρατική υπηρεσία. Οι ψηφοφορίες δεν έχουν νομική δεσμευτικότητα. Είναι εργαλείο διαφάνειας και δημοκρατικής εκπαίδευσης. © 2026 V-Labs IT Solutions & Development, MIT License.",
@@ -35,8 +41,8 @@ ENTRIES = [
      '["ekklesia","democracy","parliament","civic","initiative","vote"]', 1),
 
     ("privacy", "Πώς προστατεύεται η ανωνυμία μου;", "How is my anonymity protected?",
-     "Η εκκλησία χρησιμοποιεί κρυπτογραφία Ed25519 για υπογραφές ψήφων. Οι ψήφοι αποθηκεύονται ψευδώνυμα· συνδέονται με ψευδώνυμο nullifier, όχι με όνομα ή αριθμό τηλεφώνου. Ο αριθμός τηλεφώνου δεν αποθηκεύεται. Δείτε την πολιτική ιδιωτικότητας: https://ekklesia.gr/wiki/privacy.html. Το ιδιωτικό κλειδί μένει στη συσκευή σου. Web Beta: μη εξαγώγιμο κλειδί WebCrypto στο IndexedDB μετά την επιτυχή μετάβαση· απλό κείμενο στο localStorage μέχρι να ολοκληρωθεί η μετάβαση. Η μετάβαση απαιτεί Ed25519 WebCrypto, Web Locks και ενεργοποίηση ελέγχων κλειδιού από τον server (features.identity_key_check, ανενεργό από προεπιλογή)· αν η λειτουργία είναι ανενεργή, δεν υποστηρίζεται ή αποτύχει κάποιος έλεγχος, το απλό αντίγραφο παραμένει. Εφαρμογή κινητού: Expo SecureStore. Ο server το δημιουργεί μία φορά κατά την επαλήθευση και σου το παραδίδει μόνο μία φορά· δεν το αποθηκεύει.",
-     "ekklesia uses Ed25519 cryptography for vote signatures. Votes are stored pseudonymously; linked to a pseudonymous nullifier, not to a name or phone number. The phone number is not stored. See the privacy page: https://ekklesia.gr/wiki/privacy.html. The private key stays on your device. Web Beta: non-extractable WebCrypto key in IndexedDB after successful migration; plaintext in localStorage until migration completes. Migration requires Ed25519 WebCrypto, Web Locks and server-enabled key checks (features.identity_key_check, off by default); if the feature is off, unsupported or a check fails, the plaintext copy remains. Mobile app: Expo SecureStore. The server creates it once during verification and hands it to you a single time; it does not store it.",
+     _ANONYMITY["el"] + " Η εκκλησία χρησιμοποιεί κρυπτογραφία Ed25519 για υπογραφές ψήφων. Το ιδιωτικό κλειδί μένει στη συσκευή σου. Web Beta: μη εξαγώγιμο κλειδί WebCrypto στο IndexedDB μετά την επιτυχή μετάβαση· απλό κείμενο στο localStorage μέχρι να ολοκληρωθεί η μετάβαση. Η μετάβαση απαιτεί Ed25519 WebCrypto, Web Locks και ενεργοποίηση ελέγχων κλειδιού από τον server (features.identity_key_check, ανενεργό από προεπιλογή)· αν η λειτουργία είναι ανενεργή, δεν υποστηρίζεται ή αποτύχει κάποιος έλεγχος, το απλό αντίγραφο παραμένει. Εφαρμογή κινητού: Expo SecureStore. Ο server το δημιουργεί μία φορά κατά την επαλήθευση και σου το παραδίδει μόνο μία φορά· δεν το αποθηκεύει.",
+     _ANONYMITY["en"] + " ekklesia uses Ed25519 cryptography for vote signatures. The private key stays on your device. Web Beta: non-extractable WebCrypto key in IndexedDB after successful migration; plaintext in localStorage until migration completes. Migration requires Ed25519 WebCrypto, Web Locks and server-enabled key checks (features.identity_key_check, off by default); if the feature is off, unsupported or a check fails, the plaintext copy remains. Mobile app: Expo SecureStore. The server creates it once during verification and hands it to you a single time; it does not store it.",
      '["privacy","anonymity","cryptography","Ed25519","nullifier","phone"]', 1),
 
     ("process", "Πώς ψηφίζω;", "How do I vote?",

@@ -327,6 +327,18 @@ _EKA63_TOPIC_PATTERNS: dict[str, tuple[re.Pattern[str], ...]] = {
         r"αποτελεσμ\w*[\w\s]{0,40}(ορατ|κρυφ|κρυμμεν|εμφανιζ|εμφανιστ|φαινοντ|μηδεν)",
         r"(ορατ|κρυφ|κρυμμεν|εμφανιζ|εμφανιστ|φαινοντ)\w*[\w\s]{0,20}αποτελεσμ",
     )),
+    "anonymity": tuple(re.compile(p) for p in (
+        r"\b(ανωνυμ\w*|ψευδωνυμ\w*|anonym\w*|pseudonym\w*)\b",
+        r"\bπροσωπικ\w*\s+δεδομεν\w*\b",
+        r"\bpersonal\s+(data|information)\b",
+        r"\b(privacy|ιδιωτικοτητ\w*)\b",
+        r"\b(who|anyone|someone|others|operators?|admins?|you)\b[\w\s]{0,30}"
+        r"\b(see|sees|view|views)\b[\w\s]{0,20}\b((my|our)\s+votes?|how\s+(i|we)\s+voted)\b",
+        r"\b(ποιο[ισς]|διαχειριστ\w*|αλλοι|καποιο[ισς])\b[\w\s]{0,30}"
+        r"\b(βλεπ\w*|δει|δουν)\b[\w\s]{0,20}\b(ψηφ\w*\s+μου|(τι|πως)\s+ψηφισα)\b",
+        r"\btrack\w*\s+(me|my\s+votes?)\b",
+        r"\bμε\s+παρακολουθ\w*\b",
+    )),
 }
 # Topics where a bill/law reference means the citizen is asking about content,
 # not about the platform mechanism (e.g. a bill on deleting bank accounts).
@@ -452,6 +464,15 @@ def _canonical_response(question: str, lang: str) -> dict | None:
     # EKA-63: checked before the broad substring topics below so that e.g.
     # "διαύγ"/"δήμ" (municipal) or "nullifier" cannot pre-empt these facts.
     eka63_topic = _eka63_topic(normalized_q)
+
+    # Privacy intent must win over verification keyword scores, even when the
+    # question also mentions phone numbers, storage, HLR or SMS.
+    if eka63_topic == "anonymity":
+        return resp(
+            _FACTS["anonymity"]["el"],
+            _FACTS["anonymity"]["en"],
+            "anonymity",
+        )
 
     if eka63_topic == "data_deletion":
         return resp(
