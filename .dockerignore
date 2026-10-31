@@ -32,3 +32,10 @@ docs_backup*
 apps/mobile/android
 apps/mobile/ios
 docs/agent-bridge
+
+# Release binaries are distributed via GitHub Releases/stores and verified by
+# SHA-256 (docs/download/APK_MANIFEST.md). Never bake untracked APK/AAB files
+# from a server checkout into an image (EKA-38).
+docs/download/*.apk
+docs/download/*.aab
+builds/
