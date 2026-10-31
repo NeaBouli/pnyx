@@ -1,0 +1,202 @@
+[
+  {
+    "path": "docs/wiki/index.html",
+    "template": "    <a href=\"api.html\"          class=\"card\"><div class=\"card-icon\">⚡</div><h4 role=\"heading\" aria-level=\"3\">API</h4><p data-el=\"{{api_endpoints}} δηλώσεις διαδρομών, {{modules_listed}} καταχωρισμένες ενότητες\" data-en=\"{{api_endpoints}} route decorators, {{modules_listed}} listed modules\">{{api_endpoints}} δηλώσεις διαδρομών, {{modules_listed}} καταχωρισμένες ενότητες</p></a>"
+  },
+  {
+    "path": "docs/wiki/index.html",
+    "template": "    <a href=\"database.html\"     class=\"card\"><div class=\"card-icon\">🗄️</div><h4 role=\"heading\" aria-level=\"3\">Database</h4><p data-el=\"{{db_tables_orm}} πίνακες ORM, Alembic\" data-en=\"{{db_tables_orm}} ORM tables, Alembic\">{{db_tables_orm}} πίνακες ORM, Alembic</p></a>"
+  },
+  {
+    "path": "docs/wiki/index.html",
+    "template": "  <p data-el=\"Στοιχεία πηγαίου κώδικα {{as_of}}: {{modules_listed}} καταχωρισμένες ενότητες ({{modules_inactive}} ανενεργές), αρίθμηση έως MOD-{{modules_spec}}· {{api_endpoints}} δηλώσεις διαδρομών API σε {{api_routers}} routers· {{db_tables_orm}} πίνακες ORM· {{prod_containers}} υπηρεσίες production Compose (περιλαμβάνεται ο migrator). Δεν αποτελεί μέτρηση ενεργών υπηρεσιών.\" data-en=\"Source snapshot {{as_of}}: {{modules_listed}} listed modules ({{modules_inactive}} inactive), numbering through MOD-{{modules_spec}}; {{api_endpoints}} API route decorators in {{api_routers}} routers; {{db_tables_orm}} ORM tables; {{prod_containers}} production Compose services (including the migrator). This is not a live service count.\">Στοιχεία πηγαίου κώδικα {{as_of}}: {{modules_listed}} καταχωρισμένες ενότητες ({{modules_inactive}} ανενεργές), αρίθμηση έως MOD-{{modules_spec}}· {{api_endpoints}} δηλώσεις διαδρομών API σε {{api_routers}} routers· {{db_tables_orm}} πίνακες ORM· {{prod_containers}} υπηρεσίες production Compose (περιλαμβάνεται ο migrator). Δεν αποτελεί μέτρηση ενεργών υπηρεσιών.</p>"
+  },
+  {
+    "path": "docs/wiki/index.html",
+    "template": "    <div class=\"card\" style=\"text-align:center\"><div style=\"font-size:2rem;font-weight:900;color:var(--blue)\">{{api_endpoints}}</div><div style=\"font-size:0.78rem;color:var(--gray-400)\">API Endpoints</div></div>"
+  },
+  {
+    "path": "docs/wiki/index.html",
+    "template": "    <div class=\"card\" style=\"text-align:center\"><div style=\"font-size:2rem;font-weight:900;color:var(--green)\">{{modules_listed}}</div><div style=\"font-size:0.78rem;color:var(--gray-400)\" data-el=\"Καταχωρισμένες ενότητες\" data-en=\"Listed modules\">Καταχωρισμένες ενότητες</div></div>"
+  },
+  {
+    "path": "docs/wiki/index.html",
+    "template": "    <div class=\"card\" style=\"text-align:center\"><div style=\"font-size:2rem;font-weight:900;color:var(--purple)\">{{db_tables_orm}}</div><div style=\"font-size:0.78rem;color:var(--gray-400)\" data-el=\"Πίνακες ORM\" data-en=\"ORM tables\">Πίνακες ORM</div></div>"
+  },
+  {
+    "path": "docs/wiki/index.html",
+    "template": "    <div class=\"card\" style=\"text-align:center\"><div style=\"font-size:2rem;font-weight:900;color:var(--yellow)\">{{prod_containers}}</div><div style=\"font-size:0.78rem;color:var(--gray-400)\" data-el=\"Υπηρεσίες Compose\" data-en=\"Compose services\">Υπηρεσίες Compose</div></div>"
+  },
+  {
+    "path": "docs/index.html",
+    "template": "        <p data-el=\"{{api_endpoints}} δηλώσεις διαδρομών API\" data-en=\"{{api_endpoints}} API route decorators\">{{api_endpoints}} δηλώσεις διαδρομών API</p>"
+  },
+  {
+    "path": "docs/index.html",
+    "template": "        <p data-el=\"{{modules_listed}} καταχωρισμένες ενότητες ({{modules_inactive}} ανενεργές)\" data-en=\"{{modules_listed}} listed modules ({{modules_inactive}} inactive)\">{{modules_listed}} καταχωρισμένες ενότητες ({{modules_inactive}} ανενεργές)</p>"
+  },
+  {
+    "path": "docs/index.html",
+    "template": "        <p data-el=\"{{db_tables_orm}} πίνακες ORM, Schema\" data-en=\"{{db_tables_orm}} ORM tables, Schema\">{{db_tables_orm}} πίνακες ORM, Schema</p>"
+  },
+  {
+    "path": "docs/index.html",
+    "template": "<p data-el=\"Στοιχεία πηγαίου κώδικα {{as_of}} — ορισμοί:\" data-en=\"Source snapshot {{as_of}} — definitions:\">Στοιχεία πηγαίου κώδικα {{as_of}} — ορισμοί:</p>"
+  },
+  {
+    "path": "docs/wiki/api.html",
+    "template": "  <meta name=\"description\" content=\"REST API τεκμηρίωση για ekklesia.gr — {{api_endpoints}} endpoints, {{modules_listed}} listed modules, Ed25519 authentication. CC BY 4.0.\"/>"
+  },
+  {
+    "path": "docs/wiki/api.html",
+    "template": "  <meta property=\"og:description\" content=\"REST API τεκμηρίωση για ekklesia.gr — {{api_endpoints}} endpoints, {{modules_listed}} listed modules, Ed25519 authentication.\"/>"
+  },
+  {
+    "path": "docs/wiki/api.html",
+    "template": "  <meta name=\"twitter:description\" content=\"REST API τεκμηρίωση για ekklesia.gr — {{api_endpoints}} endpoints, {{modules_listed}} listed modules.\"/>"
+  },
+  {
+    "path": "docs/wiki/api.html",
+    "template": "    <p>Base URL: <strong>https://api.ekklesia.gr/api/v1</strong> &nbsp;|&nbsp; {{modules_listed}} listed Modules</p>"
+  },
+  {
+    "path": "docs/wiki/whitepaper.html",
+    "template": "├── FastAPI (Backend — {{api_endpoints}} endpoints, {{modules_listed}} listed modules)"
+  },
+  {
+    "path": "docs/wiki/whitepaper.html",
+    "template": "  <p class=\"fade-in\" data-project-cost=\"basis\" data-el=\"Βάση κόστους {{cost_as_of}}: περίπου {{server_monthly}} EUR/μήνα για server και {{domain_yearly_el}} EUR/έτος για domain· περίπου {{recurring_yearly_el}} EUR/έτος μόνο για αυτά τα πάγια EUR. Πρόκειται για τη δημοσιευμένη εκτίμηση, όχι τιμολόγιο. Χωριστά: ετήσιες χρεώσεις λογαριασμών σε USD, εφάπαξ εγγραφή και χρεώσεις ανά χρήση (HLR, μετάφραση, αρχειοθέτηση). Δεν προκύπτει συνολικό ετήσιο ποσό χρήσης από το αποθετήριο. Οι προηγούμενες εκτιμήσεις έχουν αντικατασταθεί.\" data-en=\"Cost basis {{cost_as_of}}: about EUR {{server_monthly}}/month for the server and EUR {{domain_yearly_en}}/year for the domain; about EUR {{recurring_yearly_en}}/year for those recurring EUR costs only. This is the published estimate, not an invoice. Separate: annual USD account charges, one-time registration and usage charges (HLR, translation, archiving). A total annual usage cost cannot be derived from the repository. Previous estimates have been superseded.\">Βάση κόστους {{cost_as_of}}: περίπου {{server_monthly}} EUR/μήνα για server και {{domain_yearly_el}} EUR/έτος για domain· περίπου {{recurring_yearly_el}} EUR/έτος μόνο για αυτά τα πάγια EUR. Πρόκειται για τη δημοσιευμένη εκτίμηση, όχι τιμολόγιο. Χωριστά: ετήσιες χρεώσεις λογαριασμών σε USD, εφάπαξ εγγραφή και χρεώσεις ανά χρήση (HLR, μετάφραση, αρχειοθέτηση). Δεν προκύπτει συνολικό ετήσιο ποσό χρήσης από το αποθετήριο. Οι προηγούμενες εκτιμήσεις έχουν αντικατασταθεί.</p>"
+  },
+  {
+    "path": "README.md",
+    "template": "[![Listed modules](https://img.shields.io/badge/Modules-{{modules_listed}}-green)](https://ekklesia.gr/wiki/modules.html)"
+  },
+  {
+    "path": "README.md",
+    "template": "|   +-- api/          -> Python FastAPI  ({{api_endpoints}} endpoints, {{modules_listed}} listed modules)"
+  },
+  {
+    "path": "README.md",
+    "template": "|   +-- db/           -> Alembic Migrations ({{db_tables_orm}} ORM tables)"
+  },
+  {
+    "path": "README.md",
+    "template": "- **{{prod_containers}} production Compose services**: DB, Redis, API, migrator, Web, assistant, Dashboard, Docker proxy, Monitor (configuration count, including the one-shot migrator; not a live deployment count)"
+  },
+  {
+    "path": "README.md",
+    "template": "Source snapshot **{{as_of}}**: [generated facts and cost basis](docs/project-facts.json). Route decorators, ORM declarations and Compose services are source counts, not live deployment measurements."
+  },
+  {
+    "path": "README.md",
+    "template": "| Modules | {{modules_listed}} listed, {{modules_inactive}} inactive; numbering through MOD-{{modules_spec}} (MOD-13/MOD-17 absent) |"
+  },
+  {
+    "path": "README.md",
+    "template": "| API Endpoints | {{api_endpoints}} route decorators |"
+  },
+  {
+    "path": "README.md",
+    "template": "| DB Tables | {{db_tables_orm}} ORM declarations (excludes migration-only tables) |"
+  },
+  {
+    "path": "README.md",
+    "template": "| Production Compose services | {{prod_containers}} (includes migrator) |"
+  },
+  {
+    "path": "README.md",
+    "template": "| [API Docs](https://ekklesia.gr/wiki/api.html) | {{api_endpoints}} endpoints, all modules |"
+  },
+  {
+    "path": "docs/wiki/modules.html",
+    "template": "  <meta name=\"description\" content=\"{{modules_listed}} listed modules ekklesia.gr — Identity, VAA, Parliament, Voting, Divergence, Municipal Governance, AI Agent.\"/>"
+  },
+  {
+    "path": "docs/wiki/modules.html",
+    "template": "  <meta property=\"og:description\" content=\"{{modules_listed}} listed modules ekklesia.gr — Identity, VAA, Parliament, Voting, Divergence, Municipal Governance, AI Agent.\"/>"
+  },
+  {
+    "path": "docs/wiki/modules.html",
+    "template": "  <meta name=\"twitter:description\" content=\"{{modules_listed}} listed modules ekklesia.gr — Identity, VAA, Parliament, Voting, Divergence, Municipal Governance, AI Agent.\"/>"
+  },
+  {
+    "path": "docs/wiki/modules.html",
+    "template": "  \"description\": \"{{modules_listed}} listed modules of ekklesia.gr — Identity, VAA, Parliament, Voting, Municipal Governance.\","
+  },
+  {
+    "path": "docs/community.html",
+    "template": "    \"description\": \"Ανοιχτή πλατφόρμα άμεσης δημοκρατίας για την Ελλάδα — {{modules_listed}} listed modules, MIT License\","
+  },
+  {
+    "path": "docs/community.html",
+    "template": "        <div class=\"fc-row\"><span style=\"color:var(--gray-700)\" data-el=\"Κόστος:\" data-en=\"Cost:\">Κόστος:</span><strong data-el=\"~{{server_monthly}} €/μήνα (στοιχεία 10.2026)\" data-en=\"~€{{server_monthly}}/month (as of 10.2026)\">~{{server_monthly}} €/μήνα (στοιχεία 10.2026)</strong></div>"
+  },
+  {
+    "path": "docs/community.html",
+    "template": "        <div class=\"fc-row\"><span>☁️ Hetzner CX43</span><strong data-el=\"{{server_monthly}} € × 12 = {{server_yearly}} €/έτος\" data-en=\"€{{server_monthly}} × 12 = €{{server_yearly}}/year\">{{server_monthly}} € × 12 = {{server_yearly}} €/έτος</strong></div>"
+  },
+  {
+    "path": "docs/community.html",
+    "template": "        <div class=\"fc-row\"><span>🌐 Domain</span><strong data-el=\"{{domain_yearly_el}} €/έτος\" data-en=\"€{{domain_yearly_en}}/year\">{{domain_yearly_el}} €/έτος</strong></div>"
+  },
+  {
+    "path": "docs/community.html",
+    "template": "        <div class=\"fc-acct-total zero\" style=\"font-size:0.7rem\"><span data-el=\"Πάγια EUR/έτος (10.2026):\" data-en=\"Recurring EUR/year (10.2026):\">Πάγια EUR/έτος (10.2026):</span><span data-el=\"~{{recurring_yearly_el}} €\" data-en=\"~€{{recurring_yearly_en}}\">~{{recurring_yearly_el}} €</span></div>"
+  },
+  {
+    "path": "docs/community.html",
+    "template": "  <p class=\"fade-in\" data-project-cost=\"basis\" data-el=\"Βάση κόστους {{cost_as_of}}: περίπου {{server_monthly}} EUR/μήνα για server και {{domain_yearly_el}} EUR/έτος για domain· περίπου {{recurring_yearly_el}} EUR/έτος μόνο για αυτά τα πάγια EUR. Πρόκειται για τη δημοσιευμένη εκτίμηση, όχι τιμολόγιο. Χωριστά: ετήσιες χρεώσεις λογαριασμών σε USD, εφάπαξ εγγραφή και χρεώσεις ανά χρήση (HLR, μετάφραση, αρχειοθέτηση). Δεν προκύπτει συνολικό ετήσιο ποσό χρήσης από το αποθετήριο. Οι προηγούμενες εκτιμήσεις έχουν αντικατασταθεί.\" data-en=\"Cost basis {{cost_as_of}}: about EUR {{server_monthly}}/month for the server and EUR {{domain_yearly_en}}/year for the domain; about EUR {{recurring_yearly_en}}/year for those recurring EUR costs only. This is the published estimate, not an invoice. Separate: annual USD account charges, one-time registration and usage charges (HLR, translation, archiving). A total annual usage cost cannot be derived from the repository. Previous estimates have been superseded.\">Βάση κόστους {{cost_as_of}}: περίπου {{server_monthly}} EUR/μήνα για server και {{domain_yearly_el}} EUR/έτος για domain· περίπου {{recurring_yearly_el}} EUR/έτος μόνο για αυτά τα πάγια EUR. Πρόκειται για τη δημοσιευμένη εκτίμηση, όχι τιμολόγιο. Χωριστά: ετήσιες χρεώσεις λογαριασμών σε USD, εφάπαξ εγγραφή και χρεώσεις ανά χρήση (HLR, μετάφραση, αρχειοθέτηση). Δεν προκύπτει συνολικό ετήσιο ποσό χρήσης από το αποθετήριο. Οι προηγούμενες εκτιμήσεις έχουν αντικατασταθεί.</p>"
+  },
+  {
+    "path": "docs/community.html",
+    "template": "      <div style=\"font-size:2rem;font-weight:900;color:var(--blue)\"><span data-el=\"~{{recurring_yearly_el}} €\" data-en=\"~€{{recurring_yearly_en}}\">~{{recurring_yearly_el}} €</span><span style=\"font-size:0.9rem;font-weight:600;color:var(--gray-500)\">/<span data-el=\"έτος\" data-en=\"year\">έτος</span></span></div>"
+  },
+  {
+    "path": "docs/community.html",
+    "template": "        <span style=\"color:var(--gray-700)\">🌐 Domain</span><strong style=\"color:var(--gray-900)\" data-el=\"{{domain_yearly_el}} €/έτος\" data-en=\"€{{domain_yearly_en}}/year\">{{domain_yearly_el}} €/έτος</strong>"
+  },
+  {
+    "path": "docs/wiki/database.html",
+    "template": "  <meta name=\"description\" content=\"Σχήμα βάσης δεδομένων ekklesia.gr — {{db_tables_orm}} πίνακες ORM, Alembic migrations, PostgreSQL 15.\"/>"
+  },
+  {
+    "path": "docs/wiki/database.html",
+    "template": "  <meta property=\"og:description\" content=\"Σχήμα βάσης δεδομένων ekklesia.gr — {{db_tables_orm}} πίνακες ORM, Alembic migrations, PostgreSQL 15.\"/>"
+  },
+  {
+    "path": "docs/wiki/database.html",
+    "template": "  <meta name=\"twitter:description\" content=\"Σχήμα βάσης δεδομένων ekklesia.gr — {{db_tables_orm}} πίνακες ORM, Alembic migrations, PostgreSQL 15.\"/>"
+  },
+  {
+    "path": "docs/llms.txt",
+    "template": "- Source snapshot {{as_of}}: {{modules_listed}} listed modules ({{modules_inactive}} inactive; numbering through MOD-{{modules_spec}}), {{api_endpoints}} API route decorators in {{api_routers}} routers, {{db_tables_orm}} ORM tables, {{prod_containers}} production Compose services (including the one-shot migrator; not a live container count). Definitions: https://ekklesia.gr/project-facts.json"
+  },
+  {
+    "path": "docs/llms.txt",
+    "template": "- Στοιχεία πηγαίου κώδικα {{as_of}}: {{modules_listed}} καταχωρισμένες ενότητες ({{modules_inactive}} ανενεργές· αρίθμηση έως MOD-{{modules_spec}}), {{api_endpoints}} δηλώσεις διαδρομών API σε {{api_routers}} routers, {{db_tables_orm}} πίνακες ORM, {{prod_containers}} υπηρεσίες production Compose (μαζί με τον migrator· όχι μέτρηση ενεργών κοντέινερ). Ορισμοί: https://ekklesia.gr/project-facts.json"
+  },
+  {
+    "path": "docs/wiki/faq.html",
+    "template": "    <div class=\"faq-a\"><p class=\"fade-in\" data-project-cost=\"basis\" data-el=\"Βάση κόστους {{cost_as_of}}: περίπου {{server_monthly}} EUR/μήνα για server και {{domain_yearly_el}} EUR/έτος για domain· περίπου {{recurring_yearly_el}} EUR/έτος μόνο για αυτά τα πάγια EUR. Πρόκειται για τη δημοσιευμένη εκτίμηση, όχι τιμολόγιο. Χωριστά: ετήσιες χρεώσεις λογαριασμών σε USD, εφάπαξ εγγραφή και χρεώσεις ανά χρήση (HLR, μετάφραση, αρχειοθέτηση). Δεν προκύπτει συνολικό ετήσιο ποσό χρήσης από το αποθετήριο. Οι προηγούμενες εκτιμήσεις έχουν αντικατασταθεί.\" data-en=\"Cost basis {{cost_as_of}}: about EUR {{server_monthly}}/month for the server and EUR {{domain_yearly_en}}/year for the domain; about EUR {{recurring_yearly_en}}/year for those recurring EUR costs only. This is the published estimate, not an invoice. Separate: annual USD account charges, one-time registration and usage charges (HLR, translation, archiving). A total annual usage cost cannot be derived from the repository. Previous estimates have been superseded.\">Βάση κόστους {{cost_as_of}}: περίπου {{server_monthly}} EUR/μήνα για server και {{domain_yearly_el}} EUR/έτος για domain· περίπου {{recurring_yearly_el}} EUR/έτος μόνο για αυτά τα πάγια EUR. Πρόκειται για τη δημοσιευμένη εκτίμηση, όχι τιμολόγιο. Χωριστά: ετήσιες χρεώσεις λογαριασμών σε USD, εφάπαξ εγγραφή και χρεώσεις ανά χρήση (HLR, μετάφραση, αρχειοθέτηση). Δεν προκύπτει συνολικό ετήσιο ποσό χρήσης από το αποθετήριο. Οι προηγούμενες εκτιμήσεις έχουν αντικατασταθεί.</p>"
+  },
+  {
+    "path": "docs/wiki/faq.html",
+    "template": "        \"text\": \"Βάση κόστους {{cost_as_of}}: περίπου {{server_monthly}} EUR/μήνα για server και {{domain_yearly_el}} EUR/έτος για domain· περίπου {{recurring_yearly_el}} EUR/έτος μόνο για αυτά τα πάγια EUR. Πρόκειται για τη δημοσιευμένη εκτίμηση, όχι τιμολόγιο. Χωριστά: ετήσιες χρεώσεις λογαριασμών σε USD, εφάπαξ εγγραφή και χρεώσεις ανά χρήση (HLR, μετάφραση, αρχειοθέτηση). Δεν προκύπτει συνολικό ετήσιο ποσό χρήσης από το αποθετήριο. Οι προηγούμενες εκτιμήσεις έχουν αντικατασταθεί. Ορισμοί και βάση κόστους · Δημοσιευμένη δήλωση 10.2026 Οι προαιρετικές δωρεές είναι προσωρινά σε παύση. Τα τρέχοντα κόστη και τα δημοσιευμένα υπόλοιπα παρουσιάζονται στη σελίδα community.html, μαζί με την ανακοίνωση παύσης. Τα επαναλαμβανόμενα, εφάπαξ και μεταβλητά κόστη παρουσιάζονται χωριστά. Ανακοίνωση παύσης δωρεών\""
+  },
+  {
+    "path": "docs/community.html",
+    "template": "        <div class=\"fc-row\"><span style=\"color:var(--gray-700)\" data-el=\"Κόστος:\" data-en=\"Cost:\">Κόστος:</span><strong>{{domain_yearly_el}}€/<span data-el=\"έτος\" data-en=\"year\">έτος</span> (24<span data-el=\"μ\" data-en=\"m\">μ</span>)</strong></div>"
+  },
+  {
+    "path": "docs/community.html",
+    "template": "        <span style=\"color:var(--gray-700)\">🖥️ Server</span><strong style=\"color:var(--gray-900)\" data-el=\"{{server_yearly}} €/έτος\" data-en=\"€{{server_yearly}}/year\">{{server_yearly}} €/έτος</strong>"
+  },
+  {
+    "path": "wiki/Whitepaper.md",
+    "template": "Βάση κόστους {{cost_as_of}}: περίπου {{server_monthly}} EUR/μήνα για server και {{domain_yearly_el}} EUR/έτος για domain· περίπου {{recurring_yearly_el}} EUR/έτος μόνο για αυτά τα πάγια EUR. Πρόκειται για τη δημοσιευμένη εκτίμηση, όχι τιμολόγιο. Χωριστά: ετήσιες χρεώσεις λογαριασμών σε USD, εφάπαξ εγγραφή και χρεώσεις ανά χρήση (HLR, μετάφραση, αρχειοθέτηση). Δεν προκύπτει συνολικό ετήσιο ποσό χρήσης από το αποθετήριο. Οι προηγούμενες εκτιμήσεις έχουν αντικατασταθεί."
+  },
+  {
+    "path": "wiki/Whitepaper.md",
+    "template": "Cost basis {{cost_as_of}}: about EUR {{server_monthly}}/month for the server and EUR {{domain_yearly_en}}/year for the domain; about EUR {{recurring_yearly_en}}/year for those recurring EUR costs only. This is the published estimate, not an invoice. Separate: annual USD account charges, one-time registration and usage charges (HLR, translation, archiving). A total annual usage cost cannot be derived from the repository. Previous estimates have been superseded."
+  }
+]

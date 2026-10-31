@@ -33,7 +33,8 @@ class ProjectFactsTest(unittest.TestCase):
 class ClaimMatcherTest(unittest.TestCase):
     """Exercise the production claims() on synthetic pages (markup, attributes, tables)."""
 
-    FACTS = {"counts": {"modules_spec": 25, "modules_listed": 23, "api_endpoints": 189,
+    FACTS = {"counts": {"modules_spec": 25, "modules_listed": 23, "modules_inactive": 2,
+                        "api_endpoints": 189, "api_routers": 32,
                         "db_tables_orm": 24, "prod_containers": 8}}
 
     def _run(self, text: str) -> list[tuple[str, str, str]]:
@@ -56,8 +57,18 @@ class ClaimMatcherTest(unittest.TestCase):
         self.assertIn(("prod_containers", "Containers: 9", "mismatch"), self._run("Containers: 9"))
 
     def test_lower_bound_and_accepted_values(self) -> None:
-        hits = self._run("70+ endpoints, 25 modules, 23 modules, 24 tables, 8 containers")
+        hits = self._run("70+ endpoints, 23 modules, 24 tables, 8 containers")
         self.assertEqual(hits, [("api_endpoints", "70+ endpoints", "lower-bound")])
+
+    def test_numbering_ceiling_is_not_a_module_count(self) -> None:
+        self.assertEqual(self._run("25 modules"), [("modules", "25 modules", "mismatch")])
+
+    def test_historical_claim_needs_visible_date(self) -> None:
+        self.assertEqual(self._run("Historical 2026-09-15: 188 endpoints"),
+                         [("api_endpoints", "188 endpoints", "historical")])
+        for text in ("Historical: 188 endpoints", "2026-09-15: 188 endpoints",
+                     '<p data-note="Historical 2026-09-15">188 endpoints</p>'):
+            self.assertEqual(self._run(text), [("api_endpoints", "188 endpoints", "mismatch")])
 
     def test_one_entry_per_claim_per_line(self) -> None:
         self.assertEqual(len(self._run('<p data-el="16 Endpoints">16 Endpoints</p>')), 1)

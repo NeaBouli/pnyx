@@ -226,6 +226,8 @@
   <a href="../" class="back-link" data-el="← Αρχική" data-en="← Home">← Αρχική</a>
 </div>
 <div class="layout">
+  <p class="fade-in" data-wiki-fact="identity-hashing" data-el="Στην παραγωγή (έλεγχος 2026-10-31) χρησιμοποιείται Argon2id v2 με άγκυρα συμβατότητας SHA-256· η προεπιλογή του κώδικα είναι v1. Το v2 απαιτεί IDENTITY_NULLIFIER_KDF_VERSION=v2 και τη στήλη nullifier_hash_v2. Τα nullifiers είναι εκδοσιοποιημένα· η άγκυρα SHA-256 διατηρεί συμβατότητα με παλαιότερες ταυτότητες. Το server salt παραμένει κρίσιμο μυστικό." data-en="Production uses Argon2id v2 with a SHA-256 compatibility anchor (checked 2026-10-31); the code default is v1. The v2 path requires IDENTITY_NULLIFIER_KDF_VERSION=v2 and the nullifier_hash_v2 column. Nullifiers are versioned; the SHA-256 anchor preserves compatibility with older identities. The server salt remains a critical secret.">Στην παραγωγή (έλεγχος 2026-10-31) χρησιμοποιείται Argon2id v2 με άγκυρα συμβατότητας SHA-256· η προεπιλογή του κώδικα είναι v1. Το v2 απαιτεί IDENTITY_NULLIFIER_KDF_VERSION=v2 και τη στήλη nullifier_hash_v2. Τα nullifiers είναι εκδοσιοποιημένα· η άγκυρα SHA-256 διατηρεί συμβατότητα με παλαιότερες ταυτότητες. Το server salt παραμένει κρίσιμο μυστικό.</p>
+  <p class="fade-in" data-wiki-fact="newsletter-email" data-el="Η συνηθισμένη συμμετοχή δεν απαιτεί email. Το προαιρετικό newsletter επεξεργάζεται email και προαιρετικό όνομα, με διπλή επιβεβαίωση εγγραφής, προτιμήσεις και στοιχεία συγκατάθεσης. Η διαγραφή ταυτότητας ψηφοφορίας δεν καταργεί την εγγραφή στο newsletter· χρησιμοποιήστε τη χωριστή κατάργηση εγγραφής." data-en="Ordinary participation requires no email. The optional newsletter processes an email and optional name, with double opt-in, preferences and consent records. Deleting a voting identity does not unsubscribe from the newsletter; use the separate unsubscribe process.">Η συνηθισμένη συμμετοχή δεν απαιτεί email. Το προαιρετικό newsletter επεξεργάζεται email και προαιρετικό όνομα, με διπλή επιβεβαίωση εγγραφής, προτιμήσεις και στοιχεία συγκατάθεσης. Η διαγραφή ταυτότητας ψηφοφορίας δεν καταργεί την εγγραφή στο newsletter· χρησιμοποιήστε τη χωριστή κατάργηση εγγραφής.</p>
 
   <h2 class="fade-in" data-el="Τρεις Χρυσοί Κανόνες" data-en="Three Golden Rules">Τρεις Χρυσοί Κανόνες</h2>
   <div class="card-grid fade-in">
@@ -237,12 +239,12 @@
     <div class="card" style="border-color:#93c5fd;background:var(--blue-l)">
       <div class="card-icon">🔑</div>
       <h4 style="color:var(--blue-d)" data-el="Private Key στη Συσκευή" data-en="Private Key on Device">Private Key στη Συσκευή</h4>
-      <p data-el="Server βλέπει μόνο public key" data-en="Server sees only public key">Server βλέπει μόνο public key</p>
+      <p data-el="Το ζεύγος Ed25519 δημιουργείται στον server και παραδίδεται μία φορά στη συσκευή. Το ιδιωτικό κλειδί δεν αποθηκεύεται ούτε καταγράφεται στον server." data-en="The Ed25519 pair is created on the server and handed to the device once. The private key is never stored or logged on the server.">Το ζεύγος Ed25519 δημιουργείται στον server και παραδίδεται μία φορά στη συσκευή. Το ιδιωτικό κλειδί δεν αποθηκεύεται ούτε καταγράφεται στον server.</p>
     </div>
     <div class="card" style="border-color:#fde047;background:#fefce8">
       <div class="card-icon">🔒</div>
       <h4 style="color:#854d0e">Server-Salted Hashing</h4>
-      <p>SHA256(data + SERVER_SALT). Το SERVER_SALT είναι κρίσιμο μυστικό.</p>
+      <p data-el="Παραγωγή (έλεγχος 2026-10-31): Argon2id v2 + άγκυρα συμβατότητας SHA-256· προεπιλογή κώδικα: v1" data-en="Production (checked 2026-10-31): Argon2id v2 + SHA-256 compatibility anchor; code default: v1">Παραγωγή (έλεγχος 2026-10-31): Argon2id v2 + άγκυρα συμβατότητας SHA-256· προεπιλογή κώδικα: v1</p>
     </div>
   </div>
 
@@ -266,7 +268,7 @@
   <div class="flow fade-in">
     <div class="fnode">+306xxx</div><div class="farr">→</div>
     <div class="fnode fnode-b">HLR</div><div class="farr">→</div>
-    <div class="fnode">SHA256</div><div class="farr">→</div>
+    <div class="fnode" data-el="Παραγωγή (έλεγχος 2026-10-31): Argon2id v2 + άγκυρα συμβατότητας SHA-256· προεπιλογή κώδικα: v1" data-en="Production (checked 2026-10-31): Argon2id v2 + SHA-256 compatibility anchor; code default: v1">Παραγωγή (έλεγχος 2026-10-31): Argon2id v2 + άγκυρα συμβατότητας SHA-256· προεπιλογή κώδικα: v1</div><div class="farr">→</div>
     <div class="fnode" style="border-color:var(--red);background:#fef2f2;color:#991b1b" data-el="Διαγράφεται" data-en="Deleted">Διαγράφεται</div><div class="farr">→</div>
     <div class="fnode fnode-g">Ed25519</div>
   </div>
@@ -290,7 +292,7 @@
       <tr><th data-el="Δεδομένο" data-en="Data">Δεδομένο</th><th data-el="Αποθηκεύεται;" data-en="Stored?">Αποθηκεύεται;</th><th>Format</th></tr>
       <tr><td data-el="Αριθμός κινητού" data-en="Phone number">Αριθμός κινητού</td><td style="color:var(--red);font-weight:700">❌</td><td data-el="Διαγράφεται αμέσως" data-en="Deleted immediately">Διαγράφεται αμέσως</td></tr>
       <tr><td>Private Key</td><td style="color:var(--red);font-weight:700">❌</td><td data-el="Μόνο client" data-en="Client only">Μόνο client</td></tr>
-      <tr><td>Identity Nullifiers</td><td style="color:var(--green);font-weight:700">✅</td><td data-el="Argon2id v2 + SHA256 compatibility anchor" data-en="Argon2id v2 + SHA256 compatibility anchor">Argon2id v2 + SHA256 compatibility anchor</td></tr>
+      <tr><td>Identity Nullifiers</td><td style="color:var(--green);font-weight:700">✅</td><td data-el="Παραγωγή (έλεγχος 2026-10-31): Argon2id v2 + άγκυρα συμβατότητας SHA-256· προεπιλογή κώδικα: v1" data-en="Production (checked 2026-10-31): Argon2id v2 + SHA-256 compatibility anchor; code default: v1">Παραγωγή (έλεγχος 2026-10-31): Argon2id v2 + άγκυρα συμβατότητας SHA-256· προεπιλογή κώδικα: v1</td></tr>
       <tr><td>Public Key</td><td style="color:var(--green);font-weight:700">✅</td><td>Ed25519 Hex</td></tr>
       <tr><td data-el="Ψήφοι" data-en="Votes">Ψήφοι</td><td style="color:var(--green);font-weight:700">✅</td><td>YES/NO/ABSTAIN</td></tr>
     </table>
@@ -341,7 +343,7 @@
 
   <figure class="ekk-visual-card ekk-visual-frame ekk-fade-up" style="margin:0 auto 2rem">
     <img src="../animations/svg/privacy-flow.svg"
-         alt="Ροή ιδιωτικότητας: τηλέφωνο διαγράφεται, αποθηκεύεται μόνο nullifier hash και δημόσιο κλειδί Ed25519"
+         alt="Ροή ιδιωτικότητας / Privacy flow: versioned nullifiers + Ed25519; no phone storage"
          loading="lazy" decoding="async">
   </figure>
 
@@ -404,7 +406,7 @@
       </tr>
       <tr>
         <td><span class="badge badge-yellow">Beta</span></td>
-        <td>HLR (+30, χωρίς SMS)</td>
+        <td data-el="HLR (+30, χωρίς SMS)" data-en="HLR (+30, no SMS)">HLR (+30, χωρίς SMS)</td>
         <td><strong>1.0x</strong></td>
         <td data-el="Κατάσταση ελληνικού αριθμού" data-en="Greek number status">Κατάσταση ελληνικού αριθμού</td>
         <td style="color:var(--red);font-weight:700" data-el="Δεν επαληθεύεται" data-en="Not verified">Δεν επαληθεύεται</td>

@@ -11,7 +11,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/NeaBouli/pnyx/actions/workflows/ci.yml/badge.svg)](https://github.com/NeaBouli/pnyx/actions)
-[![Modules](https://img.shields.io/badge/Modules-25-green)](https://ekklesia.gr/wiki/modules.html)
+[![Listed modules](https://img.shields.io/badge/Modules-23-green)](https://ekklesia.gr/wiki/modules.html)
 [![Open Source](https://img.shields.io/badge/Open%20Source-%E2%9D%A4-red)](https://github.com/NeaBouli/pnyx)
 
 **&copy; 2026 V-Labs IT Solutions & Development &mdash; MIT License**
@@ -80,7 +80,7 @@ This project uses publicly available government data from:
 ```
 pnyx/
 +-- apps/
-|   +-- api/          -> Python FastAPI  (70+ endpoints, 25 modules)
+|   +-- api/          -> Python FastAPI  (198 endpoints, 23 listed modules)
 |   +-- web/          -> Next.js 16      (el/en, Tailwind, light theme)
 |   +-- mobile/       -> Expo RN         (Android APK + Play Store)
 |   +-- dashboard/    -> Next.js 16      (Admin panel, GitHub OAuth)
@@ -88,14 +88,14 @@ pnyx/
 |   +-- representative/ -> Web app       (Role-based bill visibility)
 +-- packages/
 |   +-- crypto/       -> Ed25519, Nullifier, HMAC Chain (47 tests)
-|   +-- db/           -> Alembic Migrations (18+ tables)
+|   +-- db/           -> Alembic Migrations (24 ORM tables)
 +-- infra/
 |   +-- docker/       -> PostgreSQL, Redis, AI service, Traefik
 +-- docs/             -> Landing page + Wiki (14 pages) + Community
 ```
 
 ### Server Infrastructure (Hetzner CX43)
-- **11 containers**: API, Web, Dashboard, Monitor, DB, Redis, AI service, Docker-Proxy, VR, Test-Node, ekprosopos
+- **9 production Compose services**: DB, Redis, API, migrator, Web, assistant, Dashboard, Docker proxy, Monitor (configuration count, including the one-shot migrator; not a live deployment count)
 - **AI service**: 2.6 GB RAM, 5 GB limit
 - **Rate limiting**: SlowAPI defaults to 60 req/min/IP per endpoint on default-covered routes (for example `/health`), not on the public reads using `Depends(rate_limit_check)`. Those reads share 100 anonymous / 1000 valid-key requests per 60 seconds across participating endpoints ([client guide](docs/operations/PUBLIC_API_CLIENT_GUIDE.md)); AI endpoints have 5 req/min/IP. Configured Redis coordinates SlowAPI workers, while absent/unavailable Redis falls back to bounded per-process memory
 - **Circuit breaker**: 3 errors &rarr; 24h pause, auto-reset
@@ -175,12 +175,14 @@ New system-generated bill pills, short summaries, and forum first-post bodies ca
 
 ## Status
 
+Source snapshot **2026-10-31**: [generated facts and cost basis](docs/project-facts.json). Route decorators, ORM declarations and Compose services are source counts, not live deployment measurements.
+
 | Metric | Value |
 |---|---|
-| Modules | 25 (MOD-01 through MOD-25) |
-| API Endpoints | 70+ |
-| DB Tables | 18+ (Alembic managed) |
-| Containers | 11 |
+| Modules | 23 listed, 2 inactive; numbering through MOD-25 (MOD-13/MOD-17 absent) |
+| API Endpoints | 198 route decorators |
+| DB Tables | 24 ORM declarations (excludes migration-only tables) |
+| Production Compose services | 9 (includes migrator) |
 | CI | Green (Python API Tests + Crypto Package Tests) |
 | JSON-LD | 17 pages with structured data |
 
@@ -226,7 +228,7 @@ production rollout.
 | Document | Description |
 |---|---|
 | [Wiki](https://ekklesia.gr/wiki/) | Full technical documentation (14 pages) |
-| [API Docs](https://ekklesia.gr/wiki/api.html) | 70+ endpoints, all modules |
+| [API Docs](https://ekklesia.gr/wiki/api.html) | 198 endpoints, all modules |
 | [Follow-up API/Web deploy runbook](docs/operations/FOLLOWUP_API_WEB_DEPLOY_RUNBOOK_2026-10-10.md) | Documentation only, not executed, not a deploy approval: backup, y801 migration, smoke, rollback gates |
 | [Synthetic backup/restore drill](docs/operations/SYNTHETIC_BACKUP_RESTORE_DRILL.md) | Local synthetic PG15 dump/restore harness only; not a production backup, RPO/RTO or schema proof |
 | [Public API client guide](docs/operations/PUBLIC_API_CLIENT_GUIDE.md) | Shared public-read quota, separate default-covered routes; API-key and HTTP 429 handling |

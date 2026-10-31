@@ -225,6 +225,8 @@
   <a href="../" class="back-link" data-el="← Αρχική" data-en="← Home">← Αρχική</a>
 </div>
 <div class="layout">
+  <p class="fade-in" data-wiki-fact="identity-hashing" data-el="Στην παραγωγή (έλεγχος 2026-10-31) χρησιμοποιείται Argon2id v2 με άγκυρα συμβατότητας SHA-256· η προεπιλογή του κώδικα είναι v1. Το v2 απαιτεί IDENTITY_NULLIFIER_KDF_VERSION=v2 και τη στήλη nullifier_hash_v2. Τα nullifiers είναι εκδοσιοποιημένα· η άγκυρα SHA-256 διατηρεί συμβατότητα με παλαιότερες ταυτότητες. Το server salt παραμένει κρίσιμο μυστικό." data-en="Production uses Argon2id v2 with a SHA-256 compatibility anchor (checked 2026-10-31); the code default is v1. The v2 path requires IDENTITY_NULLIFIER_KDF_VERSION=v2 and the nullifier_hash_v2 column. Nullifiers are versioned; the SHA-256 anchor preserves compatibility with older identities. The server salt remains a critical secret.">Στην παραγωγή (έλεγχος 2026-10-31) χρησιμοποιείται Argon2id v2 με άγκυρα συμβατότητας SHA-256· η προεπιλογή του κώδικα είναι v1. Το v2 απαιτεί IDENTITY_NULLIFIER_KDF_VERSION=v2 και τη στήλη nullifier_hash_v2. Τα nullifiers είναι εκδοσιοποιημένα· η άγκυρα SHA-256 διατηρεί συμβατότητα με παλαιότερες ταυτότητες. Το server salt παραμένει κρίσιμο μυστικό.</p>
+  <p class="fade-in" data-wiki-fact="newsletter-email" data-el="Η συνηθισμένη συμμετοχή δεν απαιτεί email. Το προαιρετικό newsletter επεξεργάζεται email και προαιρετικό όνομα, με διπλή επιβεβαίωση εγγραφής, προτιμήσεις και στοιχεία συγκατάθεσης. Η διαγραφή ταυτότητας ψηφοφορίας δεν καταργεί την εγγραφή στο newsletter· χρησιμοποιήστε τη χωριστή κατάργηση εγγραφής." data-en="Ordinary participation requires no email. The optional newsletter processes an email and optional name, with double opt-in, preferences and consent records. Deleting a voting identity does not unsubscribe from the newsletter; use the separate unsubscribe process.">Η συνηθισμένη συμμετοχή δεν απαιτεί email. Το προαιρετικό newsletter επεξεργάζεται email και προαιρετικό όνομα, με διπλή επιβεβαίωση εγγραφής, προτιμήσεις και στοιχεία συγκατάθεσης. Η διαγραφή ταυτότητας ψηφοφορίας δεν καταργεί την εγγραφή στο newsletter· χρησιμοποιήστε τη χωριστή κατάργηση εγγραφής.</p>
 
   <div class="info-box fade-in">
     <p>Whitepaper v1.0 &mdash; &copy; 2026 V-Labs IT Solutions &amp; Development &mdash; MIT License</p>
@@ -249,7 +251,7 @@
   <div class="code-block fade-in">PNYX MONOREPO
 ├── Next.js 16 (Web)
 ├── Expo React Native (Mobile)
-├── FastAPI (Backend — 70+ endpoints, 25 modules)
+├── FastAPI (Backend — 198 endpoints, 23 listed modules)
 ├── PostgreSQL 15 + Redis 8.10
 └── packages/crypto (Ed25519, Nullifier)</div>
 
@@ -257,7 +259,7 @@
   <div class="flow fade-in">
     <div class="fnode">+306xxx</div><div class="farr">→</div>
     <div class="fnode fnode-b">HLR</div><div class="farr">→</div>
-    <div class="fnode">Argon2id v2</div><div class="farr">→</div>
+    <div class="fnode" data-el="Παραγωγή (έλεγχος 2026-10-31): Argon2id v2· προεπιλογή κώδικα: v1" data-en="Production (checked 2026-10-31): Argon2id v2; code default: v1">Παραγωγή (έλεγχος 2026-10-31): Argon2id v2· προεπιλογή κώδικα: v1</div><div class="farr">→</div>
     <div class="fnode" style="border-color:var(--red);background:#fef2f2;color:#991b1b">DELETE</div><div class="farr">→</div>
     <div class="fnode fnode-g">Ed25519</div>
   </div>
@@ -277,12 +279,16 @@
   <h2 class="fade-in" data-el="6. Δείκτης Απόκλισης" data-en="6. Divergence Score">6. Δείκτης Απόκλισης</h2>
   <div class="code-block fade-in"><span class="code-c"># Divergence Score</span>
 divergence = abs(citizen_yes_pct - (1.0 if authority_passed else 0.0))
-<span class="code-c"># 0.0 = πλήρης σύγκλιση / 1.0 = πλήρης απόκλιση
+<span class="code-c" data-el="# 0.0 = πλήρης σύγκλιση / 1.0 = πλήρης απόκλιση
+# Υπολογίζεται ΜΟΝΟ στο snapshot της στιγμής του Κοινοβουλευτικού Αποτελέσματος
+# Μετά (OPEN_END): η ψηφοφορία έχει κλείσει — τα αποτελέσματα παραμένουν ορατά και το snapshot αμετάβλητο" data-en="# 0.0 = full convergence / 1.0 = full divergence
+# Computed ONLY from the parliamentary-result snapshot
+# After OPEN_END: voting is closed; results remain visible and the snapshot is unchanged"># 0.0 = πλήρης σύγκλιση / 1.0 = πλήρης απόκλιση
 # Υπολογίζεται ΜΟΝΟ στο snapshot της στιγμής του Κοινοβουλευτικού Αποτελέσματος
 # Μετά (OPEN_END): η ψηφοφορία έχει κλείσει — τα αποτελέσματα παραμένουν ορατά και το snapshot αμετάβλητο</span></div>
 
   <h2 class="fade-in" data-el="7. Ιδιωτικότητα & GDPR" data-en="7. Privacy & GDPR">7. Ιδιωτικότητα &amp; GDPR</h2>
-  <div class="success-box fade-in"><p data-el="Ψευδώνυμα δεδομένα στον server (nullifier, δημόσιο κλειδί, ψήφοι)· ο αριθμός κινητού δεν αποθηκεύεται. Αποτελέσματα με λιγότερες από 10 ψήφους δεν εμφανίζονται δημόσια· αποκρύπτονται επίσης μικρές επιμέρους ομάδες. Το όριο μειώνει, αλλά δεν εξαλείφει, τον κίνδυνο επαναναγνώρισης. Servers Ευρώπη (Hetzner). Δεν αποτελεί βεβαίωση νομικής συμμόρφωσης." data-en="Pseudonymous data on the server (nullifier, public key, votes); the phone number is not stored. Results with fewer than 10 votes are not shown publicly; small subgroups are also withheld. The threshold reduces, but does not eliminate, re-identification risk. Servers Europe (Hetzner). Not a statement of legal compliance.">Ψευδώνυμα δεδομένα στον server· ο αριθμός κινητού δεν αποθηκεύεται. Αποτελέσματα με λιγότερες από 10 ψήφους δεν εμφανίζονται δημόσια· αποκρύπτονται επίσης μικρές επιμέρους ομάδες. Το όριο μειώνει, αλλά δεν εξαλείφει, τον κίνδυνο επαναναγνώρισης. Servers Ευρώπη. Δεν αποτελεί βεβαίωση νομικής συμμόρφωσης.</p></div>
+  <div class="success-box fade-in"><p data-el="Ψευδώνυμα δεδομένα στον server (nullifier, δημόσιο κλειδί, ψήφοι)· ο αριθμός κινητού δεν αποθηκεύεται. Αποτελέσματα με λιγότερες από 10 ψήφους δεν εμφανίζονται δημόσια· αποκρύπτονται επίσης μικρές επιμέρους ομάδες. Το όριο μειώνει, αλλά δεν εξαλείφει, τον κίνδυνο επαναναγνώρισης. Servers Ευρώπη. Δεν αποτελεί βεβαίωση νομικής συμμόρφωσης." data-en="Pseudonymous data on the server (nullifier, public key, votes); the phone number is not stored. Results with fewer than 10 votes are not shown publicly; small subgroups are also withheld. The threshold reduces, but does not eliminate, re-identification risk. Servers Europe. Not a statement of legal compliance.">Ψευδώνυμα δεδομένα στον server· ο αριθμός κινητού δεν αποθηκεύεται. Αποτελέσματα με λιγότερες από 10 ψήφους δεν εμφανίζονται δημόσια· αποκρύπτονται επίσης μικρές επιμέρους ομάδες. Το όριο μειώνει, αλλά δεν εξαλείφει, τον κίνδυνο επαναναγνώρισης. Servers Ευρώπη. Δεν αποτελεί βεβαίωση νομικής συμμόρφωσης.</p></div>
 
   <h2 class="fade-in" data-el="8. Στρατηγική" data-en="8. Strategy">8. Στρατηγική</h2>
   <div class="info-box fade-in"><p data-el="Legitimacy before deployment. Ανοιχτός κώδικας = στρατηγική προστασία. Κανείς δεν μπορεί να κατηγορήσει αυτό που ελέγχει ο καθένας." data-en="Legitimacy before deployment. Open source = strategic protection.">Legitimacy before deployment. Open source = στρατηγική προστασία.</p></div>
@@ -295,7 +301,8 @@ divergence = abs(citizen_yes_pct - (1.0 if authority_passed else 0.0))
     <div class="fnode fnode-p">COMMUNITY</div>
   </div>
 
-  <h2 class="fade-in" data-el="10. TrueRepublic (προγραμματισμένο)" data-en="10. TrueRepublic (planned)">10. TrueRepublic (προγραμματισμένο)</h2>
+  <h2 class="fade-in" data-el="10. Μελλοντική γέφυρα (προγραμματισμένη, ανενεργή)" data-en="10. Future bridge (planned, inactive)">10. Μελλοντική γέφυρα (προγραμματισμένη, ανενεργή)</h2>
+  <p data-el="Η μελλοντική γέφυρα αλυσίδας είναι προγραμματισμένη και ανενεργή· δεν έχει τρέχον αναγνωριστικό ενότητας. Το MOD-08 είναι η ενότητα αρχειοθέτησης Arweave." data-en="The future chain bridge is planned and inactive; it has no current module ID. MOD-08 is the Arweave archive module.">Η μελλοντική γέφυρα αλυσίδας είναι προγραμματισμένη και ανενεργή· δεν έχει τρέχον αναγνωριστικό ενότητας. Το MOD-08 είναι η ενότητα αρχειοθέτησης Arweave.</p>
   <div class="flow fade-in">
     <div class="fnode fnode-b">Ekklesia Identity</div><div class="farr">→</div>
     <div class="fnode">ZK-Proof</div><div class="farr">→</div>
@@ -304,15 +311,8 @@ divergence = abs(citizen_yes_pct - (1.0 if authority_passed else 0.0))
   </div>
 
   <h2 class="fade-in" data-el="11. Οικονομικό Μοντέλο" data-en="11. Economic Model">11. Οικονομικό Μοντέλο</h2>
-  <div class="table-wrap fade-in">
-    <table>
-      <tr><th data-el="Κόστος" data-en="Cost">Κόστος</th><th data-el="Ποσό" data-en="Amount">Ποσό</th></tr>
-      <tr><td>Server (Hetzner)</td><td>84€/έτος</td></tr>
-      <tr><td>Domain (ekklesia.gr)</td><td>9,30€/έτος</td></tr>
-      <tr><td data-el="Ανάπτυξη" data-en="Development">Ανάπτυξη</td><td data-el="100% Εθελοντική" data-en="100% Volunteer">100% Εθελοντική</td></tr>
-      <tr><td><strong data-el="Σύνολο" data-en="Total">Σύνολο</strong></td><td><strong>~93,30€/έτος</strong></td></tr>
-    </table>
-  </div>
+  <p class="fade-in" data-project-cost="basis" data-el="Βάση κόστους 2026-10: περίπου 25 EUR/μήνα για server και 9,30 EUR/έτος για domain· περίπου 309,30 EUR/έτος μόνο για αυτά τα πάγια EUR. Πρόκειται για τη δημοσιευμένη εκτίμηση, όχι τιμολόγιο. Χωριστά: ετήσιες χρεώσεις λογαριασμών σε USD, εφάπαξ εγγραφή και χρεώσεις ανά χρήση (HLR, μετάφραση, αρχειοθέτηση). Δεν προκύπτει συνολικό ετήσιο ποσό χρήσης από το αποθετήριο. Οι προηγούμενες εκτιμήσεις έχουν αντικατασταθεί." data-en="Cost basis 2026-10: about EUR 25/month for the server and EUR 9.30/year for the domain; about EUR 309.30/year for those recurring EUR costs only. This is the published estimate, not an invoice. Separate: annual USD account charges, one-time registration and usage charges (HLR, translation, archiving). A total annual usage cost cannot be derived from the repository. Previous estimates have been superseded.">Βάση κόστους 2026-10: περίπου 25 EUR/μήνα για server και 9,30 EUR/έτος για domain· περίπου 309,30 EUR/έτος μόνο για αυτά τα πάγια EUR. Πρόκειται για τη δημοσιευμένη εκτίμηση, όχι τιμολόγιο. Χωριστά: ετήσιες χρεώσεις λογαριασμών σε USD, εφάπαξ εγγραφή και χρεώσεις ανά χρήση (HLR, μετάφραση, αρχειοθέτηση). Δεν προκύπτει συνολικό ετήσιο ποσό χρήσης από το αποθετήριο. Οι προηγούμενες εκτιμήσεις έχουν αντικατασταθεί.</p>
+  <p><a href="../project-facts.json" data-el="Ορισμοί και βάση κόστους" data-en="Definitions and cost basis">Ορισμοί και βάση κόστους</a> · <a href="../community.html" data-el="Δημοσιευμένη δήλωση 10.2026" data-en="Published statement 10.2026">Δημοσιευμένη δήλωση 10.2026</a></p>
 
   <h2 class="fade-in" data-el="12. Νομικό Πλαίσιο" data-en="12. Legal Framework">12. Νομικό Πλαίσιο</h2>
   <div class="warn-box fade-in"><p data-el="Η Ekklesia.gr ΔΕΝ είναι νομικά δεσμευτική ψηφοφορία. MIT License © 2026 V-Labs IT Solutions &amp; Development." data-en="Ekklesia.gr is NOT a legally binding vote. MIT License © 2026 V-Labs IT Solutions &amp; Development.">⚠️ Η Ekklesia.gr ΔΕΝ είναι νομικά δεσμευτική ψηφοφορία. MIT License &copy; 2026 V-Labs IT Solutions &amp; Development.</p></div>

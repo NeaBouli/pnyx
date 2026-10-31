@@ -67,7 +67,8 @@ ekklesia.gr (εκκλησία του έθνους) is an independent civic initi
 
 ## Status
 
-- Tier 1: Active (25 modules, 11+ containers)
+- Source snapshot 2026-10-31: 23 listed modules (2 inactive; numbering through MOD-25), 198 API route decorators in 32 routers, 24 ORM tables, 9 production Compose services (including the one-shot migrator; not a live container count). Definitions: https://ekklesia.gr/project-facts.json
+- Στοιχεία πηγαίου κώδικα 2026-10-31: 23 καταχωρισμένες ενότητες (2 ανενεργές· αρίθμηση έως MOD-25), 198 δηλώσεις διαδρομών API σε 32 routers, 24 πίνακες ORM, 9 υπηρεσίες production Compose (μαζί με τον migrator· όχι μέτρηση ενεργών κοντέινερ). Ορισμοί: https://ekklesia.gr/project-facts.json
 - Newsletter: Brevo + Telegram cross-publish
 - Monitor: 3-tier self-healing (API recovery, Docker restart, Telegram escalation)
 - ZK Voting V2: Semaphore-based; guarded Parliament voting and ZK Arweave publication paused since 2026-10-03 for a security review. No new ZK votes are accepted during the pause; ordinary Tier-1 voting continues

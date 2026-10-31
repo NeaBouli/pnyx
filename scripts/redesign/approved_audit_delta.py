@@ -4,6 +4,26 @@ import hashlib
 
 import r0_inventory
 
+# B09/B10 (user-requested, 2026-10-31): dated source counts/cost basis in the
+# landing, community, wiki index, API/database/modules metadata and whitepaper;
+# audit's 188 endpoints explicitly labelled historical (2026-09-15); FAQ cost
+# answer and JSON-LD; canonical privacy identity/newsletter facts mirrored in
+# security, whitepaper and database; security's server-generated one-time key
+# handoff and Argon2id v2 + compatibility anchor; planned/inactive future bridge
+# with no runtime module ID. Privacy/whitepaper hosting wording stays generic.
+# PR #728 fix (operator-approved 2026-10-31): production Argon2id v2 is
+# dated 2026-10-31, conditional on the v2 setting/column; code defaults to v1.
+# Apply that scope in the shared paragraph and every security/whitepaper label.
+# Move the audit date immediately before its 188-endpoint claim (EL/EN), so
+# historical exemptions cannot cover a neighbouring router/current claim.
+# The approved planned bridge remains unchanged.
+# Exact fingerprints below protect all of these visible deltas and existing
+# interactions. The immutable R0 inventory is not regenerated.
+APPROVED_LANDING_FACT_REPLACEMENTS = {
+    ("13 Πίνακες, Schema", "13 Tables, Schema"):
+        ("24 πίνακες ORM, Schema", "24 ORM tables, Schema"),
+}
+
 # Exact inventory hashes, recomputed from the combined tree (T-434). Layers:
 # EKA audit disclosure (index/security); EKA-37 API rows and vote example
 # corrected against OpenAPI (api); T-419 / EKA-38 F-Droid availability sentence
@@ -82,25 +102,25 @@ import r0_inventory
 # T-9149: deferred script/listener migration; public copy and JSON-LD are unchanged.
 # T-9172: Direct APK copy is v1.0.37/vC66 in EL/EN/FAQ JSON-LD; Play stays vC62.
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/community.html": "7c3ee41c1c683502c28e6325641d782ab3d4a5a62cb26f45103b291e756641cf",  # T-9153: paused donations; neutral Arweave tooltip, no acquisition prompts or exchange links
-    "docs/wiki/api.html": "b71c6b05a81ed5e9065981258496dac8aa5c7bd9a8c99c21a4dced2b570cf910",  # B01 / PR #706: explicit read/heavy/generate classes and bounded work
+    "docs/community.html": "c4b86025530dfb7f79efefe3d39af6e5e40b40771343de6cd20d26abceebc662",  # T-9153: paused donations; neutral Arweave tooltip, no acquisition prompts or exchange links
+    "docs/wiki/api.html": "85c11c8e1186fc6fde591793cafa662a09926205d95226125fd4afa86c85b5f7",  # B01 / PR #706: explicit read/heavy/generate classes and bounded work
     "docs/wiki/architecture.html": "4afb91b2dcee4ce3ce136746205cd9669916ae7aea7f4b2dd46f531cf153b920",
     "docs/wiki/broadcasting.html": "13f44b28b80bd7eda2f354db950597103a36d567aa4dfa967d6137f4b78fd23c",
     "docs/wiki/contributing.html": "ce5f0381727ea54d45929c4d919150dc90a2d8c772505d5d17241c90165c257f",
-    "docs/wiki/database.html": "ff940bb48b858808eaf0205348c164dc3578b6411acab6a31d8da1919584907c",
+    "docs/wiki/database.html": "221900a3a53767262512e6f23b7c124df006c9287d81f56f86840150ed9b4900",
     "docs/wiki/delete-account.html": "a62e22bd83f648660cb5b53d3beaf25f0c0270e50b722459278f87391e14cacd",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
-    "docs/wiki/faq.html": "244038fd06dbd35afe139986b63800a65a800c3db09d0eb3b7ec5c7c1254ede5",  # T-9153: paused donations; HLR information and FAQ EL/EN/JSON-LD
-    "docs/wiki/index.html": "ce6fc4609b273cd42529b0c2b7bd7a4f5ab750b0c3d60d6396beb5946cff7eb2",  # T-9047/T-9048: named code region, contrast, headings and document language; T-9106: legal-modal claims text
-    "docs/wiki/modules.html": "34162f6c9aef8312098670c16ca47a379721ed460bec6b4837e6b33b3925c0fe",  # T-9148: reviewed EL/EN AI wording
-    "docs/wiki/privacy.html": "6aa3ee5d54142d0e995e814552ff5e7df5e532fa247e55374b5719111ff06a16",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
+    "docs/wiki/faq.html": "61556df675fd43a764de2fff92d0893ba69a369505d9508d7a5ad1532718b703",  # T-9153: paused donations; HLR information and FAQ EL/EN/JSON-LD
+    "docs/wiki/index.html": "ad0c2211c3787564029b42214b5c979adfc643ebd07f339585117d0e3bcd3ee1",  # T-9047/T-9048: named code region, contrast, headings and document language; T-9106: legal-modal claims text
+    "docs/wiki/modules.html": "dee125fdcee6c374909982e6559fe913a08e9a286c9422f189631254af4321a5",  # T-9148: reviewed EL/EN AI wording
+    "docs/wiki/privacy.html": "8f41fb87b6a8c53a52721b8c386134b14f3225bce6cae747fca539ea71034412",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
     "docs/wiki/roadmap.html": "c81071d697e2a626945d2274fb417195b77330194d49d8f9b532711a47d5850c",
-    "docs/wiki/security.html": "db0a3e2046d2f6569731127d3a898aa67c24471ecfe92f8fd662c1489c443cfe",  # T-9127: OPEN_END voting closed
-    "docs/wiki/whitepaper.html": "009c4c386deb53afe0dd176dedf0eb9e16f60708b7ca8dd18e516cdf8e5140af",  # T-9127: OPEN_END voting closed
+    "docs/wiki/security.html": "bae405a791e025495cccf82f34c35fe11f33c613190d98af6308645843a4349c",  # T-9127: OPEN_END voting closed
+    "docs/wiki/whitepaper.html": "01903972f484ef5627d94290e353af5dfdbe5d5ffc6a343a442bf0ae80c66802",  # T-9127: OPEN_END voting closed
     "docs/wiki/zk-voting.html": "650a3e85f98db88751c2702229eb016cc722206758da1a03fa7af73e5914af9c",
 }
 # T-420/T-421: footer target and hreflang; B17: canonical legal-name attribution.
 # Published finding counts and finding text are unchanged.
-APPROVED_AUDIT_PAGE_SHA256 = "c287a2e116f0d7ec9c2a0e773ef9a5b167cc8e42aa903d243901f24ec99966d6"
+APPROVED_AUDIT_PAGE_SHA256 = "a8a0d507ada4ba294efa387e81eef5e6656d694cd2ae2e0c1a4a4e0bfb43c93d"
 
 
 def matches_approved_content(path: str, current: dict) -> bool:

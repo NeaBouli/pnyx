@@ -5,14 +5,19 @@ Counts are derived from source, so every published number can cite one dated art
 
     python3 scripts/project_facts.py --write    regenerate docs/project-facts.json
     python3 scripts/project_facts.py --check    fail if the committed artifact is stale (CI)
-    python3 scripts/project_facts.py --claims   report published count claims that disagree (heuristic, see claims())
+    python3 scripts/project_facts.py --claims   fail on unlabelled conflicting/imprecise claims
+    python3 scripts/project_facts.py --check-consumers   CI consumer drift gate
+    python3 scripts/project_facts.py --update-consumers  refresh registered public copy
 
 Standard library only. Definitions are fixed in ``DEFINITIONS`` so pages can quote them.
 """
 from __future__ import annotations
 
 import argparse
+import ast
 import json
+from html import unescape
+from html.parser import HTMLParser
 import re
 import sys
 from pathlib import Path
@@ -23,6 +28,8 @@ MAIN = ROOT / "apps" / "api" / "main.py"
 ROUTERS = ROOT / "apps" / "api" / "routers"
 MODELS = ROOT / "apps" / "api" / "models.py"
 COMPOSE_PROD = ROOT / "infra" / "docker" / "docker-compose.prod.yml"
+AS_OF = "2026-10-31"
+CONSUMERS = ROOT / "scripts" / "project_fact_consumers.json"
 
 DEFINITIONS = {
     "modules_spec": "Highest module number in the /health module list (MOD-01 … MOD-NN).",
@@ -69,7 +76,25 @@ def compute() -> dict[str, object]:
     endpoints = sum(routed.values()) + len(ROUTE_RE.findall(main_text))
     tables = re.findall(r"__tablename__\s*=\s*[\"']([^\"']+)[\"']", MODELS.read_text(encoding="utf-8"))
     services = compose_services(COMPOSE_PROD.read_text(encoding="utf-8"))
+    # Read constants without importing application code or its environment.
+    payments = ast.parse((ROOT / "apps/api/routers/payments.py").read_text(encoding="utf-8"))
+    costs = {node.targets[0].id: ast.literal_eval(node.value) for node in payments.body
+             if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name)
+             and node.targets[0].id in {"SERVER_COST_MONTHLY", "DOMAIN_COST_YEARLY"}}
+    monthly, domain = costs["SERVER_COST_MONTHLY"], costs["DOMAIN_COST_YEARLY"]
     return {
+        "as_of": AS_OF,
+        "cost_basis": {
+            "as_of": "2026-10",
+            "statement": "docs/community.html (October 2026 operator estimate, not an invoice)",
+            "config_source": "apps/api/routers/payments.py: SERVER_COST_MONTHLY, DOMAIN_COST_YEARLY",
+            "recurring_eur": {"server_monthly": monthly, "domain_yearly": domain,
+                              "server_and_domain_yearly": round(monthly * 12 + domain, 2)},
+            "other_recurring": "Separate USD annual account charge in the dated community statement; excluded from EUR subtotal; current invoice needs operator confirmation.",
+            "usage_dependent": "HLR, translation and archival publication depend on usage, plan and funding; no current annual total is derivable from the repo.",
+            "one_time": "Separate USD registration charge in the community statement; excluded from recurring totals.",
+            "historical": "Superseded EUR 93.30/year and EUR 200–300/year estimates are recorded in EKA_STATUS_2026-10-23.md (EKA-39); neither is a current cost basis.",
+        },
         "definitions": DEFINITIONS,
         "counts": {
             "modules_spec": max(numbers),
@@ -91,24 +116,63 @@ def render(facts: dict[str, object]) -> str:
     return json.dumps(facts, indent=2, ensure_ascii=False, sort_keys=True) + "\n"
 
 
-# Published count claims in EL/EN: "<n> <noun>", "<noun>: <n>" or a "| <noun> | <n> |" table row. HTML tags are
-# stripped first so "<strong>22</strong> Modules" is seen as "22 Modules".
-NOUN = (r"(modules?|module|ενότητες|ενοτήτων|endpoints?|tables?|πίνακες|πινάκων|"
-        r"containers?|κοντέινερ)")
-CLAIM_RES = [
-    re.compile(r"(\d+)(\+?)\s*" + NOUN, re.IGNORECASE),
-    # "Containers: 9", "Containers = 9" and Markdown table cells "| Containers | 11 |"
-    re.compile(NOUN + r"\s*(?:[:=]|\|)\s*(\d+)(\+?)", re.IGNORECASE),
-]
-CLAIM_KIND = {
-    "module": "modules", "modules": "modules", "ενότητες": "modules", "ενοτήτων": "modules",
-    "endpoint": "api_endpoints", "endpoints": "api_endpoints",
-    "table": "db_tables_orm", "tables": "db_tables_orm", "πίνακες": "db_tables_orm", "πινάκων": "db_tables_orm",
-    "container": "prod_containers", "containers": "prod_containers", "κοντέινερ": "prod_containers",
+# Qualified public EL/EN count phrases, including the llms snapshot vocabulary.
+CLAIM_NOUNS = {
+    "modules": r"(?:(?:listed|inactive|disabled|deferred)\s+)?modules?|(?:(?:καταχωρισμένες|ανενεργές)\s+)?ενότητες|ενοτήτων",
+    "api_endpoints": r"(?:API\s+)?route\s+decorators?|endpoints?|δηλώσεις\s+διαδρομών(?:\s+API)?",
+    "api_routers": r"routers?",
+    "db_tables_orm": r"(?:ORM\s+)?tables?|πίνακες(?:\s+ORM)?|πινάκων",
+    "prod_containers": r"(?:production\s+)?Compose\s+services|υπηρεσίες\s+(?:production\s+)?Compose|containers?|κοντέινερ",
 }
+NOUN = "(?:" + "|".join(CLAIM_NOUNS.values()) + ")"
+CLAIM_RES = [
+    re.compile(r"(?P<num>\d+)(?P<plus>\+?)\s*(?P<noun>" + NOUN + r")\b", re.IGNORECASE),
+    re.compile(r"\b(?P<noun>" + NOUN + r")\s*(?:[:=]|\|)\s*(?P<num>\d+)(?P<plus>\+?)", re.IGNORECASE),
+]
 TAG_RE = re.compile(r"<[^>]+>")
-# Pages that quote dated audit figures; reported, but not counted as current claims.
-HISTORICAL = {"docs/wiki/audit.html"}
+HISTORICAL_RE = re.compile(r"(?:historical|ιστορικ\w*)[^;·.!?\n]*?\b20\d{2}-\d{2}-\d{2}\b", re.IGNORECASE)
+INACTIVE_RE = re.compile(r"\b(?:inactive|disabled|deferred|ανενεργές)\b", re.IGNORECASE)
+CLAUSE_BOUNDARY_RE = re.compile(r"[;·.!?\n]|\b(?:current(?:ly)?|today|now|τρέχ\w*|σημεριν\w*|σήμερα|τώρα)\b", re.IGNORECASE)
+
+
+class ClaimTextParser(HTMLParser):
+    """Keep translated attributes, metadata and visible prose in separate runs.
+
+    Inline tags may split a number from its noun; block tags end a run. Dates
+    in an attribute can never exempt the visible text or another translation.
+    """
+    BLOCKS = {"p", "div", "li", "tr", "td", "th", "section", "article", "meta",
+              "h1", "h2", "h3", "h4", "h5", "h6", "br", "script", "style"}
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.runs = []
+        self.parts = []
+        self.line = 1
+
+    def flush(self):
+        if self.parts:
+            self.runs.append((self.line, " ".join(self.parts), True))
+            self.parts = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag in self.BLOCKS:
+            self.flush()
+        for key, value in attrs:
+            if value:
+                self.runs.append((self.getpos()[0], TAG_RE.sub(" ", unescape(value)), key in {"data-el", "data-en"}))
+
+    def handle_endtag(self, tag):
+        if tag in self.BLOCKS:
+            self.flush()
+
+    def handle_data(self, data):
+        for offset, text in enumerate(data.split("\n")):
+            line = self.getpos()[0] + offset
+            if line != self.line:
+                self.flush()
+                self.line = line
+            self.parts.append(text)
 
 
 def claim_paths() -> list[Path]:
@@ -119,41 +183,95 @@ def claim_paths() -> list[Path]:
 
 
 def claims(facts: dict[str, object], paths: list[Path] | None = None) -> list[tuple[str, int, str, str, str]]:
-    """Return (path, line, kind, text, class) for published counts that differ from the facts.
+    """Return differing claims, exempting only a dated claim in its own locale.
 
-    class: "mismatch" (exact number that differs), "lower-bound" (e.g. "70+", true but
-    imprecise when the fact is larger) or "historical" (dated audit quotes). One entry per
-    distinct claim per line. Heuristic: a count is only detected next to one of the listed
-    nouns ("<n> <noun>", "<noun>: <n>", "| <noun> | <n> |"); other phrasings (e.g. "32 routers",
-    "two dozen tables", a number in a different table column) are not detected.
+    A historical label applies to the next count in the same clause/locale,
+    even when that count already agrees with the facts. Subset module counts
+    use their own bound (or exact inactive count), never the global total.
     """
     counts = facts["counts"]
-    accepted = {
-        "modules": {counts["modules_spec"], counts["modules_listed"]},
-        "api_endpoints": {counts["api_endpoints"]},
-        "db_tables_orm": {counts["db_tables_orm"]},
-        "prod_containers": {counts["prod_containers"]},
-    }
+    accepted = {**{k: {counts[k]} for k in
+                   ("api_endpoints", "db_tables_orm", "prod_containers")},
+                "modules": {counts["modules_listed"]},
+                "api_routers": {counts["api_routers"]}}
     out: list[tuple[str, int, str, str, str]] = []
     for path in (claim_paths() if paths is None else paths):
-        for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-            seen: set[tuple[str, int, str]] = set()
-            # Raw line catches attribute text (meta content, data-el/data-en); the
-            # tag-stripped line catches numbers split from their noun by markup.
-            for pattern, text in ((p, t) for t in (line, TAG_RE.sub(" ", line)) for p in CLAIM_RES):
-                for m in pattern.finditer(text):
-                    groups = m.groups()
-                    num, plus, noun = (groups[0], groups[1], groups[2]) if groups[0].isdigit() else (groups[1], groups[2], groups[0])
-                    kind = CLAIM_KIND.get(noun.lower())
-                    value = int(num)
-                    if not kind or value in accepted[kind] or (kind, value, plus) in seen:
-                        continue
-                    seen.add((kind, value, plus))
-                    lower_ok = plus == "+" and value <= max(accepted[kind])
-                    rel = str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path)
-                    cls = "historical" if rel in HISTORICAL else ("lower-bound" if lower_ok else "mismatch")
-                    out.append((rel, lineno, kind, " ".join(m.group(0).split()), cls))
+        parser = ClaimTextParser()
+        parser.feed(path.read_text(encoding="utf-8"))
+        parser.flush()
+        seen = set()
+        for lineno, text, visible in parser.runs:
+            matches = sorted((m for p in CLAIM_RES for m in p.finditer(text)), key=lambda m: m.start())
+            previous_end = 0
+            for m in matches:
+                noun, num, plus = m["noun"], m["num"], m["plus"]
+                kind = next(k for k, pattern in CLAIM_NOUNS.items() if re.fullmatch(pattern, noun, re.IGNORECASE))
+                prefix = text[previous_end:m.start()]
+                previous_end = m.end()
+                label = HISTORICAL_RE.search(prefix) if visible else None
+                historical = label and not CLAUSE_BOUNDARY_RE.search(prefix[label.end():])
+                values = accepted[kind]
+                if kind == "modules":
+                    suffix = text[m.end():]
+                    if INACTIVE_RE.search(noun) or re.match(r"\s+(?:disabled|inactive|deferred|ανενεργές)\b", suffix, re.IGNORECASE):
+                        values = {counts["modules_inactive"]}
+                    elif re.search(r"(?:including|of which|περιλαμβάνονται|από τις οποίες)\s*$", prefix, re.IGNORECASE):
+                        values = range(counts["modules_listed"] + 1)
+                value = int(num)
+                if value in values and not plus:
+                    continue
+                lower_ok = plus == "+" and value <= max(values)
+                cls = "historical" if historical else ("lower-bound" if lower_ok else "mismatch")
+                identity = (lineno, kind, value, plus, cls)
+                if identity in seen:
+                    continue
+                seen.add(identity)
+                rel = str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path)
+                out.append((rel, lineno, kind, " ".join(m.group(0).split()), cls))
     return out
+
+
+TOKEN_RE = re.compile(r"\{\{([a-z0-9_]+)\}\}")
+
+
+def consumer_values(facts: dict) -> dict[str, str]:
+    costs = facts["cost_basis"]["recurring_eur"]
+    return {**{k: str(v) for k, v in facts["counts"].items()},
+            "as_of": facts["as_of"], "cost_as_of": facts["cost_basis"]["as_of"],
+            "server_monthly": f'{costs["server_monthly"]:g}',
+            "server_yearly": f'{costs["server_monthly"] * 12:g}',
+            "domain_yearly_en": f'{costs["domain_yearly"]:.2f}',
+            "domain_yearly_el": f'{costs["domain_yearly"]:.2f}'.replace(".", ","),
+            "recurring_yearly_en": f'{costs["server_and_domain_yearly"]:.2f}',
+            "recurring_yearly_el": f'{costs["server_and_domain_yearly"]:.2f}'.replace(".", ",")}
+
+
+def consumer_errors(facts: dict, *, update: bool = False, root: Path = ROOT,
+                    specs: list[dict] | None = None) -> list[str]:
+    """Check exact rendered lines, including EL/EN, metadata and separated metric cards.
+
+    The registry contains prose/templates, never an independent copy of a count.
+    Missing/duplicated lines fail closed. Updates replace only known numeric slots.
+    The broader claims scan also rejects new, unregistered conflicting claims.
+    """
+    values = consumer_values(facts)
+    errors = []
+    for spec in json.loads(CONSUMERS.read_text()) if specs is None else specs:
+        path = root / spec["path"]
+        source = path.read_text(encoding="utf-8")
+        template = spec["template"]
+        expected = TOKEN_RE.sub(lambda m: values[m[1]], template)
+        pattern = "^" + "[^\\n]*?".join(re.escape(s) for s in TOKEN_RE.split(template)[::2]) + "$"
+        matches = list(re.finditer(pattern, source, re.MULTILINE))
+        if len(matches) != spec.get("occurrences", 1):
+            errors.append(f'{spec["path"]}: missing/duplicated consumer: {expected.strip()[:100]}')
+        elif any(m[0] != expected for m in matches):
+            if update:
+                source = re.sub(pattern, lambda _: expected, source, flags=re.MULTILINE)
+                path.write_text(source, encoding="utf-8")
+            else:
+                errors.append(f'{spec["path"]}: consumer drift: {expected.strip()[:100]}')
+    return errors
 
 
 def main(argv: list[str]) -> int:
@@ -162,6 +280,8 @@ def main(argv: list[str]) -> int:
     mode.add_argument("--write", action="store_true")
     mode.add_argument("--check", action="store_true")
     mode.add_argument("--claims", action="store_true")
+    mode.add_argument("--check-consumers", action="store_true")
+    mode.add_argument("--update-consumers", action="store_true")
     args = parser.parse_args(argv)
     facts = compute()
     if args.write:
@@ -175,13 +295,24 @@ def main(argv: list[str]) -> int:
             return 1
         print(f"project facts ok: {facts['counts']}")
         return 0
+    if args.check_consumers or args.update_consumers:
+        errors = consumer_errors(facts, update=args.update_consumers)
+        if args.check_consumers and (not ARTIFACT.exists() or ARTIFACT.read_text() != render(facts)):
+            errors.append("project-facts.json is stale; run --write")
+        for error in errors:
+            print(error, file=sys.stderr)
+        if errors:
+            return 1
+        if args.update_consumers:
+            print("updated project fact consumers; run scripts/wiki_publish.py --write next")
+            return 0
     found = claims(facts)
     for path, lineno, kind, text, cls in found:
         print(f"{path}:{lineno}: {kind}: {cls}: {text!r}")
     lines = {(p, n) for p, n, *_ in found}
     by = {c: sum(1 for *_, x in found if x == c) for c in ("mismatch", "lower-bound", "historical")}
     print(f"{len(found)} distinct claim(s) on {len(lines)} line(s): " + ", ".join(f"{v} {k}" for k, v in by.items()))
-    return 0
+    return int(any(cls != "historical" for *_, cls in found))
 
 
 if __name__ == "__main__":
