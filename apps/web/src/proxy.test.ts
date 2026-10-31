@@ -58,3 +58,19 @@ describe("next.config.mjs – legacy APK redirect (T-350)", () => {
     expect(apkRedirect.permanent).toBe(false);
   });
 });
+
+describe("next.config.mjs – representative APK alias", () => {
+  it("redirects /download/ekprosopos-latest.apk → ekprosopos GitHub release asset", async () => {
+    // @ts-expect-error -- .mjs has no type declarations
+    const mod = await import("../../next.config.mjs");
+    const redirects = await mod.default.redirects();
+    const repRedirect = redirects.find(
+      (r: { source: string }) => r.source === "/download/ekprosopos-latest.apk",
+    );
+    expect(repRedirect).toBeDefined();
+    expect(repRedirect.destination).toBe(
+      "https://github.com/NeaBouli/pnyx/releases/download/ekprosopos-v1.1.1/ekprosopos-v1.1.1-vC3.apk",
+    );
+    expect(repRedirect.permanent).toBe(false);
+  });
+});

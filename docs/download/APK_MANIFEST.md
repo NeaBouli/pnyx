@@ -7,33 +7,41 @@ artifacts under `/opt/ekklesia/app/docs/download/` and verified by SHA-256.
 
 ## ekprosopos
 
-Status: **not published.** `https://ekklesia.gr/download/ekprosopos-latest.apk`
-returned HTTP 404 on 2026-09-27, so no public page links it. The representative
-page (`docs/representative.html#download`) shows the Android APK as "In
-development". Do not add a public download link until the artifact is deployed
-and verified with the commands below.
-
-Last local build candidate (not served):
+Status: **published** as a GitHub release (Gio approval 2026-10-31).
 
 | Field | Value |
 |---|---|
-| Intended public URL | `https://ekklesia.gr/download/ekprosopos-latest.apk` (HTTP 404, 2026-09-27) |
-| Intended server path | `/opt/ekklesia/app/docs/download/ekprosopos-latest.apk` |
-| Local archive | ignored `builds/artifacts/ekprosopos-v1.1.0-vC2.apk` |
-| SHA-256 | `4b9d49d888465cac2f1de94f50e46efc8dbfea49cb805fd715459bbbb28a761e` (candidate record only; no public checksum file until the APK is published) |
-| Metadata | package `ekklesia.representative`, versionCode `2`, versionName `1.1.0` |
+| Version | 1.1.1 |
+| versionCode | 3 |
+| Package | ekklesia.representative |
+| Release tag | `ekprosopos-v1.1.1` → commit `616ea5a4` |
+| APK SHA-256 | `e9959c6951fd10bee731b176876386877a8206bcc5e910584cfbe424bec38432` |
+| Signing certificate SHA-256 | `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec` (same release key as the ekklesia Direct APK) |
+| Canonical APK URL | `https://github.com/NeaBouli/pnyx/releases/download/ekprosopos-v1.1.1/ekprosopos-v1.1.1-vC3.apk` |
+| Checksum file | `ekprosopos-v1.1.1-vC3.apk.sha256` on the same release |
+| Server alias | `https://ekklesia.gr/download/ekprosopos-latest.apk` redirects (307) to the canonical APK (web `next.config.mjs`) |
+| WebView target | `https://ekklesia.gr/representative/index.html` |
 
-Validation command after deployment:
+Build: `REP_SIGNING_PROPERTIES=<keystore properties> bash scripts/build-representative.sh`
+from the release tag. The script fails if the APK certificate digest differs
+from the value above.
+
+The earlier unpublished 1.1.0 / versionCode 2 candidate
+(`4b9d49d888465cac2f1de94f50e46efc8dbfea49cb805fd715459bbbb28a761e`) was signed
+with the Android debug key and was never released. A device that still has it
+installed must uninstall it before installing 1.1.1, because Android rejects an
+update signed with a different certificate.
+
+Post-publication validation:
 
 ```bash
-sha256sum /opt/ekklesia/app/docs/download/ekprosopos-latest.apk
-aapt dump badging /opt/ekklesia/app/docs/download/ekprosopos-latest.apk | head -5
-```
-
-Expected WebView target:
-
-```text
-https://ekklesia.gr/representative/index.html
+(
+  set -euo pipefail
+  expected='e9959c6951fd10bee731b176876386877a8206bcc5e910584cfbe424bec38432'
+  actual="$(curl -fsSL https://ekklesia.gr/download/ekprosopos-latest.apk | sha256sum | awk '{print $1}')"
+  test "$actual" = "$expected"
+  printf 'APK SHA256 verified: %s\n' "$actual"
+)
 ```
 
 ## ekklesia mobile
