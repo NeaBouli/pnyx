@@ -7,7 +7,7 @@ from enum import Enum as PyEnum
 from sqlalchemy import (
     Column, Integer, BigInteger, String, Text, SmallInteger, Boolean, Float,
     DateTime, JSON, ForeignKey, UniqueConstraint, Index,
-    CheckConstraint, Enum, Numeric, text
+    CheckConstraint, Enum, FetchedValue, Numeric, text
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from database import Base
@@ -177,9 +177,15 @@ class ParliamentBill(Base):
     org_label           = Column(Text, nullable=True)               # Diavgeia organization name
     flag_count          = Column(Integer, default=0)
     admin_hidden        = Column(Boolean, default=False)
+    sensitive_public_block = Column(Boolean, nullable=False, server_default=text("false"), server_onupdate=FetchedValue())
+    sensitive_override  = Column(Boolean, nullable=True)
+    sensitive_override_reason = Column(Text, nullable=True)
 
     created_at          = Column(DateTime, default=datetime.utcnow)
     updated_at          = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Fetch the trigger's decision before an object is used by publishing hooks.
+    __mapper_args__ = {"eager_defaults": True}
 
     __table_args__ = (
         Index("idx_bills_status", "status"),

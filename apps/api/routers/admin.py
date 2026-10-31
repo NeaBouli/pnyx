@@ -13,7 +13,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, text
 
@@ -101,6 +101,50 @@ class BillCreateRequest(BaseModel):
 
 class BillTextRequest(BaseModel):
     text: str
+
+
+class BillSensitivityRequest(BaseModel):
+    sensitive_override: bool | None = Field(...)
+    reason: str = Field(min_length=1, max_length=2000)
+    clear_sensitive_public_block: bool = False
+
+    @field_validator("reason")
+    @classmethod
+    def nonblank_reason(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("A reason is required")
+        return value
+
+
+@router.patch("/bills/{bill_id}/sensitivity", dependencies=[Depends(enforce_route_limit)])
+@public_heavy
+async def admin_set_bill_sensitivity(
+    bill_id: str, req: BillSensitivityRequest,
+    _key=Depends(verify_admin), db: AsyncSession = Depends(get_db),
+    request: Request = None,
+) -> dict[str, object]:
+    """Record a reasoned admin decision; NULL restores the persisted flag policy."""
+    bill = (await db.execute(
+        select(ParliamentBill).where(ParliamentBill.id == bill_id)
+        .with_for_update().execution_options(populate_existing=True)
+    )).scalar_one_or_none()
+    if bill is None:
+        raise HTTPException(404, "Bill not found")
+    await db.execute(text("""SELECT admin_set_bill_sensitivity(
+        :bill_id, :override, :clear_flag, :reason, :actor)"""), {
+        "bill_id": bill_id, "override": req.sensitive_override,
+        "clear_flag": req.clear_sensitive_public_block,
+        "reason": req.reason, "actor": "admin_api_key",
+    })
+    await db.refresh(bill)
+    after = {
+        "sensitive_public_block": bill.sensitive_public_block,
+        "sensitive_override": bill.sensitive_override,
+        "sensitive_override_reason": bill.sensitive_override_reason,
+    }
+    await commit_and_invalidate_representation(db)
+    return {"success": True, "bill_id": bill_id, **after}
 
 
 @router.get("/dashboard", dependencies=[Depends(enforce_route_limit)])

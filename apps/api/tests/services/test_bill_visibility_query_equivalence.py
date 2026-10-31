@@ -3,7 +3,7 @@ import itertools
 from collections.abc import Iterator
 
 import pytest
-from sqlalchemy import Boolean, Column, MetaData, String, Table, and_, create_engine, func, not_, or_, select
+from sqlalchemy import Boolean, Column, MetaData, String, Table, and_, create_engine, func, not_, or_, select, text
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.engine import Connection
 from sqlalchemy.sql.elements import ColumnElement
@@ -11,18 +11,23 @@ from sqlalchemy.sql.elements import ColumnElement
 from models import ParliamentBill as Bill
 from services.bill_visibility import (
     DIAVGEIA_SENSITIVE_PUBLIC_TERMS,
+    public_bill_raw_sql,
     public_bill_with_demo_filter,
 )
 
 
-def _previous_guard() -> ColumnElement[bool]:
+def _previous_sensitive() -> ColumnElement[bool]:
     fields = (Bill.title_el, Bill.summary_short_el, Bill.summary_long_el)
+    return and_(Bill.source == "DIAVGEIA", or_(*(
+        func.lower(func.coalesce(field, "")).contains(term)
+        for field in fields for term in DIAVGEIA_SENSITIVE_PUBLIC_TERMS
+    )))
+
+
+def _previous_guard() -> ColumnElement[bool]:
     return and_(
         Bill.admin_hidden.is_not(True),
-        not_(and_(Bill.source == "DIAVGEIA", or_(*(
-            func.lower(func.coalesce(field, "")).contains(term)
-            for field in fields for term in DIAVGEIA_SENSITIVE_PUBLIC_TERMS
-        )))),
+        not_(_previous_sensitive()),
         ~Bill.id.like("DEMO-%"),
     )
 
@@ -36,6 +41,8 @@ def visibility_db() -> Iterator[tuple[Connection, Table]]:
         Column("id", String, primary_key=True), Column("source", String),
         Column("admin_hidden", Boolean), Column("title_el", String),
         Column("summary_short_el", String), Column("summary_long_el", String),
+        Column("sensitive_public_block", Boolean, nullable=False, server_default=text("false")),
+        Column("sensitive_override", Boolean),
     )
     metadata.create_all(engine)
     with engine.connect() as connection:
@@ -72,6 +79,9 @@ def test_literal_marker_optimization_preserves_all_visibility_decisions(
     ))
     connection.execute(table.insert(), rows)
     previous = set(connection.execute(select(Bill.id).where(_previous_guard())).scalars())
+    # SQLite fixture models the migration, including NULL old sensitivity results.
+    sensitive = _previous_sensitive().compile(compile_kwargs={"literal_binds": True})
+    connection.execute(text(f"UPDATE parliament_bills SET sensitive_public_block = (({sensitive}) IS NOT FALSE)"))
     optimized = set(connection.execute(select(Bill.id).where(public_bill_with_demo_filter())).scalars())
     assert optimized == previous
     assert "split" in optimized
@@ -79,14 +89,26 @@ def test_literal_marker_optimization_preserves_all_visibility_decisions(
     assert "long" not in optimized
 
 
-def test_postgresql_uses_the_costed_function_with_index_predicate_arguments() -> None:
+def test_postgresql_uses_flags_without_prose_or_function_arguments() -> None:
     query = select(Bill.id).where(public_bill_with_demo_filter())
     compiled = query.compile(dialect=postgresql.dialect())
     sql = str(compiled)
-    assert (
-        "NOT public_bill_sensitive(parliament_bills.source, parliament_bills.title_el, "
-        "parliament_bills.summary_short_el, parliament_bills.summary_long_el)"
-    ) in sql
+    assert "coalesce(parliament_bills.sensitive_override, parliament_bills.sensitive_public_block) IS NOT true" in sql
+    assert "summary_" not in sql and "public_bill_sensitive" not in sql
     assert "lower(" not in sql and " ~ " not in sql
     assert "ασθεν" not in sql
     assert "admin_hidden" in sql and "DEMO-%" in compiled.params.values()
+
+
+@pytest.mark.parametrize("hidden", [None, False, True])
+@pytest.mark.parametrize("blocked", [False, True])
+@pytest.mark.parametrize("override", [None, False, True])
+def test_sqlite_orm_and_raw_share_flag_policy(visibility_db, hidden, blocked, override) -> None:
+    connection, table = visibility_db
+    connection.execute(table.insert().values(id="B", admin_hidden=hidden,
+                       sensitive_public_block=blocked, sensitive_override=override))
+    raw, params = public_bill_raw_sql("b")
+    assert not params
+    expected = hidden is not True and not (blocked if override is None else override)
+    assert bool(connection.execute(select(Bill.id).where(public_bill_with_demo_filter())).all()) is expected
+    assert bool(connection.execute(text(f"SELECT id FROM parliament_bills b WHERE {raw}"), params).all()) is expected

@@ -662,7 +662,7 @@ async def transition_bill(
             "old_status": old_status.value,
             "new_status": new_status.value,
             "label_el": STATUS_LABELS.get(new_status.value, new_status.value),
-        })
+        }, db=db)
     except Exception as notify_err:
         logger.warning(f"[MOD-07] Notification failed: {notify_err}")
 

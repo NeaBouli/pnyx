@@ -100,6 +100,7 @@ def test_storage_rechecks_generated_rejection_without_removing_sensitive_marker(
     from services.bill_visibility import is_public_bill
 
     bill = SimpleNamespace(id="SYNTH-1", source="DIAVGEIA", title_el="Συνθετικός τίτλος",
+                           sensitive_public_block=True,
                            summary_short_el=None, summary_long_el=GOOD + " ΑΜΚΑ", generated_content_provenance=None)
     assert not is_public_bill(bill)
     assert not fetcher.store_fetched_text(bill, fetcher.GeneratedExtraction(BAD))

@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.representation_cache import commit_and_invalidate_representation
 from models import ParliamentBill, BillStatus, Periferia, Dimos
-from services.bill_visibility import public_bill_filter
+from services.bill_visibility import is_public_bill, public_bill_filter
 from services.content_provenance import (
     FORUM_BODY_FIELD,
     clear_generated_content,
@@ -557,6 +557,8 @@ async def _region_name_for_body(bill: ParliamentBill, db: AsyncSession) -> str:
 
 async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
     """Create a Discourse topic for a bill. Returns topic_id."""
+    if not is_public_bill(bill):
+        raise ValueError("Bill is not public")
     category_id = await _resolve_category(bill, db)
     topic_title = await _build_topic_title(bill, db)
     region_name = await _region_name_for_body(bill, db)
@@ -640,7 +642,7 @@ async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
 
 async def update_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> bool:
     """Update existing Discourse topic: category + tags + first post body."""
-    if not bill.forum_topic_id or not DISCOURSE_API_KEY:
+    if not is_public_bill(bill) or not bill.forum_topic_id or not DISCOURSE_API_KEY:
         return False
 
     try:

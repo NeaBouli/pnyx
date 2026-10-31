@@ -674,6 +674,7 @@ async def scheduled_notify_new_bills():
     from database import AsyncSessionLocal
     from models import ParliamentBill, BillStatus
     from routers.notify import notify_all
+    from services.bill_visibility import public_bill_filter
     from services.scraper_state import record_run, record_success, record_failure
 
     name = "notify_new_bills"
@@ -682,7 +683,7 @@ async def scheduled_notify_new_bills():
         r = aioredis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"), decode_responses=True)
         async with AsyncSessionLocal() as db:
             result = await db.execute(
-                select(ParliamentBill).where(ParliamentBill.status == BillStatus.ACTIVE)
+                select(ParliamentBill).where(ParliamentBill.status == BillStatus.ACTIVE, public_bill_filter())
             )
             for bill in result.scalars().all():
                 key = f"notified:new_bill:{bill.id}"
@@ -800,6 +801,7 @@ async def scheduled_notify_results():
     from database import AsyncSessionLocal
     from models import ParliamentBill, BillStatus
     from routers.notify import notify_all
+    from services.bill_visibility import public_bill_filter
     from services.scraper_state import record_run, record_success, record_failure
 
     name = "notify_results"
@@ -808,7 +810,7 @@ async def scheduled_notify_results():
         r = aioredis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"), decode_responses=True)
         async with AsyncSessionLocal() as db:
             result = await db.execute(
-                select(ParliamentBill).where(ParliamentBill.status == BillStatus.PARLIAMENT_VOTED)
+                select(ParliamentBill).where(ParliamentBill.status == BillStatus.PARLIAMENT_VOTED, public_bill_filter())
             )
             for bill in result.scalars().all():
                 key = f"notified:result:{bill.id}"

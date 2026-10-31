@@ -64,6 +64,7 @@ ADMIN_AUTH_REQUIRED = {
         ('GET', '/api/v1/rep/admin/invites'),
         ('GET', '/api/v1/zk/canary/preflight/{vote_scope_id}'),
         ('PATCH', '/api/v1/admin/bills/{bill_id}'),
+        ('PATCH', '/api/v1/admin/bills/{bill_id}/sensitivity'),
         ('POST', '/api/v1/admin/bills'),
         ('POST', '/api/v1/admin/bills/{bill_id}/fetch-text'),
         ('POST', '/api/v1/admin/bills/{bill_id}/party-votes'),

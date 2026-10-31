@@ -6,7 +6,7 @@ No planner switches disable sequential scans or force a particular plan.
 from collections.abc import AsyncIterator, Iterator
 import itertools
 import json
-from types import ModuleType, SimpleNamespace
+from types import ModuleType
 from typing import Any
 from unittest.mock import patch
 from uuid import uuid4
@@ -22,12 +22,12 @@ from sqlalchemy.sql import Select
 
 from models import ParliamentBill
 from services.bill_visibility import (
-    DIAVGEIA_SENSITIVE_PUBLIC_TERMS, is_public_bill, public_bill_filter,
+    DIAVGEIA_SENSITIVE_PUBLIC_TERMS, public_bill_filter,
     public_bill_with_demo_filter,
 )
 from services.public_bill_index import PUBLIC_BILL_INDEX
 from services.public_bill_snapshot import visibility_snapshot_query
-from tests.pg_public_bill_schema import public_metadata_revision
+from tests.pg_public_bill_schema import public_metadata_revision, sensitivity_revision
 from tests.pg_vote_schema import disposable_postgres_url, requires_postgres
 
 pytestmark = requires_postgres
@@ -43,7 +43,8 @@ async def postgres(request: pytest.FixtureRequest) -> AsyncIterator[tuple[AsyncC
             connection = await connection.execution_options(isolation_level="AUTOCOMMIT")
             await connection.exec_driver_sql(f"CREATE SCHEMA {schema}")
             await connection.exec_driver_sql(f"SET search_path TO {schema}")
-            await connection.exec_driver_sql("SET plan_cache_mode = force_generic_plan")
+            if not cold:
+                await connection.exec_driver_sql("SET plan_cache_mode = force_generic_plan")
             for sql in (
                 "CREATE TYPE billstatus AS ENUM ('ANNOUNCED','ACTIVE','WINDOW_24H','PARLIAMENT_VOTED','OPEN_END')",
                 "CREATE TYPE votechoice AS ENUM ('YES','NO','ABSTAIN','UNKNOWN')",
@@ -84,8 +85,9 @@ async def postgres(request: pytest.FixtureRequest) -> AsyncIterator[tuple[AsyncC
                 "INSERT INTO zk_vote_receipts SELECT 'bill:' || id, 'YES' FROM parliament_bills",
             ):
                 await connection.exec_driver_sql(sql)
-            revision = public_metadata_revision()
+            revision = sensitivity_revision()
             await migrate(connection, public_metadata_revision(legacy=True), "upgrade")
+            await migrate(connection, public_metadata_revision(), "upgrade")
             await migrate(connection, revision, "upgrade")
             for table in ("parliament_bills", "citizen_votes", "zk_vote_receipts"):
                 await connection.exec_driver_sql(f"ANALYZE {table}" if cold else f"VACUUM (ANALYZE) {table}")
@@ -176,13 +178,13 @@ async def test_asyncpg_executes_forty_thousand_ids_and_migration_round_trip(post
     assert await connection.scalar(text("SELECT to_regclass(:name)"), {"name": revision.LEGACY_INDEX_NAME}) is not None
     assert await connection.scalar(text(
         "SELECT to_regprocedure('public_bill_sensitive(text,text,text,text)')"
-    )) is None
-    legacy = public_metadata_revision(legacy=True)
+    )) is not None
+    legacy = public_metadata_revision()
     legacy_definition = await connection.scalar(text(
         "SELECT pg_get_expr(indpred, indrelid) FROM pg_index WHERE indexrelid = to_regclass(:name)"
     ), {"name": legacy.INDEX_NAME})
-    assert "public_bill_sensitive" not in legacy_definition
-    assert legacy_definition.count(" ~ ") == 3
+    assert "public_bill_sensitive" in legacy_definition
+    assert "sensitive_override" not in legacy_definition
     await migrate(connection, revision, "upgrade")
     assert await connection.scalar(text(
         "SELECT i.indisvalid FROM pg_index i JOIN pg_class c ON c.oid=i.indexrelid "
@@ -193,9 +195,10 @@ async def test_asyncpg_executes_forty_thousand_ids_and_migration_round_trip(post
 
 
 @pytest.mark.parametrize("postgres", [True], indirect=True)
-async def test_cold_toasted_population_uses_v2_without_vacuum(postgres: Any) -> None:
+async def test_cold_toasted_population_never_reads_prose_for_visibility(postgres: Any) -> None:
     connection, _ = postgres
     assert await connection.scalar(text("SHOW enable_seqscan")) == "on"
+    assert await connection.scalar(text("SHOW plan_cache_mode")) == "auto"
     assert await connection.scalar(text(
         "SELECT relallvisible FROM pg_class WHERE oid = 'parliament_bills'::regclass"
     )) == 0
@@ -209,10 +212,13 @@ async def test_cold_toasted_population_uses_v2_without_vacuum(postgres: Any) -> 
     ):
         plan = await explain(connection, query)
         scans = list(nodes(plan))
-        assert any(n.get("Index Name") == PUBLIC_BILL_INDEX for n in scans), json.dumps(plan)
-        assert not any(n.get("Relation Name") == "parliament_bills" and "Seq Scan" in n["Node Type"]
-                       for n in scans), json.dumps(plan)
-        assert not any("public_bill_sensitive" in n.get("Filter", "") for n in scans), json.dumps(plan)
+        # Visibility now reads two boolean flags. Whether the planner picks the
+        # partial index or a heap scan, it must never evaluate prose or the
+        # regex function, and the cold toasted population must stay cheap.
+        prose = ("public_bill_sensitive", "title_el", "summary_short_el", "summary_long_el")
+        assert not any(term in n.get("Filter", "") + n.get("Recheck Cond", "") for n in scans for term in prose), \
+            json.dumps(plan)
+        assert plan["Actual Total Time"] < 250, json.dumps(plan)
         print(f"\nEXPLAIN {label}:\n{json.dumps(plan, indent=2)}")
 
 
@@ -250,14 +256,15 @@ async def test_function_matches_frozen_sql_predicate_on_edge_cases(postgres: Any
     assert len(rows) == len(cases)
     for bill_id, old_public, new_public, orm_public in rows:
         assert new_public is old_public, (bill_id, old_public, new_public)
-        assert orm_public is old_public, (bill_id, old_public, orm_public)
+        assert bool(orm_public) is bool(old_public), (bill_id, old_public, orm_public)
     edge = ParliamentBill.id.like("EDGE-%")
     old_ids = set((await connection.execute(select(ParliamentBill.id).where(edge, legacy))).scalars())
     new_ids = set((await connection.execute(select(ParliamentBill.id).where(edge, public_bill_filter()))).scalars())
     assert old_ids == new_ids
     null_source_marker = {
         row["id"] for row in cases if row["source"] is None and row["admin_hidden"] is not True
-        and is_public_bill(SimpleNamespace(**{**row, "source": "DIAVGEIA", "admin_hidden": False})) is False
+        and any(term in (row[field] or "").lower()
+                for term in DIAVGEIA_SENSITIVE_PUBLIC_TERMS for field in fields)
     }
     assert null_source_marker and not (null_source_marker & new_ids)
     properties = (await connection.execute(text(

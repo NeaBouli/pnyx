@@ -330,7 +330,8 @@ async def send_monthly_report(db: AsyncSession) -> bool:
 
     # ── Top-Abstimmungen mit Ergebnis (diesen Monat) ─────────────
     from sqlalchemy import text
-    from services.bill_visibility import results_visible_raw_sql
+    from services.bill_visibility import public_bill_raw_sql, results_visible_raw_sql
+    public_guard, public_params = public_bill_raw_sql("b")
     top_votes_result = await db.execute(text(f"""
         SELECT b.id, b.title_el, b.title_en,
             COUNT(*) FILTER (WHERE cv.vote='YES') as yes,
@@ -339,11 +340,11 @@ async def send_monthly_report(db: AsyncSession) -> bool:
         FROM citizen_votes cv
         JOIN parliament_bills b ON b.id = cv.bill_id
         WHERE cv.created_at >= :month_start
-          AND b.admin_hidden IS NOT TRUE
+          AND {public_guard}
           AND {results_visible_raw_sql('b')}
         GROUP BY b.id, b.title_el, b.title_en
         ORDER BY total DESC LIMIT 5
-    """), {"month_start": month_start})
+    """), {"month_start": month_start, **public_params})
     top_votes_list = top_votes_result.all()
 
     # Older monthly queries use a different population/window from public
