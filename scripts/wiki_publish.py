@@ -74,7 +74,14 @@ def escape_text(text):
     # CommonMark treats underscores within words (e.g. SQL identifiers) as
     # literal text; underscores at word edges can introduce emphasis.
     text = re.sub(r"(?<!\w)_|_(?!\w)", r"\\_", text)
-    return re.sub(r"(?m)^(\s*)([#>+\-]|\d+[.)])(?=\s)", r"\1\\\2", text)
+    # Escape block markers at line start: the punctuation of an ordered-list
+    # marker ("1\\."), and the character itself for "#", ">", "+", "-".
+    def block_marker(match):
+        indent, marker = match.group(1), match.group(2)
+        if marker[0].isdigit():
+            return f"{indent}{marker[:-1]}\\{marker[-1]}"
+        return f"{indent}\\{marker}"
+    return re.sub(r"(?m)^(\s*)([#>+\-]|\d+[.)])(?=\s)", block_marker, text)
 
 
 def link_url(href, base):

@@ -18,7 +18,7 @@ COPY docs/embed/ ./public/embed/
 COPY docs/municipality/ ./public/municipality/
 COPY apps/representative/web/ ./public/representative/
 COPY docs/assets/ ./public/assets/
-COPY docs/robots.txt docs/sitemap.xml docs/llms.txt ./public/
+COPY docs/robots.txt docs/sitemap.xml docs/llms.txt docs/project-facts.json ./public/
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 

@@ -13,11 +13,11 @@
 
 Whitepaper v1.0 — © 2026 V-Labs IT Solutions &amp; Development — MIT License
 
-### \1. Περίληψη
+### 1\. Περίληψη
 
 Η Ekklesia.gr είναι ανοιχτού κώδικα πλατφόρμα ψηφιακής άμεσης δημοκρατίας. Καλύπτει τρία επίπεδα διακυβέρνησης: εθνικό, περιφερειακό και τοπικό. Η ψευδωνυμία εξασφαλίζεται μέσω Ed25519 και Nullifier Hash.
 
-### \2. Πρόβλημα
+### 2\. Πρόβλημα
 
 | Πρόβλημα | Αντίκτυπος |
 | --- | --- |
@@ -25,7 +25,7 @@ Whitepaper v1.0 — © 2026 V-Labs IT Solutions &amp; Development — MIT Licens
 | Παθητική συμμετοχή | Ψηφοφορία κάθε 4 χρόνια |
 | Τοπικό έλλειμμα | Δημοτικές αποφάσεις χωρίς συμμετοχή |
 
-### \3. Αρχιτεκτονική
+### 3\. Αρχιτεκτονική
 
 ```text
 PNYX MONOREPO
@@ -36,11 +36,11 @@ PNYX MONOREPO
 └── packages/crypto (Ed25519, Nullifier)
 ```
 
-### \4. Μοντέλο Ταυτότητας
+### 4\. Μοντέλο Ταυτότητας
 
 +306xxx → HLR → Παραγωγή (έλεγχος 2026-10-31): Argon2id v2· προεπιλογή κώδικα: v1 → DELETE → Ed25519
 
-### \5. Bill Lifecycle
+### 5\. Bill Lifecycle
 
 | Κατάσταση | Ψηφοφορία | Αλλαγή |
 | --- | --- | --- |
@@ -50,7 +50,7 @@ PNYX MONOREPO
 | PARLIAMENT_VOTED | ❌ | — |
 | OPEN_END | ❌ Κλειστή — τα αποτελέσματα παραμένουν ορατά | — |
 
-### \6. Δείκτης Απόκλισης
+### 6\. Δείκτης Απόκλισης
 
 ```text
 # Divergence Score
@@ -60,35 +60,35 @@ divergence = abs(citizen_yes_pct - (1.0 if authority_passed else 0.0))
 # Μετά (OPEN_END): η ψηφοφορία έχει κλείσει — τα αποτελέσματα παραμένουν ορατά και το snapshot αμετάβλητο
 ```
 
-### \7. Ιδιωτικότητα &amp; GDPR
+### 7\. Ιδιωτικότητα &amp; GDPR
 
 Ψευδώνυμα δεδομένα στον server (nullifier, δημόσιο κλειδί, ψήφοι)· ο αριθμός κινητού δεν αποθηκεύεται. Αποτελέσματα με λιγότερες από 10 ψήφους δεν εμφανίζονται δημόσια· αποκρύπτονται επίσης μικρές επιμέρους ομάδες. Το όριο μειώνει, αλλά δεν εξαλείφει, τον κίνδυνο επαναναγνώρισης. Servers Ευρώπη. Δεν αποτελεί βεβαίωση νομικής συμμόρφωσης.
 
-### \8. Στρατηγική
+### 8\. Στρατηγική
 
 Legitimacy before deployment. Ανοιχτός κώδικας = στρατηγική προστασία. Κανείς δεν μπορεί να κατηγορήσει αυτό που ελέγχει ο καθένας.
 
-### \9. Τοπική Αυτοδιοίκηση
+### 9\. Τοπική Αυτοδιοίκηση
 
 NATIONAL ↓ REGIONAL ↓ MUNICIPAL ↓ COMMUNITY
 
-### \10. Μελλοντική γέφυρα (προγραμματισμένη, ανενεργή)
+### 10\. Μελλοντική γέφυρα (προγραμματισμένη, ανενεργή)
 
 Η μελλοντική γέφυρα αλυσίδας είναι προγραμματισμένη και ανενεργή· δεν έχει τρέχον αναγνωριστικό ενότητας. Το MOD-08 είναι η ενότητα αρχειοθέτησης Arweave.
 
 Ekklesia Identity → ZK-Proof → TrueRepublic Chain → On-chain Vote
 
-### \11. Οικονομικό Μοντέλο
+### 11\. Οικονομικό Μοντέλο
 
 Βάση κόστους 2026-10: περίπου 25 EUR/μήνα για server και 9,30 EUR/έτος για domain· περίπου 309,30 EUR/έτος μόνο για αυτά τα πάγια EUR. Πρόκειται για τη δημοσιευμένη εκτίμηση, όχι τιμολόγιο. Χωριστά: ετήσιες χρεώσεις λογαριασμών σε USD, εφάπαξ εγγραφή και χρεώσεις ανά χρήση (HLR, μετάφραση, αρχειοθέτηση). Δεν προκύπτει συνολικό ετήσιο ποσό χρήσης από το αποθετήριο. Οι προηγούμενες εκτιμήσεις έχουν αντικατασταθεί.
 
 [Ορισμοί και βάση κόστους](https://ekklesia.gr/project-facts.json) · [Δημοσιευμένη δήλωση 10.2026](https://ekklesia.gr/community.html)
 
-### \12. Νομικό Πλαίσιο
+### 12\. Νομικό Πλαίσιο
 
 Η Ekklesia.gr ΔΕΝ είναι νομικά δεσμευτική ψηφοφορία. MIT License © 2026 V-Labs IT Solutions &amp; Development.
 
-### \13. Βιβλιογραφία
+### 13\. Βιβλιογραφία
 
 | Αναφορά | Σχέση |
 | --- | --- |
@@ -132,11 +132,11 @@ Ordinary participation requires no email. The optional newsletter processes an e
 
 Whitepaper v1.0 — © 2026 V-Labs IT Solutions &amp; Development — MIT License
 
-### \1. Abstract
+### 1\. Abstract
 
 Ekklesia.gr is an open-source digital direct democracy platform. Covers three governance levels: national, regional and local. Pseudonymity ensured via Ed25519 and Nullifier Hash.
 
-### \2. Problem
+### 2\. Problem
 
 | Problem | Impact |
 | --- | --- |
@@ -144,7 +144,7 @@ Ekklesia.gr is an open-source digital direct democracy platform. Covers three go
 | Passive participation | Voting every 4 years |
 | Local deficit | Municipal decisions without participation |
 
-### \3. Architecture
+### 3\. Architecture
 
 ```text
 PNYX MONOREPO
@@ -155,11 +155,11 @@ PNYX MONOREPO
 └── packages/crypto (Ed25519, Nullifier)
 ```
 
-### \4. Identity Model
+### 4\. Identity Model
 
 +306xxx → HLR → Production (checked 2026-10-31): Argon2id v2; code default: v1 → DELETE → Ed25519
 
-### \5. Bill Lifecycle
+### 5\. Bill Lifecycle
 
 | State | Voting | Change |
 | --- | --- | --- |
@@ -169,7 +169,7 @@ PNYX MONOREPO
 | PARLIAMENT_VOTED | ❌ | — |
 | OPEN_END | ❌ Closed — results remain visible | — |
 
-### \6. Divergence Score
+### 6\. Divergence Score
 
 ```text
 # Divergence Score
@@ -179,35 +179,35 @@ divergence = abs(citizen_yes_pct - (1.0 if authority_passed else 0.0))
 # After OPEN_END: voting is closed; results remain visible and the snapshot is unchanged
 ```
 
-### \7. Privacy &amp; GDPR
+### 7\. Privacy &amp; GDPR
 
 Pseudonymous data on the server (nullifier, public key, votes); the phone number is not stored. Results with fewer than 10 votes are not shown publicly; small subgroups are also withheld. The threshold reduces, but does not eliminate, re-identification risk. Servers Europe. Not a statement of legal compliance.
 
-### \8. Strategy
+### 8\. Strategy
 
 Legitimacy before deployment. Open source = strategic protection.
 
-### \9. Local Governance
+### 9\. Local Governance
 
 NATIONAL ↓ REGIONAL ↓ MUNICIPAL ↓ COMMUNITY
 
-### \10. Future bridge (planned, inactive)
+### 10\. Future bridge (planned, inactive)
 
 The future chain bridge is planned and inactive; it has no current module ID. MOD-08 is the Arweave archive module.
 
 Ekklesia Identity → ZK-Proof → TrueRepublic Chain → On-chain Vote
 
-### \11. Economic Model
+### 11\. Economic Model
 
 Cost basis 2026-10: about EUR 25/month for the server and EUR 9.30/year for the domain; about EUR 309.30/year for those recurring EUR costs only. This is the published estimate, not an invoice. Separate: annual USD account charges, one-time registration and usage charges (HLR, translation, archiving). A total annual usage cost cannot be derived from the repository. Previous estimates have been superseded.
 
 [Definitions and cost basis](https://ekklesia.gr/project-facts.json) · [Published statement 10.2026](https://ekklesia.gr/community.html)
 
-### \12. Legal Framework
+### 12\. Legal Framework
 
 Ekklesia.gr is NOT a legally binding vote. MIT License © 2026 V-Labs IT Solutions &amp; Development.
 
-### \13. References
+### 13\. References
 
 | Reference | Relation |
 | --- | --- |
