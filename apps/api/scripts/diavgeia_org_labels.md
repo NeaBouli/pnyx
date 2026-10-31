@@ -36,6 +36,26 @@ the neutral `Διαύγεια` pill with a NULL label. The raw UID already exist
 The raw decision's existing NOT NULL `organization_label` uses an empty string
 on lookup failure; the manual maintenance repair also retries those blanks.
 
+All display-label writers use `clean_org_label`: remove Unicode control/format
+characters (including NUL, C0/C1 and bidi controls), collapse whitespace and
+normalize to NFC before detecting empty/unknown/numeric placeholders. Labels
+containing angle-bracket markup are rejected. The bound comes from the models:
+`pill_el` is varchar(200), while `org_label` and `organization_label` are Text.
+The common label limit is therefore 190 characters, including a final ellipsis
+when truncated, leaving room for `Διαύγεια: `. React renders pills as escaped
+text; static embeds use text nodes. Labels are not stored as HTML entities,
+which would display double-escaped in those consumers.
+
+Each scrape, conversion and historical import shares a cumulative three-second
+lookup budget across distinct UIDs, including cache access, HTTP, pacing and
+backoff. A run lock protects both budget accounting and UID memoization. Budget
+exhaustion or an API/cache outage opens the breaker for the rest of that run;
+HTTP cancellation allows at most 100ms for host-lease cleanup. Imports continue
+using clean stored labels or neutral pills and commit normally. Both admin
+repair routes also retry neutral bills using the numeric UID joined from their
+decision, so a later healthy run can repair these fallbacks. Admin update
+counts come from rowcount and report concurrent skips separately.
+
 ## Operator commands
 
 Run from the deployment checkout with the API Python environment active and
@@ -51,7 +71,11 @@ python scripts/backfill_diavgeia_org_labels.py \
 
 Both runs use a read-only database transaction and may warm Redis. Review the
 counts, sample IDs and every `new_pill` in the plan, including neutral fallbacks.
-The plan header is `id,old_pill_sha256,uid,new_pill`; its file mode is 0600.
+The plan header is
+`id,old_pill_sha256,old_org_label_sha256,uid,new_pill`; its file mode is 0600.
+The label digest hashes its raw JSON value, distinguishing SQL NULL, empty
+strings and literal `null`. Plans made before this header change must be
+regenerated.
 The known production count was 6,746 on 2026-10-31; the explicit bound below is
 that observation, not a default. Choose another bound only after reviewing a
 fresh plan. Paths must be new files; existing files are never overwritten.
@@ -66,15 +90,16 @@ python scripts/backfill_diavgeia_org_labels.py --apply \
 Apply performs no organization HTTP lookups and writes exactly the reviewed
 pill values. It only considers `source = 'DIAVGEIA'` rows with the entire pill
 matching `Διαύγεια: [unknown:<numeric uid>]`, with the same ID/UID/old pill
-digest in the approved plan. A clean existing `org_label` is preserved;
-NULL/blank/unknown labels are filled from the reviewed pill (or cleared to NULL
+digest and raw-label digest in the approved plan. A clean existing `org_label`
+is preserved after normalization; NULL/blank/unknown labels are filled from the reviewed pill (or cleared to NULL
 for a neutral fallback). Default planning can also reuse a clean stored
 `org_label` if live resolution fails.
 
 Before any UPDATE, all attempted rows' old pills and old labels are written to
 an exclusive 0600 backup and fsynced. `old_org_label_json` distinguishes SQL
-NULL from an empty string. Updates recheck the exact old pill, source and old
-label, and commit in batches of 100. Concurrently changed rows are skipped;
+NULL from an empty string. Apply skips labels changed since planning, and
+updates recheck the exact old pill, source and NULL-safe old label again,
+then commit in batches of 100. Concurrently changed rows are skipped;
 the backup can therefore include attempted rows that were not changed. More
 matching rows than `--max-rows` aborts before backup or database writes. A
 repeated apply skips already repaired rows. Each committed changed batch

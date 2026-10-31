@@ -13,7 +13,9 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from services.representation_cache import commit_and_invalidate_representation
 from models import DiavgeiaDecision, DimosDiavgeiaOrg, ParliamentBill, BillStatus, GovernanceLevel
 from services.diavgeia_client import DiavgeiaClient, parse_timestamp
-from services.diavgeia_org_lookup import clean_org_label as _clean_org_label, org_pill, resolve_org_label
+from services.diavgeia_org_lookup import (
+    ImportOrgLabels, clean_org_label as _clean_org_label, org_pill, resolve_org_label,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +109,7 @@ async def scrape_decisions(
         decision_type_uids = ["Α.1.1", "Α.2", "2.4.1", "2.4.2"]  # Νόμοι, Κανονιστικές, Οικονομικές
 
     result = ScrapeResult()
-    labels: dict[str, str | None] = {}
+    labels = ImportOrgLabels(resolve_org_label)
 
     try:
         # Determine published_after cursor
@@ -150,9 +152,7 @@ async def scrape_decisions(
                     # Resolve org → dimos/periferia/governance_level
                     dimos_id, periferia_id, gov_level = await _resolve_org(session, org_uid)
 
-                    if org_uid not in labels:
-                        labels[org_uid] = await resolve_org_label(org_uid)
-                    org_label = labels[org_uid]
+                    org_label = await labels.resolve(org_uid)
 
                     row_data = {
                         "ada": ada,
@@ -319,7 +319,7 @@ async def convert_decisions_to_bills(session: AsyncSession) -> dict:
 
     created = 0
     skipped = 0
-    labels: dict[str, str | None] = {}
+    labels = ImportOrgLabels(resolve_org_label)
 
     for row in rows:
         ada, subject, type_uid, org_label, doc_url, gov_level, dimos_id, periferia_id, pub_ts, org_uid = row
@@ -335,9 +335,7 @@ async def convert_decisions_to_bills(session: AsyncSession) -> dict:
             periferia_id,
         )
 
-        if org_uid not in labels:
-            labels[org_uid] = await resolve_org_label(org_uid)
-        org_label = labels[org_uid] or _clean_org_label(org_label)
+        org_label = await labels.resolve(org_uid) or _clean_org_label(org_label)
 
         title = f"{subject.strip()}"
         pill = org_pill(org_label)

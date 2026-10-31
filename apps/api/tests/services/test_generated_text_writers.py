@@ -195,7 +195,10 @@ async def test_automatic_org_resolution_keeps_official_latin_label(monkeypatch: 
     from routers import admin
     from services import diavgeia_org_lookup
 
-    db = SimpleNamespace(execute=AsyncMock(return_value=SimpleNamespace(fetchall=lambda: [("SYNTH-1", "Διαύγεια: [unknown:123]", None)])))
+    db = SimpleNamespace(execute=AsyncMock(side_effect=[
+        SimpleNamespace(fetchall=lambda: [("SYNTH-1", "Διαύγεια: [unknown:123]", None, None)]),
+        SimpleNamespace(rowcount=1),
+    ]))
     monkeypatch.setattr(diavgeia_org_lookup, "resolve_org_label", AsyncMock(return_value="SYNTHETIC TIMING SYSTEMS AE"))
     monkeypatch.setattr(admin, "commit_and_invalidate_representation", AsyncMock())
     result = await inspect.unwrap(admin.admin_resolve_orgs)(_key=True, db=db, request=None)

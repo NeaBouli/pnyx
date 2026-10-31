@@ -14,31 +14,36 @@ import csv
 import hashlib
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from services.diavgeia_org_lookup import (
-    ORG_LABEL_MISSING_SQL, UID_RE, UNKNOWN_PILL_RE, UNKNOWN_PILL_SQL_PATTERN,
+    UID_RE, UNKNOWN_PILL_RE, UNKNOWN_PILL_SQL_PATTERN,
     clean_org_label, org_pill, resolve_org_label,
 )
 from services.representation_cache import invalidate_representation_cache
 
-PLAN_HEADER = ("id", "old_pill_sha256", "uid", "new_pill")
+PLAN_HEADER = ("id", "old_pill_sha256", "old_org_label_sha256", "uid", "new_pill")
 BACKUP_HEADER = ("id", "old_pill", "old_org_label_json", "new_pill")
 BATCH_SIZE = 100
 SELECT_SQL = """SELECT id, pill_el, org_label FROM parliament_bills
     WHERE source = 'DIAVGEIA' AND pill_el ~ $1 ORDER BY id"""
 # Assign only these two columns: z904's UPDATE OF sensitivity trigger must not fire.
-UPDATE_SQL = f"""UPDATE parliament_bills SET pill_el = $3,
-    org_label = CASE WHEN {ORG_LABEL_MISSING_SQL} THEN $5 ELSE org_label END
+UPDATE_SQL = """UPDATE parliament_bills SET pill_el = $3, org_label = $5
     WHERE id = $1 AND source = 'DIAVGEIA' AND pill_el = $2
       AND org_label IS NOT DISTINCT FROM $4"""
 
 
 def pill_sha256(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def org_label_sha256(value: str | None) -> str:
+    # JSON binds the raw value, distinguishing SQL NULL, empty and literal null.
+    return pill_sha256(json.dumps(value, ensure_ascii=False))
 
 
 def _open_private(path: Path):
@@ -61,6 +66,8 @@ def read_plan(path: Path) -> dict[str, dict[str, str]]:
             old_pill = f"Διαύγεια: [unknown:{row['uid']}]"
             if row["old_pill_sha256"] != pill_sha256(old_pill):
                 raise ValueError("Plan digest does not match UID")
+            if not re.fullmatch(r"[0-9a-f]{64}", row["old_org_label_sha256"]):
+                raise ValueError("Invalid old organization label digest")
             new_pill = row["new_pill"]
             if new_pill != "Διαύγεια":
                 prefix = "Διαύγεια: "
@@ -106,7 +113,9 @@ async def backfill(
             digest = pill_sha256(row["pill_el"])
             if expected is not None:
                 entry = expected.get(row["id"])
-                if entry is None or (entry["uid"], entry["old_pill_sha256"]) != (uid, digest):
+                if entry is None or (
+                    entry["uid"], entry["old_pill_sha256"], entry["old_org_label_sha256"]
+                ) != (uid, digest, org_label_sha256(row["org_label"])):
                     skipped += 1
                     continue
                 new_pill = entry["new_pill"]
@@ -130,8 +139,8 @@ async def backfill(
         with _open_private(plan_path) as stream:
             writer = csv.writer(stream)
             writer.writerow(PLAN_HEADER)
-            writer.writerows((bill_id, pill_sha256(old), uid, new)
-                             for bill_id, old, _, uid, new in candidates)
+            writer.writerows((bill_id, pill_sha256(old), org_label_sha256(old_label), uid, new)
+                             for bill_id, old, old_label, uid, new in candidates)
             stream.flush()
             os.fsync(stream.fileno())
         print(f"Plan: {plan_path}")
@@ -157,6 +166,7 @@ async def backfill(
         async with conn.transaction():
             for bill_id, old, old_label, _, new in candidates[start:start + BATCH_SIZE]:
                 label = clean_org_label(new.removeprefix("Διαύγεια: ")) if new != "Διαύγεια" else None
+                label = clean_org_label(old_label) or label
                 status = await conn.execute(UPDATE_SQL, bill_id, old, new, old_label, label)
                 batch_updated += int(status.split()[-1])
         updated += batch_updated

@@ -103,6 +103,18 @@ describe("bill correction feedback", () => {
       }
     });
 
+  it("escapes organization pill markup as React text", async () => {
+    const pill = 'Διαύγεια: <img src=x onerror="alert(1)"><svg onload="alert(2)"> & Agency';
+    context.bill = { source: "DIAVGEIA", governance_level: "INSTITUTIONAL", pill_el: pill };
+    const params = Promise.resolve({ id: "GR-9133" });
+    await act(async () => root.render(<Suspense><BillDetailPage params={params} /></Suspense>));
+    const badge = container.querySelector("span.text-purple-700")!;
+    expect(badge.textContent).toBe("🏢 " + pill);
+    expect(badge.innerHTML).toContain("&lt;img");
+    expect(badge.innerHTML).toContain("&amp; Agency");
+    expect(badge.querySelector("img, svg, [onerror], [onload]")).toBeNull();
+  });
+
   it.each(["el", "en"])("shows the used correction message in %s after /correct returns 409", async language => {
     context.submit.mockResolvedValue({
       isCorrection: true,

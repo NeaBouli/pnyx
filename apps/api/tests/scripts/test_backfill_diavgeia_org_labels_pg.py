@@ -20,7 +20,7 @@ async def postgres():
         await conn.execute(f"CREATE SCHEMA {schema}")
         await conn.execute(f"SET search_path TO {schema}")
         await conn.execute("""CREATE TABLE parliament_bills (
-            id text PRIMARY KEY, source text, pill_el text, org_label text,
+            id text PRIMARY KEY, source text, pill_el varchar(200), org_label text,
             title_el text, summary_short_el text, summary_long_el text,
             generated_content_provenance jsonb, updated_at timestamp DEFAULT now(),
             sensitive_public_block boolean NOT NULL DEFAULT false,
@@ -35,9 +35,12 @@ async def postgres():
         await conn.close()
 
 
-async def test_real_sql_preserves_all_other_columns_and_never_fires_sensitivity_trigger(postgres, tmp_path, monkeypatch):
+@pytest.mark.parametrize("live_label", ["SYNTHETIC AGENCY AE", "Α\u0301\x00\u202e" + "😀" * 191])
+async def test_real_sql_preserves_all_other_columns_and_never_fires_sensitivity_trigger(
+    postgres, tmp_path, monkeypatch, live_label,
+):
     conn = postgres
-    resolve = AsyncMock(return_value="SYNTHETIC AGENCY AE")
+    resolve = AsyncMock(return_value=live_label)
     invalidate = AsyncMock()
     monkeypatch.setattr(script, "resolve_org_label", resolve)
     monkeypatch.setattr(script, "invalidate_representation_cache", invalidate)
@@ -72,10 +75,27 @@ async def test_real_sql_preserves_all_other_columns_and_never_fires_sensitivity_
     for bill_id, original in before.items():
         expected = original.copy()
         if bill_id in {"null", "unknown", "plain", "keep"}:
-            expected["pill_el"] = "Διαύγεια: SYNTHETIC AGENCY AE"
-            expected["org_label"] = "Retained label" if bill_id == "keep" else "SYNTHETIC AGENCY AE"
+            expected["pill_el"] = script.org_pill(live_label)
+            expected["org_label"] = "Retained label" if bill_id == "keep" else script.clean_org_label(live_label)
         assert after[bill_id] == expected
     invalidate.assert_awaited_once()
     # Exercise the SQL's concurrent old-value guards directly on real NULLs.
     assert await conn.execute(script.UPDATE_SQL, "null", "stale pill", "New", None, "New") == "UPDATE 0"
     assert await conn.execute(script.UPDATE_SQL, "null", after["null"]["pill_el"], "New", None, "New") == "UPDATE 0"
+
+
+@pytest.mark.parametrize("old,new", [("Agency A", "Agency B"), (None, ""), ("", None)])
+async def test_real_plan_skips_label_changed_before_apply(postgres, tmp_path, monkeypatch, old, new):
+    monkeypatch.setattr(script, "resolve_org_label", AsyncMock(return_value=None))
+    invalidate = AsyncMock()
+    monkeypatch.setattr(script, "invalidate_representation_cache", invalidate)
+    await postgres.execute("""INSERT INTO parliament_bills (id, source, pill_el, org_label)
+        VALUES ('changed', 'DIAVGEIA', 'Διαύγεια: [unknown:42]', $1)""", old)
+    plan, backup = tmp_path / "plan.csv", tmp_path / "unused.csv"
+    await script.backfill(postgres, plan_path=plan)
+    await postgres.execute("UPDATE parliament_bills SET org_label = $1 WHERE id = 'changed'", new)
+    assert await script.backfill(postgres, apply=True, expect_from=plan, max_rows=1, backup_path=backup) == 0
+    actual = await postgres.fetchrow("SELECT pill_el, org_label FROM parliament_bills WHERE id = 'changed'")
+    assert (actual["pill_el"], actual["org_label"]) == ("Διαύγεια: [unknown:42]", new)
+    assert not backup.exists()
+    invalidate.assert_not_awaited()

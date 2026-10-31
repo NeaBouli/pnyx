@@ -1,5 +1,7 @@
 """Synthetic organization lookups; real HTTP hooks, mocked HTTP and Redis."""
 import asyncio
+import time
+import unicodedata
 from contextlib import asynccontextmanager
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -182,6 +184,169 @@ def test_neutral_pill_never_contains_unknown_or_uid(label):
     assert lookup.org_pill(label) == "Διαύγεια"
 
 
+@pytest.mark.parametrize("raw,expected", [
+    ("  Α\u0301\tAgency\n\u00a0Office  ", "Ά Agency Office"),
+    ("A\x00\x01\x7f\x80\x9f\u200b\u202e\u2066gency", "Agency"),
+    ('Agency & "Office"', 'Agency & "Office"'),
+    ("\x00\u200b\u202e\t", None), ("\u200b[unknown:42]", None),
+    ("\u202e[no-label:42]", None), ("u\x00nknown", None),
+    ('<img src=x onerror="alert(1)">', None), ("<b>Agency</b>", None),
+])
+def test_label_normalization_precedes_validation(raw, expected):
+    assert lookup.clean_org_label(raw) == expected
+    assert lookup.org_pill(raw) == (lookup.PILL_PREFIX + expected if expected else "Διαύγεια")
+
+
+@pytest.mark.parametrize("raw", ["Α" * 190, "Α" * 191, "😀" * 191, "Α\u0301" * 250])
+def test_labels_fit_model_column_sizes_and_truncate_on_unicode_boundaries(raw):
+    from models import DiavgeiaDecision, ParliamentBill
+
+    label = lookup.clean_org_label(raw)
+    assert label == unicodedata.normalize("NFC", label)
+    assert len(label) <= lookup.ORG_LABEL_MAX_LENGTH == 190
+    assert len(lookup.org_pill(label)) <= ParliamentBill.__table__.c.pill_el.type.length == 200
+    for column in (ParliamentBill.__table__.c.org_label, DiavgeiaDecision.__table__.c.organization_label):
+        assert column.type.length is None or len(label) <= column.type.length
+    assert label.encode("utf-8").decode("utf-8") == label
+    if len(unicodedata.normalize("NFC", raw)) > 190:
+        assert label.endswith("…") and len(label) == 190
+    assert lookup.clean_org_label(label) == label
+
+
+@pytest.mark.parametrize("source", ["snapshot", "cache", "api"])
+async def test_all_resolution_sources_use_same_normalizer(label_store, source):
+    raw = " Α\u0301\x00\u202e\t" + "😀" * 191
+    if source == "snapshot":
+        lookup._org_cache["42"] = {"label": raw}
+    elif source == "cache":
+        label_store.hashes[lookup.LABEL_CACHE_PREFIX + "42"] = {"label": raw}
+        label_store.expiry[lookup.LABEL_CACHE_PREFIX + "42"] = float("inf")
+    with respx.mock(assert_all_called=source == "api") as mock:
+        mock.get(f"{lookup.ORGANIZATIONS_URL}/42").respond(200, json={"uid": "42", "label": raw})
+        assert await lookup.resolve_org_label("42") == lookup.clean_org_label(raw)
+    if source == "api":
+        assert label_store.hashes[lookup.LABEL_CACHE_PREFIX + "42"]["label"] == lookup.clean_org_label(raw)
+
+
+async def test_run_budget_is_cumulative_and_concurrent_uid_requests_are_memoized(monkeypatch):
+    monkeypatch.setattr(lookup, "IMPORT_LABEL_BUDGET", 0.07)
+    called = []
+
+    async def resolve(uid, **kwargs):
+        called.append(uid)
+        await asyncio.sleep(0.03)
+        return "Agency " + uid
+
+    labels = lookup.ImportOrgLabels(resolve)
+    started = time.monotonic()
+    values = await asyncio.gather(*(labels.resolve(str(i // 2)) for i in range(40)))
+    assert time.monotonic() - started < 0.5
+    assert called == ["0", "1", "2"]
+    assert values[:4] == ["Agency 0", "Agency 0", "Agency 1", "Agency 1"]
+    assert values[4:] == [None] * 36
+
+
+@pytest.mark.parametrize("failure", ["timeout", "outage"])
+async def test_organization_outage_bounds_total_conversion_latency(label_store, monkeypatch, failure):
+    from services import diavgeia_scraper as scraper
+
+    monkeypatch.setattr(lookup, "IMPORT_LABEL_BUDGET", 0.06)
+    attempts = []
+
+    async def unavailable(request):
+        attempts.append(request)
+        if failure == "timeout":
+            await asyncio.Future()
+        return httpx.Response(503)
+
+    rows = [(f"SYNTH-{i}", "Synthetic official decision", "Α.2", " Stored\tAgency\x00 " if i == 1 else None,
+             "https://example.test/doc", "OTHER", None, None, None, str(42 + i)) for i in range(101)]
+    added = []
+    db = SimpleNamespace(execute=AsyncMock(return_value=SimpleNamespace(fetchall=lambda: rows)),
+                         add=added.append, flush=AsyncMock())
+    monkeypatch.setattr(scraper, "_sync_existing_decision_bill_scopes", AsyncMock(return_value=0))
+    commit = AsyncMock()
+    monkeypatch.setattr(scraper, "commit_and_invalidate_representation", commit)
+    with respx.mock(assert_all_called=False) as mock:
+        mock.get(url__regex=lookup.ORGANIZATIONS_URL + r"/[0-9]+$").mock(side_effect=unavailable)
+        started = time.monotonic()
+        stats = await scraper.convert_decisions_to_bills(db)
+        assert time.monotonic() - started < 0.6
+        assert len(attempts) == (1 if failure == "timeout" else lookup.MAX_RETRIES)
+        assert {request.url.path.rsplit("/", 1)[-1] for request in attempts} == {"42"}
+    assert stats["created"] == 101
+    assert added[1].pill_el == "Διαύγεια: Stored Agency" and added[1].org_label == "Stored Agency"
+    assert all(bill.pill_el == "Διαύγεια" and bill.org_label is None for bill in [added[0], *added[2:]])
+    assert not label_store.hashes
+    commit.assert_awaited_once_with(db)
+    # An import deadline must release its host lease and not poison later runs.
+    with respx.mock() as mock:
+        mock.get(f"{lookup.ORGANIZATIONS_URL}/42").respond(200, json={"uid": "42", "label": "Recovered"})
+        assert await lookup.ImportOrgLabels().resolve("42") == "Recovered"
+
+
+@pytest.mark.parametrize("writer", ["scrape", "historical"])
+async def test_raw_import_outage_budget_is_shared_across_all_uids(label_store, monkeypatch, writer):
+    from datetime import datetime, timezone
+    from scripts import backfill_diavgeia_decisions as historical
+    from services import diavgeia_client, diavgeia_scraper as scraper
+    import database
+
+    monkeypatch.setattr(lookup, "IMPORT_LABEL_BUDGET", 0.06)
+    records = [{"ada": f"SYNTH-{i}", "organizationId": str(42 + i),
+                "issueDate": "2026-10-01T00:00:00Z", "subject": "Official synthetic decision"} for i in range(12)]
+
+    class Client:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            pass
+
+        async def iter_decisions(self, **kwargs):
+            for record in records:
+                yield record
+
+        async def search_decisions(self, **kwargs):
+            return {"decisions": records}
+
+    db = SimpleNamespace(execute=AsyncMock(return_value=SimpleNamespace(rowcount=1)), commit=AsyncMock())
+
+    @asynccontextmanager
+    async def session():
+        yield db
+
+    monkeypatch.setattr(scraper, "DiavgeiaClient", Client)
+    monkeypatch.setattr(diavgeia_client, "DiavgeiaClient", Client)
+    monkeypatch.setattr(scraper, "_resolve_org", AsyncMock(return_value=(None, None, "OTHER")))
+    monkeypatch.setattr(database, "AsyncSessionLocal", session)
+    monkeypatch.setattr(historical, "parse_args", lambda: SimpleNamespace(
+        since="2026-01-01", until="2026-10-31", resume=False, decision_type_uid="Α.2",
+        organization_uid=None, max_pages=1, batch_size=500, dry_run=False))
+    monkeypatch.setattr(historical.signal, "signal", lambda *args: None)
+    monkeypatch.setattr(historical, "save_cursor", lambda *args: None)
+    attempts = []
+
+    async def stall(request):
+        attempts.append(request)
+        await asyncio.Future()
+
+    with respx.mock(assert_all_called=False) as mock:
+        mock.get(url__regex=lookup.ORGANIZATIONS_URL + r"/[0-9]+$").mock(side_effect=stall)
+        started = time.monotonic()
+        if writer == "scrape":
+            result = await scraper.scrape_decisions(db, decision_type_uids=["Α.2"], published_after=datetime.now(timezone.utc))
+            assert result.inserted == len(records)
+        else:
+            await historical.main()
+        assert time.monotonic() - started < 0.6
+    assert len(attempts) == 1
+    assert not label_store.hashes
+    db.commit.assert_awaited_once()
+    params = db.execute.await_args.args[0].compile().params
+    assert params["organization_label" if writer == "scrape" else f"organization_label_m{len(records) - 1}"] == ""
+
+
 @pytest.mark.parametrize("live_label", ["SYNTHETIC AGENCY AE", None])
 async def test_conversion_uses_shared_live_resolution_and_neutral_fallback(label_store, monkeypatch, live_label):
     from services import diavgeia_scraper as scraper
@@ -209,7 +374,7 @@ async def test_conversion_uses_shared_live_resolution_and_neutral_fallback(label
     assert "d.organization_uid" in str(db.execute.await_args.args[0])
 
 
-@pytest.mark.parametrize("live_label", ["Synthetic agency", None])
+@pytest.mark.parametrize("live_label", ["Synthetic agency", None, " Α\u0301\x00\u202e\t" + "😀" * 191])
 async def test_scrape_stores_resolved_label_and_retains_raw_uid(label_store, monkeypatch, live_label):
     from datetime import datetime, timezone
     from services import diavgeia_scraper as scraper
@@ -235,12 +400,12 @@ async def test_scrape_stores_resolved_label_and_retains_raw_uid(label_store, mon
     assert result.inserted == 1
     params = db.execute.await_args.args[0].compile().params
     assert params["organization_uid"] == "42"
-    assert params["organization_label"] == (live_label or "")
+    assert params["organization_label"] == (lookup.clean_org_label(live_label) or "")
     assert scraper.DiavgeiaDecision.__table__.c.organization_label.nullable is False
 
 
 @pytest.mark.parametrize("batch_size", [1, 100])
-@pytest.mark.parametrize("live_label", ["Synthetic agency", None])
+@pytest.mark.parametrize("live_label", ["Synthetic agency", None, " Α\u0301\x00\u202e\t" + "😀" * 191])
 async def test_historical_import_uses_shared_resolver_in_both_flush_paths(label_store, monkeypatch, batch_size, live_label):
     from scripts import backfill_diavgeia_decisions as historical
     from services import diavgeia_client, diavgeia_scraper
@@ -277,6 +442,6 @@ async def test_historical_import_uses_shared_resolver_in_both_flush_paths(label_
         await historical.main()
     params = db.execute.await_args.args[0].compile().params
     assert params["organization_uid_m0"] == "42"
-    assert params["organization_label_m0"] == (live_label or "")
+    assert params["organization_label_m0"] == (lookup.clean_org_label(live_label) or "")
     assert params["governance_level_m0"] == "OTHER"
     db.commit.assert_awaited_once()

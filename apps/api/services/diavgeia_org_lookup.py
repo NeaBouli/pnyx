@@ -9,6 +9,9 @@ import gzip
 import json
 import logging
 import re
+import time
+import unicodedata
+from asyncio import CancelledError, Lock
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -16,6 +19,7 @@ import httpx
 import redis.asyncio as aioredis
 
 from config import settings
+from models import DiavgeiaDecision, ParliamentBill
 from services import scraper_http
 from services.diavgeia_client import MAX_RETRIES, RETRY_BASE_DELAY, USER_AGENT
 from services.scraper_http import SCRAPER_HTTP_HOOKS
@@ -41,22 +45,77 @@ ORG_LABEL_MISSING_SQL = """(org_label IS NULL OR btrim(org_label) = ''
     OR lower(btrim(org_label)) LIKE '[unknown:%'
     OR lower(btrim(org_label)) LIKE '[no-label:%')"""
 DECISION_LABEL_MISSING_SQL = ORG_LABEL_MISSING_SQL.replace("org_label", "organization_label")
+PILL_PREFIX = "Διαύγεια: "
+# pill_el is varchar(200); both label columns are Text (no declared limit).
+# Keep the same bounded label in every column, including raw decisions/cache.
+ORG_LABEL_MAX_LENGTH = min([
+    ParliamentBill.__table__.c.pill_el.type.length - len(PILL_PREFIX),
+    *(column.type.length for column in (
+        ParliamentBill.__table__.c.org_label,
+        DiavgeiaDecision.__table__.c.organization_label,
+    ) if column.type.length is not None),
+])
+IMPORT_LABEL_BUDGET = 3.0
 
 
 def clean_org_label(label: object) -> str | None:
     """Validate display metadata, independently of generated prose quality."""
     if not isinstance(label, str):
         return None
-    label = label.strip()
+    label = unicodedata.normalize("NFC", "".join(
+        " " if char.isspace() else char for char in label
+        if char.isspace() or unicodedata.category(char) not in {"Cc", "Cf", "Cs"}
+    ))
+    label = " ".join(label.split())
     if (not label or label.lower() == "unknown" or label.isdecimal()
-            or label.lower().startswith(("[unknown:", "[no-label:"))):
+            or label.lower().startswith(("[unknown:", "[no-label:"))
+            or "<" in label or ">" in label):
         return None
+    if len(label) > ORG_LABEL_MAX_LENGTH:
+        label = label[:ORG_LABEL_MAX_LENGTH - 1].rstrip() + "…"
     return label
 
 
 def org_pill(label: str | None) -> str:
     label = clean_org_label(label)
-    return f"Διαύγεια: {label}" if label else "Διαύγεια"
+    return PILL_PREFIX + label if label else "Διαύγεια"
+
+
+class OrgLabelLookupUnavailable(Exception):
+    """Transient lookup failure, distinct from a known missing organization."""
+
+
+class ImportOrgLabels:
+    """One cumulative lookup budget and outage breaker for an entire import.
+
+    Serialize budget accounting and UID memoization even for concurrent callers.
+    The resolver still uses the shared Redis request slot across runs/workers.
+    """
+
+    def __init__(self, resolver=None):
+        self._resolver = resolver or resolve_org_label
+        self._remaining = IMPORT_LABEL_BUDGET
+        self._labels: dict[str, str | None] = {}
+        self._lock = Lock()
+
+    async def resolve(self, uid: str) -> str | None:
+        async with self._lock:
+            if uid in self._labels:
+                return self._labels[uid]
+            if self._remaining <= 0:
+                return None
+            started = time.monotonic()
+            try:
+                async with asyncio.timeout(self._remaining):
+                    label = clean_org_label(await self._resolver(uid, fail_on_unavailable=True))
+            except (TimeoutError, OrgLabelLookupUnavailable):
+                self._remaining = 0
+                label = None
+                logger.warning("Diavgeia import label lookups deferred for remainder of run")
+            finally:
+                self._remaining -= time.monotonic() - started
+            self._labels[uid] = label
+            return label
 
 
 @asynccontextmanager
@@ -131,7 +190,7 @@ def get_label(uid: str) -> str:
     return f"[unknown:{uid}]"
 
 
-async def resolve_org_label(uid: str) -> str | None:
+async def resolve_org_label(uid: str, *, fail_on_unavailable: bool = False) -> str | None:
     """Snapshot → persistent label/negative cache → public organization API.
 
     Only a numeric public organization UID leaves this process. Transient
@@ -154,6 +213,8 @@ async def resolve_org_label(uid: str) -> str | None:
                 return label
     except Exception as exc:
         logger.warning("Diavgeia label cache read unavailable error=%s", type(exc).__name__)
+        if fail_on_unavailable:
+            raise OrgLabelLookupUnavailable from None
 
     last_request = None
 
@@ -185,6 +246,8 @@ async def resolve_org_label(uid: str) -> str | None:
                     logger.warning("Diavgeia label status=%d attempt=%d", resp.status_code, attempt + 1)
                 elif resp.status_code != 200:
                     logger.warning("Diavgeia label unavailable status=%d", resp.status_code)
+                    if fail_on_unavailable:
+                        raise OrgLabelLookupUnavailable
                     return None
                 else:
                     try:
@@ -198,6 +261,17 @@ async def resolve_org_label(uid: str) -> str | None:
                         logger.warning("Diavgeia label invalid response")
                     await _cache_label(uid, label)
                     return label
+            except CancelledError:
+                # The import budget can cancel HTTP or a pacing hook. Bound
+                # cleanup too; the orphan TTL covers an unavailable Redis.
+                try:
+                    async with asyncio.timeout(0.1):
+                        await release_failed_request()
+                except TimeoutError:
+                    pass
+                raise
+            except OrgLabelLookupUnavailable:
+                raise
             except (httpx.TransportError, TimeoutError) as exc:
                 await release_failed_request()
                 logger.warning("Diavgeia label attempt=%d error=%s", attempt + 1, type(exc).__name__)
@@ -206,9 +280,13 @@ async def resolve_org_label(uid: str) -> str | None:
                 # Includes scraper admission/cooldown and Redis pacing failures.
                 # Never log payloads or exception messages containing URLs/data.
                 logger.warning("Diavgeia label deferred error=%s", type(exc).__name__)
+                if fail_on_unavailable:
+                    raise OrgLabelLookupUnavailable from None
                 return None
             if attempt < MAX_RETRIES - 1:
                 await asyncio.sleep(RETRY_BASE_DELAY * 2 ** attempt)
+    if fail_on_unavailable:
+        raise OrgLabelLookupUnavailable
     return None
 
 

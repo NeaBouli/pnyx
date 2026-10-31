@@ -74,8 +74,7 @@ class Connection:
         for item in self.rows:
             if (item["id"], item["source"], item["pill_el"], item["org_label"]) == (bill_id, "DIAVGEIA", old, old_label):
                 item["pill_el"] = new
-                if script.clean_org_label(old_label) is None:
-                    item["org_label"] = label
+                item["org_label"] = label
                 return "UPDATE 1"
         return "UPDATE 0"
 
@@ -122,8 +121,10 @@ async def test_plan_is_private_exact_and_exclusive(tmp_path, resolver, invalidat
         assert tuple(reader.fieldnames) == script.PLAN_HEADER
         entries = list(reader)
     assert entries == [dict(id="DIAV-1", old_pill_sha256=script.pill_sha256(row()["pill_el"]),
+                            old_org_label_sha256=script.org_label_sha256(None),
                             uid="42", new_pill="Διαύγεια: SYNTHETIC AGENCY AE"),
                        dict(id="DIAV-2", old_pill_sha256=script.pill_sha256(row(uid="99")["pill_el"]),
+                            old_org_label_sha256=script.org_label_sha256(None),
                             uid="99", new_pill="Διαύγεια")]
     assert "Synthetic retained summary" not in plan.read_text()
     with pytest.raises(FileExistsError):
@@ -255,6 +256,7 @@ def test_cli_rejects_missing_rails_and_bad_limits(args):
 
 
 @pytest.mark.parametrize("change", [{"uid": "../42"}, {"old_pill_sha256": "wrong"},
+                                    {"old_org_label_sha256": "wrong"},
                                     {"new_pill": "Διαύγεια: [unknown:42]"}, {"new_pill": "Other pill"}])
 async def test_malformed_plan_fails_before_database_io(tmp_path, resolver, change):
     plan = await make_plan(tmp_path, [row()])
@@ -267,3 +269,30 @@ async def test_malformed_plan_fails_before_database_io(tmp_path, resolver, chang
         writer.writerows(entries)
     with pytest.raises(ValueError):
         await script.backfill(None, apply=True, expect_from=plan, max_rows=1, backup_path=tmp_path / "backup.csv")
+
+
+@pytest.mark.parametrize("old,new", [("Agency A", "Agency B"), (None, ""), ("", None),
+                                    ("Agency A", " Agency A "), (None, "null")])
+async def test_plan_binds_raw_org_label_before_apply(tmp_path, resolver, invalidate, old, new, capsys):
+    original = row(uid="99")
+    original["org_label"] = old
+    plan = await make_plan(tmp_path, [original])
+    changed = {**original, "org_label": new}
+    conn = Connection([changed], tmp_path / "backup.csv")
+    resolver.reset_mock()
+    assert await script.backfill(conn, apply=True, expect_from=plan, max_rows=1, backup_path=conn.backup) == 0
+    assert conn.rows == [changed] and not conn.writes and not conn.backup.exists()
+    assert "unplanned/changed=1" in capsys.readouterr().out
+    resolver.assert_not_awaited()
+    invalidate.assert_not_awaited()
+
+
+@pytest.mark.parametrize("stored", ["  Agency\x00\u202e\tΑ\u0301  ", "Α" * 191, "\u200b[unknown:99]", "<b>Agency</b>"])
+async def test_backfill_normalizes_stored_labels_in_both_columns(tmp_path, resolver, invalidate, stored):
+    original = row(uid="99")
+    original["org_label"] = stored
+    plan = await make_plan(tmp_path, [original])
+    conn = Connection([original], tmp_path / "backup.csv")
+    assert await script.backfill(conn, apply=True, expect_from=plan, max_rows=1, backup_path=conn.backup) == 1
+    label = script.clean_org_label(stored)
+    assert conn.rows == [{**original, "pill_el": script.org_pill(label), "org_label": label}]
