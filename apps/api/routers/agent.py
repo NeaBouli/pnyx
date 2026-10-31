@@ -310,8 +310,10 @@ _EKA63_TOPIC_PATTERNS: dict[str, tuple[re.Pattern[str], ...]] = {
         r"\b(see|view)\b[\w\s]{0,20}\bresults?\b[\w\s]{0,20}\b(before|during|while|until|yet)\b",
         r"\bresults?\s+visibility\b",
         r"\bhidden\s+results?\b",
+        r"\b(?:see|view)\s+(?:the\s+)?(?:vote\s+)?results?\b",
         r"αποτελεσμ\w*[\w\s]{0,40}(ορατ|κρυφ|κρυμμεν|εμφανιζ|εμφανιστ|φαινοντ|μηδεν)",
         r"(ορατ|κρυφ|κρυμμεν|εμφανιζ|εμφανιστ|φαινοντ)\w*[\w\s]{0,20}αποτελεσμ",
+        r"\b(?:βλεπ\w*|δει|δουν)\s+(?:τα\s+)?αποτελεσμ",
     )),
 }
 # Topics where a bill/law reference means the citizen is asking about content,
@@ -333,15 +335,21 @@ _PRIVACY_SUBJECTS = {
         r"προσωπικ\w* (?:μου |μασ )?(?:δεδομεν\w*|στοιχει\w*|πληροφορι\w*)|"
         r"δεδομεν\w* (?:μου|μασ)|λογαριασμ\w*|ταυτοτητ\w*|κλειδι\w*)\b"
     ),
+    "results": re.compile(r"\b(?:(?:vote|voting) )?results?\b|\bαποτελεσμ\w*\b"),
     # Explicit external subjects cannot inherit the platform from a pronoun or
     # an incidental mention of an app. Donations retain their payment routing.
     "other": re.compile(r"\b(?:banks?|hospitals?|articles?|donat\w*|phone calls?|τραπεζ\w*|νοσοκομ\w*|αρθρ\w*|δωρε\w*)\b"),
 }
 _PRIVACY_INTENTS = {
     "deletion": re.compile(r"\b(?:delet\w*|eras\w*|remove|wipe|revok\w*|revocation|διαγραφ\w*|διαγραψ\w*|σβησ\w*|ανακαλ\w*|ανακλη\w*)\b"),
-    "anonymity": re.compile(r"\b(?:anonym\w*|pseudonym\w*|privacy|private(?! keys?\b)|ανωνυμ\w*|ψευδωνυμ\w*|ιδιωτικοτητ\w*)\b"),
+    "anonymity": re.compile(r"\b(?:anon[yi]m\w*|pseudonym\w*|privacy|private(?! keys?\b)|ανωνυμ\w*|ψευδωνυμ\w*|ιδιωτικοτητ\w*)\b"),
+    "secrecy": re.compile(r"\b(?:secret|μυστικ\w*)\b"),
     "linkage": re.compile(r"\b(?:link(?:s|ed|ing)?|connect\w*|associat\w*|trac(?:e|ed|ing)|track\w*|συνδε\w*|συσχετ\w*|ταυτοποι\w*|παρακολουθ\w*)\b"),
-    "visibility": re.compile(r"\b(?:who|anyone|someone|others|operators?|admins?|you|ποιο[ισ]|διαχειριστ\w*|αλλοι|καποιο[ισ])\b.*\b(?:see|sees|view|views|βλεπ\w*|δει|δουν)\b"),
+    "visibility": re.compile(
+        r"\b(?:who|anyone|someone|others|operators?|admins?|you|ποιο[ισ]|διαχειριστ\w*|αλλοι|καποιο[ισ])\b"
+        r"(?:\s+(?:can|could|may|might|will|would|be|able|to|else|actually|exactly|μπορει|μπορουν|να)){0,5}"
+        r"\s+(?:see|sees|view|views|βλεπ\w*|δει|δουν)\b"
+    ),
     "storage": re.compile(r"\b(?:stor\w*|keep|collect|retain|save|αποθηκευ\w*|κρατατε|συλλεγ\w*|διατηρειτε)\b"),
     "verification": re.compile(r"\b(?:hlr|sms|verif\w*|phone|mobile|επαληθευ\w*|επαληθ\w*|τηλεφων\w*|κινητ\w*)\b"),
 }
@@ -350,26 +358,66 @@ _SELF = re.compile(r"\b(?:i|we|me|us|my|our|μου|μασ|εμενα|μενα|ε
 _PERSON = re.compile(r"\b(?:me|us|identity|name|phone|εμενα|μενα|εμασ|ταυτοτητ\w*|ονομα|τηλεφων\w*)\b")
 _IDENTITY = re.compile(r"\b(?:me|us|identity|name|εμενα|μενα|εμασ|ταυτοτητ\w*|ονομα)\b")
 _KEY = re.compile(r"\b(?:keys?|κλειδι\w*)\b")
+# Prepositional bill/law references describe context, regardless of whether
+# they precede or follow the question. Legislative subjects ("does the law
+# require ...") remain intact. Remove the entire phrase so "privacy bill"
+# cannot supply privacy intent to an ordinary voting question.
+_PRIVACY_LAW_CONTEXT = re.compile(
+    r"\b(?:on|for|under|regarding)\s+(?:(?:the|this|that|a|privacy)\s+)*"
+    r"(?:bills?|laws?|legislation|gr \d{4}(?: \d+)?)\b(?:\s+gr \d{4}(?: \d+)?)?"
+    r"|\b(?:στο|στον|για το|για τον|συμφωνα με τον)\s+"
+    r"(?:νομοσχ\w*|νομο(?:σ|υ)?)\b"
+)
+_PRIVACY_REVOCATION = re.compile(
+    r"\b(?:revok\w*\s+(?:my\s+)?(?:identity|key|verification)|"
+    r"(?:identity|key|verification)\s+revocation|"
+    r"ανακ(?:αλ|λη)\w*\s+(?:(?:την|του|τησ|το)\s+)?(?:ταυτοτητ\w*|κλειδι\w*|επαληθευσ\w*))\b"
+)
+
+
+def _has_identity_linkage(text: str, subject: str) -> bool:
+    """Require an identity/vote object; a URL's noun 'link' is not a verb."""
+    vote = _PRIVACY_SUBJECTS["vote"].search(text)
+    personal = subject == "personal_data" and not _KEY.search(text)
+    for match in _PRIVACY_INTENTS["linkage"].finditer(text):
+        after = text[match.end():]
+        if match.group() in {"link", "links"}:
+            # Active 'link my vote to me', as opposed to 'send me a link to vote'.
+            object_text = re.sub(r"^\s+(?:(?:my|our|the)\s+)?", "", after)
+            if not any(_PRIVACY_SUBJECTS[name].match(object_text)
+                       for name in ("vote", "personal_data")):
+                continue
+        if ((vote and (_PERSON.search(after) or "track" in match.group()
+                       or (_PERSON.search(text[:match.start()])
+                           and _PRIVACY_SUBJECTS["vote"].search(after))))
+                or (personal and (_IDENTITY.search(after)
+                                  or (_IDENTITY.search(text[:match.start()]) and vote)))):
+            return True
+    return False
 
 
 def _privacy_subject(text: str) -> str:
     """Identify what privacy would apply to, before interpreting the intent."""
     matches = {name: pattern.search(text) for name, pattern in _PRIVACY_SUBJECTS.items()}
     platform_subjects = sorted((match.start(), name) for name, match in matches.items()
-                               if match and name in {"vote", "personal_data"})
-    # An explicitly named subject beats generic platform context. A personal
-    # vote before a bill reference is still a platform vote ("my vote on a bill");
-    # a law before a vote is legislative content ("does the law require ...").
+                               if match and name in {"vote", "personal_data", "results"})
+    # Named legislative/external subjects beat generic platform context.
     explicit = [(match.start(), name) for name, match in matches.items()
                 if match and name in {"forum", "feedback", "law", "other"}]
     if explicit:
-        position, subject = min(explicit)
-        if (subject == "law" and _SELF.search(text[:position])
-                and platform_subjects and platform_subjects[0][0] < position):
-            return platform_subjects[0][1]
-        return subject
+        return min(explicit)[1]
+    # Visibility is about the object of 'see', not an incidental vote/identity
+    # elsewhere. 'Vote results' is a single aggregate object.
+    visible = _PRIVACY_INTENTS["visibility"].search(text)
+    if visible:
+        objects = [(match.start(), name) for name in ("results", "vote", "personal_data")
+                   if (match := _PRIVACY_SUBJECTS[name].search(text, visible.end()))]
+        if objects:
+            return min(objects)[1]
     if platform_subjects:
         return platform_subjects[0][1]
+    if _PRIVACY_REVOCATION.search(text):
+        return "personal_data"
     if _SELF.search(text) and any(_PRIVACY_INTENTS[name].search(text)
                                   for name in ("anonymity", "linkage")):
         return "personal_data"
@@ -383,16 +431,14 @@ def _privacy_subject(text: str) -> str:
 def _privacy_intent(text: str, subject: str) -> str:
     """Classify the request; HLR is context when privacy is the actual intent."""
     hits = {name: bool(pattern.search(text)) for name, pattern in _PRIVACY_INTENTS.items()}
-    if hits["deletion"] and _PRIVACY_SUBJECTS["personal_data"].search(text):
+    if hits["deletion"] and (_PRIVACY_SUBJECTS["personal_data"].search(text)
+                             or _PRIVACY_REVOCATION.search(text)):
         return "deletion"
-    if hits["anonymity"]:
-        return "anonymity"
-    vote = bool(_PRIVACY_SUBJECTS["vote"].search(text))
     personal = subject == "personal_data" and not _KEY.search(text)
-    if ((vote or personal) and hits["visibility"]) or (hits["linkage"] and (
-        (vote and (_PERSON.search(text) or "track" in text))
-        or (personal and _IDENTITY.search(text))
-    )):
+    if hits["anonymity"] or (hits["secrecy"] and (subject in {"vote", "results"} or personal)):
+        return "anonymity"
+    if (((subject == "vote" or personal) and hits["visibility"])
+            or _has_identity_linkage(text, subject)):
         return "anonymity"
     # Storage of personal data is the published privacy FAQ; storage of a phone
     # number or a key alone keeps the existing verification/key explanation.
@@ -406,6 +452,8 @@ def _privacy_intent(text: str, subject: str) -> str:
 
 def _classify_privacy(question: str) -> tuple[str, str]:
     text = " ".join(re.sub(r"[^\w]+", " ", _match_text(question)).split())
+    if _SELF.search(text) or _PRIVACY_INTENTS["visibility"].search(text):
+        text = " ".join(_PRIVACY_LAW_CONTEXT.sub(" ", text).split())
     subject = _privacy_subject(text)
     return subject, _privacy_intent(text, subject)
 
@@ -434,7 +482,10 @@ def _eka63_topic(normalized_q: str) -> str | None:
     privacy = _privacy_topic(normalized_q)
     if privacy:
         return privacy
-    is_bill_query = _privacy_subject(_match_text(folded)) == "law"
+    subject, intent = _classify_privacy(normalized_q)
+    if subject == "results" and intent == "anonymity":
+        return "results_visibility"
+    is_bill_query = subject == "law"
     for topic, patterns in _EKA63_TOPIC_PATTERNS.items():
         if topic in _EKA63_BILL_EXCLUDED_TOPICS and is_bill_query:
             continue

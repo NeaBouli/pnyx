@@ -196,6 +196,135 @@ NEW_BARE_CASES = [
     ("el", "δεδομένα κινητού", ["verification"]),
 ]
 
+PRIVATE_KEY_CASES = [
+    ("en", "Where is my private key used to sign my vote stored?"),
+    ("el", "Πού αποθηκεύεται το ιδιωτικό κλειδί για την ψήφο μου;"),
+    ("en", "Where is my private key stored?"),
+    ("en", "Is my private key secret?"),
+    ("el", "Είναι μυστικό το ιδιωτικό κλειδί μου;"),
+]
+
+
+# Round 4 review: a reference prompt pins each existing canonical answer.
+ROUND4_CASES = [
+    ("en", "For bill GR-2026-1234, who can see my vote?", "anonymity", "Are votes anonymous?"),
+    ("en", "How should I vote on the privacy bill?", None, None),
+    ("en", "Can anyone see the vote results before voting ends?", "results_visibility", "Why are results hidden?"),
+    ("en", "Can you send me a link to vote?", None, None),
+    ("en", "Can you send me a link to the Android app?", "android_download", "Download the Android app"),
+    ("en", "Is my vote secret?", "anonymity", "Are votes anonymous?"),
+    ("el", "Είναι μυστική η ψήφος μου;", "anonymity", "Είναι οι ψήφοι ανώνυμες;"),
+    ("el", "Ειναι μυστικη η ψηφος μου;", "anonymity", "Είναι οι ψήφοι ανώνυμες;"),
+    ("en", "Is my vote anonimous?", "anonymity", "Are votes anonymous?"),
+    ("en", "Can I revoke my verification?", "data_deletion", "How can I delete my data?"),
+]
+
+ROUND4_VARIANT_CASES = [
+    ("en", "Who can see my vote for bill GR-2026-1234?", "anonymity", "Are votes anonymous?"),
+    ("en", "On the privacy bill, is my vote secret?", "anonymity", "Are votes anonymous?"),
+    ("en", "For bill GR-2026-1234, is my vote anonymus?", "anonymity", "Are votes anonymous?"),
+    ("en", "Is my vote anonimi?", "anonymity", "Are votes anonymous?"),
+    ("el", "Ειναι ανωνυμη η ψηφος μου;", "anonymity", "Είναι οι ψήφοι ανώνυμες;"),
+    ("el", unicodedata.normalize("NFD", "ΕΙΝΑΙ ΜΥΣΤΙΚΗ Η ΨΗΦΟΣ ΜΟΥ;"), "anonymity", "Είναι οι ψήφοι ανώνυμες;"),
+    ("en", "Can anyone link my vote to me?", "anonymity", "Are votes anonymous?"),
+    ("en", "Can my phone number be linked to my vote?", "anonymity", "Are votes anonymous?"),
+    ("el", "Συνδέεται η ψήφος με το τηλέφωνο;", "anonymity", "Είναι οι ψήφοι ανώνυμες;"),
+    ("en", "Can anyone see the results?", "results_visibility", "Why are results hidden?"),
+    ("en", "Are the vote results anonymous?", "results_visibility", "Why are results hidden?"),
+    ("en", "Are the vote results secret?", "results_visibility", "Why are results hidden?"),
+    ("el", "Μπορεί κάποιος να δει τα αποτελέσματα πριν κλείσει η ψηφοφορία;", "results_visibility", "Γιατί τα αποτελέσματα είναι κρυφά;"),
+    ("en", "For the privacy bill, how should I vote?", None, None),
+    ("en", "Can you send me a link to my vote?", None, None),
+    ("en", "Can you send me a link to verify my vote?", None, None),
+    ("en", "Can you send me a link to see my vote?", None, None),
+    ("en", "Is there verification revocation?", "data_deletion", "How can I delete my data?"),
+    ("el", "Μπορώ να ανακαλέσω την επαλήθευση;", "data_deletion", "Πώς διαγράφω τα δεδομένα μου;"),
+]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("mode", ["deterministic", "hybrid"])
+@pytest.mark.parametrize("lang,question,topic,reference", ROUND4_CASES + ROUND4_VARIANT_CASES)
+async def test_round4_review_routing(monkeypatch, mode, lang, question, topic, reference):
+    monkeypatch.setenv("AGENT_MODE", mode)
+
+    async def unexpected(*args, **kwargs):
+        raise AssertionError("Canonical/deterministic routing must precede database/model calls")
+
+    for name in ("_build_context", "ollama_available", "answer_citizen_question", "_claude_answer"):
+        monkeypatch.setattr(agent, name, unexpected)
+
+    if topic is None:
+        assert agent._canonical_response(question, lang) is None
+        assert "anonymity" not in agent._select_fact_blocks(question)
+        if "bill" in question:
+            assert agent._should_include_bills(question)
+        if mode == "hybrid":
+            class RetrievalReached(Exception):
+                pass
+
+            async def context(actual_question, actual_lang, db):
+                assert (actual_question, actual_lang) == (question, lang)
+                raise RetrievalReached
+
+            monkeypatch.setattr(agent, "_build_context", context)
+            with pytest.raises(RetrievalReached):
+                await agent.ask_agent.__wrapped__(
+                    object(), agent.AskRequest(question=question, lang=lang), db=object(),
+                )
+            return
+
+    response = await agent.ask_agent.__wrapped__(
+        object(), agent.AskRequest(question=question, lang=lang), db=object(),
+    )
+    if topic is None:
+        assert response["model"] == "faq-deterministic"
+        assert "anonymity" not in [source["topic"] for source in response["sources"]]
+        assert any(source["topic"] == "voting" for source in response["sources"])
+    else:
+        assert response == agent._canonical_response(reference, lang) | {"question": question}
+        assert response["sources"] == [{"type": "knowledge_base", "topic": topic}]
+
+
+# Exercise every input in every earlier routing table through the endpoint.
+# Noncanonical cases retain their existing broader FAQ/fallback assertions;
+# verification, forum and bare probes also pin their exact source topics.
+PREVIOUS_ROUND_ROUTING_CASES = [
+    *[(lang, q, "payments_paused", None) for lang, q in PAYMENT_CASES],
+    *[(lang, q, "data_deletion", None) for lang, q in DELETION_CASES + ROUND2_DELETION_CASES + NEW_DELETION_CASES],
+    *[(lang, q, "anonymity", None) for lang, q in ANONYMITY_CASES + ROUND2_ANONYMITY_CASES + NEW_ANONYMITY_CASES],
+    *[(lang, q, "private_key", None) for lang, q in PRIVATE_KEY_CASES],
+    *[(lang, q, None, topics) for lang, q, topics in VERIFICATION_CASES + NEW_VERIFICATION_CASES + NEW_BARE_CASES],
+    *[(lang, q, None, ["forum"]) for lang, q in ROUND2_FORUM_CASES + NEW_FORUM_CASES],
+    *[(lang, q, None, None) for lang, q in BILL_CASES + UNRELATED_CASES + ROUND2_BILL_CASES + NEW_BILL_CASES + NEW_UNRELATED_CASES + ROUND2_FEEDBACK_CASES + NEW_FEEDBACK_CASES],
+]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("lang,question,canonical_topic,topics", PREVIOUS_ROUND_ROUTING_CASES)
+async def test_every_previous_routing_table_input(monkeypatch, lang, question, canonical_topic, topics):
+    monkeypatch.setenv("AGENT_MODE", "deterministic")
+
+    async def unexpected(*args, **kwargs):
+        raise AssertionError("Deterministic routing must stay offline")
+
+    for name in ("_build_context", "ollama_available", "answer_citizen_question", "_claude_answer"):
+        monkeypatch.setattr(agent, name, unexpected)
+
+    canonical = agent._canonical_response(question, lang)
+    response = await agent.ask_agent.__wrapped__(
+        object(), agent.AskRequest(question=question, lang=lang), db=object(),
+    )
+    if canonical_topic:
+        assert response["model"] == "knowledge-base"
+        assert response["sources"] == [{"type": "knowledge_base", "topic": canonical_topic}]
+    else:
+        assert canonical is None
+        assert response["model"] == "faq-deterministic"
+        assert "anonymity" not in [source["topic"] for source in response["sources"]]
+        if topics is not None:
+            assert response["sources"] == [{"type": "knowledge_base", "topic": topic} for topic in topics]
+
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("mode", ["deterministic", "hybrid"])
@@ -258,11 +387,7 @@ def test_other_intents_do_not_select_voting_privacy(lang: str, question: str) ->
     assert "anonymity" not in agent._select_fact_blocks(question)
 
 
-@pytest.mark.parametrize("lang,question", [
-    ("en", "Where is my private key used to sign my vote stored?"),
-    ("el", "Πού αποθηκεύεται το ιδιωτικό κλειδί για την ψήφο μου;"),
-    ("en", "Where is my private key stored?"),
-])
+@pytest.mark.parametrize("lang,question", PRIVATE_KEY_CASES)
 def test_private_key_for_voting_keeps_existing_answer(lang: str, question: str) -> None:
     response = agent._canonical_response(question, lang)
     assert response["sources"] == [{"type": "knowledge_base", "topic": "private_key"}]
