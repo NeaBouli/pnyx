@@ -668,3 +668,18 @@ def test_cli_rejects_invalid_row_limit(monkeypatch: pytest.MonkeyPatch, limit: s
     with pytest.raises(SystemExit) as error:
         audit_script.parse_args()
     assert error.value.code == 2
+
+
+@pytest.mark.asyncio
+async def test_legacy_error_page_only_clears_page_like_text(tmp_path: Path) -> None:
+    page = "<html><title>403 Forbidden</title><body><h1>Access Denied</h1>Reference #18.abc</body></html>"
+    long_prose = ("<h1>Access Denied</h1>\n" + "Η απόφαση του δημοτικού συμβουλίου ρυθμίζει τη διαδικασία "
+                  "πρόσβασης των πολιτών στις δημόσιες υπηρεσίες. " * 40)
+    assert audit_script.page_like(page) and not audit_script.page_like(long_prose)
+    rows = [{"id": i, "source": "DIAVGEIA", "ai_summary_reviewed": False, "generated_content_provenance": None,
+             "summary_long_el": v} for i, v in (("PAGE", page), ("LONG", long_prose))]
+    plan = tmp_path / "plan.csv"
+    await _raw_audit(PlanConnection(rows), fields=("summary_long_el",), plan_path=plan,
+                     legacy_sources=frozenset({"DIAVGEIA"}))
+    planned = [r["id"] for r in csv.DictReader(plan.read_text(encoding="utf-8").splitlines())]
+    assert planned == ["PAGE"]

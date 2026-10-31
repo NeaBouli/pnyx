@@ -39,6 +39,24 @@ DEFAULT_LEGACY_REASONS = frozenset({"refusal_or_meta", "reader_metadata", "mojib
 LEGACY_REASON_CHOICES = DEFAULT_LEGACY_REASONS | {"foreign_script", "mixed_script", "non_greek"}
 
 
+PAGE_LIKE_MAX_CHARS = 1500
+PAGE_LIKE_MIN_MARKUP_SHARE = 0.5
+
+
+def page_like(value: str) -> bool:
+    """Block pages are short or mostly markup; long legislative prose never is.
+
+    A structural bound for legacy clearing: an error-page heuristic hit inside a
+    long official text stays report-only, whatever the regexes match.
+    """
+    if len(value) < PAGE_LIKE_MAX_CHARS:
+        return True
+    from services.error_pages import _TAG
+
+    markup = sum(len(match) for match in _TAG.findall(value))
+    return markup / len(value) > PAGE_LIKE_MIN_MARKUP_SHARE
+
+
 def _ownership(row: Any) -> dict[str, str]:
     value = row["generated_content_provenance"]
     if isinstance(value, str):
@@ -110,7 +128,10 @@ async def audit(
                             generated_count += 1
                             permitted_reasons = reasons
                         elif field not in ownership and row["source"] in legacy_sources:
-                            permitted_reasons = tuple(reason for reason in reasons if reason in legacy_reasons)
+                            permitted_reasons = tuple(
+                                reason for reason in reasons if reason in legacy_reasons
+                                and (reason != "error_page" or page_like(value))
+                            )
                             if permitted_reasons:
                                 legacy_count += 1
                                 source = row["source"]

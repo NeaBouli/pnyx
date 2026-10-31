@@ -79,3 +79,5 @@ and Thai, plus the existing Vietnamese-specific Latin letters. Modifier letters
 (category `Lm`), symbols, and ordinary accented Latin names do not trigger it.
 Foreign letters are checked even inside quotes. Greek numeral signs U+02B9,
 U+0374, and U+0375 are accepted.
+
+For legacy fields, `error_page` is additionally bounded structurally: it only counts when the whole value is page-like (shorter than 1,500 characters or more than 50% markup). A heuristic hit inside long official prose stays report-only.
