@@ -173,7 +173,7 @@ export default function HomeScreen() {
       </View>
 
       <Text style={s.disclaimer}>Η εκκλησία δεν είναι κρατική εφαρμογή. Οι ψηφοφορίες έχουν αποκλειστικά ενημερωτικό χαρακτήρα — χωρίς νομική ή πολιτική δεσμευτικότητα.</Text>
-      <Text style={s.footer}>εκκλησία · MIT · © 2026 V-Labs IT Solutions & Development</Text>
+      <Text style={s.footer}>εκκλησία · MIT · © 2026 V-Labs Development</Text>
     </ScrollView>
   );
 }
