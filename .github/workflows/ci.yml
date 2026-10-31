@@ -174,6 +174,12 @@ jobs:
 
       # Static docs gates (R0 inventory, approved audit delta, R2/R3 checks,
       # FAQ/wiki regressions) and active Compose CSP configuration/inventory.
+      - name: Consumer drift gate (dated facts, costs and wiki publication)
+        run: |
+          python scripts/project_facts.py --check
+          python scripts/project_facts.py --check-consumers
+          python scripts/wiki_publish.py --check
+
       - name: Run redesign gates
         working-directory: scripts/redesign
         run: |

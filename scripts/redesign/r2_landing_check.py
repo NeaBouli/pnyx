@@ -440,10 +440,15 @@ def check_index_preservation(baseline: dict, current: dict) -> list[str]:
     # Header navigation is intentionally consolidated. Subtract exactly the
     # one known R0 header occurrence of each replaced pair; same-valued body
     # content remains protected.
+    # B09: the exact approved schema-card correction is a content delta.
+    from approved_audit_delta import APPROVED_LANDING_FACT_REPLACEMENTS
     baseline_pairs = Counter(
-        approved_analytics_delta.LANDING_BILINGUAL_REPLACEMENTS.get(
+        APPROVED_LANDING_FACT_REPLACEMENTS.get(
             (item.get("data_el", ""), item.get("data_en", "")),
-            (item.get("data_el", ""), item.get("data_en", "")),
+            approved_analytics_delta.LANDING_BILINGUAL_REPLACEMENTS.get(
+                (item.get("data_el", ""), item.get("data_en", "")),
+                (item.get("data_el", ""), item.get("data_en", "")),
+            ),
         )
         for item in baseline["bilingual"]["pairs"]
     )

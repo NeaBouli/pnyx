@@ -115,7 +115,7 @@ def parse(rel: str) -> Cells:
 
 def md_first_column(rel: str) -> list[str]:
     return [line.split("|")[1].strip() for line in read(rel).splitlines()
-            if line.startswith("| ") and not line.startswith("| ID") and not line.startswith("| Table")]
+            if line.startswith("| ") and line.split("|")[1].strip() not in {"ID", "Table", "Πίνακας", "---"}]
 
 
 class ModuleRegistryTest(unittest.TestCase):

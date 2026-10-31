@@ -5,13 +5,16 @@ Counts are derived from source, so every published number can cite one dated art
 
     python3 scripts/project_facts.py --write    regenerate docs/project-facts.json
     python3 scripts/project_facts.py --check    fail if the committed artifact is stale (CI)
-    python3 scripts/project_facts.py --claims   report published count claims that disagree (heuristic, see claims())
+    python3 scripts/project_facts.py --claims   fail on unlabelled conflicting/imprecise claims
+    python3 scripts/project_facts.py --check-consumers   CI consumer drift gate
+    python3 scripts/project_facts.py --update-consumers  refresh registered public copy
 
 Standard library only. Definitions are fixed in ``DEFINITIONS`` so pages can quote them.
 """
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import re
 import sys
@@ -23,6 +26,8 @@ MAIN = ROOT / "apps" / "api" / "main.py"
 ROUTERS = ROOT / "apps" / "api" / "routers"
 MODELS = ROOT / "apps" / "api" / "models.py"
 COMPOSE_PROD = ROOT / "infra" / "docker" / "docker-compose.prod.yml"
+AS_OF = "2026-10-31"
+CONSUMERS = ROOT / "scripts" / "project_fact_consumers.json"
 
 DEFINITIONS = {
     "modules_spec": "Highest module number in the /health module list (MOD-01 … MOD-NN).",
@@ -69,7 +74,25 @@ def compute() -> dict[str, object]:
     endpoints = sum(routed.values()) + len(ROUTE_RE.findall(main_text))
     tables = re.findall(r"__tablename__\s*=\s*[\"']([^\"']+)[\"']", MODELS.read_text(encoding="utf-8"))
     services = compose_services(COMPOSE_PROD.read_text(encoding="utf-8"))
+    # Read constants without importing application code or its environment.
+    payments = ast.parse((ROOT / "apps/api/routers/payments.py").read_text(encoding="utf-8"))
+    costs = {node.targets[0].id: ast.literal_eval(node.value) for node in payments.body
+             if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name)
+             and node.targets[0].id in {"SERVER_COST_MONTHLY", "DOMAIN_COST_YEARLY"}}
+    monthly, domain = costs["SERVER_COST_MONTHLY"], costs["DOMAIN_COST_YEARLY"]
     return {
+        "as_of": AS_OF,
+        "cost_basis": {
+            "as_of": "2026-10",
+            "statement": "docs/community.html (October 2026 operator estimate, not an invoice)",
+            "config_source": "apps/api/routers/payments.py: SERVER_COST_MONTHLY, DOMAIN_COST_YEARLY",
+            "recurring_eur": {"server_monthly": monthly, "domain_yearly": domain,
+                              "server_and_domain_yearly": round(monthly * 12 + domain, 2)},
+            "other_recurring": "Separate USD annual account charge in the dated community statement; excluded from EUR subtotal; current invoice needs operator confirmation.",
+            "usage_dependent": "HLR, translation and archival publication depend on usage, plan and funding; no current annual total is derivable from the repo.",
+            "one_time": "Separate USD registration charge in the community statement; excluded from recurring totals.",
+            "historical": "Superseded EUR 93.30/year and EUR 200–300/year estimates are recorded in EKA_STATUS_2026-10-23.md (EKA-39); neither is a current cost basis.",
+        },
         "definitions": DEFINITIONS,
         "counts": {
             "modules_spec": max(numbers),
@@ -108,7 +131,8 @@ CLAIM_KIND = {
 }
 TAG_RE = re.compile(r"<[^>]+>")
 # Pages that quote dated audit figures; reported, but not counted as current claims.
-HISTORICAL = {"docs/wiki/audit.html"}
+# A dated label must be visible on the claim's own line, not inferred from its filename.
+HISTORICAL_RE = re.compile(r"(?:historical|ιστορικ\w*)[^\n]*?\b20\d{2}-\d{2}-\d{2}\b", re.IGNORECASE)
 
 
 def claim_paths() -> list[Path]:
@@ -129,7 +153,7 @@ def claims(facts: dict[str, object], paths: list[Path] | None = None) -> list[tu
     """
     counts = facts["counts"]
     accepted = {
-        "modules": {counts["modules_spec"], counts["modules_listed"]},
+        "modules": {counts["modules_listed"]},
         "api_endpoints": {counts["api_endpoints"]},
         "db_tables_orm": {counts["db_tables_orm"]},
         "prod_containers": {counts["prod_containers"]},
@@ -146,14 +170,57 @@ def claims(facts: dict[str, object], paths: list[Path] | None = None) -> list[tu
                     num, plus, noun = (groups[0], groups[1], groups[2]) if groups[0].isdigit() else (groups[1], groups[2], groups[0])
                     kind = CLAIM_KIND.get(noun.lower())
                     value = int(num)
-                    if not kind or value in accepted[kind] or (kind, value, plus) in seen:
+                    if not kind or (value in accepted[kind] and not plus) or (kind, value, plus) in seen:
                         continue
                     seen.add((kind, value, plus))
                     lower_ok = plus == "+" and value <= max(accepted[kind])
                     rel = str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path)
-                    cls = "historical" if rel in HISTORICAL else ("lower-bound" if lower_ok else "mismatch")
+                    cls = "historical" if HISTORICAL_RE.search(TAG_RE.sub(" ", line)) else ("lower-bound" if lower_ok else "mismatch")
                     out.append((rel, lineno, kind, " ".join(m.group(0).split()), cls))
     return out
+
+
+TOKEN_RE = re.compile(r"\{\{([a-z0-9_]+)\}\}")
+
+
+def consumer_values(facts: dict) -> dict[str, str]:
+    costs = facts["cost_basis"]["recurring_eur"]
+    return {**{k: str(v) for k, v in facts["counts"].items()},
+            "as_of": facts["as_of"], "cost_as_of": facts["cost_basis"]["as_of"],
+            "server_monthly": f'{costs["server_monthly"]:g}',
+            "server_yearly": f'{costs["server_monthly"] * 12:g}',
+            "domain_yearly_en": f'{costs["domain_yearly"]:.2f}',
+            "domain_yearly_el": f'{costs["domain_yearly"]:.2f}'.replace(".", ","),
+            "recurring_yearly_en": f'{costs["server_and_domain_yearly"]:.2f}',
+            "recurring_yearly_el": f'{costs["server_and_domain_yearly"]:.2f}'.replace(".", ",")}
+
+
+def consumer_errors(facts: dict, *, update: bool = False, root: Path = ROOT,
+                    specs: list[dict] | None = None) -> list[str]:
+    """Check exact rendered lines, including EL/EN, metadata and separated metric cards.
+
+    The registry contains prose/templates, never an independent copy of a count.
+    Missing/duplicated lines fail closed. Updates replace only known numeric slots.
+    The broader claims scan also rejects new, unregistered conflicting claims.
+    """
+    values = consumer_values(facts)
+    errors = []
+    for spec in json.loads(CONSUMERS.read_text()) if specs is None else specs:
+        path = root / spec["path"]
+        source = path.read_text(encoding="utf-8")
+        template = spec["template"]
+        expected = TOKEN_RE.sub(lambda m: values[m[1]], template)
+        pattern = "^" + "[^\\n]*?".join(re.escape(s) for s in TOKEN_RE.split(template)[::2]) + "$"
+        matches = list(re.finditer(pattern, source, re.MULTILINE))
+        if len(matches) != spec.get("occurrences", 1):
+            errors.append(f'{spec["path"]}: missing/duplicated consumer: {expected.strip()[:100]}')
+        elif any(m[0] != expected for m in matches):
+            if update:
+                source = re.sub(pattern, lambda _: expected, source, flags=re.MULTILINE)
+                path.write_text(source, encoding="utf-8")
+            else:
+                errors.append(f'{spec["path"]}: consumer drift: {expected.strip()[:100]}')
+    return errors
 
 
 def main(argv: list[str]) -> int:
@@ -162,6 +229,8 @@ def main(argv: list[str]) -> int:
     mode.add_argument("--write", action="store_true")
     mode.add_argument("--check", action="store_true")
     mode.add_argument("--claims", action="store_true")
+    mode.add_argument("--check-consumers", action="store_true")
+    mode.add_argument("--update-consumers", action="store_true")
     args = parser.parse_args(argv)
     facts = compute()
     if args.write:
@@ -175,13 +244,24 @@ def main(argv: list[str]) -> int:
             return 1
         print(f"project facts ok: {facts['counts']}")
         return 0
+    if args.check_consumers or args.update_consumers:
+        errors = consumer_errors(facts, update=args.update_consumers)
+        if args.check_consumers and (not ARTIFACT.exists() or ARTIFACT.read_text() != render(facts)):
+            errors.append("project-facts.json is stale; run --write")
+        for error in errors:
+            print(error, file=sys.stderr)
+        if errors:
+            return 1
+        if args.update_consumers:
+            print("updated project fact consumers; run scripts/wiki_publish.py --write next")
+            return 0
     found = claims(facts)
     for path, lineno, kind, text, cls in found:
         print(f"{path}:{lineno}: {kind}: {cls}: {text!r}")
     lines = {(p, n) for p, n, *_ in found}
     by = {c: sum(1 for *_, x in found if x == c) for c in ("mismatch", "lower-bound", "historical")}
     print(f"{len(found)} distinct claim(s) on {len(lines)} line(s): " + ", ".join(f"{v} {k}" for k, v in by.items()))
-    return 0
+    return int(any(cls != "historical" for *_, cls in found))
 
 
 if __name__ == "__main__":

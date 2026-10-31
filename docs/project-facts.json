@@ -1,4 +1,19 @@
 {
+  "as_of": "2026-10-31",
+  "cost_basis": {
+    "as_of": "2026-10",
+    "config_source": "apps/api/routers/payments.py: SERVER_COST_MONTHLY, DOMAIN_COST_YEARLY",
+    "historical": "Superseded EUR 93.30/year and EUR 200–300/year estimates are recorded in EKA_STATUS_2026-10-23.md (EKA-39); neither is a current cost basis.",
+    "one_time": "Separate USD registration charge in the community statement; excluded from recurring totals.",
+    "other_recurring": "Separate USD annual account charge in the dated community statement; excluded from EUR subtotal; current invoice needs operator confirmation.",
+    "recurring_eur": {
+      "domain_yearly": 9.3,
+      "server_and_domain_yearly": 309.3,
+      "server_monthly": 25.0
+    },
+    "statement": "docs/community.html (October 2026 operator estimate, not an invoice)",
+    "usage_dependent": "HLR, translation and archival publication depend on usage, plan and funding; no current annual total is derivable from the repo."
+  },
   "counts": {
     "api_endpoints": 198,
     "api_routers": 32,
