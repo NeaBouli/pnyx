@@ -106,12 +106,105 @@ UNRELATED_CASES = [
 ]
 
 
+# Round 2 review, including the abbreviated ballot prompt in full.
+ROUND2_ANONYMITY_CASES = [
+    ("en", "Am I anonymous after HLR verification?"),
+    ("el", "Είμαι ανώνυμος μετά την επαλήθευση HLR;"),
+    ("en", "Is my ballot anonymous after HLR verification?"),
+]
+ROUND2_DELETION_CASES = [
+    ("el", "Πώς μπορώ να διαγράψω τα προσωπικά μου δεδομένα;"),
+    ("en", "How do I delete personal data?"),
+]
+ROUND2_BILL_CASES = [
+    ("en", "Does the law require anonymous voting?"),
+    ("el", "Ο νόμος επιτρέπει ανώνυμη ψηφοφορία;"),
+]
+ROUND2_FORUM_CASES = [("en", "Is the forum on this platform anonymous?")]
+ROUND2_FEEDBACK_CASES = [
+    ("en", "Can I leave anonymous feedback on your platform?"),
+    ("el", "Μπορώ να κάνω ανώνυμη καταγγελία στην πλατφόρμα;"),
+]
+
+NEW_ANONYMITY_CASES = [
+    ("en", "Can anyone trace my ballot to me after verification?"),
+    ("en", "Who sees my ballot after HLR?"),
+    ("en", "Is my platform account anonymous after HLR verification?"),
+    ("en", "Can my account be traced to me after HLR verification?"),
+    ("en", "Who sees my personal data after HLR verification?"),
+    ("el", "Μπορούν τα προσωπικά μου δεδομένα να συνδεθούν με την ταυτότητά μου;"),
+    ("el", "Είμαι ανώνυμη μετά την επαλήθευση;"),
+    ("el", "Ποιος μπορεί να δει την ψήφο μου μετά το HLR;"),
+    ("el", unicodedata.normalize("NFD", "Είμαι ανώνυμος μετά την επαλήθευση HLR;".upper())),
+]
+NEW_DELETION_CASES = [
+    ("en", "Please erase the personal data after HLR verification"),
+    ("en", "Delete my account: am I anonymous after HLR?"),
+    ("en", "Delete my personal data: can my vote on this bill be linked to me after HLR?"),
+    ("en", "Can my vote be linked to me after HLR, and how do I delete my personal data?"),
+    ("en", "How can I delete my data under privacy law?"),
+    ("el", "Θέλω να σβήσω τα προσωπικά μας δεδομένα"),
+    ("el", "Θέλω διαγραφή των προσωπικών μου πληροφοριών"),
+    ("el", unicodedata.normalize("NFD", "Πώς μπορώ να διαγράψω τα προσωπικά μου δεδομένα;".upper())),
+]
+NEW_BILL_CASES = [
+    ("en", "Does legislation permit anonymous ballots?"),
+    ("en", "Does the law require personal data deletion?"),
+    ("en", "Does the privacy law make my vote anonymous?"),
+    ("el", "Η νομοθεσία επιτρέπει ανώνυμη ψηφοφορία;"),
+    ("el", "Ο νόμος απαιτεί διαγραφή των προσωπικών μου δεδομένων;"),
+    ("el", "Επιτρέπεται ανώνυμη ψηφοφορία σύμφωνα με τον νόμο;"),
+    ("el", unicodedata.normalize("NFD", "Ο νόμος επιτρέπει ανώνυμη ψηφοφορία;".upper())),
+]
+NEW_FORUM_CASES = [
+    ("el", "Είναι το φόρουμ στην πλατφόρμα ανώνυμο;"),
+    ("en", "Is my forum account anonymous after HLR verification?"),
+    ("en", "Does this platform keep forum comments anonymous?"),
+    ("en", "How do I delete a forum comment containing personal data?"),
+]
+NEW_FEEDBACK_CASES = [
+    ("en", "Can I submit an anonymous complaint on this platform?"),
+    ("el", "Μπορώ να στείλω ανώνυμα παράπονα στην πλατφόρμα;"),
+    ("en", "anonymous feedback"),
+    ("el", "ανώνυμη καταγγελία"),
+    ("en", "complaint"),
+    ("en", "feedback"),
+    ("en", "Can I leave anonymous feedback after HLR verification?"),
+    ("en", "How do I delete feedback containing my personal data?"),
+]
+NEW_VERIFICATION_CASES = [
+    ("en", "How does HLR work for ballot verification?", ["verification"]),
+    ("en", "How is my account verified with HLR?", ["verification"]),
+    ("el", "Πώς λειτουργεί η επαλήθευση HLR;", ["verification"]),
+    ("el", "δεδομένα κινητού", ["verification"]),
+]
+NEW_UNRELATED_CASES = [
+    ("en", "Where is the link to cast my ballot?"),
+    ("en", "Where can I see my ballot history?"),
+    ("en", "How can I delete my vote?"),
+    ("en", "Can my ballot be erased after HLR verification?"),
+    ("en", "Do banks delete personal data?"),
+    ("el", "Οι τράπεζες διαγράφουν προσωπικά δεδομένα;"),
+    ("en", "How do I delete a forum comment containing personal data?"),
+    ("en", "How do I delete feedback containing my personal data?"),
+    ("en", "What is an anonymous account in a hospital app?"),
+]
+NEW_BARE_CASES = [
+    ("en", "complaint", []),
+    ("en", "feedback", []),
+    ("en", "forum", ["forum"]),
+    ("el", "δεδομένα κινητού", ["verification"]),
+]
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize("mode", ["deterministic", "hybrid"])
 @pytest.mark.parametrize("topic,lang,question", [
     *[("payments_paused", lang, q) for lang, q in PAYMENT_CASES],
     *[("data_deletion", lang, q) for lang, q in DELETION_CASES],
     *[("anonymity", lang, q) for lang, q in ANONYMITY_CASES],
+    *[("anonymity", lang, q) for lang, q in ROUND2_ANONYMITY_CASES + NEW_ANONYMITY_CASES],
+    *[("data_deletion", lang, q) for lang, q in ROUND2_DELETION_CASES + NEW_DELETION_CASES],
 ])
 async def test_scoped_canonical_routing(
     monkeypatch: pytest.MonkeyPatch, mode: str, topic: str, lang: str, question: str,
@@ -140,7 +233,7 @@ async def test_scoped_canonical_routing(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("lang,question,topics", VERIFICATION_CASES)
+@pytest.mark.parametrize("lang,question,topics", VERIFICATION_CASES + NEW_VERIFICATION_CASES)
 async def test_verification_only_keeps_existing_answer(
     monkeypatch: pytest.MonkeyPatch, lang: str, question: str, topics: list[str],
 ) -> None:
@@ -159,7 +252,7 @@ async def test_verification_only_keeps_existing_answer(
     assert response["answer"] == agent._with_disclaimer(expected, lang)
 
 
-@pytest.mark.parametrize("lang,question", BILL_CASES + UNRELATED_CASES)
+@pytest.mark.parametrize("lang,question", BILL_CASES + UNRELATED_CASES + ROUND2_BILL_CASES + NEW_BILL_CASES + NEW_UNRELATED_CASES)
 def test_other_intents_do_not_select_voting_privacy(lang: str, question: str) -> None:
     assert agent._canonical_response(question, lang) is None
     assert "anonymity" not in agent._select_fact_blocks(question)
@@ -168,6 +261,7 @@ def test_other_intents_do_not_select_voting_privacy(lang: str, question: str) ->
 @pytest.mark.parametrize("lang,question", [
     ("en", "Where is my private key used to sign my vote stored?"),
     ("el", "Πού αποθηκεύεται το ιδιωτικό κλειδί για την ψήφο μου;"),
+    ("en", "Where is my private key stored?"),
 ])
 def test_private_key_for_voting_keeps_existing_answer(lang: str, question: str) -> None:
     response = agent._canonical_response(question, lang)
@@ -176,7 +270,7 @@ def test_private_key_for_voting_keeps_existing_answer(lang: str, question: str) 
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("lang,question", BILL_CASES)
+@pytest.mark.parametrize("lang,question", BILL_CASES + ROUND2_BILL_CASES + NEW_BILL_CASES)
 async def test_bill_content_keeps_normal_retrieval(
     monkeypatch: pytest.MonkeyPatch, lang: str, question: str,
 ) -> None:
@@ -195,3 +289,60 @@ async def test_bill_content_keeps_normal_retrieval(
         await agent.ask_agent.__wrapped__(
             object(), agent.AskRequest(question=question, lang=lang), db=object(),
         )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("mode", ["deterministic", "hybrid"])
+@pytest.mark.parametrize("lang,question", ROUND2_FORUM_CASES + NEW_FORUM_CASES)
+async def test_forum_anonymity_uses_existing_forum_answer(monkeypatch, mode, lang, question):
+    monkeypatch.setenv("AGENT_MODE", mode)
+
+    async def unexpected(*args, **kwargs):
+        raise AssertionError("Forum privacy must use the reviewed forum FAQ")
+
+    for name in ("_build_context", "ollama_available", "answer_citizen_question", "_claude_answer"):
+        monkeypatch.setattr(agent, name, unexpected)
+    response = await agent.ask_agent.__wrapped__(
+        object(), agent.AskRequest(question=question, lang=lang), db=object(),
+    )
+    assert response == agent._deterministic_response("forum", lang) | {"question": question}
+    assert response["sources"] == [{"type": "knowledge_base", "topic": "forum"}]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("mode", ["deterministic", "hybrid"])
+@pytest.mark.parametrize("lang,question", ROUND2_FEEDBACK_CASES + NEW_FEEDBACK_CASES)
+async def test_feedback_anonymity_keeps_fallback_or_retrieval(monkeypatch, mode, lang, question):
+    monkeypatch.setenv("AGENT_MODE", mode)
+    assert agent._canonical_response(question, lang) is None
+    assert "anonymity" not in agent._select_fact_blocks(question)
+
+    class RetrievalReached(Exception):
+        pass
+
+    async def context(actual_question, actual_lang, db):
+        assert (actual_question, actual_lang) == (question, lang)
+        raise RetrievalReached
+
+    monkeypatch.setattr(agent, "_build_context", context)
+    if mode == "hybrid":
+        with pytest.raises(RetrievalReached):
+            await agent.ask_agent.__wrapped__(
+                object(), agent.AskRequest(question=question, lang=lang), db=object(),
+            )
+    else:
+        response = await agent.ask_agent.__wrapped__(
+            object(), agent.AskRequest(question=question, lang=lang), db=object(),
+        )
+        topics = agent._select_fact_blocks(question)
+        assert topics in ([], ["contact"])
+        if topics:
+            assert agent._FACTS["contact"][lang] in response["answer"]
+        else:
+            assert response["answer"] == agent._with_disclaimer(agent._FAQ_FALLBACK[lang], lang)
+
+
+@pytest.mark.parametrize("lang,question,topics", NEW_BARE_CASES)
+def test_review_bare_probes_keep_existing_topics(lang, question, topics):
+    assert agent._canonical_response(question, lang) is None
+    assert agent._select_fact_blocks(question) == topics
