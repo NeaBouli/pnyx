@@ -154,7 +154,7 @@ def generate_pill(title: str, long_summary: str) -> str:
 
 # ─── Main ────────────────────────────────────────────────────────────────────
 
-async def main():
+async def main() -> None:
     parser = argparse.ArgumentParser(description="NEA-301: Backfill summary_short_el (PARLIAMENT only)")
     parser.add_argument("--apply", action="store_true", help="Write to DB (default: dry-run)")
     parser.add_argument("--limit", type=int, default=0, help="Limit bills (0=all)")
@@ -179,6 +179,7 @@ async def main():
 
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "apps", "api"))
     from services.representation_cache import invalidate_representation_cache
+    from services.error_pages import looks_like_error_page
 
     import asyncpg
     conn = await asyncpg.connect(db_url)
@@ -222,6 +223,9 @@ async def main():
             skipped += 1
             continue
 
+        if looks_like_error_page(long_el):
+            skipped += 1
+            continue
         short = generate_short_summary(title, long_el)
         pill = None
         if not existing_pill or not existing_pill.strip():
@@ -232,18 +236,28 @@ async def main():
             skipped += 1
             continue
 
+        if looks_like_error_page(short) or looks_like_error_page(pill):
+            skipped += 1
+            continue
+
         writer.writerow([bill_id, row["status"], len(long_el), short[:200], pill[:120] if pill else "", "UPDATE" if not dry_run else "DRY_RUN"])
 
         if not dry_run:
             if pill:
                 await conn.execute(
-                    "UPDATE parliament_bills SET summary_short_el = $1, pill_el = $2 WHERE id = $3 AND (summary_short_el IS NULL OR summary_short_el = '')",
+                    """
+                    UPDATE parliament_bills SET summary_short_el = $1, pill_el = $2
+                    WHERE id = $3 AND (summary_short_el IS NULL OR summary_short_el = '')
+                    """,
                     short, pill, bill_id,
                 )
                 await invalidate_representation_cache()
             else:
                 await conn.execute(
-                    "UPDATE parliament_bills SET summary_short_el = $1 WHERE id = $2 AND (summary_short_el IS NULL OR summary_short_el = '')",
+                    """
+                    UPDATE parliament_bills SET summary_short_el = $1
+                    WHERE id = $2 AND (summary_short_el IS NULL OR summary_short_el = '')
+                    """,
                     short, bill_id,
                 )
                 await invalidate_representation_cache()

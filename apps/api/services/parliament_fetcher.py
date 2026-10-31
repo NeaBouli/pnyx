@@ -7,6 +7,7 @@ import logging
 import os
 import re
 from asyncio import CancelledError, create_task, timeout as attempt_timeout, timeout_at, wait
+from typing import Any
 from urllib.parse import urlsplit
 
 import httpx
@@ -14,6 +15,10 @@ import httpx
 from services.representation_cache import commit_and_invalidate_representation
 from services.scraper_http import HostCooldown, SCRAPER_HTTP_HOOKS, host_limiter
 from services.parliament_access import USER_AGENT, RobotsDisallowed, is_parliament
+from services.content_provenance import (
+    accepted_generated_text, clear_generated_content, contains_sensitive_marker, record_generated_content,
+)
+from services.error_pages import looks_like_error_page
 
 logger = logging.getLogger(__name__)
 
@@ -38,12 +43,6 @@ _BAD_TEXT_PATTERNS = [
 _BAD_TEXT_PREFIXES = [
     "Αναζήτηση Τίτλος",
 ]
-
-_ACCESS_DENIAL_PATTERNS = (
-    "you don't have permission to access",
-    "errors.edgesuite.net",
-)
-
 
 _DOCUMENT_BLOCK_HEADING = "### Πλήρη έγγραφα"
 _DOCUMENT_BLOCK_LINK_RE = re.compile(
@@ -85,11 +84,7 @@ def _is_bad_parliament_text(text: str | None) -> bool:
     if not text or len(text.strip()) < 200:
         return True
     stripped = text.strip()
-    lowered = stripped.lower()
-    if (
-        any(pattern in lowered for pattern in _ACCESS_DENIAL_PATTERNS)
-        or ("access denied" in lowered and "reference #" in lowered)
-    ):
+    if looks_like_error_page(text):
         return True
     if any(stripped.startswith(prefix) for prefix in _BAD_TEXT_PREFIXES):
         return True
@@ -118,6 +113,27 @@ DIAVGEIA_DOCUMENT_HOSTS = frozenset({"diavgeia.gov.gr"})
 MAX_RETRIES = 2
 TIMEOUT = 30
 PLAYWRIGHT_TEARDOWN_TIMEOUT = 2
+
+
+class GeneratedExtraction(str):
+    """Carry generated-channel ownership with the fetched text to its writer."""
+
+
+def store_fetched_text(bill: Any, text: str | None, *, limit: int | None = None) -> bool:
+    """Last storage guard for official text and accepted generated extraction."""
+    if _is_bad_parliament_text(text) or contains_sensitive_marker(bill.summary_long_el):
+        return False
+    assert text is not None
+    generated = isinstance(text, GeneratedExtraction)
+    candidate = text[:limit] if limit is not None else str(text)
+    if generated and not accepted_generated_text(candidate, field="summary_long_el", bill_id=bill.id):
+        return False
+    bill.summary_long_el = _merge_text_with_existing_document_block(candidate, bill.summary_long_el)
+    if generated:
+        record_generated_content(bill, "summary_long_el", bill.summary_long_el)
+    else:
+        clear_generated_content(bill, "summary_long_el")
+    return True
 
 
 # ─── Kanal 1: Jina Markdown ─────────────────────────────────────────────────
@@ -212,6 +228,9 @@ async def _channel_jina_html(url: str) -> str:
 
 def _extract_text_from_html(html: str) -> str:
     """Extract text from HTML using regex (no lxml dependency)."""
+    # Extraction may drop short headings or select a main element without them.
+    if looks_like_error_page(html):
+        return ""
     # Remove script/style blocks
     html = re.sub(r"<script[^>]*>.*?</script>", "", html, flags=re.DOTALL | re.IGNORECASE)
     html = re.sub(r"<style[^>]*>.*?</style>", "", html, flags=re.DOTALL | re.IGNORECASE)
@@ -551,6 +570,10 @@ async def _fetch_bill_text_result(
             except HostCooldown:
                 deferred = True
                 break
+            if channel is _channel_ollama_extract and text:
+                text = accepted_generated_text(text, field="summary_long_el", bill_id=bill_id)
+                if text:
+                    text = GeneratedExtraction(text)
             if text and not _is_bad_parliament_text(text):
                 logger.info("[TEXT-FETCH] channel=%s chars=%d", channel.__name__, len(text))
                 outcome = "fetched"
@@ -578,7 +601,7 @@ async def fetch_bill_text(bill_id: str, parliament_url: str, *, source: str | No
 
 # ─── Enrich All ──────────────────────────────────────────────────────────────
 
-async def enrich_bill_with_text(bill_id: str, db, redis=None) -> dict:
+async def enrich_bill_with_text(bill_id: str, db: Any, redis: Any = None) -> dict[str, Any]:
     """Fetch text for a bill + update DB + clear cached summary."""
     from sqlalchemy import select
     from models import ParliamentBill
@@ -595,8 +618,7 @@ async def enrich_bill_with_text(bill_id: str, db, redis=None) -> dict:
     text, outcome = await _fetch_bill_text_result(bill_id, bill.parliament_url, source=bill.source)
     if outcome == "skipped":
         return {"success": False, "skipped": True, "error": "Text enrichment deferred; source link retained"}
-    if text and len(text) >= MIN_TEXT_LENGTH:
-        bill.summary_long_el = _merge_text_with_existing_document_block(text, bill.summary_long_el)
+    if outcome == "fetched" and store_fetched_text(bill, text):
         await commit_and_invalidate_representation(db)
         if redis:
             try:
@@ -609,7 +631,7 @@ async def enrich_bill_with_text(bill_id: str, db, redis=None) -> dict:
     return {"success": False, "error": "All channels failed or text too short"}
 
 
-async def enrich_all_bills(db) -> dict:
+async def enrich_all_bills(db: Any) -> dict[str, Any]:
     """Enrich parliament bills with no real full text.
 
     Existing PDF-only document blocks are kept as a fallback and appended to fetched text.
@@ -640,8 +662,7 @@ async def enrich_all_bills(db) -> dict:
         if outcome == "skipped":
             stats["skipped"] += 1
             continue
-        if text and len(text) >= MIN_TEXT_LENGTH:
-            bill.summary_long_el = _merge_text_with_existing_document_block(text, bill.summary_long_el)
+        if outcome == "fetched" and store_fetched_text(bill, text):
             stats["enriched"] += 1
             stats["fetched"] += 1
         else:

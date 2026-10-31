@@ -449,6 +449,7 @@ async def get_bill_summary(
     import redis.asyncio as aioredis
     import os
     from services.ollama_service import summarize_bill
+    from services.content_provenance import OfficialText, accepted_generated_text
 
     # Get bill
     result = await db.execute(
@@ -478,7 +479,7 @@ async def get_bill_summary(
     cache_key = f"bill_summary:{bill_id}:{lang}"
     try:
         cached = await r.get(cache_key)
-        if cached:
+        if cached and accepted_generated_text(cached, field=f"summary_short_{lang}", bill_id=bill_id):
             return {"bill_id": bill_id, "summary": cached, "cached": True, "lang": lang, "source": "cache"}
     except Exception:
         pass
@@ -492,9 +493,13 @@ async def get_bill_summary(
         pill=pill or "",
         status=bill.status.value if bill.status else "",
         categories=bill.categories or [],
+        bill_id=bill_id,
     )
+    if isinstance(summary, OfficialText):
+        return {"bill_id": bill_id, "summary": summary, "cached": False, "lang": lang, "source": "fallback"}
+    summary = accepted_generated_text(summary, field=f"summary_short_{lang}", bill_id=bill_id)
     if not summary:
-        raise HTTPException(status_code=503, detail="AI summary generation failed")
+        raise HTTPException(status_code=503, detail="Summary temporarily unavailable")
 
     # Cache 7 days
     try:

@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 
+
 SCRIPT_PATH = (
     Path(__file__).resolve().parents[2]
     / "scripts"
@@ -60,11 +61,21 @@ async def test_apply_update_is_scoped_to_parliament_and_empty_fields_only():
     conn = FakeConn()
     row = {"id": "GR-test"}
 
-    result = await backfill.apply_update(conn, row, "summary", "pill")
+    result = await backfill.apply_update(conn, row, "Σύνοψη", "Περιγραφή")
 
     assert result == "UPDATE 1"
     query, params = conn.calls[0]
     assert "source = 'PARLIAMENT'" in query
     assert "summary_short_el IS NULL OR btrim(summary_short_el) = ''" in query
     assert "pill_el IS NULL OR btrim(pill_el) = ''" in query
-    assert params == ("summary", "pill", "GR-test")
+    assert params == ("Σύνοψη", "Περιγραφή", "GR-test")
+
+
+async def test_apply_update_preserves_official_latin_text() -> None:
+    conn = FakeConn()
+    official = "Ανάθεση στη SYNTHETIC TIMING SYSTEMS AE για το Example Endpoint Package"
+    result = await backfill.apply_update(conn, {"id": "SYNTH-1"}, official, official)
+    assert result == "UPDATE 1"
+    query, params = conn.calls[0]
+    assert params == (official, official, "SYNTH-1")
+    assert "generated_content_provenance" not in query

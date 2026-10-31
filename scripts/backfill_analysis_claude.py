@@ -436,9 +436,16 @@ async def gated_call_claude(title: str, excerpt: str, redis_client=None) -> tupl
 
 
 def validate_result(result: dict, excerpt: str) -> list[str]:
+    _add_api_path()
+    from services.text_quality import check_generated_greek
+
     errors: list[str] = []
-    short = (result.get("summary_short_el") or "").strip()
-    analysis = (result.get("analysis_el") or "").strip()
+    for field in ("summary_short_el", "analysis_el"):
+        quality = check_generated_greek(result.get(field), field=field)
+        errors.extend(f"{field}: {reason}" for reason in quality.reasons)
+    short_value, analysis_value = result.get("summary_short_el"), result.get("analysis_el")
+    short = short_value.strip() if isinstance(short_value, str) else ""
+    analysis = analysis_value.strip() if isinstance(analysis_value, str) else ""
     if len(short) < 40:
         errors.append("summary_short_el too short")
     if len(short) > 600:
@@ -451,7 +458,10 @@ def validate_result(result: dict, excerpt: str) -> list[str]:
     for word in forbidden:
         if word in short or word in analysis:
             errors.append(f"known bad phrase: {word}")
-    if "ως AI" in analysis or "δεν μπορώ" in analysis:
+    from services.text_quality import without_quotes
+
+    unquoted = without_quotes(analysis)  # quoted testimony may say "δεν μπορώ"
+    if "ως AI" in unquoted or "δεν μπορώ" in unquoted:
         errors.append("AI disclaimer leaked")
     return errors
 
@@ -583,6 +593,11 @@ async def main() -> None:
                     print(f"{bill_id}: {exc}; stopping", file=sys.stderr)
                     sys.exit(1)
                 errors = validate_result(result, excerpt)
+                from services.content_provenance import accepted_generated_text, content_sha256
+
+                # Invalid generated prose must not reach preview files either.
+                for field in ("summary_short_el", "analysis_el"):
+                    result[field] = accepted_generated_text(result.get(field), field=field, bill_id=bill_id) or ""
 
             preview = {
                 "bill_id": bill_id,
@@ -640,13 +655,18 @@ async def main() -> None:
                     await conn.execute(
                         """
                         UPDATE parliament_bills
-                        SET summary_short_el=$1, analysis_el=$2, summary_long_el=$3, updated_at=NOW()
+                        SET summary_short_el=$1, analysis_el=$2, summary_long_el=$3, updated_at=NOW(),
+                            generated_content_provenance=COALESCE(NULLIF(generated_content_provenance, 'null'::jsonb), '{}'::jsonb) || $5::jsonb
                         WHERE id=$4
                         """,
                         (result.get("summary_short_el") or "").strip(),
                         (result.get("analysis_el") or "").strip(),
                         official_text,
                         bill_id,
+                        json.dumps({
+                            field: content_sha256((result.get(field) or "").strip())
+                            for field in ("summary_short_el", "analysis_el")
+                        }),
                     )
                     await invalidate_representation_cache()
                 print(f"{bill_id}: DB updated")

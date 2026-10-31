@@ -153,6 +153,8 @@ async def apply_update(conn: Any, row: Any, summary: str, pill: str) -> str:
 
 
 async def run(args: argparse.Namespace) -> int:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
     import asyncpg
 
     conn = await asyncpg.connect(database_url_from_env())

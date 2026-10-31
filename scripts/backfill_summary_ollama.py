@@ -127,7 +127,6 @@ REJECT_PATTERNS = [
     r"δεν υπάρχουν πληροφορίες",
     r"ως AI",
     r"δεν μπορώ",
-    r"https?://",
     r"<[a-z]",
     r"\!\[",
     r"\*\*",
@@ -136,6 +135,15 @@ REJECT_PATTERNS = [
 
 def validate_output(pill: str, short: str, title: str) -> str | None:
     """Return rejection reason or None if valid."""
+    api_path = os.path.join(os.path.dirname(__file__), "..", "apps", "api")
+    if api_path not in sys.path:
+        sys.path.insert(0, api_path)
+    from services.text_quality import check_generated_greek
+
+    for field, text in (("pill_el", pill), ("summary_short_el", short)):
+        quality = check_generated_greek(text, field=field)
+        if not quality.ok:
+            return ",".join(quality.reasons)
     if not short or len(short) < 20:
         return "summary too short"
     if len(short) > 500:
@@ -145,10 +153,14 @@ def validate_output(pill: str, short: str, title: str) -> str | None:
     # Must end on sentence boundary
     if not SENTENCE_ENDINGS.search(short[-1:]):
         return "summary does not end on sentence boundary"
+    from services.text_quality import without_quotes
+
+    # Quoted speech may legitimately contain these phrases; only the model's own prose is rejected.
+    short_unquoted, pill_unquoted = without_quotes(short), without_quotes(pill or "")
     for pat in REJECT_PATTERNS:
-        if re.search(pat, short, re.IGNORECASE):
+        if re.search(pat, short_unquoted, re.IGNORECASE):
             return f"rejected pattern: {pat}"
-        if pill and re.search(pat, pill, re.IGNORECASE):
+        if pill and re.search(pat, pill_unquoted, re.IGNORECASE):
             return f"rejected pattern in pill: {pat}"
     # Reject if summary just repeats the title
     if title and short.strip().lower()[:40] == title.strip().lower()[:40]:
@@ -156,7 +168,7 @@ def validate_output(pill: str, short: str, title: str) -> str | None:
     return None
 
 
-async def main():
+async def main() -> None:
     parser = argparse.ArgumentParser(description="NEA-301b: Ollama backfill summary_short_el")
     parser.add_argument("--apply", action="store_true", help="Write to DB (default: dry-run)")
     parser.add_argument("--limit", type=int, default=10, help="Limit bills (default 10)")
@@ -173,6 +185,7 @@ async def main():
 
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "apps", "api"))
     from services.representation_cache import invalidate_representation_cache
+    from services.content_provenance import content_sha256
 
     import asyncpg
     conn = await asyncpg.connect(db_url)
@@ -260,7 +273,7 @@ async def main():
         if rejection:
             writer.writerow([bill_id, row["source"], row["status"], "", "", f"REJECTED: {rejection}", model_used])
             errors += 1
-            print(f"  REJECTED: {rejection}")
+            print(f"{bill_id}: rejected reasons={rejection}")
             time.sleep(RATE_LIMIT_SEC)
             continue
 
@@ -278,14 +291,23 @@ async def main():
         if not dry_run:
             if pill:
                 await conn.execute(
-                    "UPDATE parliament_bills SET summary_short_el = $1, pill_el = $2 WHERE id = $3 AND (summary_short_el IS NULL OR summary_short_el = '')",
+                    """
+                    UPDATE parliament_bills SET summary_short_el = $1, pill_el = $2,
+                        generated_content_provenance = COALESCE(NULLIF(generated_content_provenance, 'null'::jsonb), '{}'::jsonb) || $4::jsonb
+                    WHERE id = $3 AND (summary_short_el IS NULL OR summary_short_el = '')
+                    """,
                     short, pill, bill_id,
+                    json.dumps({"summary_short_el": content_sha256(short), "pill_el": content_sha256(pill)}),
                 )
                 await invalidate_representation_cache()
             else:
                 await conn.execute(
-                    "UPDATE parliament_bills SET summary_short_el = $1 WHERE id = $2 AND (summary_short_el IS NULL OR summary_short_el = '')",
-                    short, bill_id,
+                    """
+                    UPDATE parliament_bills SET summary_short_el = $1,
+                        generated_content_provenance = COALESCE(NULLIF(generated_content_provenance, 'null'::jsonb), '{}'::jsonb) || $3::jsonb
+                    WHERE id = $2 AND (summary_short_el IS NULL OR summary_short_el = '')
+                    """,
+                    short, bill_id, json.dumps({"summary_short_el": content_sha256(short)}),
                 )
                 await invalidate_representation_cache()
 

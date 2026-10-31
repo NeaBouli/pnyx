@@ -23,7 +23,7 @@ import httpx
 import urllib.parse
 from asyncio import timeout as attempt_timeout
 from bs4 import BeautifulSoup
-from typing import Optional
+from typing import Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -38,7 +38,11 @@ from services.ollama_service import (
     ollama_available,
     ollama_json_generate,
 )
-from services.content_provenance import apply_generated_content, record_generated_content
+from services.content_provenance import (
+    accepted_generated_text, apply_generated_content, apply_official_summary, record_generated_content,
+)
+from services.error_pages import looks_like_error_page
+from services.text_quality import GENERATED_TEXT_FIELDS
 from services.scraper_http import HostCooldown, SCRAPER_HTTP_HOOKS
 from services.parliament_access import USER_AGENT, RobotsDisallowed, RobotsUnavailable, is_parliament
 from services.source_identity import official_law_id
@@ -117,6 +121,8 @@ def _is_nav_line(line: str) -> bool:
 
 def extract_bill_text(html: str) -> str:
     """Extrahiert relevanten Text aus HTML oder Plain Text."""
+    if looks_like_error_page(html):
+        return ""
     if not html.strip().startswith("<"):
         lines = [l.strip() for l in html.split("\n")
                  if l.strip() and len(l.strip()) > 20 and not _is_nav_line(l)]
@@ -171,6 +177,7 @@ async def summarize_ollama(bill_text: str, title_el: str) -> Optional[dict]:
     if not isinstance(data.get("categories"), list):
         data["categories"] = ["Νομοθεσία"]
 
+    data["_generated_fields"] = GENERATED_TEXT_FIELDS
     logger.info(f"[MOD-10] Ollama OK: {title_el[:40]}")
     return data
 
@@ -194,8 +201,11 @@ async def summarize_huggingface(bill_text: str, title_el: str) -> Optional[dict]
             if r.status_code == 200:
                 result = r.json()
                 generated = result[0].get("generated_text", "") if isinstance(result, list) else ""
+                if not generated or not generated.strip():
+                    return None
                 logger.info(f"[MOD-10] HuggingFace OK: {title_el[:40]}")
                 return {
+                    "_generated_fields": ("pill_en", "summary_short_en", "summary_long_en"),
                     "pill_el": f"Νόμος: {title_el[:100]}",
                     "pill_en": generated[:120] if generated else f"Law: {title_el[:100]}",
                     "summary_short_el": bill_text[:300],
@@ -235,6 +245,7 @@ def summarize_rule_based(bill_text: str, title_el: str) -> dict:
 
     logger.info(f"[MOD-10] Regel-basiert für: {title_el[:40]}")
     return {
+        "_generated_fields": (),
         "pill_el": pill,
         "pill_en": f"Law: {title_el[:100]}",
         "summary_short_el": "\n".join(sentences[:5]) if sentences else bill_text[:300],
@@ -247,19 +258,39 @@ def summarize_rule_based(bill_text: str, title_el: str) -> dict:
 
 # ── Provider Router ───────────────────────────────────────────────────────────
 
-async def generate_summaries(bill_text: str, title_el: str) -> dict:
+def _gate_summaries(result: dict[str, Any], *, bill_id: str) -> dict[str, Any]:
+    """Check provider results again at the persistence boundary."""
+    result = dict(result)
+    for field in GENERATED_TEXT_FIELDS:
+        if field in result:
+            if field in result.get("_generated_fields", GENERATED_TEXT_FIELDS):
+                result[field] = accepted_generated_text(result[field], field=field, bill_id=bill_id)
+            elif looks_like_error_page(result[field]):
+                result[field] = None
+    return result
+
+
+async def generate_summaries(bill_text: str, title_el: str, *, bill_id: str = "unknown") -> dict[str, Any]:
     """L1: Ollama → L2: HuggingFace → L3: Regel-basiert"""
     result = await summarize_ollama(bill_text, title_el)
-    if result:
+    if result and (checked := _gate_summaries(result, bill_id=bill_id)) == result and all(
+        isinstance(checked.get(field), str) and checked[field].strip()
+        for field in ("pill_el", "pill_en", "summary_short_el", "summary_short_en", "summary_long_el", "summary_long_en")
+    ):
+        result = checked
         result["_provider"] = "ollama"
         return result
 
     result = await summarize_huggingface(bill_text, title_el)
-    if result:
+    if result and (checked := _gate_summaries(result, bill_id=bill_id)) == result and all(
+        isinstance(checked.get(field), str) and checked[field].strip()
+        for field in ("pill_el", "pill_en", "summary_short_el", "summary_short_en", "summary_long_el", "summary_long_en")
+    ):
+        result = checked
         result["_provider"] = "huggingface"
         return result
 
-    result = summarize_rule_based(bill_text, title_el)
+    result = _gate_summaries(summarize_rule_based(bill_text, title_el), bill_id=bill_id)
     result["_provider"] = "rule_based"
     return result
 
@@ -387,13 +418,7 @@ def _record_probe_error(probe_errors: list[str] | None, code: str) -> None:
 
 
 def _looks_like_access_denied_body(text: str) -> bool:
-    lowered = text.lower()
-    return (
-        "access denied" in lowered
-        or "authenticationrequirederror" in lowered
-        or "blocked from performing anonymous queries" in lowered
-        or "you don't have permission to access" in lowered
-    )
+    return looks_like_error_page(text)
 
 
 async def _fetch_jina_markdown(url: str, probe_errors: list[str] | None = None) -> Optional[str]:
@@ -871,23 +896,28 @@ async def fetch_and_store(
         raise HTTPException(422, "Konnte URL nicht abrufen")
 
     text = extract_bill_text(html)
-    summaries = await generate_summaries(text, title_el)
+    summaries = _gate_summaries(
+        await generate_summaries(text, title_el, bill_id=bill_id), bill_id=bill_id,
+    )
 
+    generated_fields = summaries.get("_generated_fields", GENERATED_TEXT_FIELDS)
     bill = ParliamentBill(
         id=bill_id, title_el=title_el, parliament_url=url,
-        title_en=summaries.get("pill_en", "")[:200],
-        pill_el=summaries.get("pill_el"), pill_en=summaries.get("pill_en"),
-        summary_short_el=summaries.get("summary_short_el"),
+        title_en=(summaries.get("pill_en") or "")[:200],
+        pill_el=None if "pill_el" in generated_fields else summaries.get("pill_el"),
+        pill_en=summaries.get("pill_en"),
+        summary_short_el=None if "summary_short_el" in generated_fields else summaries.get("summary_short_el"),
         summary_short_en=summaries.get("summary_short_en"),
         summary_long_el=summaries.get("summary_long_el"),
         summary_long_en=summaries.get("summary_long_en"),
         categories=summaries.get("categories", []),
         status=BillStatus.ANNOUNCED,
     )
-    record_generated_content(bill, "pill_el", summaries.get("pill_el"))
-    record_generated_content(
-        bill, "summary_short_el", summaries.get("summary_short_el")
-    )
+    for field in generated_fields:
+        if field in ("pill_el", "summary_short_el"):
+            apply_generated_content(bill, field, summaries.get(field))
+        else:
+            record_generated_content(bill, field, summaries.get(field))
     db.add(bill)
     await commit_and_invalidate_representation(db)
 
@@ -939,15 +969,12 @@ def _is_safe_legacy_metadata_summary(value: str | None) -> bool:
 
 def _is_safe_verified_short_summary(value: str | None) -> bool:
     text = (value or "").strip()
-    lowered = text.lower()
     greek_words = re.findall(r"[Α-ΩΆ-Ώα-ωά-ώ]{3,}", text)
     return bool(
         80 <= len(text) <= 500
         and len(greek_words) >= 10
         and not text.startswith(_PARLIAMENT_METADATA_PREFIX)
-        and "access denied" not in lowered
-        and "you don't have permission" not in lowered
-        and "errors.edgesuite.net" not in lowered
+        and not looks_like_error_page(text)
     )
 
 
@@ -1139,6 +1166,9 @@ async def import_parliament_bills(
             if item.summary_short_el and (not item.official_text_verified or verified_payload_is_bound)
             else metadata_summary_short_el
         )
+        summary_long_el = item.summary_long_el
+        if looks_like_error_page(summary_long_el):
+            summary_long_el = None
 
         if existing_bill:
             changed = False
@@ -1155,7 +1185,7 @@ async def import_parliament_bills(
             if vote_date and existing_bill.parliament_vote_date != vote_date:
                 existing_bill.parliament_vote_date = vote_date
                 changed = True
-            if apply_generated_content(existing_bill, "pill_el", pill_el):
+            if apply_official_summary(existing_bill, "pill_el", pill_el):
                 changed = True
             if not item.official_text_verified:
                 preserve_verified_summary = bool(
@@ -1164,32 +1194,28 @@ async def import_parliament_bills(
                 )
                 if (
                     not preserve_verified_summary
-                    and apply_generated_content(existing_bill, "summary_short_el", summary_short_el)
+                    and apply_official_summary(existing_bill, "summary_short_el", summary_short_el)
                 ):
                     changed = True
                 if (
-                    item.summary_long_el
+                    summary_long_el
                     and not existing_bill.summary_long_el
-                    and _is_parliament_document_block_only(item.summary_long_el)
+                    and _is_parliament_document_block_only(summary_long_el)
                 ):
-                    existing_bill.summary_long_el = item.summary_long_el
+                    existing_bill.summary_long_el = summary_long_el
                     changed = True
             elif verified_payload_is_bound:
-                if apply_generated_content(existing_bill, "summary_short_el", summary_short_el):
+                if apply_official_summary(existing_bill, "summary_short_el", summary_short_el):
                     changed = True
-                elif (
-                    not getattr(existing_bill, "ai_summary_reviewed", False)
-                    and _is_safe_legacy_metadata_summary(existing_bill.summary_short_el)
-                    and existing_bill.summary_short_el != summary_short_el
+                elif _is_safe_legacy_metadata_summary(existing_bill.summary_short_el) and apply_official_summary(
+                    existing_bill, "summary_short_el", summary_short_el, replace_metadata=True,
                 ):
-                    existing_bill.summary_short_el = summary_short_el
-                    record_generated_content(existing_bill, "summary_short_el", summary_short_el)
                     changed = True
                 if (
                     not existing_bill.summary_long_el
                     or _is_parliament_document_block_only(existing_bill.summary_long_el)
                 ):
-                    existing_bill.summary_long_el = item.summary_long_el
+                    existing_bill.summary_long_el = summary_long_el
                     changed = True
             if item.ministry and not existing_bill.categories:
                 existing_bill.categories = [item.ministry]
@@ -1206,19 +1232,24 @@ async def import_parliament_bills(
 
         summaries = summarize_rule_based(item.title_el, item.title_el)
         safe_summary_long_el = None
-        if item.summary_long_el:
+        if summary_long_el:
             if verified_payload_is_bound or (
                 not item.official_text_verified
-                and _is_parliament_document_block_only(item.summary_long_el)
+                and _is_parliament_document_block_only(summary_long_el)
             ):
-                safe_summary_long_el = item.summary_long_el
+                safe_summary_long_el = summary_long_el
+
+        english = {
+            "pill_en": f"Law {item.law_num}: {item.ministry[:80]}" if item.law_num else "",
+            "summary_short_en": f"Law {item.law_num} by {item.ministry}." if item.law_num else "",
+        }
 
         bill = ParliamentBill(
             id=item.bill_id, title_el=title,
             pill_el=pill_el,
-            pill_en=f"Law {item.law_num}: {item.ministry[:80]}" if item.law_num else "",
+            pill_en=english["pill_en"],
             summary_short_el=summary_short_el,
-            summary_short_en=f"Law {item.law_num} by {item.ministry}." if item.law_num else "",
+            summary_short_en=english["summary_short_en"],
             summary_long_el=safe_summary_long_el,
             categories=summaries.get("categories", ["Νομοθεσία"]),
             status=BillStatus.ANNOUNCED,
@@ -1226,8 +1257,6 @@ async def import_parliament_bills(
             parliament_vote_date=vote_date,
             submitted_date=submitted_date,
         )
-        record_generated_content(bill, "pill_el", pill_el)
-        record_generated_content(bill, "summary_short_el", summary_short_el)
         db.add(bill)
         imported += 1
 

@@ -12,6 +12,7 @@ import os
 import re
 from typing import Any, Mapping, Sequence
 
+from services.content_provenance import OfficialText, accepted_generated_text
 from services.agent_prompt import (
     UnsafeModelOutputError,
     build_agent_prompt,
@@ -249,6 +250,7 @@ def _template_summary(
 async def summarize_bill(
     title: str, content: str = "", lang: str = "el",
     pill: str = "", status: str = "", categories: list[str] | None = None,
+    bill_id: str = "unknown",
 ) -> str:
     """
     Generate bill summary. Strategy:
@@ -257,6 +259,7 @@ async def summarize_bill(
     3. Fallback: static template (always correct, no hallucination)
     """
     cats = categories or []
+    field = f"summary_short_{lang}"
 
     # Strategy 1: Real content → Ollama (English) → DeepL (→ Greek)
     if content and len(content) > 500 and await ollama_available():
@@ -269,22 +272,29 @@ async def summarize_bill(
             "Summary:"
         )
         en_summary = await ollama_generate(prompt, max_tokens=400)
+        en_summary = accepted_generated_text(en_summary, field="summary_short_en", bill_id=bill_id)
         if en_summary and len(en_summary) > 50:
             if lang == "el":
                 el_summary = await deepl_translate(en_summary, "EL", "EN")
+                el_summary = accepted_generated_text(el_summary, field=field, bill_id=bill_id)
                 if el_summary:
                     return el_summary
-            return en_summary
+            else:
+                return en_summary
 
     # Strategy 2: No content, but DeepL → translate title/pill for EN version
     if lang == "en" and DEEPL_API_KEY:
         en_title = await deepl_translate(title, "EN", "EL")
         en_pill = await deepl_translate(pill, "EN", "EL") if pill else ""
         if en_title:
-            return _template_summary(en_title, en_pill, status, cats, "en")
+            translated = _template_summary(en_title, en_pill, status, cats, "en")
+            translated = accepted_generated_text(translated, field=field, bill_id=bill_id)
+            if translated:
+                return translated
 
     # Strategy 3: Fallback template (always works)
-    return _template_summary(title, pill, status, cats, lang)
+    fallback = _template_summary(title, pill, status, cats, lang)
+    return OfficialText(fallback)
 
 
 # ── Divergence Explanation ───────────────────────────────────────────────────
