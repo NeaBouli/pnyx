@@ -121,6 +121,8 @@ def _is_nav_line(line: str) -> bool:
 
 def extract_bill_text(html: str) -> str:
     """Extrahiert relevanten Text aus HTML oder Plain Text."""
+    if looks_like_error_page(html):
+        return ""
     if not html.strip().startswith("<"):
         lines = [l.strip() for l in html.split("\n")
                  if l.strip() and len(l.strip()) > 20 and not _is_nav_line(l)]

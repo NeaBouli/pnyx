@@ -107,3 +107,51 @@ def test_storage_rechecks_generated_rejection_without_removing_sensitive_marker(
     empty = SimpleNamespace(id="SYNTH-2", summary_long_el=None)
     assert not fetcher.store_fetched_text(empty, fetcher.GeneratedExtraction(BAD))
     assert empty.summary_long_el is None
+
+
+@pytest.mark.parametrize("heading", ["Access Denied", "403 Forbidden", "Request Rejected"])
+@pytest.mark.parametrize("tag", ["h1", "h2", "h3", "h4", "h5", "h6", "title"])
+def test_prefixed_html_error_heading_is_rejected_before_and_after_extraction(heading: str, tag: str) -> None:
+    html = f'<title>Error</title><{tag} class="failure"><span>{heading}</span></{tag}><main>Reference #synthetic ' + GOOD + "</main>"
+    flattened = f"Error {heading} Reference #synthetic " + GOOD
+    assert scraper._looks_like_access_denied_body(html)
+    assert fetcher._is_bad_parliament_text(html)
+    assert scraper.extract_bill_text(html) == ""
+    assert fetcher._extract_text_from_html(html) == ""
+    for value in (html, flattened, fetcher._extract_text_from_html(html), scraper.extract_bill_text(html)):
+        bill = SimpleNamespace(id="SYNTH-ERROR", summary_long_el=None, generated_content_provenance=None)
+        assert not fetcher.store_fetched_text(bill, value)
+        assert bill.summary_long_el is None and bill.generated_content_provenance is None
+    for value in (html, flattened):
+        assert "error_page" in check_generated_text(value, field="summary_long_el").reasons
+        assert "error_page" in check_generated_text(value, field="summary_long_en").reasons
+        assert scraper._looks_like_access_denied_body(value)
+        assert fetcher._is_bad_parliament_text(value)
+
+
+@pytest.mark.parametrize("heading", [
+    "Ορισμός του όρου Access Denied", "«Access Denied» ως τεχνικός όρος",
+    "Η φράση 403 Forbidden ως τεχνικός όρος", "Ερμηνεία του όρου Request Rejected",
+])
+def test_legislative_error_terms_survive_extraction_and_official_storage(heading: str) -> None:
+    html = f"<title>Error</title><h1>{heading}</h1><main>" + GOOD + "</main>"
+    assert not scraper._looks_like_access_denied_body(html)
+    for extracted in (scraper.extract_bill_text(html), fetcher._extract_text_from_html(html)):
+        assert extracted and not fetcher._is_bad_parliament_text(extracted)
+        bill = SimpleNamespace(id="SYNTH-OFFICIAL", summary_long_el=None, generated_content_provenance=None)
+        assert fetcher.store_fetched_text(bill, extracted)
+        assert bill.summary_long_el == extracted and bill.generated_content_provenance is None
+
+
+@pytest.mark.parametrize("text", [
+    "Η τεχνική έκθεση αναφέρει Error Access Denied Reference #42 ως παράδειγμα μηνύματος. ",
+    "Η τεχνική έκθεση παραθέτει «Error Access Denied Reference #42» ως παράδειγμα μηνύματος. ",
+    "«Access Denied» είναι το μήνυμα που εμφανίζεται όταν απορρίπτεται η πρόσβαση. ",
+])
+def test_error_reference_mentions_in_legislative_prose_are_preserved(text: str) -> None:
+    value = text + GOOD
+    assert check_generated_text(value, field="summary_long_el").ok
+    assert not scraper._looks_like_access_denied_body(value)
+    bill = SimpleNamespace(id="SYNTH-OFFICIAL", summary_long_el=None, generated_content_provenance=None)
+    assert fetcher.store_fetched_text(bill, value)
+    assert bill.summary_long_el == value and bill.generated_content_provenance is None

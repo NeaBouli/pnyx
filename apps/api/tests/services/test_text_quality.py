@@ -98,7 +98,6 @@ def test_review_failure_regressions(text: str, reason: str) -> None:
 
 @pytest.mark.parametrize("text", [
     "Η Εσθονία χρησιμοποιείται ως μοντέλο για την ψηφιακή διακυβέρνηση.",
-    "Η ρύθμιση για τη δημόσια διοίκηση provides new rules για τη διαδικασία.",
     "Η κατάθεση αναφέρει «I cannot endorse this proposal» ως δήλωση του μάρτυρα.",
     "Η ρύθμιση χρησιμοποιεί «γνήσια εισαγωγικά», … και — στη διατύπωση.",
     "COVID-19", "ΕΕ COVID-19", "ΕΕ API", "GDPR", "H1N1", "B2B",
@@ -202,3 +201,98 @@ def test_brands_quotes_and_urls_do_not_create_mixed_words() -> None:
 def test_explicit_foreign_script_fragments_are_rejected(fragment: str) -> None:
     text = f"Η απόφαση καθορίζει τη διαδικασία των δημοτικών υπηρεσιών και αναφέρει «{fragment}»."
     assert "foreign_script" in check_generated_greek(text, field="summary_long_el").reasons
+
+
+@pytest.mark.parametrize("text", [
+    "Η ρύθμιση ορίζει ως μοντέλο τεχνητής νοημοσύνης το σύστημα που παράγει προβλέψεις.",
+    "Ως μοντέλο τεχνητής νοημοσύνης νοείται το σύστημα που παράγει προβλέψεις.",
+    "Ως γλωσσικό μοντέλο νοείται το σύστημα επεξεργασίας της φυσικής γλώσσας.",
+    "«Δεν έχω πρόσβαση στα στοιχεία»",
+    "«Κατά την εξέταση δήλωσε:\nΔεν έχω πρόσβαση στα στοιχεία\nΠαρακαλώ να μου στείλετε το έγγραφο»",
+    "Η κατάθεση αναφέρει «Λυπάμαι, αλλά δεν μπορώ να δώσω τα στοιχεία».",
+    'Ο μάρτυρας δήλωσε "Δεν διαθέτω πρόσβαση στο έγγραφο" κατά την εξέταση.',
+    "“Παρακαλώ να μου στείλετε το έγγραφο”, δήλωσε ο πολίτης.",
+    "1. Απάντηση του Υπουργείου σε ερώτηση για τη διαδικασία αδειοδότησης.",
+    "23) Απάντηση του Υπουργείου σε ερώτηση για τη λειτουργία των υπηρεσιών.",
+    "• Απάντηση του Υπουργείου σε ερώτηση για την εφαρμογή της απόφασης.",
+    "Η απόφαση αφορά τους φορείς New Rules Foundation και Digital Services Programme για τη βελτίωση των δημόσιων υπηρεσιών και την ενίσχυση της διαφάνειας στη διοίκηση.",
+    "Η απόφαση αφορά τα API PDF GDPR και τη συνεργασία με τους José René και Jesús.",
+    'Η έκθεση παραθέτει "introduces new requirements" ως όρο της συμφωνίας.',
+    "Η κατάθεση αναφέρει «Please provide the document so I can summarize it» ως παράδειγμα.",
+    "Η κατάθεση αναφέρει “provides new rules” ως παράδειγμα ξενόγλωσσης διατύπωσης.",
+])
+@pytest.mark.parametrize("field", ["summary_short_el", "summary_long_el", "analysis_el"])
+def test_round_three_legislative_preservation(text: str, field: str) -> None:
+    assert check_generated_text(text, field=field).ok
+    assert check_generated_text(unicodedata.normalize("NFD", text), field=field).ok
+
+
+@pytest.mark.parametrize("fragment", [
+    "introduces new requirements", "provides new rules", "establishes additional obligations",
+    "Please provide the document so I can summarize it.",
+    "Please send me your text so I can analyse it.",
+])
+@pytest.mark.parametrize("position", ["before", "within", "after"])
+def test_english_clause_cannot_hide_in_greek_padding(fragment: str, position: str) -> None:
+    greek = "Η ρύθμιση αφορά τη λειτουργία των δημόσιων υπηρεσιών και τη διαδικασία αδειοδότησης. " * 3
+    text = {"before": fragment + " " + greek, "within": greek + fragment + " " + greek,
+            "after": greek + fragment}[position]
+    assert check_generated_text(text, field="summary_short_el").reasons == ("non_greek",)
+
+
+@pytest.mark.parametrize("prefix", ["1. ", "23) ", "• ", "‣ ", "◦ ", "⁃ ", "∙ ", "● ", "▪ ", "▫ ", "> 1. ", "1. 2) "])
+def test_formatted_meta_answers_are_rejected(prefix: str) -> None:
+    result = check_generated_text(prefix + "Απάντηση: Για να βρεις την πληροφορία, αναζήτησε το έγγραφο.",
+                                  field="summary_short_el")
+    assert result.reasons == ("refusal_or_meta",)
+
+
+# Exercise every word boundary in the refusal/meta lead-ins, with a failed
+# suffix so regex engines must explore their nonmatching paths too.
+_META_LEADS = (
+    "Tôi", "Tôi xin", "Tôi không", "I'm", "I", "I am", "I can't", "As", "As an", "As an AI,",
+    "As a language", "As a language model,", "Λυπάμαι", "Λυπάμαι,", "Λυπάμαι, αλλά",
+    "Δυστυχώς", "Δυστυχώς,", "Δυστυχώς, αλλά", "Δεν", "Δεν μπορώ", "Δεν μπορώ να",
+    "Δεν έχω", "Δεν διαθέτω", "Χρειάζομαι", "Χρειάζομαι το", "Χρειάζομαι το πλήρες",
+    "Χρειάζομαι περισσότερες", "Παρακαλώ", "Παρακαλώ,", "Παρακαλώ να", "Παρακαλώ να μου",
+    "Μπορείτε", "Μπορείτε να", "Μπορείτε να μου", "Ως", "Ως γλωσσικό", "Ως μοντέλο",
+    "Ως μοντέλο τεχνητής", "Ως μοντέλο τεχνητής νοημοσύνης", "Απάντηση", "Για", "Για να",
+    "Για να βρεις", "Για να βρεις την", "Δώστε", "Δώσε", "Στείλτε", "Στείλε", "Παραθέστε", "Παραθέσε",
+    "Δώστε μου", "Δώστε μου το", "Here", "Here is", "Here's", "Summary", "You", "You are", "You are a",
+    "You are a Greek", "You are a Greek legislation", "Write", "Write only", "Return", "Return only",
+    "Return only valid", "Summarize", "Summarize this", "Summarize this Greek", "Respond", "Respond only",
+    "Respond only in", "Επέστρεψε", "Επέστρεψε μόνο", "Επέστρεψε μόνο έγκυρο", "Ανάλυσε", "Ανάλυσε αυτό",
+    "Ανάλυσε αυτό το", "Ανάλυσε αυτό το ελληνικό", "System", "User", "Assistant", "Prompt", "Title", "Text",
+    "Τίτλος", "Κείμενο", "Please", "Please provide", "Please provide the", "Please provide the document",
+    "Please provide the document so", "Please provide the document so I", "Please provide the document so I can",
+)
+
+
+@pytest.mark.parametrize("lead", _META_LEADS)
+@pytest.mark.parametrize("whitespace", [" ", "\t", " \t"], ids=["spaces", "tabs", "mixed"])
+def test_every_meta_lead_with_100k_horizontal_whitespace_is_fast(lead: str, whitespace: str) -> None:
+    from time import perf_counter
+
+    text = lead + (whitespace * 100_000)[:100_000] + "η απόφαση ορίζει τη νόμιμη διαδικασία."
+    started = perf_counter()
+    check_generated_text(text, field="summary_long_el")
+    assert perf_counter() - started < 0.5
+
+
+@pytest.mark.parametrize("lead", ["Παρακαλώ", "Λυπάμαι", "Δυστυχώς"])
+@pytest.mark.parametrize("length", [10_000, 100_000])
+@pytest.mark.parametrize("matching", [False, True])
+def test_review_backtracking_reproduction(lead: str, length: int, matching: bool) -> None:
+    from time import perf_counter
+
+    suffix = (", δώστε μου το κείμενο." if lead == "Παρακαλώ" else ", αλλά δεν μπορώ να αναλύσω το κείμενο.")
+    text = lead + " " * length + (suffix if matching else "η απόφαση ορίζει τη νόμιμη διαδικασία.")
+    started = perf_counter()
+    result = check_generated_text(text, field="summary_long_el")
+    assert perf_counter() - started < 0.5
+    assert ("refusal_or_meta" in result.reasons) == matching
+
+
+def test_whitespace_compaction_preserves_original_mojibake_density() -> None:
+    text = "Η απόφαση αναφέρει τους συμβολισμούς ≈ÀÕ≈ÀÕ≈ÀÕ≈ÀÕ." + "\t" * 100_000 + " Η διαδικασία καθορίζεται αναλυτικά."
+    assert check_generated_text(text, field="summary_long_el").ok

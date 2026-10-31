@@ -6,8 +6,9 @@ or explicit legacy source/reason eligibility.
 Legacy fields without provenance are reported but only cleared when an operator
 names their source with --include-legacy after reviewing a dry run: their
 ownership cannot be distinguished from human edits or official text otherwise.
-Legacy clearing defaults to high-precision reasons; non_greek is report-only
-unless explicitly selected with --legacy-reasons (which replaces the defaults).
+Legacy clearing defaults to refusal_or_meta, reader_metadata, mojibake and
+error_page; language/script signals are report-only unless explicitly selected
+with --legacy-reasons (which replaces the defaults).
 The exclusive, mode-0600 CSV backup is flushed to disk before any UPDATE.
 """
 
@@ -76,8 +77,8 @@ async def audit(
     if apply and (expect_from is None or max_rows is None):
         # An approval covers exactly the reviewed dry-run plan, never whatever a later scan finds.
         raise ValueError("--apply requires --expect-from and --max-rows")
-    if max_rows is not None and max_rows < 0:
-        raise ValueError("max_rows must be non-negative")
+    if max_rows is not None and (type(max_rows) is not int or max_rows < 0):
+        raise ValueError("max_rows must be a nonnegative integer")
     expected = read_plan(expect_from) if expect_from is not None else None
     plan_file = _open_private(plan_path) if plan_path is not None else None
     plan_writer = csv.writer(plan_file) if plan_file is not None else None
@@ -232,13 +233,16 @@ def parse_args() -> argparse.Namespace:
                         help="Also clear high-precision failures in unreviewed fields without provenance for this bill source")
     parser.add_argument("--plan-csv", type=Path, help="New private CSV listing every field this run would clear (no text)")
     parser.add_argument("--expect-from", type=Path, help="Approved dry-run plan; --apply clears only matching fields")
-    parser.add_argument("--max-rows", type=int, help="Abort --apply without writing if more fields match")
+    parser.add_argument("--max-rows", type=int, help="Nonnegative integer; abort --apply without writing if more fields match")
     parser.add_argument("--legacy-reasons", nargs="+", choices=sorted(LEGACY_REASON_CHOICES),
                         default=sorted(DEFAULT_LEGACY_REASONS),
-                        help="Replace the legacy clearing reasons; defaults to all except non_greek (report-only)")
+                        help="Replace the legacy clearing reasons; defaults to refusal_or_meta, reader_metadata, "
+                             "mojibake, error_page; non_greek, mixed_script, foreign_script are report-only")
     args = parser.parse_args()
     if args.samples < 0:
         parser.error("--samples must be non-negative")
+    if args.max_rows is not None and args.max_rows < 0:
+        parser.error("--max-rows must be a nonnegative integer")
     if args.apply and args.backup_csv is None:
         parser.error("--apply requires --backup-csv")
     if args.apply and (args.expect_from is None or args.max_rows is None):

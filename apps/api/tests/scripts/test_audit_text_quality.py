@@ -556,3 +556,115 @@ async def test_legacy_script_signals_are_report_only_by_default(tmp_path: Path, 
     await _raw_audit(PlanConnection([row]), fields=("summary_long_el",), plan_path=plan,
                      legacy_sources=frozenset({"DIAVGEIA"}))
     assert list(csv.DictReader(plan.read_text(encoding="utf-8").splitlines())) == []
+
+
+@pytest.mark.parametrize("value", [
+    "Η ρύθμιση ορίζει ως μοντέλο τεχνητής νοημοσύνης το σύστημα που παράγει προβλέψεις.",
+    "Ως μοντέλο τεχνητής νοημοσύνης νοείται το σύστημα που παράγει προβλέψεις.",
+    "Ως γλωσσικό μοντέλο νοείται το σύστημα επεξεργασίας της φυσικής γλώσσας.",
+    "«Δεν έχω πρόσβαση στα στοιχεία»",
+    "«Κατά την εξέταση δήλωσε:\nΔεν έχω πρόσβαση στα στοιχεία\nΠαρακαλώ να μου στείλετε το έγγραφο»",
+    "Η κατάθεση αναφέρει «Λυπάμαι, αλλά δεν μπορώ να δώσω τα στοιχεία».",
+    'Ο μάρτυρας δήλωσε "Δεν διαθέτω πρόσβαση στο έγγραφο" κατά την εξέταση.',
+    "“Παρακαλώ να μου στείλετε το έγγραφο”, δήλωσε ο πολίτης.",
+    "1. Απάντηση του Υπουργείου σε ερώτηση για τη διαδικασία αδειοδότησης.",
+    "23) Απάντηση του Υπουργείου σε ερώτηση για τη λειτουργία των υπηρεσιών.",
+    "• Απάντηση του Υπουργείου σε ερώτηση για την εφαρμογή της απόφασης.",
+    "Η απόφαση αφορά τους φορείς New Rules Foundation και Digital Services Programme για τη βελτίωση των δημόσιων υπηρεσιών και την ενίσχυση της διαφάνειας στη διοίκηση.",
+    "Η απόφαση αφορά τα API PDF GDPR και τη συνεργασία με τους José René και Jesús.",
+    'Η έκθεση παραθέτει "introduces new requirements" ως όρο της συμφωνίας.',
+    "Η κατάθεση αναφέρει «Please provide the document so I can summarize it» ως παράδειγμα.",
+    "Η κατάθεση αναφέρει “provides new rules” ως παράδειγμα ξενόγλωσσης διατύπωσης.",
+    "Η τεχνική έκθεση αναφέρει Error Access Denied Reference #42 ως παράδειγμα μηνύματος.",
+    "Η τεχνική έκθεση παραθέτει «Error Access Denied Reference #42» ως παράδειγμα μηνύματος.",
+    "<title>Error</title><h1>Ορισμός του όρου Access Denied</h1><p>" + GOOD * 8 + "</p>",
+    "<h1>«Access Denied» ως τεχνικός όρος</h1><p>" + GOOD * 8 + "</p>",
+    "<h1>Απάντηση του Υπουργείου</h1><p>" + GOOD * 8 + "</p>",
+    "Η απόφαση αναφέρει τους συμβολισμούς ≈ÀÕ≈ÀÕ≈ÀÕ≈ÀÕ." + "\t" * 100_000 + " Η διαδικασία καθορίζεται αναλυτικά.",
+])
+async def test_legislative_prose_is_never_planned_or_cleared_by_legacy_defaults(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], invalidate: AsyncMock, value: str,
+) -> None:
+    row = _legacy("OFF-PRESERVE", value=value)
+    conn = PlanConnection([row])
+    plan, backup = tmp_path / "plan.csv", tmp_path / "backup.csv"
+    assert await _raw_audit(conn, fields=("summary_long_el",), plan_path=plan,
+                            legacy_sources=frozenset({"DIAVGEIA"})) == 0
+    assert list(csv.DictReader(plan.read_text(encoding="utf-8").splitlines())) == []
+    assert "0 eligible failing legacy fields" in capsys.readouterr().out
+    assert await _raw_audit(conn, fields=("summary_long_el",), apply=True, backup_path=backup,
+                            expect_from=plan, max_rows=0, legacy_sources=frozenset({"DIAVGEIA"})) == 0
+    assert not conn.writes and not backup.exists()
+    assert row["summary_long_el"] == value
+    invalidate.assert_not_awaited()
+
+
+@pytest.mark.parametrize("value", [
+    "Η ρύθμιση introduces new requirements για τη λειτουργία των δημόσιων υπηρεσιών και τη διαδικασία αδειοδότησης.",
+    GOOD * 8 + " Please provide the document so I can summarize it.",
+])
+async def test_embedded_english_is_report_only_in_default_legacy_plans(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], value: str,
+) -> None:
+    plan = tmp_path / "plan.csv"
+    await _raw_audit(PlanConnection([_legacy("L-English", value=value)]), fields=("summary_long_el",),
+                     plan_path=plan, legacy_sources=frozenset({"DIAVGEIA"}))
+    assert "\tnon_greek\t1\tL-English\t0\t1" in capsys.readouterr().out
+    assert list(csv.DictReader(plan.read_text(encoding="utf-8").splitlines())) == []
+
+
+@pytest.mark.parametrize("max_rows", [float("nan"), float("inf"), float("-inf"), 1.0, 1.5, "1", True, False, -1])
+@pytest.mark.parametrize("apply", [False, True])
+async def test_invalid_python_row_limit_fails_before_io(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, max_rows: Any, apply: bool,
+) -> None:
+    def unexpected_io(*args: Any, **kwargs: Any) -> None:
+        pytest.fail("Invalid max_rows reached plan/file/database I/O")
+
+    conn = PlanConnection([_owned("P-1"), _owned("P-2")])
+    monkeypatch.setattr(conn, "transaction", unexpected_io)
+    monkeypatch.setattr(audit_script, "read_plan", unexpected_io)
+    monkeypatch.setattr(audit_script, "_open_private", unexpected_io)
+    monkeypatch.setattr(audit_script.tempfile, "TemporaryFile", unexpected_io)
+    plan, backup = tmp_path / "plan.csv", tmp_path / "backup.csv"
+    with pytest.raises(ValueError, match="max_rows must be a nonnegative integer"):
+        await _raw_audit(conn, fields=("summary_long_el",), apply=apply, plan_path=plan,
+                         expect_from=tmp_path / "approved.csv", backup_path=backup, max_rows=max_rows)
+    assert not conn.writes and not plan.exists() and not backup.exists()
+
+
+@pytest.mark.parametrize("limit", [0, 1, 2])
+async def test_integer_row_limit_with_two_approved_updates(
+    tmp_path: Path, invalidate: AsyncMock, limit: int,
+) -> None:
+    conn = PlanConnection([_owned("P-1"), _owned("P-2")])
+    plan, backup = tmp_path / "plan.csv", tmp_path / "backup.csv"
+    await _raw_audit(conn, fields=("summary_long_el",), plan_path=plan)
+    assert await _raw_audit(conn, fields=("summary_long_el",), apply=True, backup_path=backup,
+                            expect_from=plan, max_rows=limit) == (2 if limit == 2 else 0)
+    assert len(conn.writes) == (2 if limit == 2 else 0)
+    assert backup.exists() == (limit == 2)
+
+
+def test_cli_help_documents_the_four_structural_defaults(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+) -> None:
+    import sys
+
+    monkeypatch.setattr(sys, "argv", [str(SCRIPT), "--help"])
+    with pytest.raises(SystemExit) as error:
+        audit_script.parse_args()
+    assert error.value.code == 0
+    help_text = " ".join(capsys.readouterr().out.split())
+    assert "defaults to refusal_or_meta, reader_metadata, mojibake, error_page" in help_text
+    assert "non_greek, mixed_script, foreign_script are report-only" in help_text
+
+
+@pytest.mark.parametrize("limit", ["nan", "inf", "1.0", "-1"])
+def test_cli_rejects_invalid_row_limit(monkeypatch: pytest.MonkeyPatch, limit: str) -> None:
+    import sys
+
+    monkeypatch.setattr(sys, "argv", [str(SCRIPT), "--max-rows", limit])
+    with pytest.raises(SystemExit) as error:
+        audit_script.parse_args()
+    assert error.value.code == 2

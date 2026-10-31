@@ -16,6 +16,22 @@ from services.content_provenance import apply_generated_content, content_sha256
 
 GOOD = "Η ρύθμιση ορίζει τη διαδικασία λειτουργίας των δημόσιων υπηρεσιών."
 BAD = "Απάντηση: Για να βρεις την πληροφορία, αναζήτησε το έγγραφο."
+REVIEW_FAILURES = (
+    BAD,
+    "Η ρύθμιση introduces new requirements για τη λειτουργία των δημόσιων υπηρεσιών και τη διαδικασία αδειοδότησης.",
+    GOOD * 8 + " Please provide the document so I can summarize it.",
+    "1. " + BAD, "23) " + BAD, "• " + BAD, "‣ " + BAD, "◦ " + BAD,
+)
+REVIEW_LEGISLATIVE_PROSE = (
+    "Η ρύθμιση ορίζει ως μοντέλο τεχνητής νοημοσύνης το σύστημα που παράγει προβλέψεις.",
+    "«Δεν έχω πρόσβαση στα στοιχεία»",
+    "«Κατά την εξέταση δήλωσε:\nΔεν έχω πρόσβαση στα στοιχεία\nΠαρακαλώ να μου στείλετε το έγγραφο»",
+    "1. Απάντηση του Υπουργείου σε ερώτηση για τη διαδικασία αδειοδότησης.",
+    "• Απάντηση του Υπουργείου σε ερώτηση για τη λειτουργία των υπηρεσιών.",
+    "Η κατάθεση αναφέρει «Please provide the document so I can summarize it» ως παράδειγμα.",
+    'Η έκθεση παραθέτει "introduces new requirements" ως όρο της συμφωνίας.',
+    "Η απόφαση αφορά τα API PDF GDPR και τον φορέα Digital Services Programme για τη βελτίωση των δημόσιων υπηρεσιών.",
+)
 
 
 def _summary(text: str = GOOD) -> dict[str, Any]:
@@ -25,14 +41,15 @@ def _summary(text: str = GOOD) -> dict[str, Any]:
 
 
 @pytest.mark.parametrize("hf_bad", [False, True])
-async def test_provider_fallthrough(monkeypatch: pytest.MonkeyPatch, hf_bad: bool) -> None:
-    first = AsyncMock(return_value=_summary(BAD))
-    second = AsyncMock(return_value=_summary(BAD if hf_bad else GOOD))
+@pytest.mark.parametrize("bad", REVIEW_FAILURES)
+async def test_provider_fallthrough(monkeypatch: pytest.MonkeyPatch, hf_bad: bool, bad: str) -> None:
+    first = AsyncMock(return_value=_summary(bad))
+    second = AsyncMock(return_value=_summary(bad if hf_bad else GOOD))
     monkeypatch.setattr(scraper, "summarize_ollama", first)
     monkeypatch.setattr(scraper, "summarize_huggingface", second)
     result = await scraper.generate_summaries(GOOD * 10, "Δοκιμαστικός τίτλος", bill_id="SYNTH-1")
     assert result["_provider"] == ("rule_based" if hf_bad else "huggingface")
-    assert BAD not in result.values()
+    assert bad not in result.values()
     first.assert_awaited_once()
     second.assert_awaited_once()
 
@@ -73,21 +90,55 @@ async def test_refusal_is_rejected_before_translation(monkeypatch: pytest.Monkey
     translate.assert_not_awaited()
 
 
-@pytest.mark.parametrize("cached", [None, BAD])
-async def test_on_demand_rejection_never_cached(monkeypatch: pytest.MonkeyPatch, cached: str | None) -> None:
+@pytest.mark.parametrize("cached", [False, True])
+@pytest.mark.parametrize("bad", REVIEW_FAILURES)
+async def test_on_demand_rejection_never_cached(monkeypatch: pytest.MonkeyPatch, cached: bool, bad: str) -> None:
     import redis.asyncio as redis
 
     bill = SimpleNamespace(summary_short_el=None, summary_short_en=None, pill_el=None, pill_en=None,
                            summary_long_el=None, summary_long_en=None, source="PARLIAMENT",
                            title_el="Δοκιμαστικός τίτλος", status=BillStatus.ACTIVE, categories=[])
     db = SimpleNamespace(execute=AsyncMock(return_value=SimpleNamespace(scalar_one_or_none=lambda: bill)))
-    cache = SimpleNamespace(get=AsyncMock(return_value=cached), setex=AsyncMock())
+    cache = SimpleNamespace(get=AsyncMock(return_value=bad if cached else None), setex=AsyncMock())
     monkeypatch.setattr(redis, "from_url", lambda *a, **k: cache)
     monkeypatch.setattr(parliament, "is_public_bill", lambda bill: True)
-    monkeypatch.setattr(ollama_service, "summarize_bill", AsyncMock(return_value=BAD))
+    generate = AsyncMock(return_value=bad)
+    monkeypatch.setattr(ollama_service, "summarize_bill", generate)
     with pytest.raises(HTTPException) as exc:
         await inspect.unwrap(parliament.get_bill_summary)(request=None, bill_id="SYNTH-1", lang="el", db=db)
     assert exc.value.status_code == 503
+    generate.assert_awaited_once()
+    cache.setex.assert_not_awaited()
+
+
+@pytest.mark.parametrize("text", REVIEW_LEGISLATIVE_PROSE)
+async def test_provider_preserves_legislative_definitions_quotes_and_enumerations(
+    monkeypatch: pytest.MonkeyPatch, text: str,
+) -> None:
+    monkeypatch.setattr(scraper, "summarize_ollama", AsyncMock(return_value=_summary(text)))
+    second = AsyncMock()
+    monkeypatch.setattr(scraper, "summarize_huggingface", second)
+    result = await scraper.generate_summaries(GOOD * 10, "Δοκιμαστικός τίτλος")
+    assert result["_provider"] == "ollama" and result["summary_long_el"] == text
+    second.assert_not_awaited()
+
+
+@pytest.mark.parametrize("text", REVIEW_LEGISLATIVE_PROSE)
+async def test_redis_preserves_legislative_definitions_quotes_and_enumerations(
+    monkeypatch: pytest.MonkeyPatch, text: str,
+) -> None:
+    import redis.asyncio as redis
+
+    bill = SimpleNamespace(summary_short_el=None, pill_el=None, source="PARLIAMENT")
+    db = SimpleNamespace(execute=AsyncMock(return_value=SimpleNamespace(scalar_one_or_none=lambda: bill)))
+    cache = SimpleNamespace(get=AsyncMock(return_value=text), setex=AsyncMock())
+    generate = AsyncMock()
+    monkeypatch.setattr(redis, "from_url", lambda *a, **k: cache)
+    monkeypatch.setattr(parliament, "is_public_bill", lambda _: True)
+    monkeypatch.setattr(ollama_service, "summarize_bill", generate)
+    result = await inspect.unwrap(parliament.get_bill_summary)(request=None, bill_id="SYNTH-1", lang="el", db=db)
+    assert result["summary"] == text and result["source"] == "cache"
+    generate.assert_not_awaited()
     cache.setex.assert_not_awaited()
 
 

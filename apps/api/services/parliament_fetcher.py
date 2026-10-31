@@ -228,6 +228,9 @@ async def _channel_jina_html(url: str) -> str:
 
 def _extract_text_from_html(html: str) -> str:
     """Extract text from HTML using regex (no lxml dependency)."""
+    # Extraction may drop short headings or select a main element without them.
+    if looks_like_error_page(html):
+        return ""
     # Remove script/style blocks
     html = re.sub(r"<script[^>]*>.*?</script>", "", html, flags=re.DOTALL | re.IGNORECASE)
     html = re.sub(r"<style[^>]*>.*?</style>", "", html, flags=re.DOTALL | re.IGNORECASE)

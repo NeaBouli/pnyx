@@ -24,6 +24,13 @@ ERROR_PAGE_MARKERS: tuple[tuple[str, bool], ...] = (
     ("akamaighost", False),
 )
 _TAG = re.compile(r"<[^<>\n]*>")
+_HEADING_TAG = re.compile(r"</?(?:title|h[1-6])\b[^<>]*>", re.IGNORECASE)
+# Extraction can flatten a generic title and the denial heading onto one line.
+# Require the transport reference immediately after the heading in that case.
+_PREFIXED_REFERENCE = re.compile(
+    r"^error +(?:access denied|403 forbidden|request rejected) +reference *#"
+)
+_HORIZONTAL_SPACE = re.compile(r"[ \t]+")
 
 
 def looks_like_error_page(text: str | None) -> bool:
@@ -31,12 +38,21 @@ def looks_like_error_page(text: str | None) -> bool:
     if not text:
         return False
     lowered = text.lower()
+    if not any(marker in lowered for marker, _ in ERROR_PAGE_MARKERS) and "reference" not in lowered:
+        return False
+    # Keep heading boundaries before stripping tags, even for minified HTML.
+    lines = [
+        _HORIZONTAL_SPACE.sub(" ", line).lstrip(" #*>_`-")
+        for line in _TAG.sub(" ", _HEADING_TAG.sub("\n", lowered)).splitlines()
+    ]
+    if any(_PREFIXED_REFERENCE.match(line) for line in lines):
+        return True
     for marker, heading_only in ERROR_PAGE_MARKERS:
         if marker not in lowered:
             continue
         if not heading_only:
             return True
-        for line in _TAG.sub(" ", lowered).splitlines():
-            if line.lstrip(" \t#*>_`-").startswith(marker):
+        for line in lines:
+            if line.startswith(marker) and (len(line) == len(marker) or not line[len(marker)].isalnum()):
                 return True
     return False
