@@ -75,28 +75,31 @@ import r0_inventory
 # T-9148 (#636, owner-requested): neutral AI labels and FAQ text (EL/EN/JSON-LD);
 # community model attribution is fixed to V-Labs Artificial Systems · vlabs.gr.
 # Only the changed pages below receive new exact inventory fingerprints.
+# B08/B12/B17 (user-requested): Compass/server-history and conditional Arweave
+# disclosures; production small-cell/sensitivity facts; FAQ grouping/counts/schema;
+# initial Greek copy; established legal-name attribution and operator responsibility.
 # T-9149: deferred script/listener migration; public copy and JSON-LD are unchanged.
 # T-9172: Direct APK copy is v1.0.37/vC66 in EL/EN/FAQ JSON-LD; Play stays vC62.
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/community.html": "3056fa1108b6f6701eda9888653a0eee27153b7c2af26d8865350fb3cd651383",  # T-9153: paused donations; neutral Arweave tooltip, no acquisition prompts or exchange links
-    "docs/wiki/api.html": "c9ab8e5d6a4ffcae272c877f12672741c92a00c6834f1f664c06048ecf319301",  # B01 / PR #706: explicit read/heavy/generate classes and bounded work
-    "docs/wiki/architecture.html": "15bf107d472a1a299c1a0f91ad42c90d6542146eb8f384b09f0ee2d39b0c34ca",
-    "docs/wiki/broadcasting.html": "b5e2ee8a6c84697b9e5921d1910adc7a222de8fc41630f72cffa7c61aba106e0",
-    "docs/wiki/contributing.html": "44b72f926ea13ed3d6000269ac8be6444997d8096f6d8f9377a533f29f53d842",
-    "docs/wiki/database.html": "b5eb36171a860d2b0466c29d2e31d6b7461bda1d08eea83aa3bd39c48c26d219",
-    "docs/wiki/delete-account.html": "de0002a7852aab5de44262c4d8ad8a86e51453a491ff3fbcfe0daa8a7d03ee25",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
-    "docs/wiki/faq.html": "dc44f919d09557503372a89cf612a2feb44a33fbc0500af725386dfc1a748989",  # T-9153: paused donations; HLR information and FAQ EL/EN/JSON-LD
-    "docs/wiki/index.html": "3903bcd0ff9928025235f924c78724ff0e4fbecf20d07572dbf3f2cc41271b97",  # T-9047/T-9048: named code region, contrast, headings and document language; T-9106: legal-modal claims text
-    "docs/wiki/modules.html": "3debb7c511a4a2702b7924cb1e20fba5f1a0a44289fd225a01645adb478fcb0e",  # T-9148: reviewed EL/EN AI wording
-    "docs/wiki/privacy.html": "418e942092ae40c39565fdccbd9afcd1e38535068683a4a58c4f266babc3bec2",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
-    "docs/wiki/roadmap.html": "3b575ee5724570cd922ddc049a856f08314e0c96af4a0983636650a4302ef880",
-    "docs/wiki/security.html": "9d2303450e9b2fbf74cb218d512cfd43ebcaf72027679e36cb2b05101ab12723",  # T-9127: OPEN_END voting closed
-    "docs/wiki/whitepaper.html": "1e704f1b0b586a85cdead864cd1ba6428eeee2f360b0386c11c7ffa7f6cc91c5",  # T-9127: OPEN_END voting closed
-    "docs/wiki/zk-voting.html": "5b2d5e1fe862adf56e746683077c22139e2501ba3cf45121fef93b97c8084edb",
+    "docs/community.html": "7c3ee41c1c683502c28e6325641d782ab3d4a5a62cb26f45103b291e756641cf",  # T-9153: paused donations; neutral Arweave tooltip, no acquisition prompts or exchange links
+    "docs/wiki/api.html": "b71c6b05a81ed5e9065981258496dac8aa5c7bd9a8c99c21a4dced2b570cf910",  # B01 / PR #706: explicit read/heavy/generate classes and bounded work
+    "docs/wiki/architecture.html": "4afb91b2dcee4ce3ce136746205cd9669916ae7aea7f4b2dd46f531cf153b920",
+    "docs/wiki/broadcasting.html": "13f44b28b80bd7eda2f354db950597103a36d567aa4dfa967d6137f4b78fd23c",
+    "docs/wiki/contributing.html": "ce5f0381727ea54d45929c4d919150dc90a2d8c772505d5d17241c90165c257f",
+    "docs/wiki/database.html": "ff940bb48b858808eaf0205348c164dc3578b6411acab6a31d8da1919584907c",
+    "docs/wiki/delete-account.html": "a62e22bd83f648660cb5b53d3beaf25f0c0270e50b722459278f87391e14cacd",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
+    "docs/wiki/faq.html": "b9dc0119e1e559b93c1763958c2e92e1cf557fc709869ef71bbdafa9ecc92130",  # T-9153: paused donations; HLR information and FAQ EL/EN/JSON-LD
+    "docs/wiki/index.html": "ce6fc4609b273cd42529b0c2b7bd7a4f5ab750b0c3d60d6396beb5946cff7eb2",  # T-9047/T-9048: named code region, contrast, headings and document language; T-9106: legal-modal claims text
+    "docs/wiki/modules.html": "34162f6c9aef8312098670c16ca47a379721ed460bec6b4837e6b33b3925c0fe",  # T-9148: reviewed EL/EN AI wording
+    "docs/wiki/privacy.html": "2f50cd8606c1ab3a96f0b1a096a5b150eefbd7b49efdd88e2a5a6bf55d82394a",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
+    "docs/wiki/roadmap.html": "200321ec99b47a32cba7aad3d30cc67558e3902e99dd519021a9af51c27627fe",
+    "docs/wiki/security.html": "db0a3e2046d2f6569731127d3a898aa67c24471ecfe92f8fd662c1489c443cfe",  # T-9127: OPEN_END voting closed
+    "docs/wiki/whitepaper.html": "009c4c386deb53afe0dd176dedf0eb9e16f60708b7ca8dd18e516cdf8e5140af",  # T-9127: OPEN_END voting closed
+    "docs/wiki/zk-voting.html": "650a3e85f98db88751c2702229eb016cc722206758da1a03fa7af73e5914af9c",
 }
-# T-420 changed only the "24 Ώρες" footer target; T-421 only drops the same-URL
-# hreflang="en" head link. Findings text is unchanged.
-APPROVED_AUDIT_PAGE_SHA256 = "ec76a7e97fad62d71dcefb4da8cd31ee5f7a809aadf3363e143fb24e30a37fa9"
+# T-420/T-421: footer target and hreflang; B17: canonical legal-name attribution.
+# Published finding counts and finding text are unchanged.
+APPROVED_AUDIT_PAGE_SHA256 = "c287a2e116f0d7ec9c2a0e773ef9a5b167cc8e42aa903d243901f24ec99966d6"
 
 
 def matches_approved_content(path: str, current: dict) -> bool:

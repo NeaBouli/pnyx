@@ -119,7 +119,7 @@ class StaticAccessibilityContracts(unittest.TestCase):
         expected = (
             ("docs/index.html", "#newsletter label > span[data-el]", "#475569", False),
             ("docs/community.html", ".principle-grid .pc > p", "#475569", False),
-            ("docs/community.html", 'p[data-el="Όλοι συνεισφέρουν ισότιμα. Κανείς δεν ελέγχει."]', "#475569", True),
+            ("docs/community.html", 'p[data-el="Η συνεισφορά της κοινότητας στον κώδικα και στο περιεχόμενο δεν μεταβιβάζει την ευθύνη λειτουργίας."]', "#475569", True),
             ("docs/community.html", ".nav-logo > span", "#475569", True),
             ("docs/wiki/index.html", ".nav-logo > span", "#475569", True),
             ("docs/wiki/index.html", "footer > p", "#cbd5e1", False),

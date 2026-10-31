@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   title: "εκκλησία — Ekklesia.gr",
   description: "Ψηφιακή Πλατφόρμα Αμέσης Δημοκρατίας για τον Έλληνα Πολίτη",
   keywords: ["democracy", "greece", "parliament", "voting", "δημοκρατία"],
-  authors: [{ name: "V-Labs Development", url: "https://github.com/NeaBouli" }],
+  authors: [{ name: "V-Labs IT Solutions & Development", url: "https://github.com/NeaBouli" }],
   robots: { index: true, follow: true },
   manifest: "/manifest.json",
   appleWebApp: {

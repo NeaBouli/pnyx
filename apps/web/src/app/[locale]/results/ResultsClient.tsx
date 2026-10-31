@@ -148,7 +148,7 @@ export default function ResultsClient({ initial }: { initial: PublishedResult[] 
       <footer className="border-t border-gray-200 px-6 py-6 text-center text-xs text-gray-600">
         <p>{isEl ? "Μη κρατική εφαρμογή — ενημερωτικός χαρακτήρας" : "Non-governmental application — informational purposes only"}</p>
         <p className="mt-1">
-          © 2026 V-Labs Development — MIT License —{" "}
+          © 2026 V-Labs IT Solutions & Development — MIT License —{" "}
           <a href="https://github.com/NeaBouli/pnyx" className="hover:text-gray-600" target="_blank" rel="noreferrer">Open Source</a>
         </p>
       </footer>

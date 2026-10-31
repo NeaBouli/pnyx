@@ -517,18 +517,27 @@ def _canonical_response(question: str, lang: str) -> dict | None:
         return resp(
             "Στη σελίδα του νομοσχεδίου, η ορατότητα των αποτελεσμάτων ακολουθεί "
             "την κατάσταση του νομοσχεδίου. Σε νομοσχέδιο ACTIVE με την προεπιλεγμένη ρύθμιση "
-            "κρυφών αποτελεσμάτων, οι μετρήσεις εμφανίζονται μηδενικές και "
+            "κρυφών αποτελεσμάτων, οι μετρήσεις μπορεί να εμφανίζονται μηδενικές και "
             "σημειώνονται ως κρυφές μέχρι το νομοσχέδιο να περάσει σε κατάσταση "
             "με ορατά αποτελέσματα. Στις "
             "καταστάσεις WINDOW_24H, PARLIAMENT_VOTED και OPEN_END τα "
-            "συγκεντρωτικά αποτελέσματα είναι ορατά. Νομοσχέδια που δεν είναι "
+            "συγκεντρωτικά αποτελέσματα μπορεί να εμφανίζονται σύμφωνα με τους "
+            "κανόνες ιδιωτικότητας. Αποτελέσματα με λιγότερες από 10 ψήφους δεν "
+            "εμφανίζονται δημόσια· αποκρύπτονται επίσης μικρές επιμέρους ομάδες. "
+            "Οι αποκρυμμένες αυτές τιμές είναι μη διαθέσιμες, όχι μηδενικές ψήφοι. "
+            "Η δημόσια ορατότητα ελέγχεται και από αποθηκευμένη σήμανση ευαισθησίας, "
+            "ανεξάρτητα από το παραγόμενο κείμενο. Νομοσχέδια που δεν είναι "
             "δημόσια δεν εμφανίζουν αποτελέσματα. Για τους τρέχοντες αριθμούς "
             "δείτε τη σελίδα του νομοσχεδίου.",
             "On the bill page, result visibility follows the bill status. For an ACTIVE bill with "
-            "the default hidden-results setting, the counts are shown as zero and "
+            "the default hidden-results setting, the counts may be shown as zero and "
             "marked as hidden until the bill enters a results-visible lifecycle "
             "state. In WINDOW_24H, PARLIAMENT_VOTED "
-            "and OPEN_END status, the aggregate results are visible. Bills that "
+            "and OPEN_END status, aggregate results may be shown subject to privacy "
+            "rules. Results with fewer than 10 votes are not shown publicly; small "
+            "subgroups are also withheld. These withheld values are unavailable, "
+            "not zero votes. Public visibility also checks a persisted sensitivity "
+            "flag, independently of generated text. Bills that "
             "are not public do not show results. For current numbers, see the "
             "bill page.",
             "results_visibility",
@@ -560,11 +569,14 @@ def _canonical_response(question: str, lang: str) -> dict | None:
             "Το CPLM (Citizens Political Liquid Mirror) είναι δημόσιο, ανώνυμο "
             "συγκεντρωτικό σήμα που δείχνει τη συνολική πολιτική θέση των "
             "συμμετεχόντων πολιτών με βάση τις ψήφους τους. Δεν αποκαλύπτει "
-            "μεμονωμένες ψήφους ή ταυτότητες.",
+            "μεμονωμένες ψήφους ή ταυτότητες. Αποτελέσματα με λιγότερες από "
+            "10 ψήφους δεν εμφανίζονται δημόσια· αποκρύπτονται επίσης μικρές "
+            "επιμέρους ομάδες.",
             "CPLM (Citizens Political Liquid Mirror) is a public, anonymous "
             "aggregate signal showing the overall political position of "
             "participating citizens based on their votes. It does not reveal "
-            "individual votes or identities.",
+            "individual votes or identities. Results with fewer than 10 votes "
+            "are not shown publicly; small subgroups are also withheld.",
             "cplm",
         )
 

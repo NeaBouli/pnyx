@@ -5,7 +5,7 @@
 -->
 
 # Σχήμα Βάσης Δεδομένων / Database Schema
-# Copyright (c) 2026 Vendetta Labs — MIT License
+# Copyright (c) 2026 V-Labs IT Solutions & Development (Vendetta Labs) — MIT License
 
 ## Πίνακες / Tables
 

@@ -5,7 +5,7 @@
 -->
 
 # Χάρτης Πορείας / Roadmap
-# Copyright (c) 2026 Vendetta Labs — MIT License
+# Copyright (c) 2026 V-Labs IT Solutions & Development (Vendetta Labs) — MIT License
 
 ## Ekklesia V1 — Φάση Beta (● Ενεργή τώρα / Active now)
 
