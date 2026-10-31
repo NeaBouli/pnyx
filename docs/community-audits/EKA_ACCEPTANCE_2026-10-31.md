@@ -1,0 +1,12 @@
+# EKA live acceptance — 2026-10-31 (batches B04, B06, B07)
+
+Production checked: API image `sens715-9892e391-20261031T034604Z` (main `9892e391`), web as deployed on 2026-10-31. All probes were read-only or explicitly scoped by the reviewer lead; no paid HLR lookups were made and no personal data was used.
+
+| Finding | Batch | Result | Evidence (2026-10-31) |
+|---|---|---|---|
+| EKA-14 | B07 | **Accepted** | Deployed `tickets/polis.js`, `tickets/config.js`, `tickets/index.html` are byte-identical to `main`; `scripts/static-docs-remote-sinks.check.mjs` passes 52/52 on that source (hostile avatars, hostile login/error strings). |
+| EKA-15 | B07 | **Accepted** | All 14 JavaScript chunks referenced by the deployed web pages (`/el`, `/el/bills`, `/el/results`, `/el/analytics`, `/el/verify`, `/en`) contain no `admin_key`, `adminApi` or `ADMIN_KEY`. |
+| EKA-06 | B04 | **Accepted** (without live limit exercise) | Public `GET /api/v1/identity/hlr/credits` returns only coarse `status`/`level` per provider, no balances. The exact snapshot `GET /api/v1/admin/hlr/credits` returns 403 without and with a wrong admin key. Limits are enforced in code before the paid HLR call (`_enforce_hlr_verify_limits`). The limits were deliberately not exercised live because that would trigger paid lookups. |
+| EKA-04 | B06 | **Accepted** | Live: four subscribe attempts with one synthetic address at a project domain without MX (undeliverable): attempts 1–3 → 200, attempt 4 → 429 `retry_after: 86400` (3 per address per day). Pending tokens for the synthetic address were deleted afterwards; no Listmonk subscriber had been created (subscriptions are only written on confirmation). |
+| EKA-16 | B06 | **Accepted** | Live: the subscribe attempts above and one contact message carried a random sentinel in every free-text field. Within the test window the sentinel, the synthetic address and its local part appear 0 times in the API, web, monitor and Redis logs and in no Redis key name; access logs show only method, path and status. Seven days of API logs contain no plaintext email addresses outside operator/service addresses. |
+| EKA-09 | B06 | **Open — configuration** | `BREVO_WEBHOOK_TOKEN` is not configured in production: `POST /api/v1/newsletter/webhook/brevo` fails closed with 503 (no unauthenticated processing), but provider events are not received either. Configuring it creates a new secret; a credentials plan awaits the owner's decision. Code-side authentication (401 for missing/wrong Bearer token) is covered by tests. |
