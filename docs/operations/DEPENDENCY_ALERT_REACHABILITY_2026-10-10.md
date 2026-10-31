@@ -171,3 +171,14 @@ integrity/source parity is **not verified** for either source.
 Ranks order the queue for that follow-up: shipped Web server exposure first (#107), then Expo
 CLI signature verification (#102/#103), then Metro/Jest DoS (#105/#106), then the medium
 sprintf-js items (#109/#110).
+
+## Refresh 2026-10-31 (EKA-29 / B15, B16)
+
+- **node-forge GHSA-86w9-cpqp-85rv:** fixed. `apps/mobile` and `apps/representative` lock `node-forge@1.4.1` since #717 (affected `<= 1.4.0`); the allowlist entry is removed.
+- **braces GHSA-vfj7-8cjw-p6xm:** **withdrawn** by GitHub on 2026-10-23 (`withdrawn_at: 2026-10-23T12:53:02Z`); `npm audit` no longer reports it. The allowlist entry is removed instead of renewed.
+- **sprintf-js GHSA-hp3w-g68c-fv3c:** **withdrawn** by GitHub on 2026-10-22 (`withdrawn_at: 2026-10-22T19:21:04Z`).
+- The allowlist is now empty; any new high/critical advisory fails the gate without an exception.
+
+Supporting observation gathered before the withdrawals were noticed (kept for the record, not a basis for any exception): on 2026-10-31 braces/micromatch were absent from the web and dashboard production images and from the Hermes bundles of the published mobile APK v1.0.37 and the unpublished representative candidate (string search, sanity-checked with known strings). Other distributions (Play, F-Droid builds, iOS) were not inspected.
+
+`npm audit` in `apps/web` still lists moderate/low advisories below the gate threshold (2026-10-31): GHSA-333x-w4r6-6crp, GHSA-g3hv-75wg-m249, GHSA-gcqx-w48m-w2h4, GHSA-m5mm-p8h7-m29v, GHSA-w74x-v6f9-j3xg, GHSA-wjr9-j795-jxcr, GHSA-xhq7-xmqj-769h. They are not blocked and not waived; track them with the next dependency batch.
