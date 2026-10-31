@@ -151,13 +151,14 @@ _PAYMENT_PATTERNS = [
     # bare first-person intent with nothing (or only the platform) after it:
     # "Can I donate?", "Where can I donate?", "I want to donate"
     rf"\b(?:(?:how|where) (?:can|do|could) i|(?:can|could|may) i|i(?:'d| would)? (?:want|like|wish) to)"
-    rf" (?:donate|make a donation|make a payment|contribute money)"
-    rf"(?:\s+(?:to|for)\s+{_PAY_TARGET_EN})?\s*[?.!]*$",
+    rf" (?:anonymously donate|donate|make (?:a donation|an anonymous donation)|make a payment|contribute money)"
+    rf"(?:\s+(?:to|for)\s+{_PAY_TARGET_EN})?(?:\s+anonymously)?\s*[?.!]*$",
     # Greek: first-person intent aimed at the platform
     rf"\b(?:δωρισω|δωρισουμε|στηριξω|στηριξουμε|υποστηριξω|ενισχυσω|πληρωσω|συνεισφερω)\s+(?:\S+\s+){{0,2}}?{_PAY_TARGET_EL}\b",
     r"\b(?:στηριξω|υποστηριξω|ενισχυσω|συνεισφερω)\s+(?:\S+\s+){0,2}?οικονομικα\b",
     rf"\bοικονομικ\w*\s+(?:στηριξη|υποστηριξη|ενισχυση|συνεισφορα)\s+(?:\S+\s+){{0,2}}?(?:στην|στο|της|του|σε)\s+(?:εκκλησια|πλατφορμα|εργο|πρωτοβουλια)",
-    rf"\bκανω\s+(?:μια\s+)?δωρεα(?:\s*[;?.!]*\s*$|\s+{_PAY_TARGET_EL}\b)",
+    rf"\bκανω\s+(?:μια\s+)?(?:ανωνυμη\s+)?δωρεα(?:\s+ανωνυμα)?"
+    rf"(?:\s*[;?.!]*\s*$|\s+{_PAY_TARGET_EL}\b)",
     # clitic before the verb: "Πώς μπορώ να σας στηρίξω;"
     r"\bνα\s+σασ\s+(?:στηριξω|υποστηριξω|ενισχυσω|πληρωσω|δωρισω)\b",
 ]
@@ -246,7 +247,8 @@ def _select_fact_blocks(question: str) -> list[str]:
     folded = _match_text(question)
     scored = sorted(
         ((sum(bool(pattern.search(folded)) for pattern in patterns), topic)
-         for topic, patterns in _FACT_KEYWORDS.items()),
+         for topic, patterns in _FACT_KEYWORDS.items()
+         if topic != "anonymity" or _is_anonymity_intent(question)),
         key=lambda item: (-item[0], item[1]),
     )
     best = scored[0][0]
@@ -292,13 +294,15 @@ _EKA63_TOPIC_PATTERNS: dict[str, tuple[re.Pattern[str], ...]] = {
     "data_deletion": tuple(re.compile(p) for p in (
         r"\b(delete|erase|remove|wipe)\s+(all\s+)?(of\s+)?(my|our)\s+(personal\s+)?"
         r"(data|account|identity|profile|information|info)\b",
-        r"\b(account|data|identity)\s+deletion\b",
-        r"\bdeletion\s+of\s+(all\s+)?(my|our)\s+(personal\s+)?(data|account|identity)\b",
+        r"\b(personal\s+)?(account|data|identity|information|info)\s+deletion\b",
+        r"\bdeletion\s+of\s+(all\s+(of\s+)?)?((my|our)\s+)?(personal\s+)?"
+        r"(data|account|identity|information|info)\b",
         r"\brevok\w*\s+(my\s+)?(identity|key|verification)\b",
         r"\b(identity|key|verification)\s+revocation\b",
         r"(διαγραφ|διαγραψ|σβησ)\w*\s+(ολα\s+)?(τα\s+|τον\s+|την\s+|το\s+)?(προσωπικα\s+)?"
         r"(δεδομενα|λογαριασμο|ταυτοτητα|στοιχεια|προφιλ)\s+μου\b",
-        r"διαγραφη\s+(του\s+|των\s+|της\s+)?(λογαριασμου|δεδομενων|ταυτοτητας|στοιχειων)\b",
+        r"διαγραφη\s+(του\s+|των\s+|της\s+)?(προσωπικων\s+)?(μου\s+)?"
+        r"(λογαριασμου|δεδομενων|ταυτοτητας|στοιχειων|πληροφοριων)\b",
         r"ανακ(αλ|λη)\w*\s+(την\s+|του\s+|της\s+|το\s+)?(ταυτοτητ|κλειδι|επαληθευσ)",
     )),
     "zk_semaphore": tuple(re.compile(p) for p in (
@@ -327,24 +331,76 @@ _EKA63_TOPIC_PATTERNS: dict[str, tuple[re.Pattern[str], ...]] = {
         r"αποτελεσμ\w*[\w\s]{0,40}(ορατ|κρυφ|κρυμμεν|εμφανιζ|εμφανιστ|φαινοντ|μηδεν)",
         r"(ορατ|κρυφ|κρυμμεν|εμφανιζ|εμφανιστ|φαινοντ)\w*[\w\s]{0,20}αποτελεσμ",
     )),
-    "anonymity": tuple(re.compile(p) for p in (
-        r"\b(ανωνυμ\w*|ψευδωνυμ\w*|anonym\w*|pseudonym\w*)\b",
-        r"\bπροσωπικ\w*\s+δεδομεν\w*\b",
-        r"\bpersonal\s+(data|information)\b",
-        r"\b(privacy|ιδιωτικοτητ\w*)\b",
-        r"\b(who|anyone|someone|others|operators?|admins?|you)\b[\w\s]{0,30}"
-        r"\b(see|sees|view|views)\b[\w\s]{0,20}\b((my|our)\s+votes?|how\s+(i|we)\s+voted)\b",
-        r"\b(ποιο[ισς]|διαχειριστ\w*|αλλοι|καποιο[ισς])\b[\w\s]{0,30}"
-        r"\b(βλεπ\w*|δει|δουν)\b[\w\s]{0,20}\b(ψηφ\w*\s+μου|(τι|πως)\s+ψηφισα)\b",
-        r"\btrack\w*\s+(me|my\s+votes?)\b",
-        r"\bμε\s+παρακολουθ\w*\b",
-    )),
 }
 # Topics where a bill/law reference means the citizen is asking about content,
 # not about the platform mechanism (e.g. a bill on deleting bank accounts).
 _EKA63_BILL_EXCLUDED_TOPICS = {"data_deletion", "representative_verification"}
 # Only references to a bill, not generic "law" (e.g. "delete my data under privacy law").
 _EKA63_BILL_CONTEXT = re.compile(r"\bgr\s+\d{4}|\bbills?\b|νομοσχ")
+
+
+# These scoped patterns are shared by canonical routing and FAQ scoring. A
+# keyword such as "anonymous", "privacy" or "link" alone is not platform intent.
+_OWN_VOTE = (
+    r"\b(?:(?:my|our)\s+votes?|how\s+(?:i|we)\s+voted|"
+    r"ψηφ\w*\s+(?:μου|μασ)|(?:τι|πωσ)\s+ψηφισα\w*)\b"
+)
+_VOTE_SECRECY = r"\b(?:anonym\w*|pseudonym\w*|private(?!\s+keys?\b)|ανωνυμ\w*|ψευδωνυμ\w*)\b"
+_PRIVACY = rf"(?:{_VOTE_SECRECY}|\b(?:privacy|ιδιωτικοτητ\w*)\b)"
+_LINK_PERSON = r"\b(?:link(?:s|ed|ing)?|connect\w*|associat\w*|trac(?:e|ed|ing)|συνδε\w*|συσχετ\w*|ταυτοποι\w*)\b"
+_PERSON = (
+    r"\b(?:me|us|(?:my|our)\s+(?:identity|name|phone(?:\s+number)?)|"
+    r"εμενα|μενα|εμασ|(?:ταυτοτητ\w*|ονομα|τηλεφων\w*)\s+(?:μου|μασ))\b"
+)
+_OWN_VOTE_PRIVACY_RES = tuple(re.compile(p) for p in (
+    rf"{_OWN_VOTE}[\w\s]{{0,60}}{_VOTE_SECRECY}|{_VOTE_SECRECY}[\w\s]{{0,60}}{_OWN_VOTE}",
+    rf"\bprivacy\s+(?:of|for)\s+{_OWN_VOTE}|{_OWN_VOTE}\s+(?:s\s+)?privacy\b",
+    rf"\bιδιωτικοτητ\w*\s+(?:τησ\s+|των\s+)?{_OWN_VOTE}",
+    rf"{_LINK_PERSON}[\w\s]{{0,30}}{_OWN_VOTE}[\w\s]{{0,30}}{_PERSON}",
+    rf"{_OWN_VOTE}[\w\s]{{0,30}}{_LINK_PERSON}[\w\s]{{0,30}}{_PERSON}",
+    rf"{_PERSON}[\w\s]{{0,30}}{_LINK_PERSON}[\w\s]{{0,30}}{_OWN_VOTE}",
+    rf"{_LINK_PERSON}[\w\s]{{0,30}}{_PERSON}[\w\s]{{0,30}}{_OWN_VOTE}",
+    r"\b(?:who|anyone|someone|others|operators?|admins?|you)\b[\w\s]{0,30}"
+    rf"\b(?:see|sees|view|views)\b[\w\s]{{0,20}}{_OWN_VOTE}",
+    r"\b(?:ποιο[ισ]|διαχειριστ\w*|αλλοι|καποιο[ισ])\b[\w\s]{0,30}"
+    rf"\b(?:βλεπ\w*|δει|δουν)\b[\w\s]{{0,20}}{_OWN_VOTE}",
+    r"\btrack\w*\s+(?:my|our)\s+votes?\b",
+))
+_PERSONAL_DATA = r"\b(?:personal\s+(?:data|information)|προσωπικ\w*\s+(?:δεδομεν\w*|στοιχει\w*|πληροφορι\w*))\b"
+_PLATFORM_STORAGE = (
+    r"\b(?:you\s+(?:(?:currently|also|ever)\s+)?(?:store|keep|collect|retain|save)|"
+    r"αποθηκευετε|κρατατε|συλλεγετε|διατηρειτε)\b"
+)
+_PLATFORM = (
+    r"\b(?:ekklesia|(?:the|this|your)\s+(?:platform|site|app)|"
+    r"(?:η|την|στην|τησ|ο|τον|στον|του)\s+(?:πλατφορμ\w*|ιστοτοπ\w*|εφαρμογ\w*))\b"
+)
+_PLATFORM_PRIVACY_RES = tuple(re.compile(p) for p in (
+    rf"{_PRIVACY}[\w\s]{{0,60}}\b(?:votes?|voting|ψηφ\w*)\b",
+    rf"\b(?:votes?|voting|ψηφ\w*)\b[\w\s]{{0,60}}{_PRIVACY}",
+    rf"{_PLATFORM}[\w\s]{{0,60}}(?:{_PRIVACY}|{_PERSONAL_DATA})",
+    rf"(?:{_PRIVACY}|{_PERSONAL_DATA})[\w\s]{{0,60}}{_PLATFORM}",
+    rf"{_PLATFORM_STORAGE}[\w\s]{{0,40}}{_PERSONAL_DATA}|{_PERSONAL_DATA}[\w\s]{{0,40}}{_PLATFORM_STORAGE}",
+    r"\b(?:personal\s+(?:data|information)\s+storage|storage\s+of\s+personal\s+(?:data|information)|"
+    r"αποθηκευσ\w*\s+προσωπικ\w*\s+δεδομεν\w*)\b",
+    r"\b(?:my|our)\s+(?:anonymity|privacy)\b",
+    r"\b(?:ανωνυμι\w*|ιδιωτικοτητ\w*)\s+(?:μου|μασ)\b",
+    rf"{_PRIVACY}[\w\s]{{0,30}}{_PLATFORM_STORAGE}[\w\s]{{0,40}}"
+    r"\b(?:phone|mobile|τηλεφων\w*|κινητ\w*)\b",
+    r"\b(?:track\w*\s+me|με\s+παρακολουθ\w*)\b[\w\s]{0,60}"
+    r"\b(?:phone|mobile|τηλεφων\w*|κινητ\w*)\b",
+))
+_DONATION_CONTEXT = re.compile(r"\b(?:donat\w*|δωρε\w*)\b")
+
+
+def _is_anonymity_intent(question: str) -> bool:
+    folded = " ".join(re.sub(r"[^\w]+", " ", _match_text(question)).split())
+    # Personal vote privacy still applies when the vote concerns a bill.
+    if any(pattern.search(folded) for pattern in _OWN_VOTE_PRIVACY_RES):
+        return True
+    if _EKA63_BILL_CONTEXT.search(folded) or _DONATION_CONTEXT.search(folded):
+        return False
+    return any(pattern.search(folded) for pattern in _PLATFORM_PRIVACY_RES)
 
 
 def _fold_accents(text: str) -> str:
@@ -361,6 +417,8 @@ def _eka63_topic(normalized_q: str) -> str | None:
             continue
         if any(p.search(folded) for p in patterns):
             return topic
+    if _is_anonymity_intent(normalized_q):
+        return "anonymity"
     return None
 
 
