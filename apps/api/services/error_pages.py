@@ -23,8 +23,12 @@ ERROR_PAGE_MARKERS: tuple[tuple[str, bool], ...] = (
     ("akamai reference", False),
     ("akamaighost", False),
 )
-_TAG = re.compile(r"<[^<>\n]*>")
-_HEADING_TAG = re.compile(r"</?(?:title|h[1-6])\b[^<>]*>", re.IGNORECASE)
+# Tags may span lines and carry quoted attribute values containing ">" or quotes.
+# Every branch excludes "<", so a failed attempt stops at the next tag start and
+# the alternatives are disjoint: matching stays linear even for unclosed quotes.
+_ATTRS = r"""(?:[^<>"']|"[^"<]*"|'[^'<]*')*"""
+_TAG = re.compile(r"<[A-Za-z/!]" + _ATTRS + ">")
+_HEADING_TAG = re.compile(r"</?(?:title|h[1-6])\b" + _ATTRS + ">", re.IGNORECASE)
 # Extraction can flatten a generic title and the denial heading onto one line.
 # Require the transport reference immediately after the heading in that case.
 _PREFIXED_REFERENCE = re.compile(

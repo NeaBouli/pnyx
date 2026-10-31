@@ -182,3 +182,28 @@ def test_attribute_quotes_cannot_hide_an_unquoted_block_page() -> None:
 
     page = "<div data-prefix='\"'><h1>Access Denied</h1></div><span data-suffix='\"'>Reference #18.abc</span>"
     assert looks_like_error_page(page)
+
+
+def test_attribute_values_with_angle_brackets_keep_quotes_masked() -> None:
+    from services.error_pages import looks_like_error_page
+
+    prose = '<p title="x > y">Η έκθεση αναφέρει «<h2>Access denied</h2>» ως παράδειγμα μηνύματος.</p>'
+    assert not looks_like_error_page(prose)
+
+
+def test_multiline_tags_cannot_pair_attribute_quotes_across_a_heading() -> None:
+    from services.error_pages import looks_like_error_page
+
+    page = "<div\n data-prefix='\"'><h1>Access Denied</h1></div><span\n data-suffix='\"'>Reference #18.abc</span>"
+    assert looks_like_error_page(page)
+
+
+def test_tag_stripping_is_linear_on_unclosed_attribute_quotes() -> None:
+    import time
+    from services.error_pages import looks_like_error_page
+
+    for chunk in ('<a "', "<a '", '<a title="', "<\n"):
+        text = "access denied " + chunk * 30_000
+        started = time.perf_counter()
+        looks_like_error_page(text)
+        assert time.perf_counter() - started < 0.5, chunk
