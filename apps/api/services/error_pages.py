@@ -40,10 +40,14 @@ def looks_like_error_page(text: str | None) -> bool:
     lowered = text.lower()
     if not any(marker in lowered for marker, _ in ERROR_PAGE_MARKERS) and "reference" not in lowered:
         return False
+    from services.text_quality import without_quotes
+
+    # Generic headings quoted in official prose («<h2>Access denied</h2>») are
+    # discussion, not a block page: only unquoted text can supply heading lines.
     # Keep heading boundaries before stripping tags, even for minified HTML.
     lines = [
         _HORIZONTAL_SPACE.sub(" ", line).lstrip(" #*>_`-")
-        for line in _TAG.sub(" ", _HEADING_TAG.sub("\n", lowered)).splitlines()
+        for line in _TAG.sub(" ", _HEADING_TAG.sub("\n", without_quotes(lowered))).splitlines()
     ]
     if any(_PREFIXED_REFERENCE.match(line) for line in lines):
         return True

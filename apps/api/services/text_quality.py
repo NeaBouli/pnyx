@@ -179,6 +179,11 @@ def _without_quotes(text: str, *, only_latin: bool) -> str:
     return "".join(chunks)
 
 
+def without_quotes(text: str) -> str:
+    """Drop complete quoted passages in one linear pass (shared by detectors)."""
+    return _without_quotes(text, only_latin=False)
+
+
 def _meta_lines(text: str) -> list[str]:
     lines = []
     for line in _without_accents(text).splitlines():

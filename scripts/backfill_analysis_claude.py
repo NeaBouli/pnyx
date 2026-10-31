@@ -458,7 +458,10 @@ def validate_result(result: dict, excerpt: str) -> list[str]:
     for word in forbidden:
         if word in short or word in analysis:
             errors.append(f"known bad phrase: {word}")
-    if "ως AI" in analysis or "δεν μπορώ" in analysis:
+    from services.text_quality import without_quotes
+
+    unquoted = without_quotes(analysis)  # quoted testimony may say "δεν μπορώ"
+    if "ως AI" in unquoted or "δεν μπορώ" in unquoted:
         errors.append("AI disclaimer leaked")
     return errors
 

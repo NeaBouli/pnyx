@@ -155,3 +155,15 @@ def test_error_reference_mentions_in_legislative_prose_are_preserved(text: str) 
     bill = SimpleNamespace(id="SYNTH-OFFICIAL", summary_long_el=None, generated_content_provenance=None)
     assert fetcher.store_fetched_text(bill, value)
     assert bill.summary_long_el == value and bill.generated_content_provenance is None
+
+
+def test_quoted_error_headings_in_official_prose_are_not_error_pages() -> None:
+    from services.error_pages import looks_like_error_page
+
+    prose = ("Η επιτροπή εξέτασε την απάντηση του διακομιστή «<h2>Access denied</h2>» "
+             "και αποφάσισε τη βελτίωση της πρόσβασης στις δημόσιες υπηρεσίες.")
+    multiline = "Ο πολίτης ανέφερε:\n«<title>Error</title>\n<h1>403 Forbidden</h1>»\nκαι ζήτησε διόρθωση."
+    assert not looks_like_error_page(prose)
+    assert not looks_like_error_page(multiline)
+    # An unquoted block page with the same heading is still detected.
+    assert looks_like_error_page("<title>Error</title><h1>Access Denied</h1><p>Reference #18.abc</p>")

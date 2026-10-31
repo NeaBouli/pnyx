@@ -84,3 +84,40 @@ def test_backfill_accepts_greek_with_url() -> None:
 def test_model_backfill_rejects_bad_pill_with_good_summary() -> None:
     script = _load("backfill_summary_ollama")
     assert script.validate_output(BAD, GOOD, "Δοκιμαστικός τίτλος") == "refusal_or_meta"
+
+
+
+def _script(name: str):
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[4] / "scripts" / f"{name}.py"
+    spec = importlib.util.spec_from_file_location(name, path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+QUOTE = "«Λυπάμαι, αλλά δεν μπορώ να δώσω τα στοιχεία»"
+
+
+def test_ollama_backfill_accepts_quoted_refusal_speech() -> None:
+    module = _script("backfill_summary_ollama")
+    short = f"Ο Υπουργός απάντησε στη Βουλή {QUOTE} και ανακοίνωσε νέα ρύθμιση για τα δημόσια έργα."
+    assert module.validate_output("Νέα ρύθμιση δημόσιων έργων", short, "Ρύθμιση για τα δημόσια έργα") is None
+    assert module.validate_output("Νέα ρύθμιση", "Λυπάμαι, αλλά δεν μπορώ να δώσω σύνοψη για αυτό το έγγραφο.",
+                                  "Τίτλος") is not None
+
+
+def test_analysis_backfill_accepts_quoted_refusal_speech() -> None:
+    module = _script("backfill_analysis_claude")
+    short = "Η ρύθμιση αλλάζει τη διαδικασία ενημέρωσης των πολιτών για τα δημόσια έργα της περιφέρειας."
+    analysis = ("Κατά τη συζήτηση ο αρμόδιος υπηρεσιακός παράγοντας δήλωσε " + QUOTE + ", γεγονός που "
+                "ανέδειξε την ανάγκη για σαφέστερους κανόνες διαφάνειας. Η πρόταση προβλέπει υποχρεωτική "
+                "δημοσίευση των στοιχείων, προθεσμίες απάντησης και έλεγχο από ανεξάρτητη αρχή, ώστε οι "
+                "πολίτες να ενημερώνονται έγκαιρα για την πορεία των έργων και των δαπανών.")
+    errors = module.validate_result({"summary_short_el": short, "analysis_el": analysis}, "απόσπασμα")
+    assert "AI disclaimer leaked" not in errors
+    refusal = analysis.replace(QUOTE, "κάτι") + " Ως AI δεν μπορώ να κρίνω περισσότερα."
+    assert "AI disclaimer leaked" in module.validate_result({"summary_short_el": short, "analysis_el": refusal}, "x")

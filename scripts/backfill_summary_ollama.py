@@ -153,10 +153,14 @@ def validate_output(pill: str, short: str, title: str) -> str | None:
     # Must end on sentence boundary
     if not SENTENCE_ENDINGS.search(short[-1:]):
         return "summary does not end on sentence boundary"
+    from services.text_quality import without_quotes
+
+    # Quoted speech may legitimately contain these phrases; only the model's own prose is rejected.
+    short_unquoted, pill_unquoted = without_quotes(short), without_quotes(pill or "")
     for pat in REJECT_PATTERNS:
-        if re.search(pat, short, re.IGNORECASE):
+        if re.search(pat, short_unquoted, re.IGNORECASE):
             return f"rejected pattern: {pat}"
-        if pill and re.search(pat, pill, re.IGNORECASE):
+        if pill and re.search(pat, pill_unquoted, re.IGNORECASE):
             return f"rejected pattern in pill: {pat}"
     # Reject if summary just repeats the title
     if title and short.strip().lower()[:40] == title.strip().lower()[:40]:
