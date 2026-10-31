@@ -177,9 +177,10 @@ A protected row (flag set or override present) can be deleted or have its `id` c
 
 ## Rollback
 
+- Soak window: for 24 hours after the #715 deploy, set no sensitivity override and run no DIAVGEIA regeneration or text cleanup, so an app-only rollback stays possible.
 - App-only rollback to code older than #715 is safe only while no sensitivity override has been set and no DIAVGEIA prose has been regenerated or cleaned: older code ignores the flags and decides visibility from prose again. After the first override or regeneration, roll forward (fix the flag-aware code) instead of rolling back.
 - `alembic downgrade` below z904 drops the flags, overrides and their history from the bill rows (the audit_log rows remain). Roll back the application first.
 
 ## Plan choice
 
-Visibility reads two boolean columns. On the production copy the planner uses a heap scan over those flags for full counts (about 6–7 ms for ~11k bills); the partial index `idx_bills_public_metadata_v3` remains available for selective queries. Tests therefore assert that visibility plans never evaluate prose or `public_bill_sensitive()` and stay within a time bound, instead of forcing a particular access path.
+Visibility reads two boolean columns. On the production copy the planner uses a heap scan over those flags for full counts (about 6–7 ms for ~11k bills). The partial index `idx_bills_public_metadata_v3` is still essential: one pass over the typical public endpoints (bill lists, trending, overview, representation, public API, in-progress/latest results, export, timeline) produced ~44,000 index scans on it on the production copy — the id-keyed visibility snapshot and candidate lookups (index-only on `id` with the INCLUDE columns), the access pattern introduced in #707. Keep it. Tests therefore assert that visibility plans never evaluate prose or `public_bill_sensitive()` and stay within a time bound, instead of forcing a particular access path.
