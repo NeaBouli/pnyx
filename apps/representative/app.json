@@ -2,7 +2,7 @@
   "expo": {
     "name": "εκπρόσωπος",
     "slug": "ekprosopos",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -14,13 +14,18 @@
     },
     "android": {
       "package": "ekklesia.representative",
-      "versionCode": 2,
+      "versionCode": 3,
       "edgeToEdgeEnabled": false,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#d4a017"
       },
-      "permissions": ["INTERNET", "USE_BIOMETRIC", "USE_FINGERPRINT"]
+      "permissions": ["INTERNET", "USE_BIOMETRIC", "USE_FINGERPRINT"],
+      "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ]
     },
     "ios": {
       "supportsTablet": false,
