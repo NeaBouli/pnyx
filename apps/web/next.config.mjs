@@ -55,6 +55,13 @@ const nextConfig = {
           "https://github.com/NeaBouli/pnyx/releases/download/v1.0.37/ekklesia-v1.0.37-vC66-DIRECT.apk",
         permanent: false,
       },
+      {
+        // Representative app (ekprosopos) release APK.
+        source: "/download/ekprosopos-latest.apk",
+        destination:
+          "https://github.com/NeaBouli/pnyx/releases/download/ekprosopos-v1.1.1/ekprosopos-v1.1.1-vC3.apk",
+        permanent: false,
+      },
     ];
   },
   async headers() {
