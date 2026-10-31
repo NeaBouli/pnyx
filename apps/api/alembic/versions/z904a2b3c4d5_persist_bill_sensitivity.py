@@ -3,8 +3,8 @@
 Revision ID: z904a2b3c4d5
 Revises: z903a2b3c4d5
 
-The admin endpoint uses the transaction-local pnyx.allow_sensitive_public_block_clear
-setting for an explicit flag-only clear. Text writes always remain monotonic.
+Only the table owner may override or clear sensitivity. The API reaches that
+owner through a reasoned, audited SECURITY DEFINER function.
 """
 from alembic import op
 import sqlalchemy as sa
@@ -28,15 +28,26 @@ LEGACY_PREDICATE = (
     "admin_hidden IS NOT TRUE AND NOT "
     "public_bill_sensitive(source, title_el, summary_short_el, summary_long_el)"
 )
-TRIGGER_FUNCTION_DDL = """CREATE OR REPLACE FUNCTION maintain_bill_sensitivity()
-RETURNS trigger LANGUAGE plpgsql AS $$
+TRIGGER_FUNCTION_DDL = """DO $install$ BEGIN
+EXECUTE format($ddl$CREATE OR REPLACE FUNCTION maintain_bill_sensitivity()
+RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog, %1$I AS $$
+DECLARE
+    table_owner name;
 BEGIN
     IF TG_OP = 'UPDATE' THEN
-        IF current_setting('pnyx.allow_sensitive_public_block_clear', true) = 'on'
-           AND ROW(NEW.source, NEW.title_el, NEW.summary_short_el, NEW.summary_long_el)
-               IS NOT DISTINCT FROM
-               ROW(OLD.source, OLD.title_el, OLD.summary_short_el, OLD.summary_long_el)
-        THEN
+        IF ROW(NEW.sensitive_override, NEW.sensitive_override_reason)
+               IS DISTINCT FROM ROW(OLD.sensitive_override, OLD.sensitive_override_reason)
+           OR (OLD.sensitive_public_block AND NOT NEW.sensitive_public_block) THEN
+            SELECT pg_catalog.pg_get_userbyid(relowner) INTO table_owner
+                FROM pg_catalog.pg_class WHERE oid = TG_RELID;
+            IF current_user <> table_owner THEN
+                RAISE EXCEPTION 'Only the table owner may override or clear bill sensitivity'
+                    USING ERRCODE = '42501';
+            END IF;
+        END IF;
+        IF ROW(NEW.source, NEW.title_el, NEW.summary_short_el, NEW.summary_long_el)
+            IS NOT DISTINCT FROM
+            ROW(OLD.source, OLD.title_el, OLD.summary_short_el, OLD.summary_long_el) THEN
             RETURN NEW;
         END IF;
         NEW.sensitive_public_block := OLD.sensitive_public_block
@@ -44,13 +55,22 @@ BEGIN
             OR (public_bill_sensitive(NEW.source, NEW.title_el,
                 NEW.summary_short_el, NEW.summary_long_el) IS NOT FALSE);
     ELSE
+        IF NEW.sensitive_override IS NOT NULL THEN
+            SELECT pg_catalog.pg_get_userbyid(relowner) INTO table_owner
+                FROM pg_catalog.pg_class WHERE oid = TG_RELID;
+            IF current_user <> table_owner THEN
+                RAISE EXCEPTION 'Only the table owner may insert a bill sensitivity override'
+                    USING ERRCODE = '42501';
+            END IF;
+        END IF;
         NEW.sensitive_public_block := NEW.sensitive_public_block
             OR (public_bill_sensitive(NEW.source, NEW.title_el,
                 NEW.summary_short_el, NEW.summary_long_el) IS NOT FALSE);
     END IF;
     RETURN NEW;
 END;
-$$"""
+$$ $ddl$, current_schema());
+END $install$"""
 # Until every row is backfilled, capture removed OLD markers too. Afterwards an
 # explicitly cleared latch follows only NEW text; removing an old marker must
 # not undo the admin's clear. Replacing the function preserves the trigger.
@@ -62,8 +82,51 @@ BACKFILL_TRIGGER_FUNCTION_DDL = TRIGGER_FUNCTION_DDL.replace(
 )
 TRIGGER_DDL = """CREATE OR REPLACE TRIGGER trg_bill_sensitivity
 BEFORE INSERT OR UPDATE OF source, title_el, summary_short_el, summary_long_el,
-    sensitive_public_block ON parliament_bills
+    sensitive_public_block, sensitive_override, sensitive_override_reason ON parliament_bills
 FOR EACH ROW EXECUTE FUNCTION maintain_bill_sensitivity()"""
+ADMIN_FUNCTION_SIGNATURE = "admin_set_bill_sensitivity(text, boolean, boolean, text, text)"
+# Bind table names to the migration's schema, independently of the caller's
+# search_path (also supports the disposable schemas used by PostgreSQL tests).
+ADMIN_FUNCTION_DDL = """DO $install$ BEGIN
+EXECUTE format($ddl$CREATE OR REPLACE FUNCTION admin_set_bill_sensitivity(
+    p_bill_id text, p_override boolean, p_clear_flag boolean, p_reason text, p_actor text
+) RETURNS void LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = pg_catalog, public AS $$
+DECLARE
+    previous %1$I.parliament_bills%%ROWTYPE;
+    updated %1$I.parliament_bills%%ROWTYPE;
+BEGIN
+    IF p_reason IS NULL OR p_reason !~ '[^[:space:]]' THEN
+        RAISE EXCEPTION 'A non-empty reason is required' USING ERRCODE = '22023';
+    END IF;
+    IF p_actor IS NULL OR p_actor !~ '[^[:space:]]' THEN
+        RAISE EXCEPTION 'A non-empty actor is required' USING ERRCODE = '22023';
+    END IF;
+    SELECT * INTO STRICT previous FROM %1$I.parliament_bills
+        WHERE id = p_bill_id FOR UPDATE;
+    UPDATE %1$I.parliament_bills SET sensitive_override = p_override,
+        sensitive_override_reason = p_reason,
+        sensitive_public_block = CASE WHEN p_clear_flag THEN false ELSE sensitive_public_block END
+        WHERE id = p_bill_id RETURNING * INTO updated;
+    INSERT INTO %1$I.audit_log (action, actor, target_type, target_id, metadata)
+        VALUES ('bill.sensitivity_override', p_actor, 'parliament_bill', p_bill_id,
+            jsonb_build_object('reason', p_reason,
+                'before', jsonb_build_object(
+                    'sensitive_public_block', previous.sensitive_public_block,
+                    'sensitive_override', previous.sensitive_override,
+                    'sensitive_override_reason', previous.sensitive_override_reason),
+                'after', jsonb_build_object(
+                    'sensitive_public_block', updated.sensitive_public_block,
+                    'sensitive_override', updated.sensitive_override,
+                    'sensitive_override_reason', updated.sensitive_override_reason)));
+END;
+$$ $ddl$, current_schema());
+END $install$"""
+ADMIN_FUNCTION_GRANT_DDL = f"""DO $$ BEGIN
+    IF EXISTS (SELECT FROM pg_roles WHERE rolname = 'ekklesia_api') THEN
+        GRANT EXECUTE ON FUNCTION {ADMIN_FUNCTION_SIGNATURE} TO ekklesia_api;
+    END IF;
+END $$"""
 
 
 def _index_state(bind: Connection, name: str) -> bool | None:
@@ -131,6 +194,9 @@ def upgrade() -> None:
         ADD COLUMN IF NOT EXISTS sensitive_override_reason text NULL""")
     op.execute(BACKFILL_TRIGGER_FUNCTION_DDL)
     op.execute(TRIGGER_DDL)
+    op.execute(ADMIN_FUNCTION_DDL)
+    op.execute(f"REVOKE ALL ON FUNCTION {ADMIN_FUNCTION_SIGNATURE} FROM PUBLIC")
+    op.execute(ADMIN_FUNCTION_GRANT_DDL)
     with op.get_context().autocommit_block():
         # Each statement commits <= 1000 rows; the DDL lock is already released.
         # IS NOT FALSE retains NULL sensitivity outcomes that NOT(...) used to hide.
@@ -150,6 +216,7 @@ def downgrade() -> None:
         op.execute(f"DROP INDEX CONCURRENTLY IF EXISTS {INDEX_NAME}")
     op.execute("DROP TRIGGER trg_bill_sensitivity ON parliament_bills")
     op.execute("DROP FUNCTION maintain_bill_sensitivity()")
+    op.execute(f"DROP FUNCTION {ADMIN_FUNCTION_SIGNATURE}")
     op.execute("""ALTER TABLE parliament_bills
         DROP COLUMN sensitive_public_block,
         DROP COLUMN sensitive_override,

@@ -8,6 +8,7 @@ from uuid import uuid4
 
 import pytest
 from sqlalchemy import event, func, select, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncSession, create_async_engine
 
 from models import AuditLog, Dimos, ParliamentBill, Periferia
@@ -115,7 +116,7 @@ async def test_backfill_preserves_all_visible_ids_and_hides_null_predicates(old_
 
 
 @pytest.mark.parametrize("writer", ["orm", "sql"])
-async def test_marker_removal_and_direct_flag_clear_cannot_publish(old_schema, writer: str) -> None:
+async def test_marker_removal_cannot_publish(old_schema, writer: str) -> None:
     connection, revision = old_schema
     await seed(connection, [bill_row("S", summary_long_el="Synthetic AMKA marker")])
     await migrate(connection, revision, "upgrade")
@@ -129,8 +130,6 @@ async def test_marker_removal_and_direct_flag_clear_cannot_publish(old_schema, w
             assert not is_public_bill(bill)
         else:
             await db.execute(text("UPDATE parliament_bills SET summary_long_el = NULL WHERE id = 'S'"))
-        await db.commit()
-        await db.execute(text("UPDATE parliament_bills SET sensitive_public_block = false WHERE id = 'S'"))
         await db.commit()
         await db.refresh(bill)
         assert bill.sensitive_public_block is True
@@ -208,20 +207,12 @@ async def test_admin_overrides_audit_and_explicit_clear_are_atomic(old_schema, m
         )
         bill = await db.get(ParliamentBill, "S")
         assert bill.sensitive_public_block is False and is_public_bill(bill)
-        # The session setting cannot escape the admin flush or its transaction.
-        assert await db.scalar(text(
-            "SELECT coalesce(current_setting('pnyx.allow_sensitive_public_block_clear', true), '')"
-        )) != "on"
         await db.execute(text("UPDATE parliament_bills SET summary_long_el = NULL WHERE id = 'S'"))
         await db.commit()
         await db.refresh(bill)
         assert bill.sensitive_public_block is False  # Removing an OLD marker preserves an explicit clear.
         bill.summary_long_el = "AMKA again"
         await db.commit()
-        assert bill.sensitive_public_block is True
-        await db.execute(text("UPDATE parliament_bills SET sensitive_public_block = false WHERE id = 'S'"))
-        await db.commit()
-        await db.refresh(bill)
         assert bill.sensitive_public_block is True
         audits = (await db.scalars(select(AuditLog).order_by(AuditLog.created_at))).all()
         assert len(audits) == invalidate.await_count == 4
@@ -238,19 +229,14 @@ async def test_failed_audit_rolls_back_decision_and_clear(old_schema, monkeypatc
     invalidation = AsyncMock()
     monkeypatch.setattr("services.representation_cache.invalidate_representation_cache", invalidation)
 
-    def fail_audit(_conn, _cursor, sql, _parameters, _context, _many):
-        if sql.startswith("INSERT INTO audit_log"):
-            raise RuntimeError("synthetic audit failure")
+    await connection.exec_driver_sql("""ALTER TABLE audit_log ADD CONSTRAINT synthetic_audit_failure
+        CHECK (action <> 'bill.sensitivity_override')""")
 
     async with session(connection) as db:
-        event.listen(connection.engine.sync_engine, "before_cursor_execute", fail_audit)
-        try:
-            with pytest.raises(RuntimeError, match="synthetic audit failure"):
-                await admin.admin_set_bill_sensitivity("S", admin.BillSensitivityRequest(
-                    sensitive_override=False, reason="Synthetic review", clear_sensitive_public_block=True,
-                ), _key=True, db=db)
-        finally:
-            event.remove(connection.engine.sync_engine, "before_cursor_execute", fail_audit)
+        with pytest.raises(IntegrityError, match="synthetic_audit_failure"):
+            await admin.admin_set_bill_sensitivity("S", admin.BillSensitivityRequest(
+                sensitive_override=False, reason="Synthetic review", clear_sensitive_public_block=True,
+            ), _key=True, db=db)
         await db.rollback()
         bill = await db.get(ParliamentBill, "S")
         assert bill.sensitive_public_block is True and bill.sensitive_override is None
@@ -259,13 +245,12 @@ async def test_failed_audit_rolls_back_decision_and_clear(old_schema, monkeypatc
         invalidation.assert_not_awaited()
 
 
-async def test_admin_setting_cannot_bypass_a_combined_text_and_flag_write(old_schema) -> None:
+async def test_owner_clear_with_text_change_still_latches_markers(old_schema) -> None:
     connection, revision = old_schema
     await seed(connection, [bill_row("S", summary_long_el="AMKA")])
     await migrate(connection, revision, "upgrade")
     async with session(connection) as db:
-        await db.execute(text("SET LOCAL pnyx.allow_sensitive_public_block_clear = 'on'"))
-        await db.execute(text("""UPDATE parliament_bills SET summary_long_el = NULL,
+        await db.execute(text("""UPDATE parliament_bills SET summary_long_el = 'AMKA again',
             sensitive_public_block = false WHERE id = 'S'"""))
         await db.commit()
         assert (await db.get(ParliamentBill, "S")).sensitive_public_block is True

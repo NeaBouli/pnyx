@@ -29,13 +29,16 @@ fields. `IS NOT FALSE` maps both true and NULL outcomes to a hidden flag: the ol
 `NOT public_bill_sensitive(...)` predicate excluded both. In particular, a NULL
 source with a marker stays hidden; a NULL source without markers stays visible.
 
-The trigger covers inserts and updates of source, all three text fields, and the
-flag itself. It ORs the old flag, supplied flag, and new sensitivity. During
-backfill a temporary version also checks old prose, protecting rows modified
-before backfill reaches them. After backfill the normal function replaces that
+The trigger covers inserts and updates of source, all three text fields, the
+flag and both override columns. For text changes it ORs the old flag, supplied
+flag, and new sensitivity. During backfill a temporary version also checks old
+prose, protecting rows modified before backfill reaches them. After backfill the
+normal function replaces that
 version, so removing an old marker cannot undo an explicit admin clear.
-Direct SQL, ORM writes, and cleanup scripts cannot clear a latch
-by removing prose or assigning a false flag. The ORM fetches the trigger's
+Runtime SQL, ORM writes, and cleanup scripts cannot clear a latch by removing
+prose; direct clears and override changes raise a permission error. Inserts with
+a non-NULL override are also rejected for non-owners. The owner running the
+migration can still perform the batched backfill. The ORM fetches the trigger's
 decision before publishing hooks use the object.
 
 The new index is built concurrently before v2 is dropped concurrently, with the
@@ -44,10 +47,10 @@ an invalid index from this attempt's failed build is cleaned up while preserving
 the original exception and the previous index. A failed upgrade can leave the
 columns, trigger and completed backfill batches committed; retry preserves
 latched flags and overrides. Inspect any surviving index before removing it.
-Downgrade builds v2 concurrently first, then removes v3, the trigger, its helper
-and columns. It retains `public_bill_sensitive()`. Downgrade deliberately restores
-the old prose policy and loses admin decisions/history in these columns; audit
-entries remain. Pause text rewriting before a rollback.
+Downgrade builds v2 concurrently first, then removes v3, the trigger, its helper,
+the admin function and columns. It retains `public_bill_sensitive()`. Downgrade
+deliberately restores the old prose policy and loses admin decisions/history in
+these columns; audit entries remain. Pause text rewriting before a rollback.
 
 ## Administrative decisions
 
@@ -62,21 +65,39 @@ Content-Type: application/json
 
 The decision field is required, including when setting it to `null` to clear an
 override. Every change requires a nonblank reason, retained in
-`sensitive_override_reason`. The endpoint locks the bill row and writes an
+`sensitive_override_reason`. The endpoint calls
+`admin_set_bill_sensitivity(p_bill_id text, p_override boolean, p_clear_flag boolean,
+p_reason text, p_actor text)` once. This `SECURITY DEFINER` function locks the bill
+row, requires a nonblank reason and actor, updates the decision and inserts an
 `AuditLog` entry with action `bill.sensitivity_override`, actor `admin_api_key`,
-target ID, reason and before/after decisions in the same transaction. After
-commit it invalidates representation/public caches through the existing shared
-hook, including the public visibility generation.
+target ID, reason and before/after decisions in the same statement. An audit
+failure rolls back the decision too. After commit it invalidates
+representation/public caches through the existing shared hook, including the
+public visibility generation.
 
 An explicit latch clear uses the same endpoint with
-`"clear_sensitive_public_block": true`. Only that flag-only flush sets
-`SET LOCAL pnyx.allow_sensitive_public_block_clear = 'on'`; it resets the setting
-before commit, and PostgreSQL also resets it at transaction end. Even with the
-setting on, a simultaneous text/source change cannot bypass detection. A later
-text write can latch sensitivity again; use a reasoned false override for a
-durable publication decision. This setting is an application admin convention,
-not a PostgreSQL privilege boundary: trusted direct database operators can also
-set it and must use the audited endpoint for administrative decisions.
+`"clear_sensitive_public_block": true`. Only when requested does the function
+set the latch to false. A later text write can latch sensitivity again; use a
+reasoned false override for a durable publication decision.
+
+The DB boundary is: **only the table owner, reached through the SECURITY DEFINER
+function, may override or clear**. The trigger looks up `pg_class.relowner` and
+compares it with `current_user`; custom `pnyx.*` or `app.*` settings confer no
+privileges. Production tables and the function are owned by `ekklesia_migrator`.
+The function pins `search_path = pg_catalog, public`, binds table references to
+the migration schema, and revokes all function privileges from `PUBLIC`.
+`EXECUTE` is granted to `ekklesia_api` when that role exists because admin
+endpoints run in the API process using the runtime connection. The final
+boundary for using the function is therefore the API's admin authentication.
+The runtime role can call the function directly with a reason and actor, so this
+does not isolate an administrator from someone who controls runtime SQL access.
+A separate admin DB role would require new credentials and is out of scope;
+that change needs an operator decision. No new login roles or credentials are
+introduced by z904.
+
+The writer audit includes `scripts/` and `apps/api/scripts/`: the application
+admin endpoint now calls only the function; no other production writer assigns
+these columns apart from z904's owner-run backfill and sensitivity trigger.
 
 The text-quality audit still reports/skips `skipped_sensitive`; that safeguard
 is retained independently of public visibility. Its operator text scanner and
@@ -133,7 +154,12 @@ rejected such rows.
 `tests/test_bill_sensitivity_pg.py` uses disposable schemas and synthetic data
 with `PNYX_TEST_POSTGRES_URL`: old/new membership across NULL/source/marker/admin
 combinations, multiple backfill batches, text-removal race, ORM/raw latching,
-attempted direct clear, override/audit/cache behavior and explicit admin clear.
+override/audit/cache behavior and explicit admin clear.
+`test_bill_sensitivity_roles_pg.py` reuses the disposable split-role bootstrap
+from `test_db_roles_pg.py`: migration/backfill as the owner, rejected runtime
+override/reason/clear writes and override inserts even with custom GUCs, validated
+function calls, exactly one audit row per decision, function ACLs and monotonic
+runtime text writes.
 `test_public_bill_snapshot_pg.py` runs the z902/z903/z904 chain and z904 round trip;
 the cold, unvacuumed TOAST fixture checks public counts and snapshots at k=0/5
 against v3 with normal planner settings. Existing generic prepared-plan tests
@@ -141,5 +167,6 @@ also continue to run. CI rejects PostgreSQL skips when configured.
 
 Unit tests execute synthetic newsletter, publisher/export and notification
 queries, check forum/lifecycle/ZK guards, exercise authenticated admin validation
-and audit creation, and verify concurrent-index failure cleanup/refusal/order.
+and delegation to the DB function, and verify concurrent-index failure cleanup,
+refusal and ordering.
 SQLite fixture schemas include the same flags; PostgreSQL owns trigger behavior.

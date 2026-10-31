@@ -12,7 +12,7 @@ from sqlalchemy import text
 from sqlalchemy.sql.elements import TextClause
 
 from database import get_db
-from models import AuditLog, BillStatus, BillStatusLog, CitizenVote, ParliamentBill, VoteChoice, ZkVoteReceipt
+from models import BillStatus, BillStatusLog, CitizenVote, ParliamentBill, VoteChoice, ZkVoteReceipt
 from routers import admin, export, notifications, parliament, zk
 from services import bill_lifecycle, discourse_sync, newsletter_service, zk_arweave_publisher
 from services.bill_visibility import is_public_bill
@@ -165,13 +165,11 @@ async def test_admin_transition_cannot_broadcast_a_private_bill(snapshot_db, mon
 
 @pytest.mark.parametrize("override", [None, True, False])
 @pytest.mark.parametrize("clear", [False, True])
-async def test_admin_override_requires_auth_and_reason_and_audits(monkeypatch, override, clear) -> None:
+async def test_admin_override_requires_auth_and_reason_and_calls_db_function(monkeypatch, override, clear) -> None:
     monkeypatch.setenv("ADMIN_KEY", "synthetic-admin-key")
     bill = SimpleNamespace(sensitive_public_block=True, sensitive_override=None, sensitive_override_reason=None)
-    added = []
     db = SimpleNamespace(execute=AsyncMock(return_value=SimpleNamespace(scalar_one_or_none=lambda: bill)),
-                         flush=AsyncMock(), commit=AsyncMock(), add=added.append,
-                         get_bind=lambda: SimpleNamespace(dialect=SimpleNamespace(name="sqlite")))
+                         refresh=AsyncMock(), commit=AsyncMock())
     invalidation = AsyncMock()
     monkeypatch.setattr("services.representation_cache.invalidate_representation_cache", invalidation)
     app = FastAPI()
@@ -182,21 +180,23 @@ async def test_admin_override_requires_auth_and_reason_and_audits(monkeypatch, o
         body = {"sensitive_override": override, "reason": " Synthetic review ",
                 "clear_sensitive_public_block": clear}
         assert (await client.patch(url, json=body)).status_code == 403
+        wrong = {"Authorization": "Bearer not-the-admin-key"}
+        assert (await client.patch(url, json=body, headers=wrong)).status_code == 403
         headers = {"Authorization": "Bearer synthetic-admin-key"}
         for bad in ({"sensitive_override": override}, {"sensitive_override": override, "reason": "  "},
                     {"reason": "Missing decision"}):
             assert (await client.patch(url, json=bad, headers=headers)).status_code == 422
         db.execute.assert_not_awaited()
-        result = await client.patch(url, json=body, headers=headers)
+        # The audited actor comes from the auth context, never from the request body.
+        result = await client.patch(url, json={**body, "actor": "spoofed"}, headers=headers)
     assert result.status_code == 200
-    assert bill.sensitive_override is override
-    assert bill.sensitive_override_reason == "Synthetic review"
-    assert is_public_bill(bill) is (override is False or (override is None and clear))
-    assert bill.sensitive_public_block is not clear
-    assert len(added) == 1 and isinstance(added[0], AuditLog)
-    assert added[0].details == {"reason": "Synthetic review", "before": {
-        "sensitive_public_block": True, "sensitive_override": None, "sensitive_override_reason": None,
-    }, "after": {"sensitive_public_block": not clear, "sensitive_override": override,
-                  "sensitive_override_reason": "Synthetic review"}}
+    assert db.execute.await_count == 2
+    call = db.execute.await_args
+    assert "SELECT admin_set_bill_sensitivity(" in str(call.args[0])
+    assert call.args[1] == {"bill_id": "S", "override": override, "clear_flag": clear,
+                            "reason": "Synthetic review", "actor": "admin_api_key"}
+    # Only PostgreSQL owns mutation/auditing; the API refreshes its ORM state.
+    assert bill.sensitive_override is None and bill.sensitive_public_block is True
+    db.refresh.assert_awaited_once_with(bill)
     db.commit.assert_awaited_once()
     invalidation.assert_awaited_once()

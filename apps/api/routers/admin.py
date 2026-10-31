@@ -21,7 +21,7 @@ from database import get_db
 from models import (
     ParliamentBill, CitizenVote, BillStatus,
     BillStatusLog, VoteChoice, Party, Statement, GovernanceLevel,
-    IdentityRecord, KeyStatus, AuditLog,
+    IdentityRecord, KeyStatus,
 )
 from services.content_provenance import clear_generated_content
 from services.text_quality import GENERATED_TEXT_FIELDS
@@ -131,34 +131,18 @@ async def admin_set_bill_sensitivity(
     )).scalar_one_or_none()
     if bill is None:
         raise HTTPException(404, "Bill not found")
-    before = {
-        "sensitive_public_block": bill.sensitive_public_block,
-        "sensitive_override": bill.sensitive_override,
-        "sensitive_override_reason": bill.sensitive_override_reason,
-    }
-    bill.sensitive_override = req.sensitive_override
-    bill.sensitive_override_reason = req.reason
-    await db.flush()
-    if req.clear_sensitive_public_block:
-        postgres = db.get_bind().dialect.name == "postgresql"
-        if postgres:
-            await db.execute(text("SET LOCAL pnyx.allow_sensitive_public_block_clear = 'on'"))
-        try:
-            bill.sensitive_public_block = False
-            await db.flush()
-        finally:
-            if postgres:
-                await db.execute(text("SET LOCAL pnyx.allow_sensitive_public_block_clear = 'off'"))
+    await db.execute(text("""SELECT admin_set_bill_sensitivity(
+        :bill_id, :override, :clear_flag, :reason, :actor)"""), {
+        "bill_id": bill_id, "override": req.sensitive_override,
+        "clear_flag": req.clear_sensitive_public_block,
+        "reason": req.reason, "actor": "admin_api_key",
+    })
+    await db.refresh(bill)
     after = {
         "sensitive_public_block": bill.sensitive_public_block,
         "sensitive_override": bill.sensitive_override,
         "sensitive_override_reason": bill.sensitive_override_reason,
     }
-    db.add(AuditLog(
-        action="bill.sensitivity_override", actor="admin_api_key",
-        target_type="parliament_bill", target_id=bill_id,
-        details={"reason": req.reason, "before": before, "after": after},
-    ))
     await commit_and_invalidate_representation(db)
     return {"success": True, "bill_id": bill_id, **after}
 
