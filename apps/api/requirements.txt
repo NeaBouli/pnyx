@@ -50,7 +50,7 @@ unidecode>=1.4.0
 
 # Testing
 pytest==9.1.1
-pytest-asyncio==1.4.0
+pytest-asyncio==1.4.1
 aiosqlite==0.22.1
 anyio==4.15.1
 respx>=0.23.1
