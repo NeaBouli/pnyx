@@ -108,7 +108,7 @@ function createHarness() {
     };
   }
 
-  return { api, mount, renderCount: () => renders };
+  return { api, mount, render, renderCount: () => renders };
 }
 
 function createStorage(initial: Record<string, string> = {}) {
@@ -136,10 +136,19 @@ function loadScreen(storage: ReturnType<typeof createStorage>, acks?: {
   const markCategory = acks?.markCategory ?? vi.fn(async (_key: string) => {});
   const reactModule = { __esModule: true, default: harness.api, ...harness.api };
   const alert = vi.fn();
+  let focused = true;
+  function setFocused(value: boolean) {
+    focused = value;
+    harness.render();
+  }
   const requireMock = vi.fn((id: string): unknown => {
     if (id === "react") return reactModule;
     if (id === "@react-navigation/native") {
-      return { useFocusEffect: (effect: () => unknown) => harness.api.useEffect(effect, [effect]) };
+      return {
+        useFocusEffect: (effect: () => unknown) => {
+          harness.api.useEffect(() => focused ? effect() : undefined, [effect, focused]);
+        },
+      };
     }
     if (id === "react-native") {
       return {
@@ -191,7 +200,7 @@ function loadScreen(storage: ReturnType<typeof createStorage>, acks?: {
   const exports: Record<string, any> = {};
   vm.runInNewContext(compiled, { exports, require: requireMock, console });
   const screen = harness.mount(exports.default as () => El);
-  return { harness, screen, markAll, markCategory, alert };
+  return { harness, screen, markAll, markCategory, alert, setFocused };
 }
 
 /** Drain the microtask queue so pending async screen work settles. */
@@ -232,21 +241,24 @@ const alerts = (tree: El) =>
 describe("Vote confirmation preference in settings", () => {
   function loadDeviceSetting(enabled: boolean, confirmation: string) {
     const listeners = new Set<() => void>();
+    let stored = enabled;
     const voteDevice = {
       loadNullifier: vi.fn(async () => "owner-a"),
       subscribeIdentityChanges(listener: () => void) {
         listeners.add(listener);
         return () => { listeners.delete(listener); };
       },
-      isVoteDeviceConfirmationEnabled: vi.fn(async (_owner: string) => enabled),
+      isVoteDeviceConfirmationEnabled: vi.fn(async (_owner: string) => stored),
       confirmOnDevice: vi.fn(async () => confirmation),
-      saveVoteDeviceConfirmation: vi.fn(async () => {}),
+      saveVoteDeviceConfirmation: vi.fn(async (_owner: string, value: boolean) => {
+        stored = value;
+      }),
     };
-    const { screen, markAll, markCategory, alert } = loadScreen(createStorage(), undefined, voteDevice);
+    const { screen, markAll, markCategory, alert, setFocused } = loadScreen(createStorage(), undefined, voteDevice);
     const setting = () => switches(screen.tree()).find(item =>
       item.props.accessibilityLabel === "Επιβεβαίωση ψήφου στη συσκευή")!;
     const notifyIdentityChange = () => { for (const listener of listeners) listener(); };
-    return { voteDevice, setting, markAll, markCategory, alert, notifyIdentityChange };
+    return { voteDevice, setting, markAll, markCategory, alert, notifyIdentityChange, setFocused };
   }
 
   it("applies the confirmed opt-out to the active identity without changing notification settings", async () => {
@@ -279,6 +291,35 @@ describe("Vote confirmation preference in settings", () => {
     expect(voteDevice.saveVoteDeviceConfirmation).not.toHaveBeenCalled();
     await setting().props.onValueChange(true);
     expect(voteDevice.saveVoteDeviceConfirmation).toHaveBeenCalledExactlyOnceWith("owner-b", true);
+  });
+
+  it("shows the saved preference when settings regain focus during the write", async () => {
+    const { voteDevice, setting, setFocused } = loadDeviceSetting(true, "allowed");
+    await flush();
+    let finishSave!: () => void;
+    let finishOldRead!: (value: boolean) => void;
+    voteDevice.saveVoteDeviceConfirmation.mockImplementationOnce(async () => {
+      await new Promise<void>(resolve => { finishSave = resolve; });
+      voteDevice.isVoteDeviceConfirmationEnabled.mockResolvedValue(false);
+    });
+    const change = setting().props.onValueChange(false);
+    await flush();
+    expect(voteDevice.saveVoteDeviceConfirmation).toHaveBeenCalledExactlyOnceWith("owner-a", false);
+    setFocused(false);
+    voteDevice.isVoteDeviceConfirmationEnabled.mockImplementationOnce(
+      () => new Promise(resolve => { finishOldRead = resolve; }),
+    );
+    setFocused(true);
+    await flush();
+    expect(setting().props.disabled).toBe(true);
+
+    finishSave();
+    await change;
+    finishOldRead(true);
+    await flush();
+
+    expect(setting().props.disabled).toBe(false);
+    expect(setting().props.value).toBe(false);
   });
 
   it.each([[true, "denied"], [false, "no_lock"]] as const)(

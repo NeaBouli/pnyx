@@ -17,26 +17,27 @@ export default function VoteDeviceConfirmationSetting() {
   const revision = useRef(0);
   const changing = useRef(false);
 
+  const load = useCallback(async () => {
+    const currentRevision = ++revision.current;
+    const current = () => focused.current && revision.current === currentRevision;
+    setLoading(true);
+    try {
+      const identity = await loadNullifier();
+      const required = identity ? await isVoteDeviceConfirmationEnabled(identity) : false;
+      if (!current()) return;
+      setOwner(identity);
+      setEnabled(required);
+      setLoadFailed(false);
+    } catch {
+      if (current()) setLoadFailed(true);
+    } finally {
+      if (current()) setLoading(false);
+    }
+  }, []);
+
   useFocusEffect(useCallback(() => {
     focused.current = true;
     setSaving(changing.current);
-    async function load() {
-      const currentRevision = ++revision.current;
-      const current = () => focused.current && revision.current === currentRevision;
-      setLoading(true);
-      try {
-        const identity = await loadNullifier();
-        const required = identity ? await isVoteDeviceConfirmationEnabled(identity) : false;
-        if (!current()) return;
-        setOwner(identity);
-        setEnabled(required);
-        setLoadFailed(false);
-      } catch {
-        if (current()) setLoadFailed(true);
-      } finally {
-        if (current()) setLoading(false);
-      }
-    }
     const unsubscribe = subscribeIdentityChanges(() => { void load(); });
     void load();
     return () => {
@@ -44,7 +45,7 @@ export default function VoteDeviceConfirmationSetting() {
       revision.current++;
       unsubscribe();
     };
-  }, []));
+  }, [load]));
 
   async function change(value: boolean) {
     if (!focused.current || !owner || loading || loadFailed || changing.current) return;
@@ -65,7 +66,7 @@ export default function VoteDeviceConfirmationSetting() {
       }
       if (await loadNullifier() !== owner || !current()) return;
       await saveVoteDeviceConfirmation(owner, value);
-      if (current()) setEnabled(value);
+      if (focused.current) await load();
     } catch {
       if (current()) Alert.alert("Σφάλμα", "Η ρύθμιση δεν αποθηκεύτηκε.");
     } finally {
