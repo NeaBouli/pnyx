@@ -242,9 +242,9 @@ ALLOWED_T9106_CLAIMS_HASH = {
     "json_ld": "1993c92ba1d33cb012e4cda04885e2582642a1a738343502a592ba1696db3755",  # B08: conditional Arweave featureList claim
 }
 ALLOWED_APK_HREF_REPLACEMENT = {
-    # T-9172: reviewed Direct download refresh to v1.0.37/vC66. Play stays vC62.
+    # Verified Direct download refresh to v1.0.38/vC67.
     "https://github.com/NeaBouli/pnyx/releases/download/v1.0.32/ekklesia-v1.0.32-vC61-DIRECT.apk":
-        "https://github.com/NeaBouli/pnyx/releases/download/v1.0.37/ekklesia-v1.0.37-vC66-DIRECT.apk",
+        "https://github.com/NeaBouli/pnyx/releases/download/v1.0.38/ekklesia-v1.0.38-vC67-DIRECT.apk",
 }
 ALLOWED_DEMO_CYCLE_INTERACTION_COUNTS = {"add_event_listener_count": 8, "set_timeout_count": 2}
 ALLOWED_DEMO_CYCLE_FORM_CONTROLS = ({"tag": "button", "type": "button", "id": "cycleToggle"},)
