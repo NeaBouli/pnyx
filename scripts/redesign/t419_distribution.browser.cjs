@@ -1,5 +1,5 @@
 // T-419 / EKA-38 + EKA-51 browser matrix: download cards, links, navigation, overflow.
-// Chromium + WebKit at 1440px and 390px against a local static server for docs/.
+// Chromium + WebKit at 1280px and 390px against a local static server for docs/.
 // Every non-local request is aborted; external links are inspected, never followed.
 //   node scripts/redesign/t419_distribution.browser.cjs [outDir]
 //   PLAYWRIGHT_MODULE=/path/to/playwright overrides the module lookup.
@@ -24,8 +24,10 @@ const OUT = path.resolve(process.argv[2] || path.join(__dirname, "../../.fleet/r
 fs.mkdirSync(OUT, { recursive: true });
 
 const ENGINES = { chromium, webkit };
-const VIEWPORTS = [{ w: 1440, h: 900 }, { w: 390, h: 844 }];
-const CANONICAL_APK = "https://github.com/NeaBouli/pnyx/releases/download/v1.0.32/ekklesia-v1.0.32-vC61-DIRECT.apk";
+const VIEWPORTS = [{ w: 1280, h: 900 }, { w: 390, h: 844 }];
+const manifest = fs.readFileSync(path.join(DOCS, "download/APK_MANIFEST.md"), "utf8");
+const CANONICAL_APK = /^\| Canonical APK URL \| `(https:\/\/github\.com\/NeaBouli\/pnyx\/releases\/download\/[^\s`]+\.apk)` \|$/m.exec(manifest)?.[1];
+if (!CANONICAL_APK) throw new Error("APK manifest has no canonical Direct download");
 const FDROID = "https://f-droid.org/packages/ekklesia.gr/";
 const PLAY = "https://play.google.com/apps/testing/ekklesia.gr";
 
@@ -114,14 +116,14 @@ async function landing(browser, base, engine, vp) {
   check(tag, "App Store card is not a link", appStore && appStore.tag !== "A" && !appStore.href, appStore);
   const fdroid = byHref[FDROID];
   check(tag, "F-Droid says available, unversioned (el)", fdroid && /Διαθέσιμο/.test(fdroid.text) && !/v\d+\.\d+|vC\d+/.test(fdroid.text), fdroid && fdroid.text);
-  check(tag, "Play says under review (el)", byHref[PLAY] && /Υπό έλεγχο/.test(byHref[PLAY].text), byHref[PLAY] && byHref[PLAY].text);
+  check(tag, "Play says closed testing (el)", byHref[PLAY] && /Κλειστή δοκιμή/.test(byHref[PLAY].text), byHref[PLAY] && byHref[PLAY].text);
 
   // Language toggle keeps the same status wording in English.
   await page.evaluate(() => toggleLang());
   const fdEn = await page.locator(`#download a[href="${FDROID}"]`).innerText();
   check(tag, "F-Droid says available (en)", /Available/.test(fdEn) && /Independent F-Droid build/.test(fdEn), fdEn);
   const playEn = await page.locator(`#download a[href="${PLAY}"]`).innerText();
-  check(tag, "Play says under review (en)", /Under review/.test(playEn), playEn);
+  check(tag, "Play says closed testing (en)", /Closed testing/.test(playEn), playEn);
 
   const ov = await overflow(page);
   check(tag, "no horizontal overflow", ov.scrollWidth <= ov.innerWidth, ov);
