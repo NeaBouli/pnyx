@@ -3,7 +3,7 @@ name: Deploy to Hetzner
 on:
   workflow_dispatch:
   # Auto-deploy disabled — SSH key is passphrase-protected.
-  # Deploy manually: ssh → git pull → docker compose up -d --build
+  # Use the approved host rollout procedure when the deployment uses extra Compose files.
   # Re-enable push trigger after generating a passphrase-free CI key.
 
 jobs:
@@ -51,6 +51,16 @@ jobs:
           script: |
             set -e
             cd /opt/ekklesia/app
+
+            if [ "${{ steps.changes.outputs.api }}" = "true" ] || [ "${{ steps.changes.outputs.infra }}" = "true" ]; then
+              current_config=$(docker inspect --type container --format '{{index .Config.Labels "com.docker.compose.project.config_files"}}' ekklesia-api)
+              base_config="$(pwd -P)/infra/docker/docker-compose.prod.yml"
+              if [ "$current_config" != "$base_config" ]; then
+                echo "API uses deployment-specific Compose configuration. Use the approved host rollout procedure." >&2
+                exit 1
+              fi
+            fi
+
             git pull origin main
 
             source /opt/ekklesia/.env.production
