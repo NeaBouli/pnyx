@@ -88,6 +88,7 @@ function createHarness() {
       return fn;
     },
     createElement(type: unknown, props?: Record<string, unknown> | null, ...children: unknown[]) {
+      if (typeof type === "function") return type({ ...props, children });
       return { type, props: { ...(props ?? {}), children } };
     },
   };
@@ -123,11 +124,17 @@ function createStorage(initial: Record<string, string> = {}) {
 function loadScreen(storage: ReturnType<typeof createStorage>, acks?: {
   markAll?: ReturnType<typeof vi.fn>;
   markCategory?: ReturnType<typeof vi.fn>;
+}, voteDevice?: {
+  loadNullifier: ReturnType<typeof vi.fn>;
+  isVoteDeviceConfirmationEnabled: ReturnType<typeof vi.fn>;
+  confirmOnDevice: ReturnType<typeof vi.fn>;
+  saveVoteDeviceConfirmation: ReturnType<typeof vi.fn>;
 }) {
   const harness = createHarness();
   const markAll = acks?.markAll ?? vi.fn(async () => {});
   const markCategory = acks?.markCategory ?? vi.fn(async (_key: string) => {});
   const reactModule = { __esModule: true, default: harness.api, ...harness.api };
+  const alert = vi.fn();
   const requireMock = vi.fn((id: string): unknown => {
     if (id === "react") return reactModule;
     if (id === "react-native") {
@@ -137,10 +144,23 @@ function loadScreen(storage: ReturnType<typeof createStorage>, acks?: {
         Switch: "Switch",
         ScrollView: "ScrollView",
         TouchableOpacity: "TouchableOpacity",
+        Alert: { alert },
         StyleSheet: { create: (styles: unknown) => styles },
       };
     }
     if (id === "expo-secure-store") return storage;
+    if (id === "../components/VoteDeviceConfirmationSetting") {
+      if (!voteDevice) return { __esModule: true, default: () => null };
+      const source = readFileSync(new URL("../components/VoteDeviceConfirmationSetting.tsx", import.meta.url), "utf8");
+      const compiled = ts.transpileModule(source, {
+        compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React, esModuleInterop: true },
+      }).outputText;
+      const exports = {};
+      vm.runInNewContext(compiled, { exports, require: requireMock });
+      return exports;
+    }
+    if (id === "../lib/crypto-native") return { loadNullifier: voteDevice?.loadNullifier };
+    if (id === "../lib/vote-device-confirmation") return voteDevice;
     if (id === "../theme") return { colors };
     if (id === "../lib/notifications") {
       return {
@@ -162,7 +182,7 @@ function loadScreen(storage: ReturnType<typeof createStorage>, acks?: {
   const exports: Record<string, any> = {};
   vm.runInNewContext(compiled, { exports, require: requireMock, console });
   const screen = harness.mount(exports.default as () => El);
-  return { harness, screen, markAll, markCategory };
+  return { harness, screen, markAll, markCategory, alert };
 }
 
 /** Drain the microtask queue so pending async screen work settles. */
@@ -199,6 +219,44 @@ const switches = (tree: El) => findAll(tree, "Switch");
 const retryButtons = (tree: El) => findAll(tree, "TouchableOpacity");
 const alerts = (tree: El) =>
   findAll(tree, "Text").filter(t => t.props.accessibilityRole === "alert");
+
+describe("Vote confirmation preference in settings", () => {
+  function loadDeviceSetting(enabled: boolean, confirmation: string) {
+    const voteDevice = {
+      loadNullifier: vi.fn(async () => "owner-a"),
+      isVoteDeviceConfirmationEnabled: vi.fn(async () => enabled),
+      confirmOnDevice: vi.fn(async () => confirmation),
+      saveVoteDeviceConfirmation: vi.fn(async () => {}),
+    };
+    const { screen, markAll, markCategory, alert } = loadScreen(createStorage(), undefined, voteDevice);
+    const setting = () => switches(screen.tree()).find(item =>
+      item.props.accessibilityLabel === "Επιβεβαίωση ψήφου στη συσκευή")!;
+    return { voteDevice, setting, markAll, markCategory, alert };
+  }
+
+  it("applies the confirmed opt-out to the active identity without changing notification settings", async () => {
+    const { voteDevice, setting, markAll, markCategory } = loadDeviceSetting(true, "allowed");
+    await flush();
+    expect(setting().props.value).toBe(true);
+    await setting().props.onValueChange(false);
+    expect(voteDevice.saveVoteDeviceConfirmation).toHaveBeenCalledExactlyOnceWith("owner-a", false);
+    expect(setting().props.value).toBe(false);
+    expect(markAll).not.toHaveBeenCalled();
+    expect(markCategory).not.toHaveBeenCalled();
+  });
+
+  it.each([[true, "denied"], [false, "no_lock"]] as const)(
+    "preserves the %s preference when the requested change cannot be confirmed (%s)",
+    async (enabled, confirmation) => {
+      const { voteDevice, setting, alert } = loadDeviceSetting(enabled, confirmation);
+      await flush();
+      await setting().props.onValueChange(!enabled);
+      expect(alert).toHaveBeenCalled();
+      expect(voteDevice.saveVoteDeviceConfirmation).not.toHaveBeenCalled();
+      expect(setting().props.value).toBe(enabled);
+    },
+  );
+});
 
 describe("NotificationSettingsScreen hydration", () => {
   it.each(["defaults", "persisted all-on"])("does not acknowledge events on mount with %s preferences", async (mode) => {
