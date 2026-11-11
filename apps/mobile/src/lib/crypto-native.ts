@@ -243,10 +243,26 @@ export async function loadKeypairRaw(): Promise<{ privateKeyHex: string; publicK
   return { privateKeyHex: priv, publicKeyHex: pub };
 }
 
+const identityChangeListeners = new Set<() => void>();
+
+export function subscribeIdentityChanges(listener: () => void): () => void {
+  identityChangeListeners.add(listener);
+  return () => { identityChangeListeners.delete(listener); };
+}
+
+function notifyIdentityChange(): void {
+  for (const listener of identityChangeListeners) {
+    try { listener(); } catch { /* A UI refresh must not interrupt credential storage. */ }
+  }
+}
+
 export async function storeNullifier(nullifier: string): Promise<void> {
   const previous = await SecureStore.getItemAsync(KEYS.NULLIFIER);
   await SecureStore.setItemAsync(KEYS.NULLIFIER, nullifier);
-  if (previous !== nullifier) await clearVoteMarks();
+  if (previous !== nullifier) {
+    notifyIdentityChange();
+    await clearVoteMarks();
+  }
 }
 
 export async function loadNullifier(): Promise<string | null> {
@@ -427,15 +443,16 @@ export async function holdIdentityStateWhile<T>(fn: () => Promise<T>): Promise<T
  */
 export async function installIdentityState(values: Record<string, string | null>): Promise<void> {
   await secureSet(KEYS.IDENTITY_JOURNAL, JSON.stringify(values));
-  await applyIdentityState(values);
-  await SecureStore.deleteItemAsync(KEYS.IDENTITY_JOURNAL);
+  await finishIdentityStateInstall(values);
 }
 
-async function applyIdentityState(values: Record<string, string | null>): Promise<void> {
+async function finishIdentityStateInstall(values: Record<string, string | null>): Promise<void> {
   for (const [key, value] of Object.entries(values)) {
     if (value === null) await SecureStore.deleteItemAsync(key);
     else await secureSet(key, value);
   }
+  await SecureStore.deleteItemAsync(KEYS.IDENTITY_JOURNAL);
+  if (KEYS.NULLIFIER in values) notifyIdentityChange();
 }
 
 /** True while a journal is present (e.g. one that could not be parsed). */
@@ -460,8 +477,7 @@ export async function recoverIdentityJournal(): Promise<boolean> {
   // destructive automatic decisions (rotation, staging cleanup) stay blocked
   // until a full install (verification/import) replaces it.
   if (!values) return false;
-  await applyIdentityState(values);
-  await SecureStore.deleteItemAsync(KEYS.IDENTITY_JOURNAL);
+  await finishIdentityStateInstall(values);
   return true;
 }
 
@@ -792,6 +808,7 @@ async function clearKeysUnlocked(): Promise<void> {
   await SecureStore.deleteItemAsync(KEYS.PRIVATE_KEY);
   await SecureStore.deleteItemAsync(KEYS.PUBLIC_KEY);
   await SecureStore.deleteItemAsync(KEYS.NULLIFIER);
+  notifyIdentityChange();
   for (const key of KEY_LIFECYCLE_STORE_KEYS) await SecureStore.deleteItemAsync(key);
   // A new identity must never inherit a still-fresh push registration marker.
   await SecureStore.deleteItemAsync("push_registration_marker");
