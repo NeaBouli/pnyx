@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { Alert, StyleSheet, Switch, Text, View } from "react-native";
-import { loadNullifier } from "../lib/crypto-native";
+import { useFocusEffect } from "@react-navigation/native";
+import { loadNullifier, subscribeIdentityChanges } from "../lib/crypto-native";
 import { confirmOnDevice, isVoteDeviceConfirmationEnabled, saveVoteDeviceConfirmation } from "../lib/vote-device-confirmation";
 import { colors } from "../theme";
 
@@ -10,37 +11,50 @@ export default function VoteDeviceConfirmationSetting() {
   const [owner, setOwner] = useState<string | null>(null);
   const [enabled, setEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
-  const mounted = useRef(true);
+  const focused = useRef(false);
+  const revision = useRef(0);
   const changing = useRef(false);
 
-  useEffect(() => {
-    mounted.current = true;
-    let active = true;
+  useFocusEffect(useCallback(() => {
+    focused.current = true;
+    setSaving(changing.current);
     async function load() {
+      const currentRevision = ++revision.current;
+      const current = () => focused.current && revision.current === currentRevision;
+      setLoading(true);
       try {
         const identity = await loadNullifier();
-        const current = identity ? await isVoteDeviceConfirmationEnabled(identity) : false;
-        if (!active) return;
+        const required = identity ? await isVoteDeviceConfirmationEnabled(identity) : false;
+        if (!current()) return;
         setOwner(identity);
-        setEnabled(current);
+        setEnabled(required);
+        setLoadFailed(false);
       } catch {
-        if (active) setLoadFailed(true);
+        if (current()) setLoadFailed(true);
       } finally {
-        if (active) setLoading(false);
+        if (current()) setLoading(false);
       }
     }
+    const unsubscribe = subscribeIdentityChanges(() => { void load(); });
     void load();
-    return () => { active = false; mounted.current = false; };
-  }, []);
+    return () => {
+      focused.current = false;
+      revision.current++;
+      unsubscribe();
+    };
+  }, []));
 
   async function change(value: boolean) {
-    if (!owner || loading || changing.current) return;
+    if (!focused.current || !owner || loading || loadFailed || changing.current) return;
+    const currentRevision = revision.current;
+    const current = () => focused.current && revision.current === currentRevision;
     changing.current = true;
-    setLoading(true);
+    setSaving(true);
     try {
       const confirmation = await confirmOnDevice("Επιβεβαιώστε την αλλαγή ρύθμισης");
-      if (!mounted.current) return;
+      if (!current()) return;
       if (confirmation === "denied") {
         Alert.alert("Ακυρώθηκε", "Η επιβεβαίωση της συσκευής δεν ολοκληρώθηκε.");
         return;
@@ -49,14 +63,14 @@ export default function VoteDeviceConfirmationSetting() {
         Alert.alert("Κλείδωμα οθόνης", "Ορίστε πρώτα PIN, μοτίβο ή κωδικό στις ρυθμίσεις της συσκευής.");
         return;
       }
-      if (await loadNullifier() !== owner || !mounted.current) return;
+      if (await loadNullifier() !== owner || !current()) return;
       await saveVoteDeviceConfirmation(owner, value);
-      if (mounted.current) setEnabled(value);
+      if (current()) setEnabled(value);
     } catch {
-      if (mounted.current) Alert.alert("Σφάλμα", "Η ρύθμιση δεν αποθηκεύτηκε.");
+      if (current()) Alert.alert("Σφάλμα", "Η ρύθμιση δεν αποθηκεύτηκε.");
     } finally {
       changing.current = false;
-      if (mounted.current) setLoading(false);
+      if (focused.current) setSaving(false);
     }
   }
 
@@ -74,7 +88,7 @@ export default function VoteDeviceConfirmationSetting() {
       </View>
       <Switch
         accessibilityLabel={label}
-        disabled={loading || !owner || loadFailed}
+        disabled={loading || saving || !owner || loadFailed}
         value={enabled}
         onValueChange={change}
         trackColor={{ true: colors.primary, false: colors.border }}

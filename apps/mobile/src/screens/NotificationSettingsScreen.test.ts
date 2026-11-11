@@ -126,6 +126,7 @@ function loadScreen(storage: ReturnType<typeof createStorage>, acks?: {
   markCategory?: ReturnType<typeof vi.fn>;
 }, voteDevice?: {
   loadNullifier: ReturnType<typeof vi.fn>;
+  subscribeIdentityChanges: (refresh: () => void) => () => void;
   isVoteDeviceConfirmationEnabled: ReturnType<typeof vi.fn>;
   confirmOnDevice: ReturnType<typeof vi.fn>;
   saveVoteDeviceConfirmation: ReturnType<typeof vi.fn>;
@@ -137,6 +138,9 @@ function loadScreen(storage: ReturnType<typeof createStorage>, acks?: {
   const alert = vi.fn();
   const requireMock = vi.fn((id: string): unknown => {
     if (id === "react") return reactModule;
+    if (id === "@react-navigation/native") {
+      return { useFocusEffect: (effect: () => unknown) => harness.api.useEffect(effect, [effect]) };
+    }
     if (id === "react-native") {
       return {
         View: "View",
@@ -159,7 +163,12 @@ function loadScreen(storage: ReturnType<typeof createStorage>, acks?: {
       vm.runInNewContext(compiled, { exports, require: requireMock });
       return exports;
     }
-    if (id === "../lib/crypto-native") return { loadNullifier: voteDevice?.loadNullifier };
+    if (id === "../lib/crypto-native") {
+      return {
+        loadNullifier: voteDevice?.loadNullifier,
+        subscribeIdentityChanges: voteDevice?.subscribeIdentityChanges,
+      };
+    }
     if (id === "../lib/vote-device-confirmation") return voteDevice;
     if (id === "../theme") return { colors };
     if (id === "../lib/notifications") {
@@ -222,16 +231,22 @@ const alerts = (tree: El) =>
 
 describe("Vote confirmation preference in settings", () => {
   function loadDeviceSetting(enabled: boolean, confirmation: string) {
+    const listeners = new Set<() => void>();
     const voteDevice = {
       loadNullifier: vi.fn(async () => "owner-a"),
-      isVoteDeviceConfirmationEnabled: vi.fn(async () => enabled),
+      subscribeIdentityChanges(listener: () => void) {
+        listeners.add(listener);
+        return () => { listeners.delete(listener); };
+      },
+      isVoteDeviceConfirmationEnabled: vi.fn(async (_owner: string) => enabled),
       confirmOnDevice: vi.fn(async () => confirmation),
       saveVoteDeviceConfirmation: vi.fn(async () => {}),
     };
     const { screen, markAll, markCategory, alert } = loadScreen(createStorage(), undefined, voteDevice);
     const setting = () => switches(screen.tree()).find(item =>
       item.props.accessibilityLabel === "Επιβεβαίωση ψήφου στη συσκευή")!;
-    return { voteDevice, setting, markAll, markCategory, alert };
+    const notifyIdentityChange = () => { for (const listener of listeners) listener(); };
+    return { voteDevice, setting, markAll, markCategory, alert, notifyIdentityChange };
   }
 
   it("applies the confirmed opt-out to the active identity without changing notification settings", async () => {
@@ -243,6 +258,27 @@ describe("Vote confirmation preference in settings", () => {
     expect(setting().props.value).toBe(false);
     expect(markAll).not.toHaveBeenCalled();
     expect(markCategory).not.toHaveBeenCalled();
+  });
+
+  it("reloads the active switch and rejects an old confirmation when verification replaces the identity", async () => {
+    const { voteDevice, setting, notifyIdentityChange } = loadDeviceSetting(true, "allowed");
+    await flush();
+    let confirm!: (result: string) => void;
+    voteDevice.confirmOnDevice.mockImplementationOnce(() => new Promise(resolve => { confirm = resolve; }));
+    const previousChange = setting().props.onValueChange(false);
+
+    voteDevice.loadNullifier.mockResolvedValue("owner-b");
+    voteDevice.isVoteDeviceConfirmationEnabled.mockResolvedValue(false);
+    notifyIdentityChange();
+    await flush();
+    expect(setting().props.value).toBe(false);
+    expect(voteDevice.isVoteDeviceConfirmationEnabled).toHaveBeenLastCalledWith("owner-b");
+
+    confirm("allowed");
+    await previousChange;
+    expect(voteDevice.saveVoteDeviceConfirmation).not.toHaveBeenCalled();
+    await setting().props.onValueChange(true);
+    expect(voteDevice.saveVoteDeviceConfirmation).toHaveBeenCalledExactlyOnceWith("owner-b", true);
   });
 
   it.each([[true, "denied"], [false, "no_lock"]] as const)(
