@@ -9,19 +9,33 @@ import pytest
 from routers import agent
 
 
-_TASK_725_FIXTURE = Path(__file__).parent / "fixtures" / "assistant_privacy_routing_725.tsv"
-with _TASK_725_FIXTURE.open(encoding="utf-8", newline="") as fixture_file:
-    TASK_725_CASES = list(csv.DictReader(fixture_file, delimiter="\t"))
+_TASK_725_FIXTURES = (
+    Path(__file__).parent / "fixtures" / "assistant_privacy_routing_725.tsv",
+    Path(__file__).parent / "fixtures" / "assistant_privacy_routing_725_probes2.tsv",
+)
+TASK_725_CASES = []
+for fixture_path in _TASK_725_FIXTURES:
+    with fixture_path.open(encoding="utf-8", newline="") as fixture_file:
+        TASK_725_CASES.extend(
+            (case, fixture_path.name == "assistant_privacy_routing_725_probes2.tsv")
+            for case in csv.DictReader(fixture_file, delimiter="\t")
+        )
 
 
-@pytest.mark.parametrize("case", TASK_725_CASES, ids=lambda case: case["question"])
-def test_task_725_privacy_routing_fixture(monkeypatch, case):
+@pytest.mark.parametrize(
+    "case,strict_none", TASK_725_CASES,
+    ids=[case["question"] for case, _strict_none in TASK_725_CASES],
+)
+def test_task_725_privacy_routing_fixture(monkeypatch, case, strict_none):
     monkeypatch.setenv("AGENT_MODE", "deterministic")
     question = case["question"]
     lang = "el" if any("\u0370" <= char <= "\u03ff" for char in question) else "en"
     expected = case["expected"]
 
-    if expected == "not_anonymity":
+    if strict_none and expected == "none":
+        assert agent._eka63_topic(question) is None
+        assert agent._canonical_response(question, lang) is None
+    elif expected == "not_anonymity":
         assert agent._eka63_topic(question) != "anonymity"
         response = agent._canonical_response(question, lang)
         assert response is None or response["sources"][0]["topic"] != "anonymity"
