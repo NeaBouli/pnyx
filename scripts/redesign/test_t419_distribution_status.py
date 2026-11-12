@@ -202,6 +202,12 @@ class EkprosoposArtifactTest(unittest.TestCase):
             "a public checksum without its APK is a misleading release signal",
         )
 
+    def test_ekprosopos_manifest_status_is_known(self) -> None:
+        # Exactly one recognised status, so neither state's checks can be skipped silently.
+        section = MANIFEST.read_text(encoding="utf-8").split("## ekklesia mobile")[0]
+        states = ["Status: **published**" in section, "Status: **not published.**" in section]
+        self.assertEqual(states.count(True), 1, "ekprosopos manifest status must be published or not published")
+
     def test_published_ekprosopos_page_matches_manifest(self) -> None:
         manifest = MANIFEST.read_text(encoding="utf-8")
         section = manifest.split("## ekklesia mobile")[0]
