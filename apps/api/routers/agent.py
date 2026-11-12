@@ -321,15 +321,88 @@ _LEADING_BILL_CONTEXT = re.compile(
     r"για\s+το\s+νομοσχεδιο\b[^,]{0,100},|"
     r"σχετικα\s+με\s+το\s+νομοσχεδιο\b[^,]{0,100},)\s*"
 )
+_PRIVACY_VOCAB = {
+    # Keep the same vote forms available to both subject and linkage matching.
+    "own_vote": (
+        r"my\s+(?:own\s+)?votes?",
+        r"my\s+(?:own\s+)?ballot(?:\s+(?:choices?|choice))?",
+        r"my\s+voting\s+(?:history|record)",
+        r"my\s+vote\s+(?:history|record)",
+        r"(?:how|what)\s+i\s+voted(?:\s+for)?",
+        r"which\s+(?:way\s+)?i\s+voted(?:\s+for)?",
+        r"the\s+way\s+i\s+voted",
+        r"which\s+(?:(?:choice|option)\s+i\s+(?:made|chose)|way\s+i\s+voted)"
+        r"(?:\s+when\s+voting)?",
+        r"am\s+i\s+anonymous\s+when\s+i\s+vote",
+        r"(?:η|την|στην)\s+ψηφοσ?\s+μου",
+        r"το\s+ψηφοδελτιο\s+μου",
+        r"ψηφ(?:ο|ων)\s+μου\s+ιστορικ\w*",
+        r"(?:τι|πωσ)\s+ψηφισα",
+        r"ποια\s+επιλογη\s+(?:εκανα|εχω\s+κανει)"
+        r"(?:\s+στην\s+ψηφοφορια)?",
+    ),
+    "vote_object": (
+        r"votes?",
+        r"ballots?(?:\s+choices?)?",
+        r"voting\s+(?:history|record)",
+        r"vote\s+(?:history|record|receipt)",
+        r"(?:η|την|στην)\s+ψηφοσ?",
+        r"το\s+ψηφοδελτιο",
+        r"ψηφ(?:ο|ων)\s+μου\s+ιστορικ\w*",
+        r"(?:τι|πωσ)\s+ψηφισα",
+        r"ποια\s+επιλογη\s+(?:εκανα|εχω\s+κανει)"
+        r"(?:\s+στην\s+ψηφοφορια)?",
+    ),
+    "identity": (
+        r"(?:e[\s-]?mail|electronic\s+mail)",
+        r"identity",
+        r"name",
+        r"account",
+        r"phone(?:\s+number)?",
+        r"mobile(?:\s+number)?",
+        r"number",
+        r"ηλεκτρονικ\w*\s+ταχυδρομ\w*",
+        r"τηλεφων\w*",
+        r"κινητ\w*",
+        r"αριθμ\w*",
+        r"ονομα\w*",
+        r"λογαριασμ\w*",
+        r"ταυτοτητ\w*",
+    ),
+    "exposure": (
+        r"see(?:s|n|ing)?",
+        r"view\w*",
+        r"visible|visibility",
+        r"know\w*",
+        r"find(?:s|ing)?(?:\s+out)?",
+        r"learn\w*",
+        r"discover\w*",
+        r"infer\w*|guess\w*|deduc\w*",
+        r"identify|identifies|identified|identifying|identification",
+        r"associate\w*",
+        r"tie\w*",
+        r"reveal\w*",
+        r"access\w*|acces\w*",
+        r"trace\w*|track\w*",
+        r"stor\w*|keep|collect|retain|save",
+        r"show(?:s|ed|ing)?(?:\s+up)?",
+        r"public\w*|private|secret|confidential",
+        r"anonymous|annonimous|anonimous|anonymus|annonymous|anomymous|anonymity",
+        r"βλεπ\w*|δει|δουν|φαινετ\w*|μαθ\w*|ξερ\w*|μαντεψ\w*|συμπερ\w*",
+        r"βρ\w*|ανακαλυπτ\w*|ανακαλυψ\w*|ταυτοποι\w*",
+        r"προσβασ\w*|συνδε\w*|συσχετ\w*|παρακολουθ\w*",
+        r"αποθηκευ\w*|αποκαλυπτ\w*|κρατ\w*|συλλεγ\w*|διατηρ\w*|δημοσι\w*",
+        r"ιδιωτικ(?:η|ο|οσ|εσ)|μυστικ\w*|απορρητ\w*|ανωνυμ\w*",
+    ),
+}
+
+
+def _vocab_alternation(key: str) -> str:
+    return "(?:" + "|".join(_PRIVACY_VOCAB[key]) + ")"
+
+
 _OWN_VOTE_SUBJECT = re.compile(
-    r"\bmy\s+votes?\b|\bmy\s+ballot(?:\s+choices?)?\b|"
-    r"\bmy\s+voting\s+(?:history|record)\b|\bmy\s+vote\s+(?:history|record)\b|"
-    r"\bhow\s+i\s+voted\b|\bwhat\s+i\s+voted\b|"
-    r"\bwhich\s+way\s+i\s+voted\b|\bthe\s+way\s+i\s+voted\b|"
-    r"\bam\s+i\s+anonymous\s+when\s+i\s+vote\b|"
-    r"\bη\s+ψηφοσ\s+μου\b|\b(?:την|στην)\s+ψηφο\s+μου\b|"
-    r"\bτο\s+ψηφοδελτιο\s+μου\b|\bψηφ(?:ο|ων)\s+μου\s+ιστορικ\w*\b|"
-    r"\b(?:τι|πωσ)\s+ψηφισα\b"
+    r"\b(?:" + _vocab_alternation("own_vote") + r")\b"
 )
 _VOTED_CHOICE = re.compile(
     r"\b(?:the\s+)?choice\s+i\s+(?:made|chose)\b|"
@@ -350,29 +423,19 @@ _VOTE_LINK_VERB = re.compile(
     r"ταυτοποι\w*|παρακολουθ\w*)\b"
 )
 _VOTE_OBJECT = re.compile(
-    r"\b(?:my\s+votes?|my\s+ballot(?:\s+choices?)?|votes?|ballots?|"
-    r"η\s+ψηφοσ|(?:την|στην)\s+ψηφο|το\s+ψηφοδελτιο)\b"
+    r"\b(?:" + _vocab_alternation("own_vote") + r"|"
+    + _vocab_alternation("vote_object") + r")\b"
 )
 _LINK_DESTINATION = re.compile(
-    r"\b(?:to|with)\s+(?:me|my\s+(?:identity|name|account|phone(?:\s+number)?|"
-    r"mobile(?:\s+number)?|number))\b|"
-    r"\bμε\s+(?:(?:το|τη|την)\s+)?(?:εμενα|τηλεφων\w*|κινητ\w*|"
-    r"ταυτοτητ\w*|ονομα|λογαριασμ\w*)\b"
+    r"\b(?:to|with)\s+me\b|"
+    r"\b(?:to|with)\s+(?:my\s+)?" + _vocab_alternation("identity") + r"\b|"
+    r"\bμε\s+(?:(?:το|τη|την)\s+)?(?:εμενα|"
+    + _vocab_alternation("identity") + r")\b"
 )
 _LINK_SOURCE = re.compile(
-    r"\b(?:my\s+)?(?:identity|name|account|phone(?:\s+number)?|mobile(?:\s+number)?|"
-    r"τηλεφων\w*|κινητ\w*|ταυτοτητ\w*|ονομα|λογαριασμ\w*)\b"
+    r"\b(?:my\s+)?(?:identity|" + _vocab_alternation("identity") + r")\b"
 )
-_VOTE_EXPOSURE = re.compile(
-    r"\b(?:see(?:s|n|ing)?|view\w*|visible|visibility|know\w*|"
-    r"find\s+out|learn\w*|infer\w*|guess\w*|deduc\w*|tie\w*|reveal\w*|access\w*|trace\w*|track\w*|"
-    r"stor\w*|keep|collect|retain|save|public|private|secret|confidential|"
-    r"anonymous|annonimous|anonimous|anonymus|annonymous|anomymous|anonymity)\b|"
-    r"\b(?:βλεπ\w*|δει|δουν|φαινετ\w*|μαθ\w*|ξερ\w*|μαντεψ\w*|συμπερ\w*|προσβασ\w*|"
-    r"συνδε\w*|συσχετ\w*|ταυτοποι\w*|παρακολουθ\w*|"
-    r"αποθηκευ\w*|αποκαλυπτ\w*|κρατ\w*|συλλεγ\w*|διατηρ\w*|δημοσι\w*|"
-    r"ιδιωτικ(?:η|ο|οσ|εσ)|μυστικ\w*|απορρητ\w*|ανωνυμ\w*)\b"
-)
+_VOTE_EXPOSURE = re.compile(r"\b" + _vocab_alternation("exposure") + r"\b")
 _SELF_VIEW = re.compile(
     r"\b(?:how|where)\s+(?:do|can|could|may)\s+i\b.{0,55}\b(?:see|view|access|find|open)\b.{0,45}"
     r"\bmy\s+(?:vote|votes|ballot|voting\s+(?:history|record)|vote\s+(?:history|record|receipt))\b|"
@@ -383,6 +446,9 @@ _SELF_VIEW = re.compile(
     r"\bmy\s+(?:vote|votes|ballot|voting\s+(?:history|record)|vote\s+(?:history|record|receipt))\b|"
     r"\bcan\s+you\s+(?:please\s+)?help\s+me\s+see\b.{0,40}"
     r"\bmy\s+(?:vote|votes|ballot|voting\s+(?:history|record)|vote\s+(?:history|record|receipt))\b|"
+    r"\b(?:does|can|could)\s+(?:this\s+)?(?:link|url)\b.{0,35}"
+    r"\b(?:let|allow|enable)s?\s+me\s+(?:to\s+)?(?:see|view|access|open)\b.{0,40}"
+    r"\bmy\s+(?:own\s+)?(?:votes?|ballot|voting\s+(?:history|record)|vote\s+(?:history|record|receipt))\b|"
     r"\bcan\s+you\b.{0,35}\b(?:send|give)\s+me\s+(?:a\s+)?(?:link|url)\b"
     r".{0,20}\bto\s+(?:see|view)\b.{0,35}\bmy\s+(?:vote|votes|ballot)\b|"
     r"\bcan\s+you\s+(?:please\s+)?show\s+me\b.{0,35}"
@@ -408,16 +474,19 @@ _PRIVATE_KEY_PHRASE = re.compile(
     r"\bιδιωτικ\w*(?:\s+μου)?\s+κλειδι\w*\b|"
     r"\bκλειδι\w*\b.{0,25}\bυπογραφ\w*\b"
 )
+_ANDROID_PRODUCT = (
+    r"\b(?:android\b.{0,30}\b(?:app|application|version|εφαρμογ\w*)\b|"
+    r"(?:app|application|εφαρμογ\w*)\b.{0,30}\bandroid\b)"
+)
+_ANDROID_PRIVACY_POLICY = re.compile(
+    r"\bprivacy\s+polic(?:y|ies)\b|"
+    r"\bπολιτικ\w*\s+(?:ιδιωτικ\w*|απορρητ\w*)\b|"
+    r"\b(?:ιδιωτικ\w*|απορρητ\w*)\s+πολιτικ\w*\b"
+)
 _ANDROID_DOWNLOAD = re.compile(
-    r"\b(?:download|install|get|find|where\s+(?:can|do)\s+i\s+(?:get|download))\b.{0,55}"
-    r"\b(?:android\b.{0,30}\b(?:app|application)\b|(?:app|application)\b.{0,30}\bandroid\b)|"
-    r"\b(?:android\b.{0,30}\b(?:app|application)\b|(?:app|application)\b.{0,30}\bandroid\b)"
-    r".{0,35}\b(?:download|install|get|link)\b|"
-    r"\b(?:link|url)\b.{0,35}"
-    r"\b(?:android\b.{0,30}\b(?:app|application)\b|(?:app|application)\b.{0,30}\bandroid\b)|"
-    r"\b(?:συνδεσμ\w*|link)\b.{0,35}\b(?:εφαρμογ\w*|android)\b|"
-    r"\b(?:κατεβ\w*|εγκαταστ\w*|εγκαθιστ\w*|βρω|παρω)\b.{0,35}\b(?:εφαρμογ\w*|android)\b|"
-    r"\b(?:εφαρμογ\w*|android)\b.{0,35}\b(?:κατεβ\w*|εγκαταστ\w*|εγκαθιστ\w*|συνδεσμ\w*)\b"
+    r"(?=.*" + _ANDROID_PRODUCT + r")(?=.*\b(?:download\w*|install\w*|get|find|"
+    r"where|available|availability|version|what|which|how|can|could|does|do|is|use|work|"
+    r"link|url|κατεβ\w*|εγκαταστ\w*|εγκαθιστ\w*|βρω|παρω|συνδεσμ\w*)\b)"
 )
 _DELETE_ACTION = re.compile(
     r"\b(?:delet\w*|eras\w*|remov\w*|wipe\w*|revok\w*|revocation|"
@@ -515,6 +584,9 @@ def _forum_privacy_route(question: str) -> str | None:
     return None
 
 
+_CLASSIFIER_MAX_CHARS = 500
+
+
 def _eka63_topic(question: str) -> str | None:
     """Classify canonical topics in fixed precedence: specific facts, then anonymity.
 
@@ -523,6 +595,9 @@ def _eka63_topic(question: str) -> str | None:
     normalized original question. Anonymity requires an own-vote subject plus an
     exposure or secrecy signal; a user's own view is excluded.
     """
+    # The API accepts at most 500 characters. Bound the regex work for every
+    # caller: several patterns backtrack super-linearly on long repeated input.
+    question = (question or "")[:_CLASSIFIER_MAX_CHARS]
     text = _privacy_match_text(question)
     raw_text = " ".join(
         _fold_accents((question or "").casefold()).replace("ς", "σ").split()
@@ -538,7 +613,7 @@ def _eka63_topic(question: str) -> str | None:
         return "results_visibility"
     if _PRIVATE_KEY_PHRASE.search(text):
         return "private_key"
-    if _ANDROID_DOWNLOAD.search(text):
+    if _ANDROID_DOWNLOAD.search(text) and not _ANDROID_PRIVACY_POLICY.search(text):
         return "android_download"
     if _has_deletion_target(text) and not bill_content_question:
         if not (_FORUM_WORD.search(text) or _FEEDBACK_WORD.search(text)

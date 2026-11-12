@@ -12,12 +12,16 @@ from routers import agent
 _TASK_725_FIXTURES = (
     Path(__file__).parent / "fixtures" / "assistant_privacy_routing_725.tsv",
     Path(__file__).parent / "fixtures" / "assistant_privacy_routing_725_probes2.tsv",
+    Path(__file__).parent / "fixtures" / "assistant_privacy_routing_725_probes3.tsv",
 )
 TASK_725_CASES = []
 for fixture_path in _TASK_725_FIXTURES:
     with fixture_path.open(encoding="utf-8", newline="") as fixture_file:
         TASK_725_CASES.extend(
-            (case, fixture_path.name == "assistant_privacy_routing_725_probes2.tsv")
+            (case, fixture_path.name in {
+                "assistant_privacy_routing_725_probes2.tsv",
+                "assistant_privacy_routing_725_probes3.tsv",
+            })
             for case in csv.DictReader(fixture_file, delimiter="\t")
         )
 
@@ -513,3 +517,14 @@ async def test_feedback_anonymity_keeps_fallback_or_retrieval(monkeypatch, mode,
 def test_review_bare_probes_keep_existing_topics(lang, question, topics):
     assert agent._canonical_response(question, lang) is None
     assert agent._select_fact_blocks(question) == topics
+
+
+@pytest.mark.parametrize("unit", ["my vote ", "who can see ", "η ψήφος μου ", "link ", "\u0301"])
+def test_classifier_time_is_bounded_for_long_repeated_input(unit: str) -> None:
+    # Regression: repeated vocabulary made the classifier backtrack for seconds.
+    import time
+    question = unit * 5000
+    started = time.perf_counter()
+    agent._eka63_topic(question)
+    agent._canonical_response(question, "en")
+    assert time.perf_counter() - started < 0.5
