@@ -25,7 +25,8 @@ fs.mkdirSync(OUT, { recursive: true });
 
 const ENGINES = { chromium, webkit };
 const VIEWPORTS = [{ w: 1280, h: 900 }, { w: 390, h: 844 }];
-const manifest = fs.readFileSync(path.join(DOCS, "download/APK_MANIFEST.md"), "utf8");
+// Only the ekklesia Direct section; the ekprosopos section reuses the field names.
+const manifest = fs.readFileSync(path.join(DOCS, "download/APK_MANIFEST.md"), "utf8").split("## ekklesia mobile")[1] || "";
 const CANONICAL_APK = /^\| Canonical APK URL \| `(https:\/\/github\.com\/NeaBouli\/pnyx\/releases\/download\/[^\s`]+\.apk)` \|$/m.exec(manifest)?.[1];
 if (!CANONICAL_APK) throw new Error("APK manifest has no canonical Direct download");
 const FDROID = "https://f-droid.org/packages/ekklesia.gr/";
@@ -156,8 +157,8 @@ async function simplePage(browser, base, engine, vp, rel, fn) {
             await box.scrollIntoViewIfNeeded();
             check(tag, "availability block visible", await box.isVisible(), null);
             const hrefs = await box.locator("a").evaluateAll((as) => as.map((a) => a.getAttribute("href")));
-            check(tag, "no ekprosopos APK link", !hrefs.some((h) => /ekprosopos-latest\.apk/.test(h || "")), hrefs);
-            check(tag, "APK shown in development", /Σε ανάπτυξη/.test(await box.innerText()), null);
+            check(tag, "ekprosopos APK link", hrefs.some((h) => /\/download\/ekprosopos-latest\.apk$/.test(h || "")), hrefs);
+            check(tag, "no in-development claim", !/Σε ανάπτυξη|In development/.test(await box.innerText()), null);
             await box.screenshot({ path: path.join(OUT, `${engine}-${vp.w}-representative-download.png`) });
           });
           await simplePage(browser, base, engine, vp, "/sso-verify.html", async (tag, page) => {
