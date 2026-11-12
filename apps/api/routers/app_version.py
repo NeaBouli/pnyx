@@ -11,8 +11,8 @@ from routers.identity import identity_key_check_enabled, identity_rotate_enabled
 router = APIRouter(prefix="/api/v1/app", tags=["App Version"])
 
 # Hardcoded — bei neuem Release hier anpassen
-LATEST_VERSION = "1.0.37"
-LATEST_VERSION_CODE = 66
+LATEST_VERSION = "1.0.38"
+LATEST_VERSION_CODE = 67
 # v1.0.33 signs vote-status reads and uses v2 evaluations. F-Droid adds
 # an ABI digit (1-4) to the base code; keep the scalar for legacy clients.
 MIN_REQUIRED_VERSION_CODE = 62
@@ -23,12 +23,12 @@ MIN_REQUIRED_VERSION_CODE_BY_CHANNEL = {
 }
 FORCE_UPDATE = False
 
-RELEASE_NOTES_EL = "v1.0.37 — Ημερομηνία και ώρα τελευταίας ενημέρωσης των δεδομένων της Βουλής στις λίστες νομοσχεδίων και δημοφιλών. Ειδοποίηση όταν τα δεδομένα ενδέχεται να μην είναι ενημερωμένα."
-RELEASE_NOTES_EN = "v1.0.37 — Last update date and time for Parliament data in the bills and trending lists. Notice when the data may be outdated."
+RELEASE_NOTES_EL = "v1.0.38 — Στις Ρυθμίσεις επιλέγετε αν η κανονική ψήφος και η διόρθωσή της χρειάζονται επιβεβαίωση στη συσκευή. Μπορείτε να ψηφίσετε με επαληθευμένη ταυτότητα και σε συσκευή χωρίς ασφαλές κλείδωμα οθόνης."
+RELEASE_NOTES_EN = "v1.0.38 — Choose in Settings whether to confirm regular votes and corrections on your device. Verified users can vote on devices without a secure screen lock."
 
 FDROID_URL = "https://f-droid.org/packages/ekklesia.gr/"
 PLAYSTORE_URL = "https://play.google.com/apps/testing/ekklesia.gr"
-DIRECT_APK_URL = "https://github.com/NeaBouli/pnyx/releases/download/v1.0.37/ekklesia-v1.0.37-vC66-DIRECT.apk"
+DIRECT_APK_URL = "https://github.com/NeaBouli/pnyx/releases/download/v1.0.38/ekklesia-v1.0.38-vC67-DIRECT.apk"
 
 
 @router.get("/version")
