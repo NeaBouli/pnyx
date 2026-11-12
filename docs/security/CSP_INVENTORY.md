@@ -124,7 +124,7 @@ Only inert JSON-LD remains. No executable inline items, empty placeholders, stri
 | `docs/assets/js/municipality-article.js` | `54ea7fcd43ed49c0aa04748ef6bf456ec243164d9190058d285ce7b3bb03093e` |
 | `docs/assets/js/qr-login.js` | `8ac64095c45eac5455ceecde1b02169578c0d16f0a6f0b6befa8fd3958fa987e` |
 | `docs/assets/js/qrcode-vendor.js` | `c541ef06327885a8415bca8df6071e14189b4855336def4f36db54bde8484f36` |
-| `docs/assets/js/representative-app.js` | `93285d84949fca2edb2e74f7ccf4283a40a4281ac65e80ad46d2d63cbe2d59a4` |
+| `docs/assets/js/representative-app.js` | `f7b446b12c2af9d9a524d065bbb7dcae40009dfbe674bb03dd40775130c335aa` |
 | `docs/assets/js/representative-language.js` | `9e276d68e552e0abe8f39144f0ab4f18d7d44fe068ddd014c134ca990987fe86` |
 | `docs/assets/js/sso-verify.js` | `f2551e8442de7ae06a22d327998dddb27db1c99163d2c6a100475aa7c816f306` |
 | `docs/assets/js/tickets-auth-guard.js` | `5c734d80fc69928afe9022fa59883f236e1c6a2c8dad7783a743f822c5d5683e` |

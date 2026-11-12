@@ -81,9 +81,12 @@ async function loadResults(billId){
     var r=await fetch(API+'/api/v1/rep/results/'+encodeURIComponent(billId),{headers:{'Authorization':'Bearer '+token}});
     var d=await r.json();
     var yesPct=num(d.yes_pct),noPct=num(d.no_pct);
+    var resultsSuppressed=d.suppressed===true||d.total===null||d.total===undefined||d.yes_pct===null||d.yes_pct===undefined||d.no_pct===null||d.no_pct===undefined;
     var html='<button class="btn btn-outline" data-csp-click="load-bills" style="margin-bottom:16px">← Πίσω</button>';
     html+='<div class="bill-card"><h3>'+esc(d.title_el)+'</h3>';
-    if(num(d.total)>0){
+    if(resultsSuppressed){
+      html+='<div class="empty-state">Δεν υπάρχουν αρκετές ψήφοι για εμφάνιση αποτελεσμάτων</div>';
+    }else if(num(d.total)>0){
       var yesLabel=yesPct>=5?yesPct+'%':'';
       var noLabel=noPct>=5?noPct+'%':'';
       html+='<div class="bar-wrap"><div class="bar-yes" style="width:'+Math.max(yesPct,3)+'%">'+yesLabel+'</div><div class="bar-no" style="width:'+Math.max(noPct,3)+'%">'+noLabel+'</div></div>';
