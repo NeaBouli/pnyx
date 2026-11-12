@@ -269,6 +269,22 @@ async def test_timeline_hidden_when_votes_before_window_form_a_small_cell(monkey
 
 
 @pytest.mark.asyncio
+async def test_timeline_hidden_when_correction_race_makes_complement_inconsistent(monkeypatch):
+    # Totals read before a NO→YES correction, timeline after it: the
+    # complement is YES=-1, NO=+1 with a zero total and must still hide.
+    monkeypatch.setenv("PUBLIC_RESULTS_MIN_COUNT", "10")
+    hour = datetime(2026, 11, 10, 10, tzinfo=timezone.utc)
+    rows = [(hour, "YES", 21), (hour, "NO", 19), (hour, "ABSTAIN", 20), (hour, "UNKNOWN", 20)]
+    data = await call_endpoint(
+        monkeypatch,
+        path="/api/v1/rep/results/REP-SMALL-CELL",
+        totals=VoteTotals(20, 20, 20, 20, 80, 0, sources=((20, 20, 20, 20),)),
+        db=RepresentativeDb(bill_fixture(consensus_count=10), timeline=rows),
+    )
+    assert all(row["yes"] is None and row["no"] is None for row in data["timeline"])
+
+
+@pytest.mark.asyncio
 async def test_timeline_visible_when_window_holds_all_votes_and_cells_meet_k(monkeypatch):
     monkeypatch.setenv("PUBLIC_RESULTS_MIN_COUNT", "10")
     hour = datetime(2026, 11, 10, 10, tzinfo=timezone.utc)

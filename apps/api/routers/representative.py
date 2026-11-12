@@ -529,7 +529,11 @@ async def get_rep_results(
                 for choice in choices:
                     older[choice] -= row[choice]
             older["total"] = sum(older[choice] for choice in choices)
-            partition = hourly_rows + ([older] if older["total"] else [])
+            # Totals and timeline are separate reads: a vote correction in
+            # between can leave a nonzero (even negative) complement with a
+            # zero total. Any nonzero choice keeps it in the k check, where a
+            # negative or small value hides the whole series.
+            partition = hourly_rows + ([older] if any(older[c] for c in choices) else [])
             hourly_rows = suppress_public_series(
                 hourly_rows, choices=choices, total="total", all_time_rows=partition,
             )
