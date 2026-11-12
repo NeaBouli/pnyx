@@ -15,7 +15,7 @@ redis==8.1.0
 
 # Config & Validation
 pydantic[email]==2.14.2
-pydantic-settings==2.16.1
+pydantic-settings==2.16.2
 
 # Crypto
 PyNaCl==1.6.2
@@ -49,7 +49,7 @@ rapidfuzz>=3.14.6
 unidecode>=1.4.0
 
 # Testing
-pytest==9.1.1
+pytest==9.2.0
 pytest-asyncio==1.4.1
 aiosqlite==0.22.1
 anyio==4.15.1
