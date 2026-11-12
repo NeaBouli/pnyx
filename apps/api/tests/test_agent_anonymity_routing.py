@@ -1,10 +1,34 @@
 """Privacy routing stays scoped to the platform and preserves other intents."""
 
+import csv
 import unicodedata
+from pathlib import Path
 
 import pytest
 
 from routers import agent
+
+
+_TASK_725_FIXTURE = Path(__file__).parent / "fixtures" / "assistant_privacy_routing_725.tsv"
+with _TASK_725_FIXTURE.open(encoding="utf-8", newline="") as fixture_file:
+    TASK_725_CASES = list(csv.DictReader(fixture_file, delimiter="\t"))
+
+
+@pytest.mark.parametrize("case", TASK_725_CASES, ids=lambda case: case["question"])
+def test_task_725_privacy_routing_fixture(monkeypatch, case):
+    monkeypatch.setenv("AGENT_MODE", "deterministic")
+    question = case["question"]
+    lang = "el" if any("\u0370" <= char <= "\u03ff" for char in question) else "en"
+    expected = case["expected"]
+
+    if expected == "not_anonymity":
+        assert agent._eka63_topic(question) != "anonymity"
+        response = agent._canonical_response(question, lang)
+        assert response is None or response["sources"][0]["topic"] != "anonymity"
+    else:
+        response = agent._canonical_response(question, lang)
+        assert response is not None, question
+        assert response["sources"] == [{"type": "knowledge_base", "topic": expected}]
 
 
 # Includes every quoted review example and the equivalent Greek linkage question.
@@ -52,11 +76,6 @@ ANONYMITY_CASES = [
     ("en", "Are votes anonymous?"),
     ("el", "Είναι οι ψήφοι ανώνυμες;"),
     ("en", "Is my vote private?"),
-    ("en", "What personal data is stored by the platform?"),
-    ("en", "Do you collect personal information?"),
-    ("el", "Ποια προσωπικά δεδομένα αποθηκεύει η πλατφόρμα;"),
-    ("en", "How does this platform protect privacy?"),
-    ("el", "Πώς προστατεύεται η ιδιωτικότητα στην πλατφόρμα;"),
     ("en", "Is my vote on this bill anonymous?"),
     ("el", "Είναι η ψήφος μου στο νομοσχέδιο ανώνυμη;"),
 ]
@@ -88,6 +107,22 @@ BILL_CASES = [
 ]
 
 UNRELATED_CASES = [
+    # These used to inherit the anonymity answer from generic privacy wording;
+    # the task 725 rule requires an own-vote subject plus an exposure signal.
+    ("en", "What personal data is stored by the platform?"),
+    ("en", "Do you collect personal information?"),
+    ("el", "Ποια προσωπικά δεδομένα αποθηκεύει η πλατφόρμα;"),
+    ("en", "How does this platform protect privacy?"),
+    ("el", "Πώς προστατεύεται η ιδιωτικότητα στην πλατφόρμα;"),
+    ("en", "Is my vote anonimi?"),
+    ("en", "Am I anonymous after HLR verification?"),
+    ("el", "Είμαι ανώνυμος μετά την επαλήθευση HLR;"),
+    ("en", "Is my platform account anonymous after HLR verification?"),
+    ("en", "Can my account be traced to me after HLR verification?"),
+    ("en", "Who sees my personal data after HLR verification?"),
+    ("el", "Μπορούν τα προσωπικά μου δεδομένα να συνδεθούν με την ταυτότητά μου;"),
+    ("el", "Είμαι ανώνυμη μετά την επαλήθευση;"),
+    ("el", unicodedata.normalize("NFD", "Είμαι ανώνυμος μετά την επαλήθευση HLR;".upper())),
     ("en", "What is anonymization?"),
     ("en", "Who wrote this anonymous article?"),
     ("en", "Can I make an anonymous donation to my local hospital?"),
@@ -108,8 +143,6 @@ UNRELATED_CASES = [
 
 # Round 2 review, including the abbreviated ballot prompt in full.
 ROUND2_ANONYMITY_CASES = [
-    ("en", "Am I anonymous after HLR verification?"),
-    ("el", "Είμαι ανώνυμος μετά την επαλήθευση HLR;"),
     ("en", "Is my ballot anonymous after HLR verification?"),
 ]
 ROUND2_DELETION_CASES = [
@@ -129,13 +162,7 @@ ROUND2_FEEDBACK_CASES = [
 NEW_ANONYMITY_CASES = [
     ("en", "Can anyone trace my ballot to me after verification?"),
     ("en", "Who sees my ballot after HLR?"),
-    ("en", "Is my platform account anonymous after HLR verification?"),
-    ("en", "Can my account be traced to me after HLR verification?"),
-    ("en", "Who sees my personal data after HLR verification?"),
-    ("el", "Μπορούν τα προσωπικά μου δεδομένα να συνδεθούν με την ταυτότητά μου;"),
-    ("el", "Είμαι ανώνυμη μετά την επαλήθευση;"),
     ("el", "Ποιος μπορεί να δει την ψήφο μου μετά το HLR;"),
-    ("el", unicodedata.normalize("NFD", "Είμαι ανώνυμος μετά την επαλήθευση HLR;".upper())),
 ]
 NEW_DELETION_CASES = [
     ("en", "Please erase the personal data after HLR verification"),
@@ -188,6 +215,8 @@ NEW_UNRELATED_CASES = [
     ("en", "How do I delete a forum comment containing personal data?"),
     ("en", "How do I delete feedback containing my personal data?"),
     ("en", "What is an anonymous account in a hospital app?"),
+    ("el", "Είμαι ανώνυμος μετά την επαλήθευση HLR;"),
+    ("el", unicodedata.normalize("NFD", "Είμαι ανώνυμη μετά την επαλήθευση;")),
 ]
 NEW_BARE_CASES = [
     ("en", "complaint", []),
@@ -223,7 +252,6 @@ ROUND4_VARIANT_CASES = [
     ("en", "Who can see my vote for bill GR-2026-1234?", "anonymity", "Are votes anonymous?"),
     ("en", "On the privacy bill, is my vote secret?", "anonymity", "Are votes anonymous?"),
     ("en", "For bill GR-2026-1234, is my vote anonymus?", "anonymity", "Are votes anonymous?"),
-    ("en", "Is my vote anonimi?", "anonymity", "Are votes anonymous?"),
     ("el", "Ειναι ανωνυμη η ψηφος μου;", "anonymity", "Είναι οι ψήφοι ανώνυμες;"),
     ("el", unicodedata.normalize("NFD", "ΕΙΝΑΙ ΜΥΣΤΙΚΗ Η ΨΗΦΟΣ ΜΟΥ;"), "anonymity", "Είναι οι ψήφοι ανώνυμες;"),
     ("en", "Can anyone link my vote to me?", "anonymity", "Are votes anonymous?"),

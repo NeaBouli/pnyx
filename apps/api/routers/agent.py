@@ -244,19 +244,17 @@ def _select_fact_blocks(question: str) -> list[str]:
     Accent-equivalent keywords count once. Whole words have both boundaries;
     explicit '*' stems match at word starts. Topic ids break ties stably.
     """
-    subject, intent = _classify_privacy(question)
+    forum_route = _forum_privacy_route(question)
     folded = _match_text(question)
-    if intent in {"anonymity", "deletion"}:
-        if subject == "forum":
-            return ["forum"]
-        if subject == "feedback":
-            return ["contact"] if any(p.search(folded) for p in _FACT_KEYWORDS["contact"]) else []
-        if subject == "law":
-            return []  # Deterministic mode cannot retrieve legislative content.
+    if forum_route == "forum":
+        return ["forum"]
+    if forum_route == "feedback":
+        return ["contact"] if any(p.search(folded) for p in _FACT_KEYWORDS["contact"]) else []
+    canonical_topic = _eka63_topic(question)
     scored = sorted(
         ((sum(bool(pattern.search(folded)) for pattern in patterns), topic)
          for topic, patterns in _FACT_KEYWORDS.items()
-         if topic != "anonymity" or _privacy_topic(question) == "anonymity"),
+         if topic != "anonymity" or canonical_topic == "anonymity"),
         key=lambda item: (-item[0], item[1]),
     )
     best = scored[0][0]
@@ -305,170 +303,10 @@ _EKA63_TOPIC_PATTERNS: dict[str, tuple[re.Pattern[str], ...]] = {
         r"(επαληθευ|πιστοποι|εγγραφ|εγγραψ|συνδε|προσκλησ)",
         r"κωδικ\w*\s+προσκλησ",
     )),
-    "results_visibility": tuple(re.compile(p) for p in (
-        r"\bresults?\b[\w\s]{0,40}\b(visible|invisible|hidden|shown|revealed|zero|zeroed|zeros)\b",
-        r"\b(see|view)\b[\w\s]{0,20}\bresults?\b[\w\s]{0,20}\b(before|during|while|until|yet)\b",
-        r"\bresults?\s+visibility\b",
-        r"\bhidden\s+results?\b",
-        r"\b(?:see|view)\s+(?:the\s+)?(?:vote\s+)?results?\b",
-        r"αποτελεσμ\w*[\w\s]{0,40}(ορατ|κρυφ|κρυμμεν|εμφανιζ|εμφανιστ|φαινοντ|μηδεν)",
-        r"(ορατ|κρυφ|κρυμμεν|εμφανιζ|εμφανιστ|φαινοντ)\w*[\w\s]{0,20}αποτελεσμ",
-        r"\b(?:βλεπ\w*|δει|δουν)\s+(?:τα\s+)?αποτελεσμ",
-    )),
 }
 # Topics where a bill/law reference means the citizen is asking about content,
 # not about the platform mechanism (e.g. a bill on deleting bank accounts).
 _EKA63_BILL_EXCLUDED_TOPICS = {"representative_verification"}
-
-
-# Privacy routing has two independent dimensions: the subject being discussed,
-# then the requested action. These are vocabularies, not sentence templates;
-# punctuation, case and Greek accents are normalized once for both steps.
-_PRIVACY_SUBJECTS = {
-    "vote": re.compile(r"\b(?:votes?|voted|voting|ballots?|ψηφο[συ]?|ψηφοι|ψηφουσ|ψηφων|ψηφοφορι\w*|ψηφισα\w*)\b"),
-    "forum": re.compile(r"\b(?:forum|φορουμ|pnyx|πνυκα)\b"),
-    "feedback": re.compile(r"\b(?:feedback|complaints?|καταγγελι\w*|παραπον\w*)\b"),
-    "law": re.compile(r"\b(?:gr \d{4}|bills?|laws?|legislation|νομοσχ\w*|νομο(?:[συι]|υσ)?|νομων|νομοθεσ\w*)\b"),
-    "personal_data": re.compile(
-        r"\b(?:personal (?:data|information|info)|(?:my|our) (?:data|information|info)|"
-        r"accounts?|identit(?:y|ies)|profiles?|keys?|"
-        r"προσωπικ\w* (?:μου |μασ )?(?:δεδομεν\w*|στοιχει\w*|πληροφορι\w*)|"
-        r"δεδομεν\w* (?:μου|μασ)|λογαριασμ\w*|ταυτοτητ\w*|κλειδι\w*)\b"
-    ),
-    "results": re.compile(r"\b(?:(?:vote|voting) )?results?\b|\bαποτελεσμ\w*\b"),
-    # Explicit external subjects cannot inherit the platform from a pronoun or
-    # an incidental mention of an app. Donations retain their payment routing.
-    "other": re.compile(r"\b(?:banks?|hospitals?|articles?|donat\w*|phone calls?|τραπεζ\w*|νοσοκομ\w*|αρθρ\w*|δωρε\w*)\b"),
-}
-_PRIVACY_INTENTS = {
-    "deletion": re.compile(r"\b(?:delet\w*|eras\w*|remove|wipe|revok\w*|revocation|διαγραφ\w*|διαγραψ\w*|σβησ\w*|ανακαλ\w*|ανακλη\w*)\b"),
-    "anonymity": re.compile(r"\b(?:anon[yi]m\w*|pseudonym\w*|privacy|private(?! keys?\b)|ανωνυμ\w*|ψευδωνυμ\w*|ιδιωτικοτητ\w*)\b"),
-    "secrecy": re.compile(r"\b(?:secret|μυστικ\w*)\b"),
-    "linkage": re.compile(r"\b(?:link(?:s|ed|ing)?|connect\w*|associat\w*|trac(?:e|ed|ing)|track\w*|συνδε\w*|συσχετ\w*|ταυτοποι\w*|παρακολουθ\w*)\b"),
-    "visibility": re.compile(
-        r"\b(?:who|anyone|someone|others|operators?|admins?|you|ποιο[ισ]|διαχειριστ\w*|αλλοι|καποιο[ισ])\b"
-        r"(?:\s+(?:can|could|may|might|will|would|be|able|to|else|actually|exactly|μπορει|μπορουν|να)){0,5}"
-        r"\s+(?:see|sees|view|views|βλεπ\w*|δει|δουν)\b"
-    ),
-    "storage": re.compile(r"\b(?:stor\w*|keep|collect|retain|save|αποθηκευ\w*|κρατατε|συλλεγ\w*|διατηρειτε)\b"),
-    "verification": re.compile(r"\b(?:hlr|sms|verif\w*|phone|mobile|επαληθευ\w*|επαληθ\w*|τηλεφων\w*|κινητ\w*)\b"),
-}
-_PLATFORM = re.compile(r"\b(?:ekklesia|(?:the|this|your) (?:platform|site|app)|πλατφορμ\w*)\b")
-_SELF = re.compile(r"\b(?:i|we|me|us|my|our|μου|μασ|εμενα|μενα|εμασ|ειμαι|ειμαστε)\b")
-_PERSON = re.compile(r"\b(?:me|us|identity|name|phone|εμενα|μενα|εμασ|ταυτοτητ\w*|ονομα|τηλεφων\w*)\b")
-_IDENTITY = re.compile(r"\b(?:me|us|identity|name|εμενα|μενα|εμασ|ταυτοτητ\w*|ονομα)\b")
-_KEY = re.compile(r"\b(?:keys?|κλειδι\w*)\b")
-# Prepositional bill/law references describe context, regardless of whether
-# they precede or follow the question. Legislative subjects ("does the law
-# require ...") remain intact. Remove the entire phrase so "privacy bill"
-# cannot supply privacy intent to an ordinary voting question.
-_PRIVACY_LAW_CONTEXT = re.compile(
-    r"\b(?:on|for|under|regarding)\s+(?:(?:the|this|that|a|privacy)\s+)*"
-    r"(?:bills?|laws?|legislation|gr \d{4}(?: \d+)?)\b(?:\s+gr \d{4}(?: \d+)?)?"
-    r"|\b(?:στο|στον|για το|για τον|συμφωνα με τον)\s+"
-    r"(?:νομοσχ\w*|νομο(?:σ|υ)?)\b"
-)
-_PRIVACY_REVOCATION = re.compile(
-    r"\b(?:revok\w*\s+(?:my\s+)?(?:identity|key|verification)|"
-    r"(?:identity|key|verification)\s+revocation|"
-    r"ανακ(?:αλ|λη)\w*\s+(?:(?:την|του|τησ|το)\s+)?(?:ταυτοτητ\w*|κλειδι\w*|επαληθευσ\w*))\b"
-)
-
-
-def _has_identity_linkage(text: str, subject: str) -> bool:
-    """Require an identity/vote object; a URL's noun 'link' is not a verb."""
-    vote = _PRIVACY_SUBJECTS["vote"].search(text)
-    personal = subject == "personal_data" and not _KEY.search(text)
-    for match in _PRIVACY_INTENTS["linkage"].finditer(text):
-        after = text[match.end():]
-        if match.group() in {"link", "links"}:
-            # Active 'link my vote to me', as opposed to 'send me a link to vote'.
-            object_text = re.sub(r"^\s+(?:(?:my|our|the)\s+)?", "", after)
-            if not any(_PRIVACY_SUBJECTS[name].match(object_text)
-                       for name in ("vote", "personal_data")):
-                continue
-        if ((vote and (_PERSON.search(after) or "track" in match.group()
-                       or (_PERSON.search(text[:match.start()])
-                           and _PRIVACY_SUBJECTS["vote"].search(after))))
-                or (personal and (_IDENTITY.search(after)
-                                  or (_IDENTITY.search(text[:match.start()]) and vote)))):
-            return True
-    return False
-
-
-def _privacy_subject(text: str) -> str:
-    """Identify what privacy would apply to, before interpreting the intent."""
-    matches = {name: pattern.search(text) for name, pattern in _PRIVACY_SUBJECTS.items()}
-    platform_subjects = sorted((match.start(), name) for name, match in matches.items()
-                               if match and name in {"vote", "personal_data", "results"})
-    # Named legislative/external subjects beat generic platform context.
-    explicit = [(match.start(), name) for name, match in matches.items()
-                if match and name in {"forum", "feedback", "law", "other"}]
-    if explicit:
-        return min(explicit)[1]
-    # Visibility is about the object of 'see', not an incidental vote/identity
-    # elsewhere. 'Vote results' is a single aggregate object.
-    visible = _PRIVACY_INTENTS["visibility"].search(text)
-    if visible:
-        objects = [(match.start(), name) for name in ("results", "vote", "personal_data")
-                   if (match := _PRIVACY_SUBJECTS[name].search(text, visible.end()))]
-        if objects:
-            return min(objects)[1]
-    if platform_subjects:
-        return platform_subjects[0][1]
-    if _PRIVACY_REVOCATION.search(text):
-        return "personal_data"
-    if _SELF.search(text) and any(_PRIVACY_INTENTS[name].search(text)
-                                  for name in ("anonymity", "linkage")):
-        return "personal_data"
-    if _PERSON.search(text) and _PRIVACY_INTENTS["linkage"].search(text):
-        return "personal_data"
-    if _PLATFORM.search(text) and _PRIVACY_INTENTS["anonymity"].search(text):
-        return "personal_data"
-    return "other"
-
-
-def _privacy_intent(text: str, subject: str) -> str:
-    """Classify the request; HLR is context when privacy is the actual intent."""
-    hits = {name: bool(pattern.search(text)) for name, pattern in _PRIVACY_INTENTS.items()}
-    if hits["deletion"] and (_PRIVACY_SUBJECTS["personal_data"].search(text)
-                             or _PRIVACY_REVOCATION.search(text)):
-        return "deletion"
-    personal = subject == "personal_data" and not _KEY.search(text)
-    if hits["anonymity"] or (hits["secrecy"] and (subject in {"vote", "results"} or personal)):
-        return "anonymity"
-    if (((subject == "vote" or personal) and hits["visibility"])
-            or _has_identity_linkage(text, subject)):
-        return "anonymity"
-    # Storage of personal data is the published privacy FAQ; storage of a phone
-    # number or a key alone keeps the existing verification/key explanation.
-    if subject == "personal_data" and ((hits["storage"] and not _KEY.search(text))
-                                       or "track" in text or "παρακολουθ" in text):
-        return "anonymity"
-    if hits["verification"]:
-        return "verification"
-    return "other"
-
-
-def _classify_privacy(question: str) -> tuple[str, str]:
-    text = " ".join(re.sub(r"[^\w]+", " ", _match_text(question)).split())
-    if _SELF.search(text) or _PRIVACY_INTENTS["visibility"].search(text):
-        text = " ".join(_PRIVACY_LAW_CONTEXT.sub(" ", text).split())
-    subject = _privacy_subject(text)
-    return subject, _privacy_intent(text, subject)
-
-
-def _privacy_topic(question: str) -> str | None:
-    subject, intent = _classify_privacy(question)
-    # Precedence: safety/payments run first. Legislative content and explicit
-    # forum/feedback subjects keep their paths. For platform votes/accounts,
-    # deletion beats anonymity/linkage, which beats incidental verification/HLR.
-    # Verification-only and other questions retain the existing FAQ/retrieval.
-    if subject in {"vote", "personal_data"} and intent == "deletion":
-        return "data_deletion"
-    if subject in {"vote", "personal_data"} and intent == "anonymity":
-        return "anonymity"
-    return None
 
 
 def _fold_accents(text: str) -> str:
@@ -476,18 +314,215 @@ def _fold_accents(text: str) -> str:
     return "".join(ch for ch in decomposed if unicodedata.category(ch) != "Mn")
 
 
-def _eka63_topic(normalized_q: str) -> str | None:
-    """Return the EKA-63 topic id for a question, or None."""
-    folded = " ".join(_fold_accents(normalized_q).split())
-    privacy = _privacy_topic(normalized_q)
-    if privacy:
-        return privacy
-    subject, intent = _classify_privacy(normalized_q)
-    if subject == "results" and intent == "anonymity":
+_BILL_IDENTIFIER = re.compile(r"\b(?:gr-\d{4}-\d+|diav-[\w-]+)\b", re.IGNORECASE)
+_LEADING_BILL_CONTEXT = re.compile(
+    r"^(?:for\s+(?:the\s+)?[^,]{0,100}?\bbills?[^,]{0,80},|"
+    r"regarding\s+(?:this|the)\s+bill\s*,|"
+    r"για\s+το\s+νομοσχεδιο\b[^,]{0,100},|"
+    r"σχετικα\s+με\s+το\s+νομοσχεδιο\b[^,]{0,100},)\s*"
+)
+_OWN_VOTE_SUBJECT = re.compile(
+    r"\bmy\s+votes?\b|\bmy\s+ballot(?:\s+choices?)?\b|"
+    r"\bmy\s+voting\s+history\b|\bmy\s+vote\s+history\b|"
+    r"\bhow\s+i\s+voted\b|\bwhat\s+i\s+voted\b|"
+    r"\bthe\s+way\s+i\s+voted\b|"
+    r"\bam\s+i\s+anonymous\s+when\s+i\s+vote\b|"
+    r"\bη\s+ψηφοσ\s+μου\b|\b(?:την|στην)\s+ψηφο\s+μου\b|"
+    r"\bτο\s+ψηφοδελτιο\s+μου\b|"
+    r"\b(?:τι|πως)\s+ψηφισα\b"
+)
+_GENERIC_VOTES_ANONYMOUS = re.compile(
+    r"\b(?:are|were|will|can|could|would)\s+(?:the\s+)?votes?\b.{0,50}\b"
+    r"(?:anonymous|anonimous|anonymus|annonymous|anomymous|confidential|secret|private)\b|"
+    r"\bειναι\s+(?:οι\s+)?ψηφοι\b.{0,50}\b"
+    r"(?:ανωνυμ\w*|απορρητ\w*|μυστικ\w*|ιδιωτικ\w*)\b|"
+    r"\bειναι\s+(?:ανωνυμ\w*|απορρητ\w*|μυστικ\w*|ιδιωτικ\w*)\b"
+    r".{0,30}\b(?:οι\s+)?ψηφοι\b"
+)
+_VOTE_LINK_VERB = re.compile(
+    r"\b(?:link(?:ed|ing)?|connect(?:ed|ing)?|associat(?:e|es|ed|ing)|"
+    r"trac(?:e|es|ed|ing)|track(?:s|ed|ing)|συνδε\w*|συσχετ\w*|"
+    r"ταυτοποι\w*|παρακολουθ\w*)\b"
+)
+_VOTE_OBJECT = re.compile(
+    r"\b(?:my\s+votes?|my\s+ballot(?:\s+choices?)?|votes?|ballots?|"
+    r"η\s+ψηφοσ|(?:την|στην)\s+ψηφο|το\s+ψηφοδελτιο)\b"
+)
+_LINK_DESTINATION = re.compile(
+    r"\b(?:to|with)\s+(?:me|my\s+(?:identity|name|account|phone(?:\s+number)?|"
+    r"mobile(?:\s+number)?|number))\b|"
+    r"\bμε\s+(?:(?:το|τη|την)\s+)?(?:εμενα|τηλεφων\w*|κινητ\w*|"
+    r"ταυτοτητ\w*|ονομα|λογαριασμ\w*)\b"
+)
+_LINK_SOURCE = re.compile(
+    r"\b(?:my\s+)?(?:identity|name|account|phone(?:\s+number)?|mobile(?:\s+number)?|"
+    r"τηλεφων\w*|κινητ\w*|ταυτοτητ\w*|ονομα|λογαριασμ\w*)\b"
+)
+_VOTE_EXPOSURE = re.compile(
+    r"\b(?:see(?:s|n|ing)?|view\w*|visible|visibility|know\w*|"
+    r"find\s+out|learn\w*|reveal\w*|access\w*|trace\w*|track\w*|"
+    r"stor\w*|keep|collect|retain|save|public|private|secret|confidential|"
+    r"anonymous|anonymity|anonimous|anonymus|annonymous|anomymous)\b|"
+    r"\b(?:βλεπ\w*|δει|δουν|φαινετ\w*|μαθ\w*|προσβασ\w*|"
+    r"συνδε\w*|συσχετ\w*|ταυτοποι\w*|παρακολουθ\w*|"
+    r"αποθηκευ\w*|αποκαλυπτ\w*|κρατ\w*|συλλεγ\w*|διατηρ\w*|δημοσι\w*|"
+    r"ιδιωτικ(?:η|ο|οσ|εσ)|μυστικ\w*|απορρητ\w*|ανωνυμ\w*)\b"
+)
+_SELF_VIEW = re.compile(
+    r"\b(?:can|could|may|where|how)\s+i\b.{0,35}\b(?:see|view|access)\b.{0,40}"
+    r"\bmy\s+(?:vote|votes|ballot|voting\s+(?:history|record)|vote\s+history)\b|"
+    r"\bcan\s+you\s+(?:please\s+)?help\s+me\s+see\b.{0,40}"
+    r"\bmy\s+(?:vote|votes|ballot|voting\s+(?:history|record)|vote\s+history)\b|"
+    r"\bcan\s+you\b.{0,35}\b(?:send|give)\s+me\s+(?:a\s+)?(?:link|url)\b"
+    r".{0,20}\bto\s+(?:see|view)\b.{0,35}\bmy\s+(?:vote|votes|ballot)\b|"
+    r"\bcan\s+you\s+(?:please\s+)?show\s+me\b.{0,35}"
+    r"\bmy\s+(?:vote|votes|ballot)\b|"
+    r"\bμπορω\s+να\s+(?:δω|βλεπω)\b.{0,45}\b(?:ψηφο|ψηφοδελτιο)\b"
+)
+_RESULTS_WORD = re.compile(r"\bresults?\b|\btotals?\b|\bαποτελεσμα\w*\b|\bσυνολ\w*\b")
+_RESULTS_EXPOSURE = re.compile(
+    r"\b(?:see|view|show|visible|visibility|hidden|invisible|display\w*|"
+    r"reveal\w*|anonymous|secret|public|zero(?:ed|s)?)\b|"
+    r"\b(?:βλεπ\w*|δει|δουν|ορατ\w*|κρυφ\w*|εμφανιζ\w*|"
+    r"εμφανιστ\w*|φαινοντ\w*|μηδεν\w*)\b"
+)
+_RESULTS_WINDOW = re.compile(
+    r"\b(?:before|until)\s+(?:voting|the\s+poll)\s+(?:ends?|closes?)\b|"
+    r"\b(?:πριν|μεχρι)\s+(?:τελειωσει|κλεισει|κλεισει)\b"
+)
+_PRIVATE_KEY_PHRASE = re.compile(
+    r"\b(?:private|signing)\s+keys?\b|\bkeys?\b.{0,25}\bsigning\b|"
+    r"\bιδιωτικ\w*(?:\s+μου)?\s+κλειδι\w*\b|"
+    r"\bκλειδι\w*\b.{0,25}\bυπογραφ\w*\b"
+)
+_ANDROID_DOWNLOAD = re.compile(
+    r"\bandroid\b.{0,35}\b(?:app|application|download|link)\b|"
+    r"\b(?:app|application|download|link)\b.{0,35}\bandroid\b|"
+    r"\bdownload\b.{0,20}\bapp\b|\bapp\b.{0,20}\bdownload\b|"
+    r"\bεφαρμογ\w*\b.{0,35}\bandroid\b|\bandroid\b.{0,35}\bεφαρμογ\w*\b|"
+    r"\b(?:κατεβ\w*|εγκαταστ\w*)\b.{0,25}\bεφαρμογ\w*\b|"
+    r"\bεφαρμογ\w*\b.{0,25}\b(?:κατεβ\w*|εγκαταστ\w*)\b"
+)
+_DELETE_ACTION = re.compile(
+    r"\b(?:delet\w*|eras\w*|remov\w*|wipe\w*|revok\w*|revocation|"
+    r"διαγραφ\w*|διαγραψ\w*|σβησ\w*|ανακαλ\w*|ανακλη\w*)\b"
+)
+_DELETE_TARGET = re.compile(
+    r"\b(?:personal\s+)?(?:data|information|info)\b|\baccounts?\b|"
+    r"\bidentit(?:y|ies)\b|\b(?:phone\s+|hlr\s+)?verification\b|"
+    r"\bhlr\s+verification\b|\bphone\s+verification\b|"
+    r"\b(?:προσωπικ\w*\s+)?(?:δεδομεν\w*|στοιχει\w*|πληροφορι\w*)\b|"
+    r"\bλογαριασμ\w*\b|\bταυτοτητ\w*\b|\bεπαληθευσ\w*\b|"
+    r"\bκλειδι\w*\b"
+)
+_DELETE_CONTEXT_GAP = re.compile(r"\b(?:after|before|following|μετα|πριν|κατοπιν)\b")
+_LAW_REQUIREMENT = re.compile(
+    r"\b(?:does|do|will|would|should|can)\s+(?:the\s+)?(?:privacy\s+)?"
+    r"(?:bill|law|legislation)\b.{0,60}\b(?:require|allow|permit|make|change)\w*\b|"
+    r"\b(?:νομοσ|νομοθεσια|νομοσχεδιο)\b.{0,60}"
+    r"\b(?:απαιτ\w*|επιτρεπ\w*|προβλεπ\w*|καν\w*)\b|"
+    r"\b(?:τι\s+)?(?:προβλεπ\w*|απαιτ\w*|επιτρεπ\w*)\b.{0,50}"
+    r"\b(?:νομοσ|νομοθεσια|νομοσχεδιο)\b"
+)
+_FORUM_WORD = re.compile(r"\b(?:forum|φορουμ|pnyx|πνυκα)\b")
+_FEEDBACK_WORD = re.compile(r"\b(?:feedback|complaints?|καταγγελι\w*|παραπον\w*)\b")
+_PRIVACY_ACTION_WORD = re.compile(
+    r"\b(?:anon\w*|private|privacy|secret|confidential|delet\w*|eras\w*|"
+    r"revok\w*|διαγραφ\w*|ανακαλ\w*|ανωνυμ\w*|ιδιωτικ\w*|μυστικ\w*)\b"
+)
+
+
+def _privacy_match_text(question: str) -> str:
+    """Normalize matching text and remove bill context that is only a qualifier."""
+    text = _fold_accents((question or "").casefold()).replace("ς", "σ")
+    text = _BILL_IDENTIFIER.sub(" ", text)
+    text = " ".join(text.split())
+    while (match := _LEADING_BILL_CONTEXT.match(text)):
+        text = text[match.end():]
+    return " ".join(text.split())
+
+
+def _has_own_vote_subject(text: str) -> bool:
+    if _OWN_VOTE_SUBJECT.search(text) or _GENERIC_VOTES_ANONYMOUS.search(text):
+        return True
+    # In Greek, the vote linked to a phone is an implicit first-person vote.
+    return bool(
+        re.search(r"\bψηφο(?:σ|ς)?\b", text)
+        and _VOTE_LINK_VERB.search(text)
+        and re.search(r"\b(?:τηλεφων\w*|κινητ\w*|ταυτοτητ\w*|εμενα|μου)\b", text)
+    )
+
+
+def _has_vote_exposure(text: str) -> bool:
+    if _SELF_VIEW.search(text):
+        return False
+    for linkage in _VOTE_LINK_VERB.finditer(text):
+        before, after = text[:linkage.start()], text[linkage.end():]
+        right_vote = _VOTE_OBJECT.search(after[:90])
+        left_votes = list(_VOTE_OBJECT.finditer(before))
+        left_vote = left_votes[-1] if left_votes and len(before) - left_votes[-1].end() <= 45 else None
+        if right_vote and (
+            _LINK_DESTINATION.search(after[right_vote.end():]) or _LINK_SOURCE.search(before[-65:])
+        ):
+            return True
+        if left_vote and _LINK_DESTINATION.search(after[:90]):
+            return True
+    return bool(_VOTE_EXPOSURE.search(text))
+
+
+def _has_deletion_target(text: str) -> bool:
+    for action in _DELETE_ACTION.finditer(text):
+        for target in _DELETE_TARGET.finditer(text):
+            between = text[action.end():target.start()] if action.end() <= target.start() else text[target.end():action.start()]
+            distance = abs(target.start() - action.end()) if action.end() <= target.start() else abs(action.start() - target.end())
+            if distance <= 65 and not _DELETE_CONTEXT_GAP.search(between):
+                return True
+    return False
+
+
+def _forum_privacy_route(question: str) -> str | None:
+    text = _privacy_match_text(question)
+    if not _PRIVACY_ACTION_WORD.search(text):
+        return None
+    if _FORUM_WORD.search(text):
+        return "forum"
+    if _FEEDBACK_WORD.search(text):
+        return "feedback"
+    return None
+
+
+def _eka63_topic(question: str) -> str | None:
+    """Classify canonical topics in fixed precedence: specific facts, then anonymity.
+
+    Matching uses folded, whitespace-normalized text with bill identifiers and
+    leading bill context removed as noise. Anonymity requires both an own-vote
+    subject and an exposure or secrecy signal; a user's own view is excluded.
+    """
+    text = _privacy_match_text(question)
+
+    # Specific existing topics take precedence over the broader vote privacy rule.
+    if _RESULTS_WORD.search(text) and (
+        _RESULTS_EXPOSURE.search(text) or _RESULTS_WINDOW.search(text)
+    ):
         return "results_visibility"
-    is_bill_query = subject == "law"
+    if _PRIVATE_KEY_PHRASE.search(text):
+        return "private_key"
+    if _ANDROID_DOWNLOAD.search(text):
+        return "android_download"
+    if _has_deletion_target(text) and not _LAW_REQUIREMENT.search(text):
+        if not (_FORUM_WORD.search(text) or _FEEDBACK_WORD.search(text)
+                or re.search(r"\b(?:banks?|hospitals?|τραπεζ\w*|νοσοκομ\w*)\b", text)):
+            return "data_deletion"
+
+    if (_has_own_vote_subject(text) and _has_vote_exposure(text)
+            and not _LAW_REQUIREMENT.search(text)):
+        return "anonymity"
+
+    folded = " ".join(re.sub(r"[^\w]+", " ", _fold_accents(text)).split())
     for topic, patterns in _EKA63_TOPIC_PATTERNS.items():
-        if topic in _EKA63_BILL_EXCLUDED_TOPICS and is_bill_query:
+        if topic in _EKA63_BILL_EXCLUDED_TOPICS and re.search(
+            r"\b(?:bill|law|legislation)\b|\b(?:νομοσχ\w*|νομοθεσ\w*|νομοσ)\b", folded,
+        ):
             continue
         if any(p.search(folded) for p in patterns):
             return topic
@@ -591,13 +626,9 @@ def _canonical_response(question: str, lang: str) -> dict | None:
     if _is_payment_intent(question):
         return _payments_paused_response(question, lang)
 
-    subject, intent = _classify_privacy(question)
-    if subject in {"law", "forum", "feedback"} and intent in {"anonymity", "deletion"}:
-        return None
-
     # EKA-63: checked before the broad substring topics below so that e.g.
     # "διαύγ"/"δήμ" (municipal) or "nullifier" cannot pre-empt these facts.
-    eka63_topic = _eka63_topic(normalized_q)
+    eka63_topic = _eka63_topic(question)
 
     # Privacy intent must win over verification keyword scores, even when the
     # question also mentions phone numbers, storage, HLR or SMS.
@@ -700,7 +731,7 @@ def _canonical_response(question: str, lang: str) -> dict | None:
             "results_visibility",
         )
 
-    if "private key" in q or "signing key" in q or ("ιδιωτικ" in q and "κλειδ" in q):
+    if eka63_topic == "private_key":
         return resp(
             _FACTS["private_key"]["el"],
             _FACTS["private_key"]["en"],
@@ -766,7 +797,7 @@ def _canonical_response(question: str, lang: str) -> dict | None:
             "municipal",
         )
 
-    if "android" in q or "download" in q or "κατεβάζ" in q or "εφαρμογή" in q:
+    if eka63_topic == "android_download":
         return resp(
             "Η εφαρμογή Android διανέμεται μέσω των επίσημων καναλιών που "
             "ανακοινώνει το ekklesia.gr, όπως η άμεση λήψη APK, F-Droid/IzzyOnDroid "
@@ -796,7 +827,10 @@ def _canonical_response(question: str, lang: str) -> dict | None:
 
 def _should_include_bills(question: str) -> bool:
     text = " ".join(re.sub(r"[^\w]+", " ", _match_text(question)).split())
-    return bool(_PRIVACY_SUBJECTS["law"].search(text) or re.search(r"\bβουλ\w*", text))
+    return bool(re.search(
+        r"\b(?:gr\s+\d{4}|bills?|laws?|legislation|νομοσχ\w*|νομοθεσ\w*|νομο\w*)\b"
+        r"|\bβουλ\w*", text,
+    ))
 
 
 def _bill_sources(bills: list, include_bills: bool) -> list[dict]:
@@ -1184,8 +1218,7 @@ async def ask_agent(
         return canonical
 
     # The reviewed forum FAQ also handles forum privacy/deletion in hybrid mode.
-    subject, intent = _classify_privacy(req.question)
-    if subject == "forum" and intent in {"anonymity", "deletion"}:
+    if _forum_privacy_route(req.question) == "forum":
         return _deterministic_response(req.question, req.lang)
 
     if os.getenv("AGENT_MODE") != "hybrid":

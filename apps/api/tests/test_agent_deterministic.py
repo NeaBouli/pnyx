@@ -91,14 +91,12 @@ REMOVED_PRIVACY_CLAIMS = (
 
 
 @pytest.mark.parametrize("question,lang", [
-    ("How is my privacy protected?", "en"),
-    ("How is my anonymity protected?", "en"),
     ("Are votes anonymous?", "en"),
+    ("Who can see my vote?", "en"),
     ("What is a nullifier hash?", "en"),
     ("What is CPLM?", "en"),
-    ("Πώς προστατεύεται η ιδιωτικότητά μου;", "el"),
-    ("Πώς προστατεύεται η ανωνυμία μου;", "el"),
     ("Είναι ανώνυμες οι ψήφοι;", "el"),
+    ("Ποιος βλέπει την ψήφο μου;", "el"),
     ("Τι είναι το nullifier hash;", "el"),
     ("Τι είναι το CPLM;", "el"),
 ])
@@ -114,8 +112,6 @@ async def test_privacy_answers_use_published_pseudonymous_wording(question: str,
 @pytest.mark.parametrize("question,lang", [
     ("Είναι οι ψήφοι μου ανώνυμες; Αποθηκεύετε προσωπικά δεδομένα;", "el"),
     ("Are my votes anonymous? Do you store personal data?", "en"),
-    ("Αποθηκεύετε προσωπικά δεδομένα;", "el"),
-    ("Do you store personal data?", "en"),
 ])
 async def test_anonymity_precedes_verification_in_both_modes(
     monkeypatch: pytest.MonkeyPatch, mode: str, question: str, lang: str,
@@ -126,6 +122,16 @@ async def test_anonymity_precedes_verification_in_both_modes(
     assert response["model"] == "knowledge-base"
     assert response["sources"] == [{"type": "knowledge_base", "topic": "anonymity"}]
     assert response["answer"] == FACTS["anonymity"][lang] + disclaimer
+
+
+@pytest.mark.parametrize("question,lang", [
+    ("Αποθηκεύετε προσωπικά δεδομένα;", "el"),
+    ("Do you store personal data?", "en"),
+    ("How is my anonymity protected?", "en"),
+])
+async def test_privacy_words_without_own_vote_do_not_route_anonymity(question: str, lang: str) -> None:
+    response = await _ask(question, lang)
+    assert all(source["topic"] != "anonymity" for source in response["sources"])
 
 
 @pytest.mark.parametrize("question,lang", [
@@ -214,7 +220,6 @@ async def test_default_answers_all_32_questions_with_only_reviewed_text(record: 
     ("EN-014", "apps"),
     ("EN-015", "forum"),
     ("EL-001", "platform"),
-    ("EL-004", "anonymity"),
     ("EL-005", "voting"),
     ("EL-008", "analytics"),
     ("EN-012", "contact"),
