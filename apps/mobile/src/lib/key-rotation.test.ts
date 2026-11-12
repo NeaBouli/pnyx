@@ -32,7 +32,9 @@ vi.mock("./bill-scope-storage", () => ({ loadUserBillScope: vi.fn(async () => {
 }) }));
 
 import {
+  clearKeys,
   getOrDerivePolisKey,
+  installIdentityState,
   installServerIssuedCredentials,
   loadKeypair,
   runExclusiveVerification,
@@ -40,6 +42,7 @@ import {
   prepareForServerIssuedKey,
   recoverIdentityJournal,
   storeKeypair,
+  subscribeIdentityChanges,
   withIdentityStateLock,
 } from "./crypto-native";
 import { importAccountCredentials } from "./import-account";
@@ -197,6 +200,26 @@ describe("rotateLegacyKeyIfNeeded", () => {
     expect(await loadKeyOrigin()).toBe("device");
     expect(state.values.has("ekklesia_rotation_staging")).toBe(false);
     expect(state.values.has("ekklesia_identity_journal")).toBe(false);
+  });
+
+  it("notifies focused settings only after a new identity has been stored or removed", async () => {
+    legacyUser();
+    const replacement = "2".repeat(64);
+    const listener = vi.fn(() => {
+      expect(state.values.has("ekklesia_identity_journal")).toBe(false);
+      return state.values.get("ekklesia_nullifier");
+    });
+    const unsubscribe = subscribeIdentityChanges(listener);
+    try {
+      await withIdentityStateLock(() => installIdentityState({ ekklesia_nullifier: replacement }));
+      expect(listener).toHaveBeenCalledTimes(1);
+      expect(listener.mock.results[0]).toEqual({ type: "return", value: replacement });
+      await clearKeys();
+      expect(listener).toHaveBeenCalledTimes(2);
+      expect(listener.mock.results[1]).toEqual({ type: "return", value: undefined });
+    } finally {
+      unsubscribe();
+    }
   });
 
   it("ignores a corrupt staging slot", async () => {

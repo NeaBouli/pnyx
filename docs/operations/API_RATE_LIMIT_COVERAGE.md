@@ -131,7 +131,7 @@ Compatibility aliases with no observed caller are marked explicitly.
 | POST | `/api/v1/vote/{bill_id}/status` | 1/vote detail mount with a verified identity; signed POST | `VoteScreen.tsx:163` |
 | POST | `/api/v1/vote` | 1/confirmed vote | `lib/api.ts:358` |
 | PUT | `/api/v1/vote/{bill_id}/correct` | 1/confirmed correction | `lib/api.ts:375` |
-| POST | `/api/v1/vote/{bill_id}/consensus` | 1/confirmed DIAVGEIA score | `VoteScreen.tsx:783` |
+| POST | `/api/v1/vote/{bill_id}/consensus` | 1/confirmed DIAVGEIA score | `VoteScreen.tsx:807` |
 | GET | `/api/v1/vote/{bill_id}/results` | 1/results focus or refresh | `ResultScreen.tsx:67-77` |
 | GET | `/api/v1/consensus/representation` | 1/DIAVGEIA results focus or refresh | `DiavgeiaResultsScreen.tsx:48-67` |
 | GET | `/api/v1/zk/status` | 1/vote detail or ZK screen mount | `VoteScreen.tsx:176; ZkSemaphoreScreen.tsx:74` |

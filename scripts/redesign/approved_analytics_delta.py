@@ -35,7 +35,7 @@ POST_REMOVAL_SHA256 = {
     "docs/mirror-setup.html": "0d2b1d6e642535d2e0298fcf4397b5e46c0d05a60435153de6c5f12e23ef9c6f",
     "docs/municipality/article.html": "9232d97104dcae0962c4eef7104c2a6b95d53b61de5126e709685d579a747016",
     "docs/municipality/index.html": "2ee8ab81fae1ec9978a73f785d14502c31cd121e912c738867e5c78b6b7328ce",  # B08: conditional Arweave publication
-    "docs/sso-verify.html": "a782566fb0a5cdc52b02f742e376c54150a3adb6caf04d49d5ccc37976ba00a7",  # T-9172: APK v1.0.37/vC66; Play vC62 closed testing
+    "docs/sso-verify.html": "6e40397d3a9d71fe23e6c34070e66a129e2bda6937bb4854d2a94f6bfc9dbacf",  # Verified Direct download and Play Closed Testing copy
     "docs/tickets/auth/callback.html": "a11ccd12e9c35e51582f6d7c0e07a7c98159d9a3cc7a551cc32cd6fe9a28266a",
     "docs/tickets/index.html": "d15da5a5e2b2831f4784f8da49b0994aeb35c449571a44b290e62cc27f4f21ff",
     "docs/votes/active.html": "3f0f66f9b994de76c70392eb04cf15f405f7892c731ae9230aec2937c343125a",

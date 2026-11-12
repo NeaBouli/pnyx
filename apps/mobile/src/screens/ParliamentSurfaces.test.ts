@@ -50,6 +50,7 @@ function screen(name: "Trending" | "Result" | "Vote", bill: typeof imported): No
   const react: Record<string, any> = {
     useState: (initial: unknown) => [index < state.length ? state[index++] : (index++, initial), vi.fn()],
     useEffect: vi.fn(), useCallback: (fn: unknown) => fn,
+    useRef: (initial: unknown) => ({ current: initial }),
     createElement(type: any, props: any, ...children: any[]) {
       const all = { ...props, children };
       return typeof type === "function" ? type(all) : { type, props: all };

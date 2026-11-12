@@ -1,0 +1,1 @@
+Choose in Settings whether to confirm regular votes and corrections on your device. Verified users can vote on devices without a secure screen lock.

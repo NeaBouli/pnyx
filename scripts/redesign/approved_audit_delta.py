@@ -22,6 +22,12 @@ import r0_inventory
 APPROVED_LANDING_FACT_REPLACEMENTS = {
     ("13 Πίνακες, Schema", "13 Tables, Schema"):
         ("24 πίνακες ORM, Schema", "24 ORM tables, Schema"),
+    # 2026-11-12: match the verified Android distribution channels.
+    ("Υπό έλεγχο", "Under review"): ("Κλειστή δοκιμή", "Closed testing"),
+    ("Android Keystore · Ed25519 · Βιομετρική Επαλήθευση",
+     "Android Keystore · Ed25519 · Biometric Verification"):
+        ("Android Keystore · Ed25519 · Επιβεβαίωση ψήφου στη συσκευή",
+         "Android Keystore · Ed25519 · On-device vote confirmation"),
 }
 
 # Exact inventory hashes, recomputed from the combined tree (T-434). Layers:
@@ -109,11 +115,11 @@ APPROVED_WIKI_INVENTORY_HASH = {
     "docs/wiki/contributing.html": "ce5f0381727ea54d45929c4d919150dc90a2d8c772505d5d17241c90165c257f",
     "docs/wiki/database.html": "221900a3a53767262512e6f23b7c124df006c9287d81f56f86840150ed9b4900",
     "docs/wiki/delete-account.html": "a62e22bd83f648660cb5b53d3beaf25f0c0270e50b722459278f87391e14cacd",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
-    "docs/wiki/faq.html": "61556df675fd43a764de2fff92d0893ba69a369505d9508d7a5ad1532718b703",  # T-9153: paused donations; HLR information and FAQ EL/EN/JSON-LD
+    "docs/wiki/faq.html": "9a074d35706e9a1253dae6fd0e88f049230b40877e98b57b1caf11eb44c15d79",  # T-9153: paused donations; HLR information and FAQ EL/EN/JSON-LD
     "docs/wiki/index.html": "ad0c2211c3787564029b42214b5c979adfc643ebd07f339585117d0e3bcd3ee1",  # T-9047/T-9048: named code region, contrast, headings and document language; T-9106: legal-modal claims text
     "docs/wiki/modules.html": "dee125fdcee6c374909982e6559fe913a08e9a286c9422f189631254af4321a5",  # T-9148: reviewed EL/EN AI wording
     "docs/wiki/privacy.html": "8f41fb87b6a8c53a52721b8c386134b14f3225bce6cae747fca539ea71034412",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
-    "docs/wiki/roadmap.html": "c81071d697e2a626945d2274fb417195b77330194d49d8f9b532711a47d5850c",
+    "docs/wiki/roadmap.html": "55f4d0c27f43b00cf3f478dbe5c722d260013b1ac61774a6a5766407862d5dae",
     "docs/wiki/security.html": "bae405a791e025495cccf82f34c35fe11f33c613190d98af6308645843a4349c",  # T-9127: OPEN_END voting closed
     "docs/wiki/whitepaper.html": "01903972f484ef5627d94290e353af5dfdbe5d5ffc6a343a442bf0ae80c66802",  # T-9127: OPEN_END voting closed
     "docs/wiki/zk-voting.html": "650a3e85f98db88751c2702229eb016cc722206758da1a03fa7af73e5914af9c",
