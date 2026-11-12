@@ -6,8 +6,9 @@ single source for the Direct Android release is docs/download/APK_MANIFEST.md;
 every Direct version, versionCode, checksum and GitHub asset URL on a public
 surface must match it. Play is available in Closed Testing. F-Droid is an
 independent build cycle, so public surfaces state availability
-without pinning a version. The ekprosopos APK is not published, so nothing may
-link it while the manifest says so.
+without pinning a version. The ekprosopos APK is linked only while the
+manifest marks it published, and the representative page must then show the
+manifest's APK SHA-256 and no "in development" claim.
 
 Run with:
     cd scripts/redesign && python3 -m unittest test_t419_distribution_status.py
@@ -102,7 +103,9 @@ def _collect(rel: str) -> _LinkCollector:
 class ManifestSingleSourceTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        text = MANIFEST.read_text(encoding="utf-8")
+        # The ekklesia Direct fields live in their own section; the ekprosopos
+        # section above it has fields with the same names.
+        text = MANIFEST.read_text(encoding="utf-8").split("## ekklesia mobile", 1)[1]
         cls.version = _manifest_field(text, "Version")
         cls.version_code = _manifest_field(text, "versionCode")
         cls.sha256 = _manifest_field(text, "Direct APK SHA-256").strip("`")
@@ -120,7 +123,8 @@ class ManifestSingleSourceTest(unittest.TestCase):
     def test_public_version_mentions_match_their_channel(self) -> None:
         for rel in SURFACES:
             text = _read(rel)
-            for v in re.findall(r"\bv(1\.\d+\.\d+)\b", text):
+            # ekprosopos-vX.Y.Z belongs to the representative app channel.
+            for v in re.findall(r"(?<!ekprosopos-)\bv(1\.\d+\.\d+)\b", text):
                 self.assertEqual(v, self.version, f"{rel} mentions v{v}, manifest says {self.version}")
             for vc in re.findall(r"\bvC(\d+)\b", text):
                 self.assertEqual(vc, self.version_code, f"{rel} mentions vC{vc}, manifest says {self.version_code}")
@@ -198,8 +202,24 @@ class EkprosoposArtifactTest(unittest.TestCase):
             "a public checksum without its APK is a misleading release signal",
         )
 
-    def test_representative_download_says_in_development(self) -> None:
-        self.assertIn('data-en="Android APK — In development"', _read("representative.html"))
+    def test_ekprosopos_manifest_status_is_known(self) -> None:
+        # Exactly one recognised status, so neither state's checks can be skipped silently.
+        section = MANIFEST.read_text(encoding="utf-8").split("## ekklesia mobile")[0]
+        states = ["Status: **published**" in section, "Status: **not published.**" in section]
+        self.assertEqual(states.count(True), 1, "ekprosopos manifest status must be published or not published")
+
+    def test_published_ekprosopos_page_matches_manifest(self) -> None:
+        manifest = MANIFEST.read_text(encoding="utf-8")
+        section = manifest.split("## ekklesia mobile")[0]
+        if "Status: **published**" not in section:
+            self.skipTest("manifest marks ekprosopos as unpublished")
+        sha = re.search(r"\| APK SHA-256 \| `([0-9a-f]{64})` \|", section)
+        self.assertIsNotNone(sha, "manifest lacks the ekprosopos APK SHA-256")
+        page = _read("representative.html")
+        self.assertIn(f"/download/{EKPROSOPOS_APK}", _collect("representative.html").hrefs)
+        self.assertIn(sha.group(1), page)
+        self.assertNotIn("In development", page)
+        self.assertNotIn("Σε ανάπτυξη", page)
 
 
 class DownloadCardPresentationTest(unittest.TestCase):
