@@ -903,7 +903,12 @@ def _canonical_response(question: str, lang: str) -> dict | None:
             "municipal",
         )
 
-    if eka63_topic == "android_download":
+    # Same broad match as before the #725 redesign (origin/main parity); only
+    # app privacy-policy questions fall through to the FAQ path.
+    if eka63_topic == "android_download" or (
+        ("android" in q or "download" in q or "κατεβάζ" in q or "εφαρμογή" in q)
+        and not _ANDROID_PRIVACY_POLICY.search(_privacy_match_text(question))
+    ):
         return resp(
             "Η εφαρμογή Android διανέμεται μέσω των επίσημων καναλιών που "
             "ανακοινώνει το ekklesia.gr, όπως η άμεση λήψη APK, F-Droid/IzzyOnDroid "
