@@ -528,3 +528,13 @@ def test_classifier_time_is_bounded_for_long_repeated_input(unit: str) -> None:
     agent._eka63_topic(question)
     agent._canonical_response(question, "en")
     assert time.perf_counter() - started < 0.5
+
+
+@pytest.mark.parametrize("question", [
+    "Who can see my vote in the Android app?",
+    "Can someone link my vote to me when I use the Android app?",
+    "Μπορεί κάποιος να δει την ψήφο μου στην εφαρμογή Android;",
+])
+def test_anonymity_question_mentioning_the_app_gets_anonymity(question: str) -> None:
+    response = agent._canonical_response(question, "en")
+    assert response["sources"] == [{"type": "knowledge_base", "topic": "anonymity"}]

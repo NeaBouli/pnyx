@@ -613,15 +613,18 @@ def _eka63_topic(question: str) -> str | None:
         return "results_visibility"
     if _PRIVATE_KEY_PHRASE.search(text):
         return "private_key"
-    if _ANDROID_DOWNLOAD.search(text) and not _ANDROID_PRIVACY_POLICY.search(text):
+    anonymity_hit = (_has_own_vote_subject(text) and _has_vote_exposure(text)
+                     and not bill_content_question)
+    # Mentioning the app does not make "who can see my vote in the app" a download question.
+    if (_ANDROID_DOWNLOAD.search(text) and not _ANDROID_PRIVACY_POLICY.search(text)
+            and not anonymity_hit):
         return "android_download"
     if _has_deletion_target(text) and not bill_content_question:
         if not (_FORUM_WORD.search(text) or _FEEDBACK_WORD.search(text)
                 or re.search(r"\b(?:banks?|hospitals?|τραπεζ\w*|νοσοκομ\w*)\b", text)):
             return "data_deletion"
 
-    if (_has_own_vote_subject(text) and _has_vote_exposure(text)
-            and not bill_content_question):
+    if anonymity_hit:
         return "anonymity"
 
     folded = " ".join(re.sub(r"[^\w]+", " ", _fold_accents(text)).split())
