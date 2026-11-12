@@ -32,6 +32,7 @@ from services.zk_vote_aggregation import (
     bill_vote_events_query,
     include_zk_for_bill,
 )
+from services.small_cell import small_cell_k, suppress_public_cells, suppress_public_series
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/rep", tags=["Representative"])
@@ -449,13 +450,22 @@ async def get_rep_bills(
     )
     bills = result.scalars().all()
 
-    data = [{
-        "id": b.id, "title_el": b.title_el, "status": b.status.value,
-        "source": getattr(b, "source", "PARLIAMENT") or "PARLIAMENT",
-        "governance_level": b.governance_level.value if b.governance_level else "NATIONAL",
-        "parliament_vote_date": b.parliament_vote_date.isoformat() if b.parliament_vote_date else None,
-        "consensus_score": b.consensus_score, "consensus_count": b.consensus_count or 0,
-    } for b in bills]
+    threshold = small_cell_k()
+    data = []
+    for b in bills:
+        consensus_count = b.consensus_count or 0
+        consensus_suppressed = threshold > 0 and consensus_count < threshold
+        item = {
+            "id": b.id, "title_el": b.title_el, "status": b.status.value,
+            "source": getattr(b, "source", "PARLIAMENT") or "PARLIAMENT",
+            "governance_level": b.governance_level.value if b.governance_level else "NATIONAL",
+            "parliament_vote_date": b.parliament_vote_date.isoformat() if b.parliament_vote_date else None,
+            "consensus_score": None if consensus_suppressed else b.consensus_score,
+            "consensus_count": None if consensus_suppressed else consensus_count,
+        }
+        if threshold > 0:
+            item.update(consensus_suppressed=consensus_suppressed, suppression_k=threshold)
+        data.append(item)
 
     response = JSONResponse(content=data)
     response.headers["X-Rep-Role"] = role_header
@@ -505,7 +515,35 @@ async def get_rep_results(
             hourly[h] = {"hour": h, "yes": 0, "no": 0, "abstain": 0, "unknown": 0}
         hourly[h][vote.lower()] = count
 
-    return {
+    threshold = small_cell_k()
+    hourly_rows = list(hourly.values())
+    if threshold > 0:
+        if totals.publishable:
+            choices = ("yes", "no", "abstain", "unknown")
+            for row in hourly_rows:
+                row["total"] = sum(row[choice] for choice in choices)
+            # Votes older than the 48h window are the complement of the series
+            # (published totals minus visible buckets); they must pass k too.
+            older = {"yes": yes, "no": no, "abstain": abstain, "unknown": unknown}
+            for row in hourly_rows:
+                for choice in choices:
+                    older[choice] -= row[choice]
+            older["total"] = sum(older[choice] for choice in choices)
+            # Totals and timeline are separate reads: a vote correction in
+            # between can leave a nonzero (even negative) complement with a
+            # zero total. Any nonzero choice keeps it in the k check, where a
+            # negative or small value hides the whole series.
+            partition = hourly_rows + ([older] if any(older[c] for c in choices) else [])
+            hourly_rows = suppress_public_series(
+                hourly_rows, choices=choices, total="total", all_time_rows=partition,
+            )
+        else:
+            # No hourly detail is safe when the bill's complete source partitions fail k.
+            hourly_rows = []
+
+    consensus_count = bill.consensus_count or 0
+    consensus_suppressed = threshold > 0 and consensus_count < threshold
+    payload = {
         "bill_id": bill_id, "title_el": bill.title_el, "status": bill.status.value,
         "yes": yes, "no": no, "abstain": abstain, "unknown": unknown, "total": total,
         "tier1_total": totals.tier1_total, "zk_total": totals.zk_total,
@@ -513,11 +551,25 @@ async def get_rep_results(
         "no_pct": round(no / total * 100, 1) if total else 0,
         "abstain_pct": round(abstain / total * 100, 1) if total else 0,
         "unknown_pct": round(unknown / total * 100, 1) if total else 0,
-        "consensus_score": bill.consensus_score,
-        "consensus_count": bill.consensus_count or 0,
+        "consensus_score": None if consensus_suppressed else bill.consensus_score,
+        "consensus_count": None if consensus_suppressed else consensus_count,
         "party_votes": bill.party_votes_parliament,
-        "timeline": list(hourly.values()),
+        "timeline": hourly_rows,
     }
+    if threshold == 0:
+        return payload
+
+    payload = suppress_public_cells(
+        payload,
+        choices=("yes", "no", "abstain", "unknown"),
+        total="total",
+        percentages=("yes_pct", "no_pct", "abstain_pct", "unknown_pct"),
+        partitions=("tier1_total", "zk_total"),
+        publishable=totals.publishable,
+        k=threshold,
+    )
+    payload["consensus_suppressed"] = consensus_suppressed
+    return payload
 
 
 @router.get("/divergence/{bill_id}", dependencies=[Depends(enforce_route_limit)])
@@ -556,7 +608,7 @@ async def get_rep_divergence(
 
     divergence = abs(citizen_yes_pct - parl_yes_pct) if total and parl_total else None
 
-    return {
+    payload = {
         "bill_id": bill_id, "title_el": bill.title_el,
         "citizen": {
             "yes_pct": citizen_yes_pct,
@@ -568,6 +620,35 @@ async def get_rep_divergence(
         "divergence_pct": divergence,
         "governance_level": bill.governance_level.value if bill.governance_level else "NATIONAL",
     }
+    threshold = small_cell_k()
+    if threshold == 0:
+        return payload
+
+    privacy = suppress_public_cells(
+        {
+            "yes_pct": citizen_yes_pct,
+            "total": total,
+            "tier1_total": totals.tier1_total,
+            "zk_total": totals.zk_total,
+        },
+        choices=(),
+        total="total",
+        percentages=("yes_pct",),
+        partitions=("tier1_total", "zk_total"),
+        publishable=totals.publishable,
+        k=threshold,
+    )
+    payload["citizen"] = {
+        "yes_pct": privacy["yes_pct"],
+        "total": privacy["total"],
+        "tier1_total": privacy["tier1_total"],
+        "zk_total": privacy["zk_total"],
+    }
+    if privacy["suppressed"]:
+        payload["divergence_pct"] = None
+    payload["suppressed"] = privacy["suppressed"]
+    payload["suppression_k"] = threshold
+    return payload
 
 
 # ─── NEA-189: Evaluation Consent ────────────────────────────────────────────

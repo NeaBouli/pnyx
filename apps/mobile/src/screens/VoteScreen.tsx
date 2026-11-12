@@ -1,6 +1,5 @@
 /**
- * VoteScreen — Ψηφοφορία με βιομετρική πιστοποίηση
- * Biometric Auth → Ed25519 Sign → Submit
+ * VoteScreen — device confirmation preference, Ed25519 signing and submission.
  */
 import React, { useState } from "react";
 import {
@@ -14,7 +13,6 @@ import {
   ScrollView,
   Linking,
 } from "react-native";
-import * as LocalAuthentication from "expo-local-authentication";
 import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
 import { loadKeypair, loadNullifier, signVote, signVoteStatusRead, verifyVote } from "../lib/crypto-native";
@@ -31,6 +29,7 @@ import { voteSuccessDialog } from "../lib/vote-success";
 import { hasParliamentProvenance } from "../lib/parliament-source";
 import ParliamentAttribution, { type AttributionBill } from "../components/ParliamentAttribution";
 import { parliamentFreshness } from "../lib/source-freshness";
+import { confirmRegularVote } from "../lib/vote-device-confirmation";
 
 type Props = StackScreenProps<RootStackParams, "Vote">;
 
@@ -82,6 +81,7 @@ export default function VoteScreen({ route, navigation }: Props) {
     return [dialog.buttons, dialog.options] as const;
   };
   const [loading, setLoading] = useState(false);
+  const voteInProgress = React.useRef(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [summary, setSummary] = useState("");
   const [analysis, setAnalysis] = useState("");
@@ -327,7 +327,21 @@ export default function VoteScreen({ route, navigation }: Props) {
     );
   }
 
+  async function authorizeRegularVote() {
+    const owner = await loadNullifier();
+    const confirmation = await confirmRegularVote(owner);
+    if (confirmation === "allowed") return { owner };
+    Alert.alert(
+      "Ακυρώθηκε",
+      confirmation === "no_lock"
+        ? "Ορίστε κλείδωμα οθόνης ή απενεργοποιήστε την επιβεβαίωση ψήφου στις Ρυθμίσεις."
+        : "Η επιβεβαίωση της συσκευής δεν ολοκληρώθηκε.",
+    );
+    return null;
+  }
+
   async function handleVote(choice: string) {
+    if (voteInProgress.current) return;
     if (zkOptedIn) {
       Alert.alert(
         "Semaphore ZK",
@@ -335,22 +349,17 @@ export default function VoteScreen({ route, navigation }: Props) {
       );
       return;
     }
+    voteInProgress.current = true;
     setSelected(choice);
-
-    // Βιομετρική πιστοποίηση
-    const biometric = await LocalAuthentication.authenticateAsync({
-      promptMessage: "Επιβεβαιώστε την ψήφο σας",
-      fallbackLabel: "Χρήση κωδικού",
-    });
-
-    if (!biometric.success) {
-      setSelected(null);
-      Alert.alert("Ακυρώθηκε", "Η βιομετρική πιστοποίηση απέτυχε.");
-      return;
-    }
 
     setLoading(true);
     try {
+      const authorization = await authorizeRegularVote();
+      if (!authorization) {
+        setSelected(null);
+        return;
+      }
+
       // Demo mode: simulate vote without server
       const demo = await isDemoMode();
       if (demo) {
@@ -369,6 +378,11 @@ export default function VoteScreen({ route, navigation }: Props) {
       if (!keypair || !nullifier) {
         Alert.alert("Σφάλμα", "Δεν βρέθηκε κλειδί. Επαληθεύστε ξανά.");
         navigation.navigate("Verify");
+        return;
+      }
+      if (nullifier !== authorization.owner) {
+        setSelected(null);
+        Alert.alert("Ακυρώθηκε", "Η ταυτότητα άλλαξε. Δοκιμάστε ξανά.");
         return;
       }
 
@@ -398,6 +412,7 @@ export default function VoteScreen({ route, navigation }: Props) {
       Alert.alert("Σφάλμα", message);
       setSelected(null);
     } finally {
+      voteInProgress.current = false;
       setLoading(false);
     }
   }
@@ -412,12 +427,20 @@ export default function VoteScreen({ route, navigation }: Props) {
   };
 
   async function handleCorrection(choice: string) {
+    if (voteInProgress.current) return;
+    voteInProgress.current = true;
     setLoading(true);
     try {
+      const authorization = await authorizeRegularVote();
+      if (!authorization) return;
       const keypair = await loadKeypair();
       const nullifier = await loadNullifier();
       if (!keypair || !nullifier) {
         Alert.alert("Σφάλμα", "Δεν βρέθηκε κλειδί.");
+        return;
+      }
+      if (nullifier !== authorization.owner) {
+        Alert.alert("Ακυρώθηκε", "Η ταυτότητα άλλαξε. Δοκιμάστε ξανά.");
         return;
       }
       const voteParams = { bill_id: billId, vote: choice, nullifier_hash: nullifier };
@@ -431,6 +454,7 @@ export default function VoteScreen({ route, navigation }: Props) {
     } catch (err: any) {
       Alert.alert("Σφάλμα", err.message || "Η διόρθωση απέτυχε.");
     } finally {
+      voteInProgress.current = false;
       setLoading(false);
     }
   }
@@ -615,7 +639,7 @@ export default function VoteScreen({ route, navigation }: Props) {
               ? "Έχετε ήδη ψηφίσει. Μπορείτε να αλλάξετε την ψήφο σας μία φορά."
               : voteLocked
                 ? "Έχετε ήδη ψηφίσει. Η ψήφος θα μπορεί να αλλάξει μόνο στο τελευταίο 24ωρο."
-              : "Επιλέξτε την ψήφο σας. Απαιτείται βιομετρική πιστοποίηση."}
+                : "Επιλέξτε την ψήφο σας."}
           </Text>
 
           <View style={styles.options}>

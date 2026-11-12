@@ -62,7 +62,7 @@
       "method": "POST",
       "path": "/api/v1/vote/{bill_id}/consensus",
       "frequency": "1/confirmed DIAVGEIA score",
-      "source": "VoteScreen.tsx:783"
+      "source": "VoteScreen.tsx:807"
     },
     {
       "method": "GET",
@@ -366,7 +366,7 @@
     {
       "method": "POST",
       "path": "/api/v1/vote/{bill_id}/consensus",
-      "source": "apps/mobile/src/screens/VoteScreen.tsx:783"
+      "source": "apps/mobile/src/screens/VoteScreen.tsx:807"
     },
     {
       "method": "PUT",

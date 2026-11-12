@@ -60,6 +60,11 @@ function createHarness() {
       };
       return [stateSlots[i], set];
     },
+    useRef(init: unknown) {
+      const i = stateIdx++;
+      if (!(i in stateSlots)) stateSlots[i] = { current: init };
+      return stateSlots[i];
+    },
     useEffect(fn: () => unknown, deps?: unknown[]) {
       const i = effIdx++;
       const prev = effectSlots[i];
@@ -103,11 +108,16 @@ function loadScreen(owner: string, deps: {
   fetchVoteStatus: ReturnType<typeof vi.fn>;
   syncVoteMark: ReturnType<typeof vi.fn>;
   submitVote: ReturnType<typeof vi.fn>;
+  correctVote?: ReturnType<typeof vi.fn>;
+  confirmRegularVote?: ReturnType<typeof vi.fn>;
+  loadNullifier?: ReturnType<typeof vi.fn>;
 }, billOverrides: Record<string, unknown> = {}) {
   const harness = createHarness();
   const reactModule = { __esModule: true, default: harness.api, ...harness.api };
   const bill = { status: "ACTIVE", source: "PARLIAMENT", title_el: "Νόμος Τ", ...billOverrides };
   const openURL = vi.fn();
+  const alert = vi.fn();
+  const signVote = vi.fn(() => "sig");
   const fetchMock = vi.fn(async () => ({ ok: true, json: async () => bill }));
   const requireMock = vi.fn((id: string): unknown => {
     if (id === "react") return reactModule;
@@ -115,23 +125,25 @@ function loadScreen(owner: string, deps: {
       return {
         View: "View", Text: "Text", TouchableOpacity: "TouchableOpacity", ScrollView: "ScrollView",
         ActivityIndicator: "ActivityIndicator", StyleSheet: { create: (s: unknown) => s },
-        Alert: { alert: vi.fn() }, Share: { share: vi.fn() }, Linking: { openURL },
+        Alert: { alert }, Share: { share: vi.fn() }, Linking: { openURL },
       };
     }
-    if (id === "expo-local-authentication") return { authenticateAsync: vi.fn(), hasHardwareAsync: vi.fn() };
+    if (id === "../lib/vote-device-confirmation") {
+      return { confirmRegularVote: deps.confirmRegularVote ?? vi.fn(async () => "allowed") };
+    }
     if (id === "../lib/crypto-native") {
       return {
         loadKeypair: vi.fn(async () => ({ privateKeyHex: `sk-${owner}`, publicKeyHex: `pk-${owner}` })),
-        loadNullifier: vi.fn(async () => `nul-${owner}`),
-        signVote: vi.fn(() => "sig"),
+        loadNullifier: deps.loadNullifier ?? vi.fn(async () => `nul-${owner}`),
+        signVote,
         signVoteStatusRead: vi.fn(() => `rsig-${owner}`),
-        verifyVote: vi.fn(),
+        verifyVote: vi.fn(() => true),
       };
     }
     if (id === "../lib/api") {
       return {
         submitVote: deps.submitVote,
-        correctVote: vi.fn(),
+        correctVote: deps.correctVote ?? vi.fn(),
         fetchVoteStatus: deps.fetchVoteStatus,
         fetchZkStatus: vi.fn(async () => null),
         fetchZkScopeStatus: vi.fn(async () => null),
@@ -182,7 +194,7 @@ function loadScreen(owner: string, deps: {
   const Screen = exports.default as (p: unknown) => El;
   const props = { route: { params: { billId: "b-1", billTitle: "Τ" } }, navigation: { navigate: vi.fn() } };
   const screen = harness.mount(() => Screen(props));
-  return { harness, screen, openURL };
+  return { harness, screen, openURL, alert, signVote };
 }
 
 async function flush() {
@@ -247,13 +259,69 @@ describe("VoteScreen vote-status owner isolation", () => {
 
     const tree = b.screen.tree();
     expect(findAll(tree, "Text").some(t =>
-      textContent(t) === "Επιλέξτε την ψήφο σας. Απαιτείται βιομετρική πιστοποίηση.")).toBe(true);
+      textContent(t) === "Επιλέξτε την ψήφο σας.")).toBe(true);
     const voteButtons = findAll(tree, "TouchableOpacity").filter(btn =>
       ["ΝΑΙ", "ΟΧΙ", "ΑΠΟΧΗ"].some(label => textContent(btn).includes(label)) && "disabled" in btn.props);
     expect(voteButtons.map(btn => textContent(btn).replace(/[^Α-Ω]/g, ""))).toEqual(["ΝΑΙ", "ΟΧΙ", "ΑΠΟΧΗ"]);
     for (const btn of voteButtons) expect(btn.props.disabled).toBe(false);
     expect(b.harness.lateSets()).toBe(0);
     expect(submitVote).not.toHaveBeenCalled();
+  });
+});
+
+describe("VoteScreen device confirmation", () => {
+  function voteButton(tree: El) {
+    return findAll(tree, "TouchableOpacity").find(button => textContent(button).includes("ΝΑΙ"))!;
+  }
+
+  it("sends one signed vote after authorization even with repeated taps", async () => {
+    const pending = deferred<string>();
+    const confirmRegularVote = vi.fn(() => pending.promise);
+    const submitVote = vi.fn(async () => ({ message: "accepted" }));
+    const { screen, signVote } = loadScreen("A", {
+      fetchVoteStatus: vi.fn(async () => null), syncVoteMark: vi.fn(), submitVote, confirmRegularVote,
+    });
+    await flush();
+    const button = voteButton(screen.tree());
+    const first = button.props.onPress();
+    const second = button.props.onPress();
+    pending.resolve("allowed");
+    await Promise.all([first, second]);
+    expect(confirmRegularVote).toHaveBeenCalledExactlyOnceWith("nul-A");
+    expect(signVote).toHaveBeenCalledExactlyOnceWith("sk-A", { bill_id: "b-1", vote: "YES", nullifier_hash: "nul-A" });
+    expect(submitVote).toHaveBeenCalledExactlyOnceWith("nul-A", "b-1", "YES", "sig");
+    screen.unmount();
+  });
+
+  it("denies a correction when device confirmation is cancelled", async () => {
+    const confirmRegularVote = vi.fn(async () => "denied");
+    const correctVote = vi.fn();
+    const { screen, signVote, alert } = loadScreen("A", {
+      fetchVoteStatus: vi.fn(async () => ({ has_voted: true, is_correction: false, vote: "NO" })),
+      syncVoteMark: vi.fn(), submitVote: vi.fn(), correctVote, confirmRegularVote,
+    }, { status: "WINDOW_24H" });
+    await flush();
+    await voteButton(screen.tree()).props.onPress();
+    expect(confirmRegularVote).toHaveBeenCalledExactlyOnceWith("nul-A");
+    expect(signVote).not.toHaveBeenCalled();
+    expect(correctVote).not.toHaveBeenCalled();
+    expect(alert).toHaveBeenCalledWith("Ακυρώθηκε", "Η επιβεβαίωση της συσκευής δεν ολοκληρώθηκε.");
+    screen.unmount();
+  });
+
+  it("does not reuse authorization after the local identity changes", async () => {
+    let currentOwner = "nul-A";
+    const submitVote = vi.fn();
+    const { screen, signVote } = loadScreen("A", {
+      fetchVoteStatus: vi.fn(async () => null), syncVoteMark: vi.fn(), submitVote,
+      loadNullifier: vi.fn(async () => currentOwner),
+      confirmRegularVote: vi.fn(async () => { currentOwner = "nul-B"; return "allowed"; }),
+    });
+    await flush();
+    await voteButton(screen.tree()).props.onPress();
+    expect(signVote).not.toHaveBeenCalled();
+    expect(submitVote).not.toHaveBeenCalled();
+    screen.unmount();
   });
 });
 

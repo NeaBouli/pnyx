@@ -4,7 +4,7 @@
 Offline regression over every public download link and status source. The
 single source for the Direct Android release is docs/download/APK_MANIFEST.md;
 every Direct version, versionCode, checksum and GitHub asset URL on a public
-surface must match it. Play retains vC62 in Closed Testing. F-Droid is an
+surface must match it. Play is available in Closed Testing. F-Droid is an
 independent build cycle, so public surfaces state availability
 without pinning a version. The ekprosopos APK is not published, so nothing may
 link it while the manifest says so.
@@ -35,11 +35,6 @@ SURFACES = (
 
 FDROID_URL = "https://f-droid.org/packages/ekklesia.gr/"
 PLAY_TESTING_URL = "https://play.google.com/apps/testing/ekklesia.gr"
-PLAY_VERSION_CODE = "62"
-# Bilingual card labels and prose identify Play independently of Direct.
-PLAY_VERSION_MENTION = re.compile(
-    r"\bvC(\d+)\b(?=[^.;\"<>]*(?:κλειστή δοκιμή|[Cc]losed [Tt]esting))"
-)
 DISCOURSE_HUB_IOS_URL = "https://apps.apple.com/app/discourse-hub/id1173672076"
 EKPROSOPOS_APK = "ekprosopos-latest.apk"
 EKPROSOPOS_CHECKSUM = DOCS_DIR / "download" / f"{EKPROSOPOS_APK}.sha256"
@@ -127,10 +122,7 @@ class ManifestSingleSourceTest(unittest.TestCase):
             text = _read(rel)
             for v in re.findall(r"\bv(1\.\d+\.\d+)\b", text):
                 self.assertEqual(v, self.version, f"{rel} mentions v{v}, manifest says {self.version}")
-            for vc in PLAY_VERSION_MENTION.findall(text):
-                self.assertEqual(vc, PLAY_VERSION_CODE, f"{rel} has an unexpected Play versionCode")
-            direct_text = PLAY_VERSION_MENTION.sub("", text)
-            for vc in re.findall(r"\bvC(\d+)\b", direct_text):
+            for vc in re.findall(r"\bvC(\d+)\b", text):
                 self.assertEqual(vc, self.version_code, f"{rel} mentions vC{vc}, manifest says {self.version_code}")
 
     def test_public_checksum_matches_manifest(self) -> None:
@@ -168,13 +160,14 @@ class FDroidStatusTest(unittest.TestCase):
 
 
 class PlayAndIOSStatusTest(unittest.TestCase):
-    def test_play_is_never_claimed_available(self) -> None:
+    def test_play_is_labelled_closed_testing(self) -> None:
         for rel in SURFACES:
             text = _read(rel)
             self.assertNotRegex(text, r"(available|διαθέσιμ\w*) (on|στο) Google Play", rel)
+            self.assertNotIn("play.google.com/store/apps/details?id=ekklesia.gr", text, rel)
         cards = [c for c in _collect("index.html").cards if c["href"] == PLAY_TESTING_URL]
         self.assertEqual(len(cards), 1)
-        self.assertIn("Υπό έλεγχο", " ".join(cards[0]["text"]))  # type: ignore[arg-type]
+        self.assertIn("Κλειστή δοκιμή", " ".join(cards[0]["text"]))  # type: ignore[arg-type]
 
     def test_only_apple_link_is_discourse_hub(self) -> None:
         for rel in SURFACES:

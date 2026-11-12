@@ -7,6 +7,7 @@ import {
   markNotificationCategoryRead,
 } from "../lib/notifications";
 import type { NotificationPreferenceKey } from "../lib/notification-preferences";
+import VoteDeviceConfirmationSetting from "../components/VoteDeviceConfirmationSetting";
 
 const SETTINGS = [
   { key: "push_vote_open", icon: "🗳️", label: "Νέες Ψηφοφορίες", sub: "Όταν ανοίγει νέα ψηφοφορία" },
@@ -168,6 +169,7 @@ export default function NotificationSettingsScreen() {
 
   return (
     <ScrollView style={s.container} contentContainerStyle={s.content}>
+      <VoteDeviceConfirmationSetting />
       <View style={s.masterRow}>
         <View>
           <Text style={s.masterLabel}>Ειδοποιήσεις</Text>
