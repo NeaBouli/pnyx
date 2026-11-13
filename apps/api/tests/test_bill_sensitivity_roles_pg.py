@@ -133,3 +133,122 @@ async def test_runtime_cannot_delete_or_rekey_protected_bills(sensitivity_roles)
     await runtime.execute("UPDATE parliament_bills SET id = 'PLAIN-2' WHERE id = 'PLAIN'")
     await runtime.execute("DELETE FROM parliament_bills WHERE id = 'PLAIN-2'")
     assert await runtime.fetchval("SELECT count(*) FROM parliament_bills WHERE id LIKE 'PLAIN%'") == 0
+
+
+async def test_override_only_protection_blocks_runtime_delete_rekey_and_direct_edits(sensitivity_roles):
+    _owner, runtime = sensitivity_roles
+    await runtime.execute(
+        "SELECT admin_set_bill_sensitivity('S', false, true, 'Synthetic review', 'test_admin')"
+    )
+    state = await runtime.fetchrow("""SELECT sensitive_public_block, sensitive_override,
+        sensitive_override_reason FROM parliament_bills WHERE id = 'S'""")
+    assert tuple(state) == (False, False, "Synthetic review")
+
+    denied = (
+        ("DELETE FROM parliament_bills WHERE id = 'S'", "delete or re-key"),
+        ("UPDATE parliament_bills SET id = 'S-renamed' WHERE id = 'S'", "delete or re-key"),
+        ("UPDATE parliament_bills SET sensitive_override = true WHERE id = 'S'", "override or clear"),
+        ("UPDATE parliament_bills SET sensitive_override_reason = 'unaudited' WHERE id = 'S'",
+         "override or clear"),
+    )
+    for sql, message in denied:
+        with pytest.raises(asyncpg.InsufficientPrivilegeError, match=message) as error:
+            await runtime.execute(sql)
+        assert error.value.sqlstate == "42501"
+
+    state = await runtime.fetchrow("""SELECT id, sensitive_public_block, sensitive_override,
+        sensitive_override_reason FROM parliament_bills WHERE id = 'S'""")
+    assert tuple(state) == ("S", False, False, "Synthetic review")
+
+
+async def test_runtime_delete_returning_cannot_remove_a_protected_bill(sensitivity_roles):
+    _owner, runtime = sensitivity_roles
+    with pytest.raises(asyncpg.InsufficientPrivilegeError, match="delete or re-key") as error:
+        await runtime.fetch("DELETE FROM parliament_bills WHERE id = 'S' RETURNING id")
+    assert error.value.sqlstate == "42501"
+    assert await runtime.fetchval("SELECT count(*) FROM parliament_bills WHERE id = 'S'") == 1
+
+
+async def test_mixed_runtime_update_and_delete_roll_back_unprotected_rows(sensitivity_roles):
+    _owner, runtime = sensitivity_roles
+    await runtime.execute("""INSERT INTO parliament_bills
+        (id, source, title_el, status, governance_level)
+        VALUES ('PLAIN', 'DIAVGEIA', 'Ordinary procurement', 'OPEN_END', 'NATIONAL')""")
+    expected = [("PLAIN", "Ordinary procurement"), ("S", "Synthetic AMKA marker")]
+
+    with pytest.raises(asyncpg.InsufficientPrivilegeError, match="delete or re-key") as error:
+        await runtime.execute("""UPDATE parliament_bills SET id = id || '-changed'
+            WHERE id IN ('PLAIN', 'S')""")
+    assert error.value.sqlstate == "42501"
+    rows = await runtime.fetch("""SELECT id, title_el FROM parliament_bills
+        WHERE id IN ('PLAIN', 'S') ORDER BY id""")
+    assert [tuple(row) for row in rows] == expected
+
+    with pytest.raises(asyncpg.InsufficientPrivilegeError, match="delete or re-key") as error:
+        await runtime.execute("DELETE FROM parliament_bills WHERE id IN ('PLAIN', 'S')")
+    assert error.value.sqlstate == "42501"
+    rows = await runtime.fetch("""SELECT id, title_el FROM parliament_bills
+        WHERE id IN ('PLAIN', 'S') ORDER BY id""")
+    assert [tuple(row) for row in rows] == expected
+
+
+async def test_runtime_upsert_cannot_mutate_a_protected_bill(sensitivity_roles):
+    _owner, runtime = sensitivity_roles
+    attempts = (
+        ("sensitive_override = false", "override or clear"),
+        ("sensitive_override_reason = 'unaudited'", "override or clear"),
+        ("id = 'S-upsert-rekeyed'", "delete or re-key"),
+    )
+    for assignment, message in attempts:
+        sql = f"""INSERT INTO parliament_bills
+            (id, source, title_el, status, governance_level)
+            VALUES ('S', 'DIAVGEIA', 'Upsert attempt', 'OPEN_END', 'NATIONAL')
+            ON CONFLICT (id) DO UPDATE SET {assignment}"""
+        with pytest.raises(asyncpg.InsufficientPrivilegeError, match=message) as error:
+            await runtime.execute(sql)
+        assert error.value.sqlstate == "42501"
+        bill = await runtime.fetchrow("""SELECT id, title_el, sensitive_override,
+            sensitive_override_reason FROM parliament_bills WHERE id = 'S'""")
+        assert tuple(bill) == ("S", "Synthetic AMKA marker", None, None)
+
+    await runtime.execute("""INSERT INTO parliament_bills
+        (id, source, title_el, status, governance_level)
+        VALUES ('PLAIN', 'DIAVGEIA', 'Initial ordinary title', 'OPEN_END', 'NATIONAL')""")
+    await runtime.execute("""INSERT INTO parliament_bills
+        (id, source, title_el, status, governance_level)
+        VALUES ('PLAIN', 'DIAVGEIA', 'Updated ordinary title', 'OPEN_END', 'NATIONAL')
+        ON CONFLICT (id) DO UPDATE SET title_el = EXCLUDED.title_el""")
+    assert await runtime.fetchval("SELECT title_el FROM parliament_bills WHERE id = 'PLAIN'") == (
+        "Updated ordinary title"
+    )
+
+
+async def test_migrator_can_read_and_use_audited_sensitivity_maintenance(sensitivity_roles):
+    # The fixture's owner is a SQLAlchemy AsyncConnection (AUTOCOMMIT).
+    owner, _runtime = sensitivity_roles
+
+    async def row(sql):
+        return (await owner.exec_driver_sql(sql)).one()
+
+    assert (await owner.exec_driver_sql("SELECT current_user")).scalar() == "ekklesia_migrator"
+    before = await row("""SELECT sensitive_public_block, sensitive_override,
+        sensitive_override_reason FROM parliament_bills WHERE id = 'S'""")
+    assert tuple(before) == (True, None, None)
+
+    await owner.exec_driver_sql(
+        "SELECT admin_set_bill_sensitivity('S', false, true, 'Owner review', 'test_owner')"
+    )
+    after = await row("""SELECT sensitive_public_block, sensitive_override,
+        sensitive_override_reason FROM parliament_bills WHERE id = 'S'""")
+    assert tuple(after) == (False, False, "Owner review")
+    audit = await row("""SELECT action, actor, target_type, target_id
+        FROM audit_log WHERE target_id = 'S'""")
+    assert tuple(audit) == ("bill.sensitivity_override", "test_owner", "parliament_bill", "S")
+
+
+async def test_runtime_cannot_truncate_parliament_bills(sensitivity_roles):
+    _owner, runtime = sensitivity_roles
+    with pytest.raises(asyncpg.InsufficientPrivilegeError) as error:
+        await runtime.execute("TRUNCATE TABLE parliament_bills")
+    assert error.value.sqlstate == "42501"
+    assert await runtime.fetchval("SELECT count(*) FROM parliament_bills WHERE id = 'S'") == 1
