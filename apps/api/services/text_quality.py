@@ -26,6 +26,7 @@ def _without_accents(value: str) -> str:
 
 
 _URL = re.compile(r"https?://\S+|www\.\S+", re.IGNORECASE)
+_EMAIL = re.compile(r"\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b")
 # These expressions run on lines with horizontal whitespace collapsed. Refusals
 # must describe the speaker, rather than definitions or reported testimony.
 _META = re.compile(_without_accents(
@@ -40,7 +41,7 @@ _META = re.compile(_without_accents(
     r"μπορείτε[ \t]+να[ \t]+(?:μου[ \t]+)?(?:παρέχετε|στείλετε|επισυνάψετε|επικολλήσετε))\b|"
     r"^ως[ \t]+(?:ai|(?:γλωσσικό[ \t]+)?μοντέλο(?:[ \t]+τεχνητής[ \t]+νοημοσύνης)?)"
     r"[ \t]*(?:,[ \t]*)?δεν[ \t]+(?:μπορώ|έχω|διαθέτω)\b|"
-    r"^(?:απάντηση[ \t]*:|για[ \t]+να[ \t]+βρεις[ \t]+την\b|"
+    r"^(?:για[ \t]+να[ \t]+βρεις[ \t]+την\b|"
     r"(?:παρακαλώ[ \t]*(?:,[ \t]*)?)?(?:δώστε|δώσε|στείλτε|στείλε|παραθέστε|παραθέσε)[ \t]+"
     r"(?:μου[ \t]+)?(?:το[ \t]+)?(?:κείμενο|έγγραφο)|"
     r"(?:here[ \t]+is|here['’]s)[ \t]+(?:the|a|your)[ \t]+(?:summary|analysis)|summary[ \t]*:)|"
@@ -62,6 +63,65 @@ _ENGLISH_CLAUSE = re.compile(
     r"\b[Pp]lease (?:provide|send|paste|attach|upload|share) (?:me )?"
     r"(?:the|your|full) (?:document|text) so [Ii] can (?:summarize|summarise|analyze|analyse)\b"
 )
+_META_ANSWER = re.compile(_without_accents(r"^απάντηση[ \t]*:"), re.IGNORECASE)
+_META_ANSWER_INTRO = re.compile(_without_accents(
+    r"^(?:βεβαίως[ \t]*(?:,[ \t]*)?)?(?:"
+    r"η[ \t]+απάντηση[ \t]+είναι[ \t]+η[ \t]+ακόλουθη[ \t]*:|"
+    r"παρακάτω[ \t]+παρατίθεται[ \t]+η[ \t]+απάντηση[ \t]*:)"
+), re.IGNORECASE)
+_META_SUMMARY = re.compile(_without_accents(r"^σύνοψη[ \t]*:"), re.IGNORECASE)
+_PROMPT_ECHO = re.compile(_without_accents(
+    r"(?:πλήρης[ \t]+ανάλυση[ \t]+min[ \t]+200[ \t]+λέξεις|"
+    r"1[ \t]+πρόταση[ \t]+max[ \t]+120[ \t]+χαρακτήρες|"
+    r"3[ \t]+παράγραφοι[ \t]+με[ \t]+τα[ \t]+κύρια[ \t]+σημεία|"
+    r"min[ \t]+200[ \t]+words|max[ \t]+120[ \t]+chars)"), re.IGNORECASE,
+)
+_PROMPT_ECHO_EN = re.compile(
+    r"1[ \t]+sentence[ \t]+max[ \t]+120[ \t]+chars|"
+    r"3[ \t]+paragraphs[ \t]+with[ \t]+main[ \t]+points|"
+    r"full[ \t]+analysis[ \t]+min[ \t]+200[ \t]+words",
+    re.IGNORECASE,
+)
+_ENGLISH_RUN_FUNCTION_WORDS = frozenset({
+    "the", "of", "to", "for", "and", "must", "before", "sets", "out", "new",
+    "this", "with", "by", "is", "are", "be",
+})
+_LATIN_FOREIGN_RUN_FUNCTION_WORDS = frozenset(
+    _without_accents(word).casefold() for word in {
+        # German
+        "der", "die", "das", "den", "dem", "des", "ein", "eine", "einen", "einem", "eines", "einer",
+        "und", "von", "für", "mit", "zu", "im", "am", "zum", "zur", "auf", "nach", "aus", "bei",
+        "als", "auch", "dass", "ist", "sind", "nicht",
+        # French
+        "le", "la", "les", "un", "une", "des", "du", "de", "dans", "pour", "avec", "au", "aux",
+        "par", "sur", "et", "en", "est", "sont", "que", "qui", "ce", "cette", "ces", "avant", "sans",
+        "sous",
+        # Spanish
+        "el", "los", "las", "una", "unos", "unas", "del", "al", "para", "con", "por", "en", "y",
+        "que", "es", "son",
+        # Italian
+        "il", "lo", "gli", "uno", "una", "di", "della", "dei", "degli", "per", "su", "da", "alla",
+        "ai", "dal", "dalla", "nel", "nella", "nello", "sul", "sulla", "sullo", "e", "che",
+        # Portuguese
+        "o", "a", "os", "as", "um", "uma", "uns", "umas", "do", "da", "dos", "das", "em", "no", "na",
+        "nos", "nas", "com", "pelo", "pela", "pelos", "pelas", "e", "que", "são",
+    }
+)
+_FOREIGN_FUNCTION_WORDS = frozenset({
+    # Common German, French, Spanish and Italian articles/prepositions. English
+    # overlaps and one-letter forms are omitted; require lowercase words with
+    # Greek neighbors below to avoid treating Latin names as foreign prose.
+    "der", "die", "das", "den", "dem", "des", "ein", "eine", "einen", "einem", "eines", "einer",
+    "und", "von", "für", "mit", "zu", "im", "am", "zum", "zur", "auf", "nach", "aus",
+    "le", "la", "les", "un", "une", "des", "du", "de", "dans", "pour", "avec", "au", "aux",
+    "par", "sur", "et", "en",
+    "el", "los", "las", "una", "unos", "unas", "del", "al", "para", "con", "por",
+    "il", "lo", "gli", "le", "uno", "di", "della", "dei", "degli", "per", "su", "da",
+    "alla", "ai", "dal", "dalla", "nel", "nella", "nello", "sul", "sulla", "sullo",
+})
+_LATIN_GREEK_STYLE_ACCENTS = frozenset("áéíóúý")
+_LATIN_GREEK_STYLE_I_ACCENTS = frozenset("íý")
+_GREEK_UPPERCASE_MOJIBAKE_CHARS = frozenset("ÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÓÔÕÖØÙ")
 _SERIALIZED = re.compile(r'^(?:\{[ \t]*"|\[[ \t]*\{)')
 _PROMPT_TITLE = re.compile(r"^(?:title|τιτλος)[ \t]*:", re.IGNORECASE)
 _PROMPT_TEXT = re.compile(r"^(?:text|κειμενο)[ \t]*:", re.IGNORECASE)
@@ -144,6 +204,105 @@ def _has_mixed_words(prose: str) -> bool:
     return mixed >= 2 or (mixed == 1 and words <= 200)
 
 
+@lru_cache(maxsize=1024)
+def _is_latin_letter(char: str) -> bool:
+    return "LATIN" in unicodedata.name(char, "")
+
+
+@lru_cache(maxsize=4096)
+def _has_greek_style_latin_accent(token: str) -> bool:
+    accents = [char.casefold() for char in token if char.casefold() in _LATIN_GREEK_STYLE_ACCENTS]
+    if not accents or not any(_is_latin_letter(char) for char in token):
+        return False
+    # Require both repeated accents and an accented i/y: French, Spanish and
+    # Portuguese names can contain several á/é/ó without resembling Greek.
+    return len(accents) >= 2 and any(char in _LATIN_GREEK_STYLE_I_ACCENTS for char in accents)
+
+
+def _looks_like_greek_uppercase_mojibake(token: str) -> bool:
+    # Greek capitals decoded as Latin-1 produce this distinctive uppercase
+    # alphabet (e.g. ΑΚΡΙΒΕΣ -> ÁÊÑÉÂÅÓ); keep it separate from accent counting.
+    return (len(token) >= 6 and token.isupper()
+            and all(char in _GREEK_UPPERCASE_MOJIBAKE_CHARS for char in token))
+
+
+def _has_foreign_words(unquoted: str, *, greek_context: bool) -> bool:
+    if not greek_context:
+        return False
+    matches = iter(_WORD_TOKEN.finditer(unquoted))
+    previous = None
+    current = next(matches, None)
+    following = next(matches, None)
+    while current is not None:
+        token = current[0]
+        if _is_latin_letter(token[0]):
+            if _has_greek_style_latin_accent(token) or _looks_like_greek_uppercase_mojibake(token):
+                return True
+            if (previous is not None and following is not None and token == token.lower()
+                    and token.casefold() in _FOREIGN_FUNCTION_WORDS
+                    and _is_greek_token(previous[0]) and _is_greek_token(following[0])):
+                return True
+        previous, current = current, following
+        following = next(matches, None)
+    return False
+
+
+_LATIN_RUN_FIELDS = frozenset({"pill_el", "summary_short_el"})
+
+
+def _latin_run_reasons(unquoted: str) -> tuple[bool, bool]:
+    """Return English-clause and other-European-clause signals from Latin runs."""
+    # Four words require at least three horizontal separators. This keeps long
+    # numeric identifiers and unbroken tokens out of the word scanner.
+    if unquoted.count(" ") + unquoted.count("\t") < 3:
+        return False, False
+    english_clause = foreign_clause = False
+    run_size = lowercase_count = english_count = foreign_count = 0
+    run_is_latin = titlecase_only = True
+
+    def finish_run() -> None:
+        nonlocal english_clause, foreign_clause
+        if run_size >= 4 and run_is_latin and titlecase_only and lowercase_count * 5 >= run_size * 3:
+            english_clause = english_clause or english_count >= 2
+            foreign_clause = foreign_clause or foreign_count >= 2
+
+    previous_end = 0
+    for match in _WORD_TOKEN.finditer(unquoted):
+        gap = unquoted[previous_end:match.start()]
+        if run_size and gap.strip(" \t"):
+            finish_run()
+            run_size = lowercase_count = english_count = foreign_count = 0
+            run_is_latin = titlecase_only = True
+
+        word = match[0]
+        run_size += 1
+        if run_is_latin:
+            if not all(_is_latin_letter(char) for char in word):
+                run_is_latin = titlecase_only = False
+            else:
+                is_lower = word.islower()
+                lowercase_count += is_lower
+                titlecase_only = titlecase_only and (
+                    is_lower or (word[0].isupper() and (len(word) == 1 or word[1:].islower()))
+                )
+                lowered = word.casefold()
+                # One-letter tokens (OCR-spaced letters, initials) never count.
+                english_count += len(lowered) >= 2 and lowered in _ENGLISH_RUN_FUNCTION_WORDS
+                foreign_count += len(lowered) >= 2 and (
+                    lowered in _LATIN_FOREIGN_RUN_FUNCTION_WORDS
+                    or (not lowered.isascii()
+                        and _without_accents(lowered) in _LATIN_FOREIGN_RUN_FUNCTION_WORDS)
+                )
+        previous_end = match.end()
+    finish_run()
+    return english_clause, foreign_clause
+
+
+@lru_cache(maxsize=4096)
+def _is_greek_token(token: str) -> bool:
+    return any(_is_greek_letter(char) for char in token)
+
+
 def _without_quotes(text: str, *, only_latin: bool, placeholder: str = " ") -> str:
     """Scan once, retaining incomplete quotes and, optionally, non-Latin quotes."""
     if (not (text.count('"') >= 2 or ('“' in text and '”' in text) or ('«' in text and '»' in text))
@@ -188,8 +347,9 @@ def without_quotes(text: str, *, placeholder: str = " ") -> str:
     return _without_quotes(text, only_latin=False, placeholder=placeholder)
 
 
-def _meta_lines(text: str) -> list[str]:
+def _meta_lines(text: str) -> tuple[list[str], bool]:
     lines = []
+    prefixed_answer = False
     for line in _without_accents(text).splitlines():
         if not line.strip():
             continue
@@ -200,8 +360,10 @@ def _meta_lines(text: str) -> list[str]:
         offset = 0
         while match := _LIST_PREFIX.match(line, offset):
             offset = match.end()
-        lines.append(line[offset:].lstrip(" #*>_-"))
-    return lines
+        line = line[offset:].lstrip(" #*>_-")
+        prefixed_answer = prefixed_answer or bool(offset and _META_ANSWER.search(line))
+        lines.append(line)
+    return lines, prefixed_answer
 
 
 def check_generated_text(text: str | None, *, field: str) -> QualityResult:
@@ -225,28 +387,51 @@ def _check(text: str | None, *, field: str, greek_share: float | None) -> Qualit
     # Compact once before the Python character scans too. Large whitespace runs
     # carry no language/integrity information; retain the raw length for density.
     compact = _HORIZONTAL_SPACE.sub(" ", normalized)
-    prose = _without_quotes(_URL.sub("", compact), only_latin=True)
+    prose = _without_quotes(_EMAIL.sub("", _URL.sub("", compact)), only_latin=True)
     unquoted = _without_quotes(prose, only_latin=False)
     reasons: list[str] = []
     if greek_share is not None:
         letters = {c: count for c, count in Counter(prose).items() if c.isalpha()}
         letter_count = sum(letters.values())
         greek_letters = sum(count for c, count in letters.items() if _is_greek_letter(c))
+        latin_letters_present = any(_is_latin_letter(char) for char in letters)
         latin_tokens = _LATIN_TOKEN.findall(prose)
         acronyms_only = bool(latin_tokens) and all(_ACRONYM.fullmatch(token) for token in latin_tokens)
         short_acronyms = field == "pill_el" and letter_count <= 20 and acronyms_only
-        if not short_acronyms and (not letter_count or greek_letters / letter_count < greek_share
-                                  or _ENGLISH_CLAUSE.search(_HORIZONTAL_SPACE.sub(" ", unquoted))):
+        if not short_acronyms and (not letter_count or greek_letters / letter_count < greek_share):
             reasons.append("non_greek")
         if _has_mixed_words(prose):
             reasons.append("mixed_script")
+        if latin_letters_present:
+            # Whole Latin sentences are only judged in the short generated
+            # summaries: long fields hold official extracted text with unquoted
+            # English project titles, e-mail lines and OCR-spaced letters
+            # (54 false positives in a 2026-11-13 production comparison).
+            english_run, foreign_run = (
+                _latin_run_reasons(unquoted) if field in _LATIN_RUN_FIELDS else (False, False)
+            )
+            if english_run or _ENGLISH_CLAUSE.search(_HORIZONTAL_SPACE.sub(" ", unquoted)):
+                reasons.append("english_clause")
+            greek_context = bool(greek_letters and letter_count and greek_letters / letter_count >= greek_share)
+            if foreign_run or _has_foreign_words(unquoted, greek_context=greek_context):
+                reasons.append("foreign_word")
 
-    lines = _meta_lines(unquoted)
+    lines, prefixed_answer = _meta_lines(unquoted)
+    summary_label = any(_META_SUMMARY.search(line) for line in lines)
+    answer_intro = any(_META_ANSWER_INTRO.search(line) for line in lines)
+    meta_answer = (prefixed_answer or summary_label or answer_intro
+                   or any(_META_ANSWER.search(line) for line in lines))
     if (any(_META.search(line) for line in lines)
+            or meta_answer
             or (any(_PROMPT_TITLE.search(line) for line in lines) and any(_PROMPT_TEXT.search(line) for line in lines))
             or _FAILURE_TOKEN.fullmatch(prose.strip())
             or any(_SERIALIZED.search(line.lstrip()) for line in compact.splitlines() if line.strip())):
         reasons.append("refusal_or_meta")
+    if prefixed_answer or summary_label or answer_intro:
+        reasons.append("meta_answer")
+    prompt_echo = _PROMPT_ECHO_EN if field.endswith("_en") else _PROMPT_ECHO
+    if prompt_echo.search(_without_accents(unquoted)):
+        reasons.append("prompt_echo")
     if _READER_TITLE.search(compact) and _READER_BODY.search(compact):
         reasons.append("reader_metadata")
     if looks_like_error_page(compact):

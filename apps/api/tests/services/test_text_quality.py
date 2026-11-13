@@ -38,7 +38,11 @@ def test_rejection_codes(text: str, reason: str) -> None:
     result = check_generated_greek(text, field="summary_long_el")
     assert not result.ok
     assert reason in result.reasons
-    assert result == check_generated_greek(text.swapcase(), field="summary_long_el") or reason == "mojibake"
+    swapped = check_generated_greek(text.swapcase(), field="summary_long_el")
+    # The Latin-run heuristic intentionally requires lowercase-dominant prose.
+    case_sensitive_language_signals = {"english_clause", "foreign_word"}
+    assert (set(result.reasons) - case_sensitive_language_signals
+            == set(swapped.reasons) - case_sensitive_language_signals) or reason == "mojibake"
 
 
 @pytest.mark.parametrize("text", [
@@ -77,6 +81,23 @@ def test_share_threshold_and_short_pill_acronym() -> None:
 def test_english_fields_require_integrity_without_greek_share() -> None:
     assert check_generated_text("The regulation defines a synthetic procedure.", field="summary_short_en").ok
     assert not check_generated_text("I'm sorry, I cannot provide this.", field="summary_short_en").ok
+
+
+@pytest.mark.parametrize("text", [
+    "The policy sets min 200 words as the required length for the review.",
+    "This notice allows max 120 chars for the account identifier.",
+])
+def test_ordinary_english_prompt_constraints_are_not_prompt_echo(text: str) -> None:
+    assert check_generated_text(text, field="summary_long_en").ok
+
+
+@pytest.mark.parametrize("field,fragment", [
+    ("pill_en", "1 sentence max 120 chars"),
+    ("summary_short_en", "3 paragraphs with main points"),
+    ("summary_long_en", "Full analysis min 200 words"),
+])
+def test_english_prompt_template_echo_is_rejected(field: str, fragment: str) -> None:
+    assert check_generated_text(fragment, field=field).reasons == ("prompt_echo",)
 
 
 @pytest.mark.parametrize("text,reason", [
@@ -144,11 +165,21 @@ def test_greek_requests_for_input_are_not_legislative_prose(text: str) -> None:
     "για την ενίσχυση των τοπικών επιχειρήσεων και την ανάπτυξη της περιοχής.",
     "Η αιτιολογική έκθεση εξετάζει τη συνεργασία των φορέων και αναφέρεται στις μελέτες "
     "των José René και Jesús για τη βελτίωση της δημόσιας διοίκησης και των υπηρεσιών της.",
+    "Η μίσθωση αφορά μηχάνημα CATERPILLAR 100HP με σύστημα Microsoft Teams για τις υπηρεσίες.",
 ])
 @pytest.mark.parametrize("field", ["summary_short_el", "summary_long_el"])
 def test_synthetic_official_text_is_accepted(text: str, field: str) -> None:
     assert check_generated_greek(text, field=field).ok
     assert check_generated_greek(unicodedata.normalize("NFD", text), field=field).ok
+
+
+@pytest.mark.parametrize("phrase", [
+    "Société Générale", "Banco Español", "São Paulo", "Crédit Agricole",
+    "réélection", "déclaration", "Générale", "José", "Martí",
+])
+def test_accented_foreign_names_and_terms_are_preserved(phrase: str) -> None:
+    text = f"Η γνωμοδότηση αναφέρεται στη {phrase} και στην αρμόδια ελληνική εποπτική αρχή."
+    assert check_generated_text(text, field="summary_long_el").ok
 
 
 @pytest.mark.parametrize("sign", ["\u02b9", "\u0374", "\u0375", "\u02b0", "\u02e0", "\u0640", "€", "℃"])
@@ -237,14 +268,144 @@ def test_english_clause_cannot_hide_in_greek_padding(fragment: str, position: st
     greek = "Η ρύθμιση αφορά τη λειτουργία των δημόσιων υπηρεσιών και τη διαδικασία αδειοδότησης. " * 3
     text = {"before": fragment + " " + greek, "within": greek + fragment + " " + greek,
             "after": greek + fragment}[position]
-    assert check_generated_text(text, field="summary_short_el").reasons == ("non_greek",)
+    assert check_generated_text(text, field="summary_short_el").reasons == ("english_clause",)
+
+
+@pytest.mark.parametrize("text,reason", [
+    ("The regulation sets out new requirements for applicants.", "english_clause"),
+    ("Applicants must submit the signed form before the deadline.", "english_clause"),
+    ("stellte fest, dass die neue Regelung für alle Behörden gilt", "foreign_word"),
+    ("La commission a adopté la nouvelle règle pour tous les citoyens", "foreign_word"),
+    ("La autoridad aplica la nueva norma para todos los ciudadanos", "foreign_word"),
+    ("La commissione ha approvato la nuova norma per tutti i cittadini", "foreign_word"),
+    ("A comissão aprovou a proposta para os novos serviços", "foreign_word"),
+])
+def test_lowercase_latin_sentence_runs_are_reported(text: str, reason: str) -> None:
+    assert reason in check_generated_text(text, field="summary_short_el").reasons
+
+
+@pytest.mark.parametrize("text", [
+    "Η σύμβαση αφορά το έργο με τίτλο PREserving BIOdiversity in coastal DUNEs from tourism pressure της περιφέρειας.",
+    "Ε Λ Λ Η Ν Ι Κ Η Δ Η Μ Ο Κ Ρ Α Τ Ι Α e m a i l : s e c r . d i r e c t o r της υπηρεσίας του έργου.",
+])
+def test_long_official_fields_do_not_judge_latin_sentence_runs(text: str) -> None:
+    # Production comparison 2026-11-13: in summary_long_el the run rule hit
+    # unquoted EU project titles and OCR-spaced letters (54 false positives).
+    reasons = check_generated_text(text, field="summary_long_el").reasons
+    assert "english_clause" not in reasons and "foreign_word" not in reasons
+
+
+@pytest.mark.parametrize("fragment", ["Mykoníaikí", "Åëåõóßíáò", "ÁÊÑÉÂÅÓ"])
+def test_greek_transliteration_and_mojibake_signatures_are_reported(fragment: str) -> None:
+    text = f"Η απόφαση ορίζει τη διαδικασία και αναφέρει το {fragment} ως παράδειγμα."
+    assert "foreign_word" in check_generated_text(text, field="summary_long_el").reasons
+
+
+@pytest.mark.parametrize("text", [
+    'Η απόφαση παραθέτει "The regulation sets out new requirements for applicants." ως τίτλο.',
+    "Η απόφαση παραθέτει de facto, a priori, ad hoc, per capita και et al. ως νομικούς όρους "
+    "σύμφωνα με τις αρμόδιες υπηρεσίες και τις διατάξεις της απόφασης.",
+    "Η απόφαση αναφέρει τη Microsoft Teams για τις υπηρεσίες και το CATERPILLAR 100HP "
+    "σύμφωνα με τις αρμόδιες υπηρεσίες και τις διατάξεις της απόφασης.",
+    "Η απόφαση παραπέμπει στο info@example.test και στη διεύθυνση https://example.test/english-sentence "
+    "σύμφωνα με τις αρμόδιες υπηρεσίες και τις διατάξεις της απόφασης.",
+    "Η απόφαση αναφέρει το ακρωνύμιο EU και το API για τη διαδικασία.",
+])
+def test_latin_run_preserves_titles_brands_urls_emails_and_legal_phrases(text: str) -> None:
+    assert check_generated_text(text, field="summary_long_el").ok
 
 
 @pytest.mark.parametrize("prefix", ["1. ", "23) ", "• ", "‣ ", "◦ ", "⁃ ", "∙ ", "● ", "▪ ", "▫ ", "> 1. ", "1. 2) "])
 def test_formatted_meta_answers_are_rejected(prefix: str) -> None:
     result = check_generated_text(prefix + "Απάντηση: Για να βρεις την πληροφορία, αναζήτησε το έγγραφο.",
                                   field="summary_short_el")
-    assert result.reasons == ("refusal_or_meta",)
+    assert result.reasons == ("refusal_or_meta", "meta_answer")
+
+
+def test_plain_and_list_prefixed_answer_heads_have_equal_legacy_eligibility_signal() -> None:
+    answer = "Απάντηση: Η υπηρεσία εγκρίνει την αίτηση."
+    plain = check_generated_text(answer, field="summary_short_el")
+    prefixed = check_generated_text("• " + answer, field="summary_short_el")
+    assert "refusal_or_meta" in plain.reasons
+    assert "refusal_or_meta" in prefixed.reasons
+    assert ("refusal_or_meta" in plain.reasons) == ("refusal_or_meta" in prefixed.reasons)
+    assert "meta_answer" not in plain.reasons and "meta_answer" in prefixed.reasons
+
+
+@pytest.mark.parametrize("text", [
+    "η απάντηση είναι η ακόλουθη: Η υπηρεσία εγκρίνει την αίτηση.",
+    "Βεβαίως, η απάντηση είναι η ακόλουθη: Η υπηρεσία εγκρίνει την αίτηση.",
+    "Παρακάτω παρατίθεται η απάντηση: Η υπηρεσία εγκρίνει την αίτηση.",
+    "Βεβαίως, παρακάτω παρατίθεται η απάντηση: Η υπηρεσία εγκρίνει την αίτηση.",
+])
+def test_answer_introductions_are_rejected(text: str) -> None:
+    assert check_generated_text(text, field="summary_short_el").reasons == ("refusal_or_meta", "meta_answer")
+
+
+@pytest.mark.parametrize("heading", ["Περίληψη:", "Συνοπτικά:"])
+def test_official_decision_summary_headings_are_preserved(heading: str) -> None:
+    assert check_generated_text(heading + " Η ρύθμιση εγκρίνει την αίτηση.", field="summary_short_el").ok
+
+
+@pytest.mark.parametrize("prefix", ["1. ", "23) ", "• ", "‣ ", "◦ ", "⁃ ", "∙ ", "● ", "▪ ", "▫ "])
+def test_formatted_summary_labels_are_rejected(prefix: str) -> None:
+    result = check_generated_text(prefix + "Σύνοψη: Η ρύθμιση αφορά τη λειτουργία των υπηρεσιών.",
+                                  field="summary_short_el")
+    assert result.reasons == ("refusal_or_meta", "meta_answer")
+
+
+@pytest.mark.parametrize("fragment", [
+    "Πλήρης ανάλυση min 200 λέξεις",
+    "1 πρόταση max 120 χαρακτήρες",
+    "3 παράγραφοι με τα κύρια σημεία",
+    "min 200 words",
+    "max 120 chars",
+])
+def test_prompt_template_echo_is_rejected(fragment: str) -> None:
+    text = f"Η απόφαση αφορά τη διοίκηση των δημόσιων υπηρεσιών. {fragment}"
+    assert check_generated_text(text, field="summary_long_el").reasons == ("prompt_echo",)
+
+
+@pytest.mark.parametrize("text", [
+    "Η μίσθωση eines (1) μηχανήματος καλύπτεται από τους όρους της απόφασης.",
+    "Η απόφαση αφορά τον σύλλογο Mykoníaikí Aelleleghy και τη λειτουργία του.",
+    "Η έκθεση αναφέρει «eines» ως παράδειγμα και παραθέτει \"Mykoníaikí\" ως τίτλο.",
+])
+def test_foreign_function_words_and_latin_transliteration(text: str) -> None:
+    result = check_generated_text(text, field="summary_short_el")
+    if "eines (1)" in text:
+        assert result.reasons == ("foreign_word",)
+    elif "Mykoníaikí Aelleleghy" in text:
+        assert result.reasons == ("foreign_word",)
+    else:
+        assert result.ok
+
+
+@pytest.mark.parametrize("word", ["der", "avec", "una", "della"])
+def test_common_foreign_function_words_in_greek_prose_are_rejected(word: str) -> None:
+    text = f"Η μίσθωση {word} (1) μηχανήματος καλύπτεται από τους όρους της απόφασης."
+    assert check_generated_text(text, field="summary_short_el").reasons == ("foreign_word",)
+
+
+@pytest.mark.parametrize("text", [
+    "1) Η απόφαση εγκρίνει την προμήθεια εξοπλισμού.",
+    "α) Η διαδικασία εφαρμόζεται από τις αρμόδιες υπηρεσίες.",
+    "Άρθρο 1. Η απόφαση καθορίζει τους όρους εφαρμογής.",
+    "Η ρύθμιση αφορά τα ΦΕΚ, τον Ν. 123/2026 και την ΚΥΑ 45/2026.",
+    "Η απόφαση παραθέτει «Die Neue Ordnung» και \"Framework Agreement\" ως τίτλους.",
+    "Η απόφαση παραθέτει «Πλήρης ανάλυση min 200 λέξεις» και \"max 120 chars\" ως τίτλους.",
+    "Η απόφαση δημοσιεύεται στη διεύθυνση https://example.test/min-200-words.",
+    "Η εταιρεία La Poste συνεργάζεται με Microsoft Teams και προμηθεύεται CATERPILLAR 100HP "
+    "για την υλοποίηση της δράσης, τη διατήρηση των υποδομών και την παροχή υπηρεσιών "
+    "στους πολίτες και στις αρμόδιες δημοτικές υπηρεσίες.",
+])
+def test_preserved_legal_formatting_titles_and_urls(text: str) -> None:
+    assert check_generated_text(text, field="summary_short_el").ok
+
+
+def test_english_fields_are_not_run_through_greek_language_detectors() -> None:
+    text = "The rule introduces new requirements for Microsoft Teams and CATERPILLAR 100HP equipment."
+    assert check_generated_text(text, field="summary_short_en").ok
 
 
 # Exercise every word boundary in the refusal/meta lead-ins, with a failed
@@ -296,3 +457,20 @@ def test_review_backtracking_reproduction(lead: str, length: int, matching: bool
 def test_whitespace_compaction_preserves_original_mojibake_density() -> None:
     text = "Η απόφαση αναφέρει τους συμβολισμούς ≈ÀÕ≈ÀÕ≈ÀÕ≈ÀÕ." + "\t" * 100_000 + " Η διαδικασία καθορίζεται αναλυτικά."
     assert check_generated_text(text, field="summary_long_el").ok
+
+
+
+@pytest.mark.parametrize("text", [
+    "Η απόφαση αναφέρει τη déclaration της εταιρείας για το έργο της περιφέρειας.",
+    "Ο Martí ορίζεται υπεύθυνος του έργου για τη συντήρηση του δικτύου.",
+    "Στην παράγραφο é του εγγράφου περιγράφεται η διαδικασία του διαγωνισμού.",
+])
+def test_single_accent_latin_words_in_official_greek_text_are_preserved(text):
+    # Production comparison 2026-11-13: one-accent Latin tokens were the only
+    # false positives of the new foreign_word rule in 32,530 stored texts.
+    assert "foreign_word" not in check_generated_text(text, field="summary_long_el").reasons
+
+
+def test_repeated_accent_transliteration_and_mojibake_are_rejected():
+    assert "foreign_word" in check_generated_text(
+        "Συναυλία σε συνεργασία με τον σύλλογο Mykoníaikí Aelleleghy της πόλης.", field="summary_short_el").reasons
