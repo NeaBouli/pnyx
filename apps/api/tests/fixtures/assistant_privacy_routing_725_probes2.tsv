@@ -1,0 +1,59 @@
+expected	question
+anonymity	Can a moderator infer my ballot choice?
+anonymity	Do officials know how I voted on this measure?
+anonymity	Could my ballot be tied to my account?
+anonymity	Is my ballot kept confidential?
+anonymity	Do you keep a record of my vote?
+anonymity	Are the votes kept secret from site staff?
+anonymity	Does anyone know which way I voted?
+anonymity	Can my vote reveal who I am?
+none	Is my choice identifiable after I vote?
+anonymity	Can my voting record be viewed by administrators?
+anonymity	For the Digital Services Bill, can the public trace my vote?
+anonymity	On GR-2026-881, will my voting history stay secret?
+none	How do I access my voting history?
+none	Where on the site can I view my ballot?
+none	Can you give me a URL for my ballot?
+anonymity	Does this URL link my vote to me?
+none	What does the Digital Identity Bill say about deleting voter data?
+none	Does the privacy law require deleting account information?
+data_deletion	Can I erase my personal info from the platform?
+results_visibility	When do the aggregate totals become visible to voters?
+results_visibility	Are the final results hidden until voting closes?
+private_key	Where is the signing key kept?
+android_download	Where can I get the Android application?
+data_deletion	Can I revoke my platform account?
+none	How does phone verification work without a text message?
+vote_correction	Can I change my vote after submitting it?
+nullifier_hash	Explain what the nullifier hash does.
+anonymity	Μπορούν οι συντονιστές να μάθουν τι ψήφισα;
+anonymity	Ξέρουν οι άλλοι πώς ψήφισα;
+anonymity	Μπορεί κάποιος να μαντέψει τι ψήφισα;
+anonymity	Το ψηφοδέλτιό μου είναι απόρρητο;
+anonymity	Κρατούν κρυφή την ψήφο μου;
+anonymity	Η ψήφος μου εμφανίζεται δημόσια;
+anonymity	Μπορεί ο αριθμός του κινητού να συνδεθεί με την ψήφο;
+anonymity	Μπορεί κάποιος να συνδέσει την ψήφο μου με το όνομά μου;
+anonymity	ειναι η ψηφος μου ιδιωτικη;
+none	Πώς βλέπω το ιστορικό ψήφων μου;
+none	Μπορώ να δω το ψηφοδέλτιό μου στον λογαριασμό;
+anonymity	Ποιος έχει πρόσβαση στο τι ψήφισα;
+none	Για το νομοσχέδιο ψηφιακής ταυτότητας, τι γίνεται με διαγραφή δεδομένων λογαριασμού;
+results_visibility	Πότε γίνονται ορατά τα σύνολα ψήφων;
+private_key	Πού φυλάσσεται το κλειδί υπογραφής;
+android_download	Πώς εγκαθιστώ την εφαρμογή στο Android;
+data_deletion	Μπορώ να ανακαλέσω τον λογαριασμό μου;
+none	Χρειάζεται SMS για επαλήθευση κινητού;
+anonymity	Can moderators να ξέρουν τι ψήφισα?
+anonymity	Is my vote annonimous?
+anonymity	My vote είναι public?
+none	Can you send me a link to my ballot page?
+results_visibility	Can I see the vote total for my account?
+anonymity	Are my ballot choices confidential?
+anonymity	Do the admins know my vote?
+none	Does the referendum bill make all my votes anonymous?
+none	What does the bill say about whether votes are secret?
+none	What is the Android app’s privacy policy?
+anonymity	Can my vote be tracked through its receipt?
+none	Μπορεί το σύστημα να ταυτοποιήσει την επιλογή που έκανα;
+none	Can I open my vote receipt in the app?
