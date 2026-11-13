@@ -1276,9 +1276,11 @@ def run_checks():
 _stop = threading.Event()
 
 
-def _request_stop(signum, _frame) -> None:
-    """SIGTERM/SIGINT: finish the running check, then exit instead of waiting for SIGKILL."""
-    logger.info("Monitor received signal %s; stopping after the current check", signum)
+def _request_stop(_signum, _frame) -> None:
+    """SIGTERM/SIGINT: finish the running check, then exit instead of waiting for SIGKILL.
+
+    Only sets the event: logging inside a signal handler can block or re-enter.
+    """
     _stop.set()
 
 
@@ -1304,7 +1306,7 @@ def run_daemon() -> None:
         except Exception as e:
             logger.error("Monitor error: %s", e)
         _stop.wait(CHECK_INTERVAL)
-    logger.info("Monitor stopped")
+    logger.info("Monitor stopped after a stop signal")
 
 
 if __name__ == "__main__":
