@@ -127,3 +127,22 @@ class PrecisePreservationTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ModalControlLinkTest(unittest.TestCase):
+    """#729: JavaScript modal controls must not become self-links in the Markdown copy."""
+
+    def test_modal_controls_map_to_their_pages_or_are_omitted(self):
+        self.assertEqual(wiki_publish.anchor_href({"href": "#", "data-csp-click": "open-legal-modal-delete-link"}),
+                         "delete-account.html")
+        self.assertEqual(wiki_publish.anchor_href({"href": "#", "data-csp-click": "open-legal-modal-privacy-link"}),
+                         "privacy.html")
+        self.assertIsNone(wiki_publish.anchor_href({"href": "#", "data-csp-click": "unknown-modal"}))
+        self.assertEqual(wiki_publish.anchor_href({"href": "api.html"}), "api.html")
+
+    def test_published_markdown_has_no_self_link_for_account_deletion(self):
+        for name in wiki_publish.PAGES.values():
+            text = (ROOT / f"wiki/{name}.md").read_text(encoding="utf-8")
+            for line in text.splitlines():
+                if "Διαγραφή Λογαριασμού](" in line or "Delete Account](" in line:
+                    self.assertIn("/wiki/delete-account.html)", line, f"{name}: {line}")

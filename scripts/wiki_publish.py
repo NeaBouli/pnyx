@@ -101,6 +101,22 @@ def link_url(href, base):
     return quote(url, safe="/:#?&=@%+;,~!$*'-._")
 
 
+# JavaScript modal controls (href="#") have a real page behind them; unknown
+# controls are not links in the Markdown copy (#729).
+MODAL_TARGETS = {
+    "open-legal-modal-delete-link": "delete-account.html",
+    "open-legal-modal-privacy-link": "privacy.html",
+}
+
+
+def anchor_href(attrs):
+    href = (attrs.get("href") or "").strip()
+    action = attrs.get("data-csp-click")
+    if action and href in {"", "#"}:
+        return MODAL_TARGETS.get(action)
+    return href or None
+
+
 def inline_children(node):
     for child in node.children:
         if isinstance(child, Node):
@@ -111,7 +127,7 @@ def inline_children(node):
 
 def source_links(node, lang):
     """Include navigation/footer anchors and anchors inside translated HTML."""
-    if node.tag == "a" and node.attrs.get("href"):
+    if node.tag == "a" and anchor_href(node.attrs):
         yield node
     if f"data-{lang}" in node.attrs:
         fragment = Parser()
@@ -153,7 +169,7 @@ def markdown(node, lang, base):
                 continue
             label = escape_text(clean(literal(child, lang)))
             if child.tag == "a":
-                url = link_url(child.attrs.get("href", ""), base)
+                url = link_url(anchor_href(child.attrs) or "", base)
                 if url and f"]({url})" in content:
                     continue
             replaced = False
@@ -172,7 +188,8 @@ def markdown(node, lang, base):
     else:
         content = "".join(markdown(c, lang, base) for c in node.children)
     if tag == "a":
-        url = link_url(attrs["href"], base) if attrs.get("href") else None
+        href = anchor_href(attrs)
+        url = link_url(href, base) if href else None
         return f'[{clean(content)}]({url})' if url else content
     if tag in {"strong", "b"}:
         return f"**{clean(content)}**"
@@ -234,7 +251,7 @@ def render(source, slug):
         output += article
         remaining = {}
         for link in source_links(parser.root, lang):
-            url = link_url(link.attrs["href"], base)
+            url = link_url(anchor_href(link.attrs), base)
             if url and f"]({url})" not in article:
                 # Prefer a localized navigation label over an earlier logo
                 # anchor that happens to point to the same page.
