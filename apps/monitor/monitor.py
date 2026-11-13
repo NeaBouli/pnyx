@@ -9,6 +9,8 @@ import os
 import time
 import logging
 import re
+import signal
+import threading
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from typing import Any
@@ -1271,12 +1273,38 @@ def run_checks():
         r.close()
 
 
+_stop = threading.Event()
+
+
+def _request_stop(signum, _frame) -> None:
+    """SIGTERM/SIGINT: finish the running check, then exit instead of waiting for SIGKILL."""
+    logger.info("Monitor received signal %s; stopping after the current check", signum)
+    _stop.set()
+
+
+def install_signal_handlers() -> None:
+    signal.signal(signal.SIGTERM, _request_stop)
+    signal.signal(signal.SIGINT, _request_stop)
+
+
 def apply_startup_grace() -> None:
     """Delay the first daemon check so planned deploy restarts do not trigger recovery."""
     if STARTUP_GRACE_SECONDS <= 0:
         return
     logger.info("Startup grace active (%ds); delaying first monitor check", STARTUP_GRACE_SECONDS)
-    time.sleep(STARTUP_GRACE_SECONDS)
+    _stop.wait(STARTUP_GRACE_SECONDS)
+
+
+def run_daemon() -> None:
+    """Check loop; the waits wake up immediately on SIGTERM/SIGINT."""
+    apply_startup_grace()
+    while not _stop.is_set():
+        try:
+            run_checks()
+        except Exception as e:
+            logger.error("Monitor error: %s", e)
+        _stop.wait(CHECK_INTERVAL)
+    logger.info("Monitor stopped")
 
 
 if __name__ == "__main__":
@@ -1292,10 +1320,5 @@ if __name__ == "__main__":
             STARTUP_GRACE_SECONDS,
             AUTO_RECOVERY_T2,
         )
-        apply_startup_grace()
-        while True:
-            try:
-                run_checks()
-            except Exception as e:
-                logger.error("Monitor error: %s", e)
-            time.sleep(CHECK_INTERVAL)
+        install_signal_handlers()
+        run_daemon()
