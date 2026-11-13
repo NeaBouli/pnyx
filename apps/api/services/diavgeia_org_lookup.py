@@ -81,6 +81,14 @@ def org_pill(label: str | None) -> str:
     return PILL_PREFIX + label if label else "Διαύγεια"
 
 
+def _snapshot_label(uid: str) -> str | None:
+    """Label from the local snapshot only (no Redis, no HTTP)."""
+    uid = str(uid).strip()
+    if not UID_RE.fullmatch(uid):
+        return None
+    return clean_org_label((get_org(uid) or {}).get("label"))
+
+
 class OrgLabelLookupUnavailable(Exception):
     """Transient lookup failure, distinct from a known missing organization."""
 
@@ -103,14 +111,18 @@ class ImportOrgLabels:
             if uid in self._labels:
                 return self._labels[uid]
             if self._remaining <= 0:
-                return None
+                # The open breaker only stops cache/API lookups; the local
+                # snapshot needs no network, so known municipalities keep their label.
+                label = _snapshot_label(uid)
+                self._labels[uid] = label
+                return label
             started = time.monotonic()
             try:
                 async with asyncio.timeout(self._remaining):
                     label = clean_org_label(await self._resolver(uid, fail_on_unavailable=True))
             except (TimeoutError, OrgLabelLookupUnavailable):
                 self._remaining = 0
-                label = None
+                label = _snapshot_label(uid)
                 logger.warning("Diavgeia import label lookups deferred for remainder of run")
             finally:
                 self._remaining -= time.monotonic() - started

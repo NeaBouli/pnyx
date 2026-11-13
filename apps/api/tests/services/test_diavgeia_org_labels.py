@@ -445,3 +445,37 @@ async def test_historical_import_uses_shared_resolver_in_both_flush_paths(label_
     assert params["organization_label_m0"] == (lookup.clean_org_label(live_label) or "")
     assert params["governance_level_m0"] == "OTHER"
     db.commit.assert_awaited_once()
+
+
+async def test_open_breaker_still_uses_local_snapshot(monkeypatch):
+    # #734: once the budget/breaker is exhausted, cache/API lookups stop but a
+    # municipality from the local snapshot must keep its label.
+    monkeypatch.setattr(lookup, "_org_cache", {"7": {"uid": "7", "label": "ΔΗΜΟΣ ΣΤΙΓΜΙΟΤΥΠΟΥ"}})
+    monkeypatch.setattr(lookup, "IMPORT_LABEL_BUDGET", 0)
+    called = []
+
+    async def resolve(uid, **kwargs):
+        called.append(uid)
+        return "Remote " + uid
+
+    labels = lookup.ImportOrgLabels(resolve)
+    assert await labels.resolve("7") == "ΔΗΜΟΣ ΣΤΙΓΜΙΟΤΥΠΟΥ"
+    assert await labels.resolve("8") is None
+    assert called == []
+
+
+async def test_outage_falls_back_to_snapshot_for_the_failing_and_later_uids(monkeypatch):
+    monkeypatch.setattr(lookup, "_org_cache", {
+        "7": {"uid": "7", "label": "ΔΗΜΟΣ ΕΠΤΑ"}, "9": {"uid": "9", "label": "ΔΗΜΟΣ ΕΝΝΕΑ"},
+    })
+    called = []
+
+    async def unavailable(uid, **kwargs):
+        called.append(uid)
+        raise lookup.OrgLabelLookupUnavailable
+
+    labels = lookup.ImportOrgLabels(unavailable)
+    assert await labels.resolve("7") == "ΔΗΜΟΣ ΕΠΤΑ"
+    assert await labels.resolve("9") == "ΔΗΜΟΣ ΕΝΝΕΑ"
+    assert await labels.resolve("10") is None
+    assert called == ["7"]
