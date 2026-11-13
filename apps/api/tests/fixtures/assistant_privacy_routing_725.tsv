@@ -1,0 +1,91 @@
+expected	question
+anonymity	Who can see the way I voted?
+anonymity	Can the site administrators see my vote?
+anonymity	Is my vote visible to anyone?
+anonymity	Can my vote be traced back to me?
+anonymity	Can my vote be linked to my mobile number?
+anonymity	Will anyone know how I voted?
+anonymity	Can they see my vote?
+anonymity	Is my ballot confidential?
+anonymity	Does HLR reveal how I voted?
+anonymity	My vote is annonymous, right?
+anonymity	For the housing bill, who can see my vote?
+anonymity	Regarding this bill, are votes anonymous?
+not_anonymity	For the bill about privacy, how should I vote?
+not_anonymity	Can I vote for a privacy law?
+results_visibility	I want to see results for the privacy bill.
+not_anonymity	Where can I see my voting record?
+not_anonymity	Can you help me see my vote history?
+anonymity	Can anyone see my voting history?
+not_anonymity	Could you link my account to my phone before I vote?
+not_anonymity	Can I get a link for my vote?
+results_visibility	Who can see voting results before the poll closes?
+results_visibility	Before voting ends, are the results visible?
+results_visibility	Who can view the vote totals?
+data_deletion	As a mayor, can I delete my verification data?
+anonymity	Ποιοι μπορούν να δουν την ψήφο μου;
+anonymity	Μπορούν οι άλλοι χρήστες να δουν την ψήφο μου;
+anonymity	Η ψήφος μου φαίνεται σε άλλους;
+anonymity	Μπορεί κάποιος να μάθει τι ψήφισα;
+anonymity	Είναι απόρρητη η ψήφος μου;
+anonymity	Ειναι απορρητη η ψηφος μου;
+anonymity	Η ψήφος μου παραμένει ανώνυμη;
+anonymity	Για το νομοσχέδιο GR-2026-1234, ποιος βλέπει την ψήφο μου;
+anonymity	Σχετικά με το νομοσχέδιο, είναι μυστική η ψήφος μου;
+not_anonymity	Πώς ψηφίζω για το νομοσχέδιο περί ιδιωτικότητας;
+results_visibility	Πού βλέπω τα αποτελέσματα της ψηφοφορίας;
+results_visibility	Ποιος βλέπει τα συνολικά αποτελέσματα της ψηφοφορίας;
+results_visibility	Μπορώ να δω τα αποτελέσματα πριν κλείσει η ψηφοφορία;
+not_anonymity	Μπορείς να μου στείλεις σύνδεσμο για να ψηφίσω;
+android_download	Θέλω σύνδεσμο για την εφαρμογή Android.
+anonymity	Ποιος μπορεί να see my vote μετά το HLR;
+anonymity	Είναι η ψήφος μου anonimous μετά το SMS;
+data_deletion	Μπορώ να ανακαλέσω την επαλήθευσή μου;
+not_anonymity	How do I register as a representative under the law?
+not_anonymity	Does the law require representative verification?
+results_visibility	Can I see the results of the privacy bill?
+private_key	How is my private signing key stored?
+anonymity	Can anyone still see my vote?
+anonymity	Μπορεί ο καθένας να δει την ψήφο μου;
+anonymity	Who can see my vote in this bill?
+anonymity	For this bill, is my vote private?
+anonymity	Am I anonymous when I vote for the housing bill?
+not_anonymity	I want to vote on the bill about privacy.
+not_anonymity	Θέλω να ψηφίσω για το νομοσχέδιο περί ιδιωτικότητας.
+not_anonymity	Μπορώ να δω την ψήφο μου;
+not_anonymity	Can you show me my vote?
+not_anonymity	Can I see my vote?
+anonymity	Can you see my vote?
+results_visibility	Where can I see results for bill GR-2026-1234?
+anonymity	How do I use zero knowledge proofs to keep my vote private?
+not_anonymity	Can I register as a representative with a private email address?
+not_anonymity	Is my verification token secret?
+anonymity	Are my votes confidential after HLR verification?
+anonymity	Ποιος μπορεί να δει το ψηφοδέλτιό μου;
+anonymity	Ποιος μπορεί να δει το ψηφοδελτιο μου;
+anonymity	Is my vote anomymous?
+anonymity	Do admins have access to my vote?
+anonymity	Ποιοι έχουν πρόσβαση στην ψήφο μου;
+data_deletion	Can I revoke HLR verification?
+data_deletion	Can I revoke my phone verification?
+data_deletion	Can I revoke my verification for this bill?
+results_visibility	Can anyone see results before voting ends?
+anonymity	Είναι η ψήφος μου δημόσια;
+anonymity	Is my vote public?
+anonymity	Do you store my ballot choices?
+results_visibility	How can I see the results for a private bill?
+not_anonymity	For the bill about private schools, how should I vote?
+not_anonymity	Για το νομοσχέδιο περί ιδιωτικότητας, πού καταχωρώ την ψήφο μου;
+results_visibility	Can I see the results before voting ends for a private bill?
+android_download	How do I download the Android app on my private phone?
+not_anonymity	How do I connect my phone to my account before I vote?
+anonymity	For bill GR-2026-1234, who can see my vote?
+not_anonymity	How should I vote on the privacy bill?
+results_visibility	Can anyone see the vote results before voting ends?
+not_anonymity	Can you send me a link to vote?
+android_download	Can you send me a link to the Android app?
+anonymity	Is my vote secret?
+anonymity	Είναι μυστική η ψήφος μου;
+anonymity	Ειναι μυστικη η ψηφος μου;
+anonymity	Is my vote anonimous?
+data_deletion	Can I revoke my verification?

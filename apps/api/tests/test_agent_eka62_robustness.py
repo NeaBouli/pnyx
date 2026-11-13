@@ -265,8 +265,10 @@ def _assert_public_safe(sources: list[dict], seen: dict) -> None:
 async def test_sources_cite_kb_rows_given_to_the_model(
     monkeypatch: pytest.MonkeyPatch, lang: str, vote_title: str, privacy_title: str,
 ) -> None:
-    seen = _patch_models(monkeypatch, "Voting is anonymous; pick a bill and sign on device.")
-    response = await _ask("vote anonym ψηφ ανωνυμ?", lang, _FakeDb([KB_VOTE, KB_PRIVACY]))
+    seen = _patch_models(monkeypatch, "Pick a bill and sign on device.")
+    # Anonymity questions now bypass retrieval; exercise source attribution with
+    # a noncanonical query matching the vote keywords and the privacy content.
+    response = await _ask("vote ψηφ τηλέφωνο", lang, _FakeDb([KB_VOTE, KB_PRIVACY]))
 
     assert response["sources"] == [
         {"type": "knowledge_base", "id": 11, "category": "process", "title": vote_title},

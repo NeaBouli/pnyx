@@ -1,4 +1,6 @@
-from routers.agent import _canonical_response
+import pytest
+
+from routers.agent import _FACTS, _canonical_response
 from scripts.seed_knowledge_base import ENTRIES
 
 
@@ -21,6 +23,14 @@ def test_seed_privacy_claims_use_only_published_pseudonymous_facts() -> None:
 
 def _entry(title_en: str) -> tuple:
     return next(entry for entry in ENTRIES if entry[2] == title_en)
+
+
+@pytest.mark.parametrize("lang,index", [("el", 3), ("en", 4)])
+def test_generic_anonymity_seed_title_does_not_route_the_canonical(lang: str, index: int) -> None:
+    entry = _entry("How is my anonymity protected?")
+    response = _canonical_response(entry[2], lang)
+    assert response is None
+    assert entry[index].startswith(_FACTS["anonymity"][lang])
 
 
 def test_vote_weight_is_equal_for_every_verification_method() -> None:
