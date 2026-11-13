@@ -177,15 +177,21 @@ async def test_mixed_runtime_update_and_delete_roll_back_unprotected_rows(sensit
     expected = [("PLAIN", "Ordinary procurement"), ("S", "Synthetic AMKA marker")]
 
     with pytest.raises(asyncpg.InsufficientPrivilegeError, match="delete or re-key") as error:
-        await runtime.execute("""UPDATE parliament_bills SET id = id || '-changed'
-            WHERE id IN ('PLAIN', 'S')""")
+        # The main statement targets S only once the CTE has changed PLAIN, so
+        # the unprotected row is provably modified before the guard raises.
+        await runtime.execute("""WITH plain AS (
+                UPDATE parliament_bills SET title_el = 'changed' WHERE id = 'PLAIN' RETURNING id)
+            UPDATE parliament_bills SET id = id || '-changed'
+            WHERE id = 'S' AND EXISTS (SELECT 1 FROM plain)""")
     assert error.value.sqlstate == "42501"
     rows = await runtime.fetch("""SELECT id, title_el FROM parliament_bills
         WHERE id IN ('PLAIN', 'S') ORDER BY id""")
     assert [tuple(row) for row in rows] == expected
 
     with pytest.raises(asyncpg.InsufficientPrivilegeError, match="delete or re-key") as error:
-        await runtime.execute("DELETE FROM parliament_bills WHERE id IN ('PLAIN', 'S')")
+        await runtime.execute("""WITH plain AS (
+                DELETE FROM parliament_bills WHERE id = 'PLAIN' RETURNING id)
+            DELETE FROM parliament_bills WHERE id = 'S' AND EXISTS (SELECT 1 FROM plain)""")
     assert error.value.sqlstate == "42501"
     rows = await runtime.fetch("""SELECT id, title_el FROM parliament_bills
         WHERE id IN ('PLAIN', 'S') ORDER BY id""")
