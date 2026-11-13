@@ -2,6 +2,10 @@
 <!-- @update-hint Technical whitepaper. Update on architecture changes. -->
 <!-- @seo Ekklesia.gr Whitepaper — Ψηφιακή Δημοκρατία Ελλάδα -->
 
+> **Αρχειοθετημένο (2026-11-13).** Αυτό το έγγραφο δεν ενημερώνεται και μπορεί να περιέχει παλαιές ονομασίες και κόστη. Η τρέχουσα έκδοση: [ekklesia.gr/wiki/whitepaper.html](https://ekklesia.gr/wiki/whitepaper.html) · [wiki/Whitepaper.md](../wiki/Whitepaper.md).
+>
+> **Superseded (2026-11-13).** This document is no longer maintained and may contain outdated labels and costs. Current version: [ekklesia.gr/wiki/whitepaper.html](https://ekklesia.gr/wiki/whitepaper.html) · [wiki/Whitepaper.md](../wiki/Whitepaper.md).
+
 <div align="center">
 
 # εκκλησία · Ekklesia.gr

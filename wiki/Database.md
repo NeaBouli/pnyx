@@ -78,8 +78,8 @@ NATIONAL ↓ REGIONAL ↓ MUNICIPAL ↓ COMMUNITY
 - [API](https://ekklesia.gr/wiki/api.html)
 - [Modules](https://ekklesia.gr/wiki/modules.html)
 - [Roadmap](https://ekklesia.gr/wiki/roadmap.html)
-- [Ιδιωτικότητα](https://ekklesia.gr/wiki/privacy.html)
-- [Διαγραφή Λογαριασμού](https://ekklesia.gr/wiki/database.html)
+- [Πολιτική Απορρήτου](https://ekklesia.gr/wiki/privacy.html)
+- [Database](https://ekklesia.gr/wiki/database.html)
 - [Contributing](https://ekklesia.gr/wiki/contributing.html)
 - [Whitepaper](https://ekklesia.gr/wiki/whitepaper.html)
 - [FAQ](https://ekklesia.gr/wiki/faq.html)
@@ -88,6 +88,7 @@ NATIONAL ↓ REGIONAL ↓ MUNICIPAL ↓ COMMUNITY
 - [24 Ώρες](https://ekklesia.gr/el/bills?status=WINDOW_24H)
 - [Αποτελέσματα](https://ekklesia.gr/el/results)
 - [GitHub](https://github.com/NeaBouli/pnyx)
+- [Διαγραφή Λογαριασμού](https://ekklesia.gr/wiki/delete-account.html)
 
 ## English
 
@@ -162,8 +163,8 @@ NATIONAL ↓ REGIONAL ↓ MUNICIPAL ↓ COMMUNITY
 - [API](https://ekklesia.gr/wiki/api.html)
 - [Modules](https://ekklesia.gr/wiki/modules.html)
 - [Roadmap](https://ekklesia.gr/wiki/roadmap.html)
-- [Privacy](https://ekklesia.gr/wiki/privacy.html)
-- [Delete Account](https://ekklesia.gr/wiki/database.html)
+- [Privacy Policy](https://ekklesia.gr/wiki/privacy.html)
+- [Database](https://ekklesia.gr/wiki/database.html)
 - [Contributing](https://ekklesia.gr/wiki/contributing.html)
 - [Whitepaper](https://ekklesia.gr/wiki/whitepaper.html)
 - [FAQ](https://ekklesia.gr/wiki/faq.html)
@@ -172,3 +173,4 @@ NATIONAL ↓ REGIONAL ↓ MUNICIPAL ↓ COMMUNITY
 - [24 Hours](https://ekklesia.gr/el/bills?status=WINDOW_24H)
 - [Results](https://ekklesia.gr/el/results)
 - [GitHub](https://github.com/NeaBouli/pnyx)
+- [Delete Account](https://ekklesia.gr/wiki/delete-account.html)
