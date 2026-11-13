@@ -390,6 +390,23 @@ async def test_legacy_default_allows_each_high_precision_reason(
         invalidate.assert_not_awaited()
 
 
+@pytest.mark.asyncio
+async def test_plain_and_prefixed_answer_heads_keep_default_legacy_eligibility(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str],
+) -> None:
+    answer = "Απάντηση: Η υπηρεσία εγκρίνει την αίτηση."
+    conn = LegacyConnection([
+        _legacy("L-answer-plain", value=answer),
+        _legacy("L-answer-list", value="• " + answer),
+    ], tmp_path / "answers.csv")
+    await audit_script.audit(
+        conn, fields=("summary_long_el",), legacy_sources=frozenset({"DIAVGEIA"}),
+    )
+    output = capsys.readouterr().out
+    assert "DIAVGEIA\tsummary_long_el\trefusal_or_meta\t2\tL-answer-plain,L-answer-list\t2\t0" in output
+    assert not conn.writes
+
+
 async def test_explicit_legacy_reasons_replace_defaults_and_do_not_restrict_owned_fields(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], invalidate: AsyncMock,
 ) -> None:
