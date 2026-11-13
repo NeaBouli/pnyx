@@ -40,7 +40,7 @@ _META = re.compile(_without_accents(
     r"μπορείτε[ \t]+να[ \t]+(?:μου[ \t]+)?(?:παρέχετε|στείλετε|επισυνάψετε|επικολλήσετε))\b|"
     r"^ως[ \t]+(?:ai|(?:γλωσσικό[ \t]+)?μοντέλο(?:[ \t]+τεχνητής[ \t]+νοημοσύνης)?)"
     r"[ \t]*(?:,[ \t]*)?δεν[ \t]+(?:μπορώ|έχω|διαθέτω)\b|"
-    r"^(?:απάντηση[ \t]*:|για[ \t]+να[ \t]+βρεις[ \t]+την\b|"
+    r"^(?:για[ \t]+να[ \t]+βρεις[ \t]+την\b|"
     r"(?:παρακαλώ[ \t]*(?:,[ \t]*)?)?(?:δώστε|δώσε|στείλτε|στείλε|παραθέστε|παραθέσε)[ \t]+"
     r"(?:μου[ \t]+)?(?:το[ \t]+)?(?:κείμενο|έγγραφο)|"
     r"(?:here[ \t]+is|here['’]s)[ \t]+(?:the|a|your)[ \t]+(?:summary|analysis)|summary[ \t]*:)|"
@@ -62,6 +62,27 @@ _ENGLISH_CLAUSE = re.compile(
     r"\b[Pp]lease (?:provide|send|paste|attach|upload|share) (?:me )?"
     r"(?:the|your|full) (?:document|text) so [Ii] can (?:summarize|summarise|analyze|analyse)\b"
 )
+_META_ANSWER = re.compile(_without_accents(r"^απάντηση[ \t]*:"), re.IGNORECASE)
+_META_SUMMARY = re.compile(_without_accents(r"^σύνοψη[ \t]*:"), re.IGNORECASE)
+_PROMPT_ECHO = re.compile(_without_accents(
+    r"(?:πλήρης[ \t]+ανάλυση[ \t]+min[ \t]+200[ \t]+λέξεις|"
+    r"1[ \t]+πρόταση[ \t]+max[ \t]+120[ \t]+χαρακτήρες|"
+    r"3[ \t]+παράγραφοι[ \t]+με[ \t]+τα[ \t]+κύρια[ \t]+σημεία|"
+    r"min[ \t]+200[ \t]+words|max[ \t]+120[ \t]+chars)"), re.IGNORECASE,
+)
+_FOREIGN_FUNCTION_WORDS = frozenset({
+    # Common German, French, Spanish and Italian articles/prepositions. English
+    # overlaps and one-letter forms are omitted; require lowercase words with
+    # Greek neighbors below to avoid treating Latin names as foreign prose.
+    "der", "die", "das", "den", "dem", "des", "ein", "eine", "einen", "einem", "eines", "einer",
+    "und", "von", "für", "mit", "zu", "im", "am", "zum", "zur", "auf", "nach", "aus",
+    "le", "la", "les", "un", "une", "des", "du", "de", "dans", "pour", "avec", "au", "aux",
+    "par", "sur", "et", "en",
+    "el", "los", "las", "una", "unos", "unas", "del", "al", "para", "con", "por",
+    "il", "lo", "gli", "le", "uno", "di", "della", "dei", "degli", "per", "su", "da",
+    "alla", "ai", "dal", "dalla", "nel", "nella", "nello", "sul", "sulla", "sullo",
+})
+_LATIN_GREEK_STYLE_ACCENTS = frozenset("áéíóúý")
 _SERIALIZED = re.compile(r'^(?:\{[ \t]*"|\[[ \t]*\{)')
 _PROMPT_TITLE = re.compile(r"^(?:title|τιτλος)[ \t]*:", re.IGNORECASE)
 _PROMPT_TEXT = re.compile(r"^(?:text|κειμενο)[ \t]*:", re.IGNORECASE)
@@ -144,6 +165,43 @@ def _has_mixed_words(prose: str) -> bool:
     return mixed >= 2 or (mixed == 1 and words <= 200)
 
 
+@lru_cache(maxsize=1024)
+def _is_latin_letter(char: str) -> bool:
+    return "LATIN" in unicodedata.name(char, "")
+
+
+@lru_cache(maxsize=4096)
+def _has_greek_style_latin_accent(token: str) -> bool:
+    accents = [char.casefold() for char in token if char.casefold() in _LATIN_GREEK_STYLE_ACCENTS]
+    if not accents or not any(_is_latin_letter(char) for char in token):
+        return False
+    # Names and words with one accent (José, Martí, déclaration) occur in
+    # official text. Repeated accents within one Latin token are characteristic
+    # of Greek words transliterated into Latin letters, or of mojibake.
+    return len(accents) > 1
+
+
+def _has_foreign_words(unquoted: str, *, greek_context: bool) -> bool:
+    if not greek_context:
+        return False
+    words = list(_WORD_TOKEN.finditer(unquoted))
+    for index, match in enumerate(words):
+        token = match[0]
+        if _has_greek_style_latin_accent(token):
+            return True
+        if (token != token.lower() or token.casefold() not in _FOREIGN_FUNCTION_WORDS
+                or index == 0 or index == len(words) - 1):
+            continue
+        if (_is_greek_token(words[index - 1][0]) and _is_greek_token(words[index + 1][0])):
+            return True
+    return False
+
+
+@lru_cache(maxsize=4096)
+def _is_greek_token(token: str) -> bool:
+    return any(_is_greek_letter(char) for char in token)
+
+
 def _without_quotes(text: str, *, only_latin: bool, placeholder: str = " ") -> str:
     """Scan once, retaining incomplete quotes and, optionally, non-Latin quotes."""
     if (not (text.count('"') >= 2 or ('“' in text and '”' in text) or ('«' in text and '»' in text))
@@ -188,8 +246,9 @@ def without_quotes(text: str, *, placeholder: str = " ") -> str:
     return _without_quotes(text, only_latin=False, placeholder=placeholder)
 
 
-def _meta_lines(text: str) -> list[str]:
+def _meta_lines(text: str) -> tuple[list[str], bool]:
     lines = []
+    prefixed_answer = False
     for line in _without_accents(text).splitlines():
         if not line.strip():
             continue
@@ -200,8 +259,10 @@ def _meta_lines(text: str) -> list[str]:
         offset = 0
         while match := _LIST_PREFIX.match(line, offset):
             offset = match.end()
-        lines.append(line[offset:].lstrip(" #*>_-"))
-    return lines
+        line = line[offset:].lstrip(" #*>_-")
+        prefixed_answer = prefixed_answer or bool(offset and _META_ANSWER.search(line))
+        lines.append(line)
+    return lines, prefixed_answer
 
 
 def check_generated_text(text: str | None, *, field: str) -> QualityResult:
@@ -235,18 +296,29 @@ def _check(text: str | None, *, field: str, greek_share: float | None) -> Qualit
         latin_tokens = _LATIN_TOKEN.findall(prose)
         acronyms_only = bool(latin_tokens) and all(_ACRONYM.fullmatch(token) for token in latin_tokens)
         short_acronyms = field == "pill_el" and letter_count <= 20 and acronyms_only
-        if not short_acronyms and (not letter_count or greek_letters / letter_count < greek_share
-                                  or _ENGLISH_CLAUSE.search(_HORIZONTAL_SPACE.sub(" ", unquoted))):
+        if not short_acronyms and (not letter_count or greek_letters / letter_count < greek_share):
             reasons.append("non_greek")
         if _has_mixed_words(prose):
             reasons.append("mixed_script")
+        if _ENGLISH_CLAUSE.search(_HORIZONTAL_SPACE.sub(" ", unquoted)):
+            reasons.append("english_clause")
+        if _has_foreign_words(unquoted, greek_context=bool(greek_letters and letter_count
+                                                          and greek_letters / letter_count >= greek_share)):
+            reasons.append("foreign_word")
 
-    lines = _meta_lines(unquoted)
+    lines, prefixed_answer = _meta_lines(unquoted)
+    summary_label = any(_META_SUMMARY.search(line) for line in lines)
+    meta_answer = prefixed_answer or summary_label or any(_META_ANSWER.search(line) for line in lines)
     if (any(_META.search(line) for line in lines)
+            or meta_answer
             or (any(_PROMPT_TITLE.search(line) for line in lines) and any(_PROMPT_TEXT.search(line) for line in lines))
             or _FAILURE_TOKEN.fullmatch(prose.strip())
             or any(_SERIALIZED.search(line.lstrip()) for line in compact.splitlines() if line.strip())):
         reasons.append("refusal_or_meta")
+    if prefixed_answer or summary_label:
+        reasons.append("meta_answer")
+    if _PROMPT_ECHO.search(_without_accents(unquoted)):
+        reasons.append("prompt_echo")
     if _READER_TITLE.search(compact) and _READER_BODY.search(compact):
         reasons.append("reader_metadata")
     if looks_like_error_page(compact):

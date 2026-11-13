@@ -610,7 +610,7 @@ async def test_embedded_english_is_report_only_in_default_legacy_plans(
     plan = tmp_path / "plan.csv"
     await _raw_audit(PlanConnection([_legacy("L-English", value=value)]), fields=("summary_long_el",),
                      plan_path=plan, legacy_sources=frozenset({"DIAVGEIA"}))
-    assert "\tnon_greek\t1\tL-English\t0\t1" in capsys.readouterr().out
+    assert "\tenglish_clause\t1\tL-English\t0\t1" in capsys.readouterr().out
     assert list(csv.DictReader(plan.read_text(encoding="utf-8").splitlines())) == []
 
 
