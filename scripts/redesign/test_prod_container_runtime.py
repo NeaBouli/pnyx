@@ -24,6 +24,16 @@ PROXY_IMAGE = (
 )
 
 
+_ROOT_NAMES = {"0": "root", "root": "root"}
+
+
+def _owner(spec):
+    """Meaning of a chown spec: (user, group); numeric 0 and 'root' are the same, no group = user's group."""
+    user, _, group = spec.partition(":")
+    group = group or user
+    return _ROOT_NAMES.get(user, user), _ROOT_NAMES.get(group, group)
+
+
 def runtime_instructions(path):
     """Return instructions after the last FROM, ignoring comments/continuations."""
     source = (ROOT / path).read_text(encoding="utf-8").replace("\\\n", " ")
@@ -64,11 +74,20 @@ class ProductionContainerRuntimeTests(unittest.TestCase):
     def test_dashboard_owns_cache_and_keeps_application_files_root_owned(self):
         runs = "\n".join(value for opcode, value in self.dashboard if opcode == "RUN")
         self.assertIn("mkdir -p /app/.next/cache", runs)
-        self.assertIn("chown -R nextjs:nextjs /app/.next/cache", runs)
+        cache_owners = [
+            match.group("owner")
+            for match in re.finditer(
+                r"\bchown\s+(?:-R|--recursive)\s+(?P<owner>\S+)\s+/app/\.next/cache\b", runs)
+        ]
+        self.assertTrue(cache_owners, "the Next cache directory must be chowned recursively")
+        self.assertTrue(all(_owner(owner) == ("nextjs", "nextjs") for owner in cache_owners), cache_owners)
         copies = [value for opcode, value in self.dashboard if opcode == "COPY"]
         self.assertTrue(copies)
         for copy in copies:
-            self.assertIn("--chown=0:0", copy)
+            with self.subTest(copy=copy):
+                match = re.search(r"--chown(?:=|\s+)(?P<owner>\S+)", copy)
+                self.assertIsNotNone(match, "application files must be copied with an explicit owner")
+                self.assertEqual(_owner(match.group("owner")), ("root", "root"))
 
     def test_runtime_commands_and_dashboard_port_are_preserved(self):
         for instructions, expected in (

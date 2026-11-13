@@ -177,21 +177,68 @@ def test_lifecycle_fast_forward_alerts_on_skipped_public_window():
     assert "COALESCE(b.source, 'PARLIAMENT') = 'PARLIAMENT'" in sql
 
 
+class _RecordingEvent:
+    """Stand-in for the stop event: records waits, optionally stops after N."""
+
+    def __init__(self, stop_after=None):
+        self.waits = []
+        self._stopped = False
+        self._stop_after = stop_after
+
+    def wait(self, seconds):
+        self.waits.append(seconds)
+        if self._stop_after is not None and len(self.waits) >= self._stop_after:
+            self._stopped = True
+        return self._stopped
+
+    def is_set(self):
+        return self._stopped
+
+    def set(self):
+        self._stopped = True
+
+
 def test_monitor_startup_grace_delays_first_daemon_check(monkeypatch):
-    sleeps = []
+    event = _RecordingEvent()
     monkeypatch.setattr(monitor, "STARTUP_GRACE_SECONDS", 3)
-    monkeypatch.setattr(monitor.time, "sleep", sleeps.append)
+    monkeypatch.setattr(monitor, "_stop", event)
 
     monitor.apply_startup_grace()
 
-    assert sleeps == [3]
+    assert event.waits == [3]
 
 
 def test_monitor_startup_grace_can_be_disabled(monkeypatch):
-    sleeps = []
+    event = _RecordingEvent()
     monkeypatch.setattr(monitor, "STARTUP_GRACE_SECONDS", 0)
-    monkeypatch.setattr(monitor.time, "sleep", sleeps.append)
+    monkeypatch.setattr(monitor, "_stop", event)
 
     monitor.apply_startup_grace()
 
-    assert sleeps == []
+    assert event.waits == []
+
+
+def test_monitor_daemon_stops_after_signal_without_another_check(monkeypatch):
+    # #731: SIGTERM sets the stop event; the running check completes, the
+    # interval wait returns immediately and no further check starts.
+    event = _RecordingEvent(stop_after=2)  # grace wait, then first interval wait
+    checks = []
+    monkeypatch.setattr(monitor, "STARTUP_GRACE_SECONDS", 3)
+    monkeypatch.setattr(monitor, "CHECK_INTERVAL", 1800)
+    monkeypatch.setattr(monitor, "_stop", event)
+    monkeypatch.setattr(monitor, "run_checks", lambda: checks.append(1))
+
+    monitor.run_daemon()
+
+    assert checks == [1]
+    assert event.waits == [3, 1800]
+
+
+def test_monitor_signal_handler_sets_stop_event(monkeypatch):
+    import threading
+    event = threading.Event()
+    monkeypatch.setattr(monitor, "_stop", event)
+
+    monitor._request_stop(15, None)
+
+    assert event.is_set()
