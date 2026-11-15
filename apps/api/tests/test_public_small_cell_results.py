@@ -1,6 +1,6 @@
 """ADR-007 S2: public counts, derived shares and complementary cells stay private."""
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -254,8 +254,11 @@ async def test_export_population_includes_zk_and_csv_omits_suppressed_scores():
 @pytest.mark.parametrize("bill_id", [None, "GR-PRIVACY"])
 @pytest.mark.parametrize("small", [[9, 10, 10, 10], [1, 0, 0, 0]])
 async def test_analytics_timeline_suppresses_small_and_complementary_buckets(bill_id, small):
-    rows = [SimpleNamespace(bill_id="GR-PRIVACY", zk=0, day=datetime(2026, 10, day), vote=choice.upper(), count=count)
-            for day, counts in [(14, small), (15, [10] * 4)]
+    # Days relative to now: the endpoint only returns buckets inside its `days` window
+    # (fixed October dates fell out of the 30-day window on 2026-11-14).
+    today = datetime.now(timezone.utc).replace(tzinfo=None, hour=0, minute=0, second=0, microsecond=0)
+    rows = [SimpleNamespace(bill_id="GR-PRIVACY", zk=0, day=today - timedelta(days=offset), vote=choice.upper(), count=count)
+            for offset, counts in [(2, small), (1, [10] * 4)]
             for choice, count in zip(CHOICES, counts)]
     result = await analytics.votes_timeline(bill_id=bill_id, days=30, db=Db(rows=[rows]))
     assert result["status"] == "ok"

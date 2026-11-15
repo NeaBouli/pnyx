@@ -260,13 +260,28 @@ async def test_permissions_defaults_and_dump_restore(db, tmp_path):
     env = {**os.environ, "PGHOST": parsed.host, "PGPORT": str(parsed.port or 5432), "PGDATABASE": parsed.database,
            "PGUSER": "ekklesia_backup", "PGPASSWORD": passwords["backup"]}
     dump = tmp_path / "roles.dump"
-    subprocess.run(["pg_dump", "--no-password", "-Fc", "-f", str(dump)], env=env, check=True, capture_output=True)
+    dumped = subprocess.run(["pg_dump", "--no-password", "-Fc", "-f", str(dump)], env=env, capture_output=True, text=True)
+    assert dumped.returncode == 0, dumped.stderr[-2000:]
     env.update(PGUSER=parsed.username, PGPASSWORD=parsed.password or "")
     async with engine.connect() as conn:
         autocommit = await conn.execution_options(isolation_level="AUTOCOMMIT")
         await autocommit.exec_driver_sql("CREATE DATABASE pnyx_test_t9142_restore")
     try:
-        subprocess.run(["pg_restore", "--exit-on-error", "--no-owner", "--no-acl", "-d", "pnyx_test_t9142_restore", str(dump)], env=env, check=True, capture_output=True)
+        # Restore through a SQL script so client/server version skew stays visible and
+        # bounded: a newer pg_dump client (e.g. the ubuntu-26.04 runner) emits
+        # exactly `SET transaction_timeout = 0;` (only that whole line is dropped, so no
+        # COPY data row can match), which an older test server rejects. Errors surface
+        # with their stderr (connection secrets are in env, never in argv/output).
+        restore_sql = tmp_path / "roles.sql"
+        rendered = subprocess.run(["pg_restore", "--no-owner", "--no-acl", "-f", str(restore_sql), str(dump)],
+                                  env=env, capture_output=True, text=True)
+        assert rendered.returncode == 0, rendered.stderr[-2000:]
+        restore_sql.write_text("\n".join(
+            line for line in restore_sql.read_text().splitlines() if line != "SET transaction_timeout = 0;"
+        ) + "\n")
+        restored_run = subprocess.run(["psql", "-X", "-q", "-v", "ON_ERROR_STOP=1", "-d", "pnyx_test_t9142_restore",
+                                       "-f", str(restore_sql)], env=env, capture_output=True, text=True)
+        assert restored_run.returncode == 0, restored_run.stderr[-2000:]
         restored = await connect(make_url(url).set(database="pnyx_test_t9142_restore").render_as_string(hide_password=False))
         try:
             assert await restored.fetchval("SELECT version_num FROM public.alembic_version") == TARGET
