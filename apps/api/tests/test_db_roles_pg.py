@@ -269,14 +269,15 @@ async def test_permissions_defaults_and_dump_restore(db, tmp_path):
     try:
         # Restore through a SQL script so client/server version skew stays visible and
         # bounded: a newer pg_dump client (e.g. the ubuntu-26.04 runner) emits
-        # `SET transaction_timeout`, which an older test server rejects. Errors surface
+        # exactly `SET transaction_timeout = 0;` (only that whole line is dropped, so no
+        # COPY data row can match), which an older test server rejects. Errors surface
         # with their stderr (connection secrets are in env, never in argv/output).
         restore_sql = tmp_path / "roles.sql"
         rendered = subprocess.run(["pg_restore", "--no-owner", "--no-acl", "-f", str(restore_sql), str(dump)],
                                   env=env, capture_output=True, text=True)
         assert rendered.returncode == 0, rendered.stderr[-2000:]
         restore_sql.write_text("\n".join(
-            line for line in restore_sql.read_text().splitlines() if not line.startswith("SET transaction_timeout")
+            line for line in restore_sql.read_text().splitlines() if line != "SET transaction_timeout = 0;"
         ) + "\n")
         restored_run = subprocess.run(["psql", "-X", "-q", "-v", "ON_ERROR_STOP=1", "-d", "pnyx_test_t9142_restore",
                                        "-f", str(restore_sql)], env=env, capture_output=True, text=True)
