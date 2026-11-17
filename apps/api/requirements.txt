@@ -15,7 +15,7 @@ redis==8.1.0
 
 # Config & Validation
 pydantic[email]==2.14.2
-pydantic-settings==2.16.2
+pydantic-settings==2.16.3
 
 # Crypto
 PyNaCl==1.6.2
