@@ -52,6 +52,6 @@ unidecode>=1.4.0
 pytest==9.2.0
 pytest-asyncio==1.4.1
 aiosqlite==0.22.1
-anyio==4.15.1
+anyio==4.16.0
 respx>=0.23.1
 sentry-sdk[fastapi]>=2.73.0
