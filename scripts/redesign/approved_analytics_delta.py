@@ -68,7 +68,7 @@ CONTENT_REMEDIATION_SHA256 = {
     "docs/demo/bills.html": "7b17fd081470cd7c852ec5eb4691f92da8b759cf4d929bb24d8350fceeaa8071",  # T-9127: OPEN_END voting closed
     "docs/embed/vote.html": "2c065daa0cc82b22c695b2634f7738b3cc6766233db2541965f56e982aaab98b",  # T-9127: OPEN_END voting closed
     "docs/govgr-dimos.html": "073a89aeaf3ee7d4bd98ecaecde28b3461cf99a5f33bd501ab54c6e65ee629a6",  # B08: conditional Arweave publication
-    "docs/legal.html": "c52f249094d2921446f2a66372f9ae0bcda25aad34a1867c6a348702a8648935",  # Owner 2026-11-19: surname-only data-nosnippet; identity unchanged.
+    "docs/legal.html": "cb75cbe7e715f0da7919cab793f906be652e44f72513a8f9f403fadf0bcc9312",  # Owner 2026-11-19: surname-only data-nosnippet; identity unchanged.
     "docs/municipality/article.html": "9232d97104dcae0962c4eef7104c2a6b95d53b61de5126e709685d579a747016",
     "docs/municipality/index.html": "2ee8ab81fae1ec9978a73f785d14502c31cd121e912c738867e5c78b6b7328ce",  # B08: conditional Arweave publication
     "docs/tickets/index.html": "d15da5a5e2b2831f4784f8da49b0994aeb35c449571a44b290e62cc27f4f21ff",
