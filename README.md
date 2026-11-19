@@ -193,9 +193,9 @@ Source snapshot **2026-10-31**: [generated facts and cost basis](docs/project-fa
 | Channel | Status | Link |
 |---|---|---|
 | Direct APK | v1.0.38 / vC67 available with a verified checksum | [Download APK](https://github.com/NeaBouli/pnyx/releases/download/v1.0.38/ekklesia-v1.0.38-vC67-DIRECT.apk) |
-| Google Play | v1.0.37 / vC66 available to selected Closed Testing Alpha participants. Production access is pending. | [Join the test](https://play.google.com/apps/testing/ekklesia.gr) |
+| Google Play | v1.0.38 / vC67 available to selected Closed Testing participants. Production access is pending. | [Join the test](https://play.google.com/apps/testing/ekklesia.gr) |
 | GitHub Release | v1.0.38 source tag, Direct APK and checksums | [Release](https://github.com/NeaBouli/pnyx/releases/tag/v1.0.38) |
-| F-Droid | v1.0.37 independently built and signed by F-Droid. Version codes 661–664 correspond to the four Android architectures. | [F-Droid](https://f-droid.org/packages/ekklesia.gr/) |
+| F-Droid | v1.0.38 independently built and signed by F-Droid. Version codes 671–674 correspond to the four Android architectures. | [F-Droid](https://f-droid.org/packages/ekklesia.gr/) |
 
 ---
 
