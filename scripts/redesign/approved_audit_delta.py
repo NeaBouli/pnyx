@@ -121,7 +121,7 @@ APPROVED_WIKI_INVENTORY_HASH = {
     "docs/wiki/privacy.html": "8f41fb87b6a8c53a52721b8c386134b14f3225bce6cae747fca539ea71034412",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
     "docs/wiki/roadmap.html": "55f4d0c27f43b00cf3f478dbe5c722d260013b1ac61774a6a5766407862d5dae",
     "docs/wiki/security.html": "bae405a791e025495cccf82f34c35fe11f33c613190d98af6308645843a4349c",  # T-9127: OPEN_END voting closed
-    "docs/wiki/whitepaper.html": "01903972f484ef5627d94290e353af5dfdbe5d5ffc6a343a442bf0ae80c66802",  # T-9127: OPEN_END voting closed
+    "docs/wiki/whitepaper.html": "acc1051ab7fbef3ec01ac43ad00836799406fd22d7b50b538ba2e7073965ba24",  # T-9127: OPEN_END voting closed; #724: first-render Greek privacy box matches data-el (nullifier, public key, votes)
     "docs/wiki/zk-voting.html": "650a3e85f98db88751c2702229eb016cc722206758da1a03fa7af73e5914af9c",
 }
 # T-420/T-421: footer target and hreflang; B17: canonical legal-name attribution.
